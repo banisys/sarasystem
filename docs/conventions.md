@@ -6,7 +6,9 @@ _(Carried over from how the user works on LMS; confirm once the SaraSystem stack
 - Containers have **no internet access**. If a package needs installing, give the user the exact command and let them run it.
 - The user pulls Docker images through the ArvanCloud mirror and then tags them with the standard name, so `docker-compose.yml` keeps standard image names. Example: `docker pull docker.arvancloud.ir/postgres:18-alpine && docker tag docker.arvancloud.ir/postgres:18-alpine postgres:18-alpine`.
 - Talk to the user in Persian (Persian script); code, identifiers and these docs stay in English.
-- Laravel Boost is part of the stack: once installed, use its MCP tools (docs search, schema, tinker, logs) and its AI guidelines before guessing about Laravel/Filament/Inertia APIs. Keep Boost-generated guidelines and these docs from contradicting each other.
+- **Laravel Boost** is installed: use its MCP tools (`search-docs`, `database-schema`, `database-query`, logs) before guessing about Laravel, Filament or Inertia APIs. Its guidelines sit at the bottom of `CLAUDE.md` and its skills in `.claude/skills/`. Our rules in `CLAUDE.md` take precedence.
+  - `.mcp.json` is hand-edited to run `boost:mcp` through `docker compose exec`, because the host has no PHP. If `boost:install` rewrites it, restore it.
+  - `boost.json`: `agents: [claude_code]`, `cloud: false` (we don't use Laravel Cloud). Regenerate with `php artisan boost:update`.
 
 ## Porting from LMS
 Nothing is copied from `../LMS` as-is. Port only on the user's request, one named part at a time:

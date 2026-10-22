@@ -25,3 +25,10 @@ Thumbs.db
 /vendor
 /.vscode
 /.zed
+
+# Filament plugin assets, republished by `php artisan filament:upgrade` (composer post-autoload-dump)
+/public/css/filament
+/public/fonts/filament
+/public/js/filament
+/public/js/app
+/public/js/ariaieboy

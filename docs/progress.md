@@ -9,11 +9,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 
 
 ## Next
-- Install the stack packages from ADR 0001 (check Filament 5 compatibility of each plugin first; user runs the installs).
-- Install Laravel Boost and merge its guidelines into `CLAUDE.md` without losing our rules. The skeleton's bootstrap `CLAUDE.md`/`AGENTS.md` stub was intentionally not copied.
-- Configure Vite for Docker (host `0.0.0.0`, port 5174, HMR host `localhost`) when setting up Inertia.
+- Decide the tenancy model (ADR 0002), then configure spatie-multitenancy (landlord migration, tenant model/finder) and, if needed, permission `teams`.
+- Self-host a Persian font (e.g. `vazirmatn` npm package; user installs) for the Inertia front end.
+- Pick a Jalali date library/picker for Vue.
+- Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Stack installed & wired (latest versions, all verified compatible with Laravel 13 / Filament 5): Filament 5.10 panel at `/cpadmin` with Shield + ApexCharts; Spatie permission/media/tags/settings migrations run; nwidart modules configured; spatie-multitenancy installed (not configured); Inertia 3 + Vue 3.5 + Ziggy with RTL root view and Welcome page; Laravel Boost (guidelines, skills, MCP via docker). Build and tests pass. Details in `architecture.md`.
 - 2026-10-23 — Laravel 13.38 skeleton added (PHP 8.5.9), `.env` on PostgreSQL, migrations run, default tests pass, http://localhost:8000 → 200.
 - 2026-10-22 — PostgreSQL 18.6 container running (`postgres:18-alpine`, pulled via ArvanCloud mirror).
 - 2026-10-22 — `git init` (branch `main`), `.gitignore`, `docker-compose.yml` (app + PostgreSQL 18).
@@ -23,7 +25,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
-- 
+- `CLAUDE.md` Boost block still has one generic line recommending Laravel Cloud (from Boost's foundation rules); we don't use Cloud. It is regenerated, so don't hand-edit it.
+- Local super admin `admin@sarasystem.test` exists only in the local DB (created with `shield:super-admin`); no seeder for it yet.
 
 ## Open questions
 _(Things that need a decision from the user.)_

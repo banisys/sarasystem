@@ -13,24 +13,50 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 | AI dev tooling | Laravel Boost |
 
 ## Applications / surfaces
-| Surface | Who | Built with |
-|---|---|---|
-| Admin panel | Head office, school management, staff | Filament |
-| User panel | Students, parents, teachers, supporters | Inertia + Vue |
-| Public site | Visitors (school info, registration, blog) | Inertia + Vue |
+| Surface | Who | Built with | URL |
+|---|---|---|---|
+| Admin panel | Head office, school management, staff | Filament | `/cpadmin` (same prefix as LMS) |
+| User panel | Students, parents, teachers, supporters | Inertia + Vue | _(TBD)_ |
+| Public site | Visitors (school info, registration, blog) | Inertia + Vue | `/` |
+
+### Admin panel (Filament)
+- Provider: [app/Providers/Filament/AdminPanelProvider.php](../app/Providers/Filament/AdminPanelProvider.php). The panel id is `admin`, the path is `cpadmin`, the brand comes from `APP_NAME` and the primary color is Violet.
+- Registered plugins: Shield (roles & permissions UI) and ApexCharts. The other Filament packages are used per component and need no panel registration:
+  - Jalali: `->jalali()` on DatePicker/DateTimePicker, `->jalaliDate()` on TextColumn/TextEntry
+  - Spatie media/tags/settings form fields
+  - Excel export actions
+  - Impersonate action
+- **Access:** `User::canAccessPanel()` lets in only users with Shield's `super_admin` or `panel_user` role. Shield's `HasPanelShield` trait is deliberately **not** used, because it gives `panel_user` to every new user, and students and parents must not reach the admin panel.
+- Shield policies live in `app/Policies`. `FilamentShield::enforcePolicies()` in `AppServiceProvider` registers the ones Laravel can't discover, such as `RolePolicy` for Spatie's `Role`. After adding resources, run `php artisan shield:generate --all --panel=admin`.
+- Filament plugin assets in `public/{css,js,fonts}/…` are **not committed**. `composer install` and `composer update` republish them through `filament:upgrade` (post-autoload-dump), and a deploy that skips composer scripts must run `php artisan filament:assets` itself.
+
+### Public site & user panel (Inertia)
+- Root view: [resources/views/app.blade.php](../resources/views/app.blade.php). It sets `dir="rtl"` for the `fa` locale and includes `@routes` (Ziggy).
+- Entry: [resources/js/app.js](../resources/js/app.js). Pages live in `resources/js/Pages/**`, are resolved by name and are lazy-loaded. The `ZiggyVue` plugin provides `route()`.
+- Shared props: [HandleInertiaRequests](../app/Http/Middleware/HandleInertiaRequests.php) shares `auth.user` (`id`, `name`, `email`). It is appended to the `web` middleware group in `bootstrap/app.php`.
+- Vite ([vite.config.js](../vite.config.js)): the Vue plugin, Tailwind 4 and the `ziggy-js` alias pointing to `vendor/tightenco/ziggy`. The dev server listens on `0.0.0.0:VITE_PORT` (5174) inside the container.
+- Not decided yet: the Persian font (self-hosted Vazirmatn is the plan), the Jalali date picker for Vue, and how modules contribute their own Inertia pages.
 
 ## Directory map
-Currently the stock Laravel 13 skeleton (created 2026-10-23). It will be updated as modules are added.
+Laravel 13 skeleton plus the stack setup (2026-10-23). It will be updated as modules are added.
 ```
-app/            core application code (outside modules)
-bootstrap/      app bootstrap, providers list
-config/         configuration
-database/       core migrations, factories, seeders
-docs/           project docs for humans and agents (this folder)
-public/         web root
-resources/      views, css, js
-routes/         web / console routes
-tests/          Feature + Unit tests (PHPUnit)
+app/                  core application code (outside modules)
+  Http/Middleware/    HandleInertiaRequests
+  Models/User.php     HasRoles (Shield/Spatie permission), FilamentUser
+  Policies/           Shield-generated policies
+  Providers/Filament/ AdminPanelProvider
+bootstrap/            app bootstrap, providers list
+config/               configuration (incl. filament-shield, permission, settings, modules, multitenancy)
+database/             core migrations (users, cache, jobs, permission, media, tags, settings), factories, seeders
+docs/                 project docs for humans and agents (this folder)
+Modules/              nwidart modules (none yet); merged into composer via wikimedia/composer-merge-plugin
+public/               web root
+resources/js/Pages/   Inertia Vue pages
+resources/views/      app.blade.php (Inertia root)
+routes/               web / console routes
+tests/                Feature + Unit tests (PHPUnit); TestCase calls withoutVite()
+.claude/skills/       Laravel Boost skills (generated)
+.mcp.json, boost.json Laravel Boost MCP + config
 ```
 
 ## Modules
@@ -38,6 +64,8 @@ _(TODO: module list and boundaries — to be derived from the domain map in [leg
 
 ## Tenancy
 _(TODO: tenant = organization or school? single DB or DB-per-tenant? how Filament panels and Shield permissions are scoped.)_
+
+Current state: `spatie/laravel-multitenancy` is installed and `config/multitenancy.php` is published, but tenancy is **not configured**. No landlord migration, tenant model or tenant finder exists yet. Spatie permission `teams` is off. Both wait for the tenancy ADR; changing `teams` later means editing the permission migration and running `migrate:fresh` (fine while there is no real data).
 
 ## Data model
 _(TODO: main entities and their relations.)_
