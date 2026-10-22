@@ -120,7 +120,7 @@ Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/uni
 **Pieces:**
 | Piece | Where | What it does |
 |---|---|---|
-| `tenants` table, `Tenant` model | [app/Models/Tenant.php](../app/Models/Tenant.php) | Extends spatie's Tenant (`makeCurrent()`, `current()`, `execute()`). Columns: `name`, `slug` (URL), `is_active`. Head office is the seeded tenant `head-office`. |
+| `tenants` table, `Tenant` model | [app/Models/Tenant.php](../app/Models/Tenant.php) | Extends spatie's Tenant (`makeCurrent()`, `current()`, `execute()`). Columns: `name`, `slug` (URL), `is_active`. Head office is the seeded tenant `head-office`; locally the seeder also creates the super admin and gives them `panel_user` there. |
 | `BelongsToTenant` trait | [app/Models/Concerns/BelongsToTenant.php](../app/Models/Concerns/BelongsToTenant.php) | **Every tenant-owned model uses it** (table needs `tenant_id`). It adds `TenantScope` and fills `tenant_id` on create (throws `NoCurrentTenant` if there is none), plus the `tenant()` relation that Filament uses for ownership. |
 | `TenantScope` | [app/Models/Scopes/TenantScope.php](../app/Models/Scopes/TenantScope.php) | Filters by the current tenant. It **fails closed**: with no current tenant it matches nothing. Cross-tenant code uses `Model::withoutTenantScope()` (after its own authorization check) or `$tenant->execute(fn () => …)`. |
 | Permission teams | `config/permission.php` | `teams = true`, `team_foreign_key = tenant_id`, role model `App\Models\Role`. Every role *assignment* is per tenant (`model_has_roles.tenant_id`). A role *definition* is global (`roles.tenant_id` NULL) or tenant-specific. |

@@ -20,17 +20,20 @@ class DatabaseSeeder extends Seeder
     {
         // Global role (tenant_id NULL) marking staff who may use the admin panel
         // in the tenants where they hold it.
-        Role::findOrCreate(Utils::getPanelUserRoleName(), 'web')
-            ->fill(['label' => 'کارمند (ورود به پنل)'])
-            ->save();
+        $panelUserRole = Role::findOrCreate(Utils::getPanelUserRoleName(), 'web');
+        $panelUserRole->fill(['label' => 'کارمند (ورود به پنل)'])->save();
 
-        Tenant::firstOrCreate(['slug' => 'head-office'], ['name' => 'ستاد']);
+        $headOffice = Tenant::firstOrCreate(['slug' => 'head-office'], ['name' => 'ستاد']);
 
         if (app()->isLocal()) {
-            User::firstOrCreate(
+            $superAdmin = User::firstOrCreate(
                 ['email' => 'admin@sarasystem.test'],
                 ['name' => 'Super Admin', 'password' => 'password', 'is_super_admin' => true],
             );
+
+            // Membership in a tenant means holding a role there, so the super
+            // admin gets panel_user in the head office to show up in its users list.
+            $headOffice->execute(fn () => $superAdmin->assignRole($panelUserRole));
         }
     }
 }

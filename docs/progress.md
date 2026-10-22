@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Seeder gives the local super admin the `panel_user` role in the head office, so they appear in its users list (membership = holding a role in the tenant). Re-running the seeder is safe.
 - 2026-10-23 — Adminer service in `docker-compose.yml` (DB web UI on http://localhost:8081).
 - 2026-10-23 — Inertia front end uses the Shabnam font too (one font across the whole system).
 - 2026-10-23 — Ported the LMS admin-panel UI (font Shabnam, theme + glass dark mode, colors, avatar, sidebar search, table top scroll, persisted filters, panel-wide defaults). Project name fixed to «سرا سیستم» (`APP_NAME`). 90 tests pass.
