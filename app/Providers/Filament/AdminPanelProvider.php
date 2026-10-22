@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Support\InitialsAvatarProvider;
+use App\Filament\Support\PanelTable;
 use App\Http\Middleware\MakeFilamentTenantCurrent;
 use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -72,6 +73,8 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->defaultAvatarProvider(InitialsAvatarProvider::class)
             ->spa()
+            // No global search box in the top bar; the sidebar has its own menu search.
+            ->globalSearch(false)
             ->sidebarCollapsibleOnDesktop()
             // Search box (with history and collapse-all) at the top of the sidebar menu.
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_START, fn (): View => view('filament.admin.sidebar-nav-search'))
@@ -119,6 +122,9 @@ class AdminPanelProvider extends PanelProvider
      */
     private function configureComponentDefaults(): void
     {
+        // Row actions in a dropdown in the first column, no row click (PanelTable).
+        $this->app->bind(Table::class, PanelTable::class);
+
         // Filters in a dropdown beside the column manager (any AboveContent*
         // layout puts the trigger on its own row), 25 rows per page, and
         // newest records first when the model keeps timestamps.
