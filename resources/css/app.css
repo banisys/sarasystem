@@ -3,8 +3,19 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* Same font as the admin panel (resources/css/filament/admin/theme.css);
+   only the Light weight exists, used for all text. */
+@font-face {
+    font-family: 'Shabnam';
+    src:
+        url('../fonts/Shabnam-Light.woff2') format('woff2'),
+        url('../fonts/Shabnam-Light.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-    /* TODO: self-host a Persian font (e.g. Vazirmatn); Vazirmatn is used if installed locally. */
-    --font-sans: Vazirmatn, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: Shabnam, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
 }

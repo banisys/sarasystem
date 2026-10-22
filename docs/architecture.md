@@ -59,7 +59,8 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - Entry: [resources/js/app.js](../resources/js/app.js). Pages live in `resources/js/Pages/**`, are resolved by name and are lazy-loaded. The `ZiggyVue` plugin provides `route()`.
 - Shared props: [HandleInertiaRequests](../app/Http/Middleware/HandleInertiaRequests.php) shares `auth.user` (`id`, `name`, `email`). It is appended to the `web` middleware group in `bootstrap/app.php`.
 - Vite ([vite.config.js](../vite.config.js)): the Vue plugin, Tailwind 4 and the `ziggy-js` alias pointing to `vendor/tightenco/ziggy`. The dev server listens on `0.0.0.0:VITE_PORT` (5174) inside the container.
-- Not decided yet: the Persian font (self-hosted Vazirmatn is the plan), the Jalali date picker for Vue, and how modules contribute their own Inertia pages.
+- Font: **Shabnam**, the same self-hosted font as the admin panel (`@font-face` + Tailwind `--font-sans` in `resources/css/app.css`).
+- Not decided yet: the Jalali date picker for Vue.
 
 ### Authentication ([ADR 0004](decisions/0004-authentication.md))
 - **One login page** at `/login` ([Auth/Login.vue](../resources/js/Pages/Auth/Login.vue)) for everyone. The Filament panel has no login of its own (`->login()` removed): guests hitting `/cpadmin/...` are redirected to `/login` and then back to the intended URL. Panel logout still works through Filament's logout route.
