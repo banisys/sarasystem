@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -42,7 +43,7 @@ return [
     |
     */
 
-    'tenant_model' => null,
+    'tenant_model' => Tenant::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -68,8 +69,11 @@ return [
     |
     */
 
+    // Disabled: with permission teams a role is always held within one tenant, so the
+    // installation-wide super admin is the users.is_super_admin flag (Gate::before in
+    // AppServiceProvider) instead of a role. See docs/decisions/0002-tenancy-model.md.
     'super_admin' => [
-        'enabled' => true,
+        'enabled' => false,
         'name' => 'super_admin',
         'define_via_gate' => false,
         'intercept_gate' => 'before',

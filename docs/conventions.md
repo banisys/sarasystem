@@ -27,8 +27,17 @@ _(TODO: e.g. how errors are handled, how data fetching is done, where business l
 ## Patterns we avoid
 _(TODO: things that look tempting but we decided against — link ADR if any.)_
 
+## Tenancy rules (see [ADR 0002](decisions/0002-tenancy-model.md))
+- A model whose rows belong to one tenant **must** `use BelongsToTenant`, and its table needs a `tenant_id` foreign key to `tenants`.
+- Never bypass the scope silently. `withoutTenantScope()` is only for code that has checked the user may see every tenant.
+- Background work for one tenant runs inside `$tenant->execute(fn () => …)`.
+- Never hard-code school-only concepts. Make them optional or configurable.
+
 ## Testing
-_(TODO: framework, where tests live, what must be tested, how to run.)_
+- PHPUnit; tests live in `tests/Feature` and `tests/Unit`. Run them with `docker compose exec -u sail laravel.test php artisan test`.
+- Tests run on PostgreSQL, in the `testing` database of the `pgsql` container (`phpunit.xml`), with `RefreshDatabase`. The database is created by `docker/pgsql/create-testing-database.sql` when the volume is first initialised; on an existing volume, create it with `CREATE DATABASE testing`.
+- Tenancy helpers: `Tests\Concerns\InteractsWithTenants` (`grantRole()`, `makeStaff()`). `Tests\Fixtures\TenantNote` is a minimal tenant-owned model.
+- Every tenant-owned feature gets a test that another tenant's rows are invisible.
 
 ## Git
 - Default branch: `main`. _(TODO: branch naming for features.)_

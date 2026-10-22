@@ -21,12 +21,14 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 
 ### Admin panel (Filament)
 - Provider: [app/Providers/Filament/AdminPanelProvider.php](../app/Providers/Filament/AdminPanelProvider.php). The panel id is `admin`, the path is `cpadmin`, the brand comes from `APP_NAME` and the primary color is Violet.
+- **Panel tenancy:** URLs are `/cpadmin/{tenant-slug}/…` and Filament shows a tenant switcher. See [Tenancy](#tenancy).
 - Registered plugins: Shield (roles & permissions UI) and ApexCharts. The other Filament packages are used per component and need no panel registration:
   - Jalali: `->jalali()` on DatePicker/DateTimePicker, `->jalaliDate()` on TextColumn/TextEntry
   - Spatie media/tags/settings form fields
   - Excel export actions
   - Impersonate action
-- **Access:** `User::canAccessPanel()` lets in only users with Shield's `super_admin` or `panel_user` role. Shield's `HasPanelShield` trait is deliberately **not** used, because it gives `panel_user` to every new user, and students and parents must not reach the admin panel.
+- **Access:** super admins (`users.is_super_admin`), plus users who hold Shield's `panel_user` role in at least one tenant. They see only those tenants (`User::getTenants()`/`canAccessTenant()`). Shield's `HasPanelShield` trait is deliberately **not** used, because it gives `panel_user` to every new user, and students and parents must not reach the admin panel. Shield's own `super_admin` role is disabled in `config/filament-shield.php`, because a role can't be installation-wide with teams.
+- **Roles UI (Shield):** `->centralApp()->scopeToTenant(false)`. It lists all roles, and the "team" field makes a role global (empty) or specific to one tenant. Assigning roles to users must pass the current tenant id (see the Shield README, "With Tenancy").
 - Shield policies live in `app/Policies`. `FilamentShield::enforcePolicies()` in `AppServiceProvider` registers the ones Laravel can't discover, such as `RolePolicy` for Spatie's `Role`. After adding resources, run `php artisan shield:generate --all --panel=admin`.
 - Filament plugin assets in `public/{css,js,fonts}/…` are **not committed**. `composer install` and `composer update` republish them through `filament:upgrade` (post-autoload-dump), and a deploy that skips composer scripts must run `php artisan filament:assets` itself.
 
@@ -63,9 +65,24 @@ tests/                Feature + Unit tests (PHPUnit); TestCase calls withoutVite
 _(TODO: module list and boundaries — to be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains).)_
 
 ## Tenancy
-Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/unit (school, branch or department), all tenants share one database (`tenant_id` + `BelongsToTenant` global scope), users are global, roles are per tenant (permission teams), and the tenant is chosen after login.
+Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/unit (school, branch or department), all tenants share one database, users are global, roles are per tenant, and the tenant is chosen after login.
 
-Current state: **not implemented yet.** `spatie/laravel-multitenancy` is installed and its config published; there is no tenant model, migration or finder, and permission `teams` is still off.
+**Pieces:**
+| Piece | Where | What it does |
+|---|---|---|
+| `tenants` table, `Tenant` model | [app/Models/Tenant.php](../app/Models/Tenant.php) | Extends spatie's Tenant (`makeCurrent()`, `current()`, `execute()`). Columns: `name`, `slug` (URL), `is_active`. Head office is the seeded tenant `head-office`. |
+| `BelongsToTenant` trait | [app/Models/Concerns/BelongsToTenant.php](../app/Models/Concerns/BelongsToTenant.php) | **Every tenant-owned model uses it** (table needs `tenant_id`). It adds `TenantScope` and fills `tenant_id` on create (throws `NoCurrentTenant` if there is none), plus the `tenant()` relation that Filament uses for ownership. |
+| `TenantScope` | [app/Models/Scopes/TenantScope.php](../app/Models/Scopes/TenantScope.php) | Filters by the current tenant. It **fails closed**: with no current tenant it matches nothing. Cross-tenant code uses `Model::withoutTenantScope()` (after its own authorization check) or `$tenant->execute(fn () => …)`. |
+| Permission teams | `config/permission.php` | `teams = true`, `team_foreign_key = tenant_id`, role model `App\Models\Role`. Every role *assignment* is per tenant (`model_has_roles.tenant_id`). A role *definition* is global (`roles.tenant_id` NULL) or tenant-specific. |
+| `SwitchPermissionsTeamTask` | [app/Multitenancy/SwitchPermissionsTeamTask.php](../app/Multitenancy/SwitchPermissionsTeamTask.php) | Switch task: `makeCurrent()` sets the permission team id to the tenant id, and forgetting the tenant clears it. |
+| Membership | `User::tenants()` / `Tenant::users()` | No separate table: a user belongs to a tenant when they hold any role there. `User::staffTenants()` is the subset where they hold `panel_user`. |
+| Super admin | `users.is_super_admin` + `Gate::before` in `AppServiceProvider` | Installation-wide, passes every check, and sees all active tenants. It is not mass-assignable. |
+| Admin panel | `->tenant(Tenant::class, slugAttribute: 'slug')` + [MakeFilamentTenantCurrent](../app/Http/Middleware/MakeFilamentTenantCurrent.php) (persistent tenant middleware) | Filament picks the tenant from the URL, and the middleware makes it spatie's current tenant, which also switches the permission team. |
+| Web / Inertia | [ResolveCurrentTenant](../app/Http/Middleware/ResolveCurrentTenant.php) (web group) + `POST /tenants/{slug}/switch` | The tenant id is kept in the session. It is auto-selected when the user has exactly one tenant, and dropped if the user no longer belongs to it. Shared Inertia props: `tenant.current`, `tenant.available`. |
+
+spatie-multitenancy's `tenant_finder` is **not used**: it runs before the session exists, so the middlewares above resolve the tenant instead. Queued jobs are tenant-aware by default (spatie config).
+
+**Not done yet:** the tenant picker page and login on the Inertia side (guests are temporarily redirected to the admin login), a configurable tenant label (مدرسه / شعبه), and a Filament resource for managing tenants.
 
 ## Data model
 _(TODO: main entities and their relations.)_

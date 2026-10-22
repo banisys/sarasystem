@@ -33,6 +33,8 @@ SaraSystem is a **generic product**. One installation serves one organization, a
 - Legacy migration: LMS `instance_id` maps to the new `tenant_id`. Instances that are not branches (`www`, `cpadmin`, `api`, `admin`, dead cafeerent ones) are not tenants.
 
 ## Implementation notes
-- spatie-multitenancy in single-DB mode. The tenant finder reads the tenant chosen after login from the session. Switching tasks: permission team id, plus cache prefix if needed.
+- The implementation is documented in [architecture.md → Tenancy](../architecture.md#tenancy).
+- spatie-multitenancy runs in single-DB mode. Its tenant finder is not used, because it runs before the session exists. Middlewares resolve the tenant instead. Switch task: permission team id.
+- The installation-wide super admin is a `users.is_super_admin` flag with `Gate::before`, not a role, because with teams every role assignment belongs to one tenant.
 - Filament admin panel: use Filament panel tenancy (`->tenant(Tenant::class)`, tenant switcher, `User::getTenants()`/`canAccessTenant()`). A tenant middleware calls `$tenant->makeCurrent()` and sets the permission team id, so that Filament, the spatie current tenant and Shield all agree.
 - Inertia side: after login, a tenant picker page (skipped when there is only one tenant), stored in the session, with the same `makeCurrent()` path.

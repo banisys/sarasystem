@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,6 +40,11 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => fn () => $request->user()?->only('id', 'name', 'email'),
+            ],
+            'tenant' => [
+                'current' => fn () => Tenant::current()?->only('id', 'name', 'slug'),
+                'available' => fn () => $request->user()?->tenants()->active()->orderBy('name')->get(['tenants.id', 'tenants.name', 'tenants.slug'])
+                    ->map->only('id', 'name', 'slug') ?? [],
             ],
         ];
     }

@@ -9,12 +9,15 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 
 
 ## Next
-- Implement tenancy per ADR 0002: `tenants` table + `Tenant` model, `BelongsToTenant` trait, session tenant finder, permission `teams` (re-run migrations), Filament panel tenancy + tenant switcher, tenant picker after login on the Inertia side, cross-tenant leakage tests.
+- User-panel authentication on the Inertia side (login, password reset; decide Fortify vs. custom), then the tenant picker page. Remove the temporary `redirectGuestsTo` admin-login fallback in `bootstrap/app.php`.
+- Filament resources for tenants and users, including role assignment per tenant.
+- Configurable tenant label (مدرسه / شعبه / …) per installation.
 - Self-host a Persian font (e.g. `vazirmatn` npm package; user installs) for the Inertia front end.
 - Pick a Jalali date library/picker for Vue.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Tenancy implemented per ADR 0002: `Tenant` model and table, `BelongsToTenant` trait and fail-closed `TenantScope`, permission teams (`tenant_id`), super admin flag + `Gate::before`, Filament panel tenancy (`/cpadmin/{tenant}`), web-side session tenant + switch route, seeder (head office, `panel_user`, local super admin). Tests now run on PostgreSQL; 23 tests pass.
 - 2026-10-23 — Tenancy model decided → [ADR 0002](decisions/0002-tenancy-model.md); product framed as generic (school / company / language institute).
 - 2026-10-23 — Stack installed & wired (latest versions, all verified compatible with Laravel 13 / Filament 5): Filament 5.10 panel at `/cpadmin` with Shield + ApexCharts; Spatie permission/media/tags/settings migrations run; nwidart modules configured; spatie-multitenancy installed (not configured); Inertia 3 + Vue 3.5 + Ziggy with RTL root view and Welcome page; Laravel Boost (guidelines, skills, MCP via docker). Build and tests pass. Details in `architecture.md`.
 - 2026-10-23 — Laravel 13.38 skeleton added (PHP 8.5.9), `.env` on PostgreSQL, migrations run, default tests pass, http://localhost:8000 → 200.
@@ -27,7 +30,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Known issues / tech debt
 - `CLAUDE.md` Boost block still has one generic line recommending Laravel Cloud (from Boost's foundation rules); we don't use Cloud. It is regenerated, so don't hand-edit it.
-- Local super admin `admin@sarasystem.test` exists only in the local DB (created with `shield:super-admin`); no seeder for it yet.
+- Guests hitting `auth` routes on the web side are redirected to the admin login until the user-panel login exists.
 
 ## Open questions
 _(Things that need a decision from the user.)_

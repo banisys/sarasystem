@@ -34,6 +34,14 @@ class UserFactory extends Factory
     }
 
     /**
+     * Installation-wide super admin (bypasses all permission checks).
+     */
+    public function superAdmin(): static
+    {
+        return $this->state(['is_super_admin' => true]);
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
+use App\Models\Tenant;
 use App\Models\User;
+use BezhanSalleh\FilamentShield\Support\Utils;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,11 +18,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Global role (tenant_id NULL) marking staff who may use the admin panel
+        // in the tenants where they hold it.
+        Role::findOrCreate(Utils::getPanelUserRoleName(), 'web');
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        Tenant::firstOrCreate(['slug' => 'head-office'], ['name' => 'ستاد']);
+
+        if (app()->isLocal()) {
+            User::firstOrCreate(
+                ['email' => 'admin@sarasystem.test'],
+                ['name' => 'Super Admin', 'password' => 'password', 'is_super_admin' => true],
+            );
+        }
     }
 }

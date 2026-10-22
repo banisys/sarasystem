@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\MakeFilamentTenantCurrent;
+use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -30,6 +32,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('cpadmin')
             ->brandName(fn (): string => config('app.name'))
+            ->tenant(Tenant::class, slugAttribute: 'slug')
+            ->tenantMiddleware([
+                MakeFilamentTenantCurrent::class,
+            ], isPersistent: true)
             ->login()
             ->colors([
                 'primary' => Color::Violet,
@@ -59,7 +65,11 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->plugins([
-                FilamentShieldPlugin::make(),
+                // Roles are defined centrally (global, or for one tenant via the
+                // team field) and assigned per tenant; the list is not tenant-scoped.
+                FilamentShieldPlugin::make()
+                    ->centralApp()
+                    ->scopeToTenant(false),
                 FilamentApexChartsPlugin::make(),
             ]);
     }
