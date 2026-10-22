@@ -20,8 +20,17 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 | Public site | Visitors (school info, registration, blog) | Inertia + Vue |
 
 ## Directory map
+Currently the stock Laravel 13 skeleton (created 2026-10-23). It will be updated as modules are added.
 ```
-_(TODO: fill in once the Laravel project is created)_
+app/            core application code (outside modules)
+bootstrap/      app bootstrap, providers list
+config/         configuration
+database/       core migrations, factories, seeders
+docs/           project docs for humans and agents (this folder)
+public/         web root
+resources/      views, css, js
+routes/         web / console routes
+tests/          Feature + Unit tests (PHPUnit)
 ```
 
 ## Modules
@@ -46,6 +55,8 @@ _(TODO: e.g. online classes (legacy: Adobe Connect), SMS, payment gateway.)_
 |---|---|---|---|
 | `laravel.test` | `sail-8.5/app` (PHP 8.5, node, composer, pdo_pgsql) | `APP_PORT` 8000, `VITE_PORT` 5174 | Image is reused from `../LMS` (built locally) |
 | `pgsql` | `postgres:18-alpine` | `FORWARD_DB_PORT` 5432 | DB `sarasystem`, user `sail` by default; data in volume `sail-pgsql` |
+
+`.env` (from `.env.example`) sets `DB_CONNECTION=pgsql` with `DB_HOST=pgsql`, `APP_LOCALE=fa`, `APP_FAKER_LOCALE=fa_IR` and the compose ports. The app timezone stays UTC; Jalali/Tehran display is a presentation concern.
 
 The ports are chosen so they don't clash with LMS (80, 5173, 3306, 8080), and both projects can run together. Defaults can be overridden in `.env`.
 

@@ -9,10 +9,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 
 
 ## Next
-- Create the Laravel 13 app in this repo. `composer create-project` needs an empty dir, so create it in a temp dir and move it in, then merge Laravel's `.gitignore` with ours. Set `DB_CONNECTION=pgsql`, `DB_HOST=pgsql`, `APP_PORT=8000`, `VITE_PORT=5174` in `.env`.
-- Install the stack packages from ADR 0001 (user runs installs; containers are offline).
+- Install the stack packages from ADR 0001 (check Filament 5 compatibility of each plugin first; user runs the installs).
+- Install Laravel Boost and merge its guidelines into `CLAUDE.md` without losing our rules. The skeleton's bootstrap `CLAUDE.md`/`AGENTS.md` stub was intentionally not copied.
+- Configure Vite for Docker (host `0.0.0.0`, port 5174, HMR host `localhost`) when setting up Inertia.
 
 ## Done
+- 2026-10-23 — Laravel 13.38 skeleton added (PHP 8.5.9), `.env` on PostgreSQL, migrations run, default tests pass, http://localhost:8000 → 200.
 - 2026-10-22 — PostgreSQL 18.6 container running (`postgres:18-alpine`, pulled via ArvanCloud mirror).
 - 2026-10-22 — `git init` (branch `main`), `.gitignore`, `docker-compose.yml` (app + PostgreSQL 18).
 - 2026-10-22 — Tech stack decided → [ADR 0001](decisions/0001-tech-stack.md).
