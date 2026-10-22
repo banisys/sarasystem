@@ -58,6 +58,11 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - Shared logic is in [ResolvesLoginUser](../app/Http/Requests/Auth/ResolvesLoginUser.php): rate limiting (5 failures per identifier + IP) and resolving the identifier to exactly one user (shared mobile → error).
 - **SMS:** `App\Sms\SmsSender`, bound in `AppServiceProvider` from `config('sms.driver')` (`SMS_DRIVER`). Only `log` exists, and it writes to `storage/logs/laravel.log`. Tests use `Tests\Fakes\FakeSmsSender`.
 - **After login:** `redirect()->intended(route('dashboard'))`. `/dashboard` and other tenant-bound user routes use [EnsureTenantSelected](../app/Http/Middleware/EnsureTenantSelected.php), which redirects to `/tenants/select` ([Tenants/Select.vue](../resources/js/Pages/Tenants/Select.vue)) when no tenant is current. Super admins can pick any active tenant.
+- **Profile** (`/profile`, [ProfileController](../app/Http/Controllers/ProfileController.php), [Profile/Edit.vue](../resources/js/Pages/Profile/Edit.vue)): the one account page for everyone. Staff reach it from the Filament user menu («حساب کاربری»).
+  - Users can change their email, mobile and password. Name and national code are official data and are changed by staff only.
+  - **Mobile:** the new number is saved only after a code sent *to it* is confirmed (`OneTimePassword::PURPOSE_CONFIRM_MOBILE`; codes are tied to user + purpose + mobile).
+  - **Password:** the current password is required, except within 15 minutes of an SMS-code login ([RecentCodeLogin](../app/Auth/RecentCodeLogin.php)). That is the forgotten-password path.
+  - Authenticated web routes use `auth.session`, so a password change logs out the user's other sessions.
 - **User-panel layout:** [AppLayout.vue](../resources/js/Layouts/AppLayout.vue) (app name, current tenant, switch link, admin-panel link if `auth.canAccessAdmin`, logout). Shared Inertia props: `appName`, `auth.{user,canAccessAdmin}`, `tenant.{current,available,label}`, `flash.status`.
 - `config/inertia.php` is published only to point page tests at `resources/js/Pages` (Inertia 3 defaults to `js/pages`).
 

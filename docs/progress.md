@@ -9,13 +9,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 
 
 ## Next
-- Profile page: change password (the reset path is "log in with SMS code, then change password"), edit own mobile/email.
 - Real SMS provider driver (choose provider: Kavenegar / Ghasedak / …; credentials from the user).
 - Self-host a Persian font (e.g. `vazirmatn` npm package; user installs) for the Inertia front end.
 - Pick a Jalali date library/picker for Vue.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Profile page (`/profile`): email, SMS-confirmed mobile change, password change (no current password within 15 min of an SMS login), `auth.session` logs out other sessions, link in the Filament user menu. 89 tests pass.
 - 2026-10-23 — Authentication (ADR 0004): one `/login` for everyone (Filament login removed), identifier = mobile / national code / email, password or SMS code (log driver), rate limiting, tenant picker + dashboard + user-panel layout. 78 tests pass.
 - 2026-10-23 — Persian role labels: `roles.label` + `Role::display_name`; Shield RoleResource published and extended (label field/column, Jalali dates); users UI shows labels; seeder labels `panel_user`. 49 tests pass.
 - 2026-10-23 — Role assignment rules (ADR 0003): permission-subset rule, no managing stronger users (in any tenant), no changing own roles, role definitions super-admin only; server-side validation. 45 tests pass.

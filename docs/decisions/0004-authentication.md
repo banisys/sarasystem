@@ -24,5 +24,5 @@ In legacy LMS, most users have no email. About 28k log in with a national code a
 ## Consequences
 - Every user needs at least one of mobile, national code or email. A user without a mobile cannot use SMS login.
 - Sending a code to an unknown identifier looks like a successful send (no account enumeration). Messages do reveal an account in two cases: a shared mobile ("use your national code") and an account without a mobile. This is accepted for usability.
-- Password reset is "log in with an SMS code, then change the password" (a profile page, still to do). There is no email reset flow for now.
+- Password reset is "log in with an SMS code, then set a new password on `/profile` within 15 minutes, without the old one". There is no email reset flow for now. A user without a mobile who forgets their password needs staff to reset it.
 - Choosing a real SMS provider, and its credentials, remains open.

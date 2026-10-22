@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SendLoginCodeController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SwitchTenantController;
 use App\Http\Middleware\EnsureTenantSelected;
 use Illuminate\Support\Facades\Route;
@@ -18,8 +19,17 @@ Route::middleware('guest')->group(function () {
         ->name('login.code.send');
 });
 
-Route::middleware('auth')->group(function () {
+// auth.session logs a session out once the user's password changes elsewhere.
+Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile/email', [ProfileController::class, 'updateEmail'])->name('profile.email');
+    Route::post('/profile/mobile/code', [ProfileController::class, 'sendMobileCode'])
+        ->middleware('throttle:10,1')
+        ->name('profile.mobile.code');
+    Route::put('/profile/mobile', [ProfileController::class, 'updateMobile'])->name('profile.mobile');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     Route::get('/tenants/select', [SwitchTenantController::class, 'show'])->name('tenants.select');
     Route::post('/tenants/{tenant:slug}/switch', [SwitchTenantController::class, 'store'])->name('tenants.switch');

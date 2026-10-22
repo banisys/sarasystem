@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Auth\OneTimePassword;
+use App\Auth\RecentCodeLogin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\OtpLoginRequest;
@@ -39,7 +40,10 @@ class LoginController extends Controller
         // The code reached this mobile, so the user controls it.
         $user->forceFill(['mobile_verified_at' => now()])->save();
 
-        return $this->logIn($request, $user);
+        $response = $this->logIn($request, $user);
+        RecentCodeLogin::mark($request);
+
+        return $response;
     }
 
     public function destroy(Request $request): RedirectResponse

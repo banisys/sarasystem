@@ -33,7 +33,7 @@ function logout() {
                     <a v-if="page.props.auth.canAccessAdmin" href="/cpadmin" class="text-violet-600 hover:text-violet-800">
                         پنل مدیریت
                     </a>
-                    <span class="text-gray-700">{{ user?.name }}</span>
+                    <Link :href="route('profile.edit')" class="text-gray-700 hover:text-gray-900">{{ user?.name }}</Link>
                     <button type="button" class="text-gray-500 hover:text-gray-800" @click="logout">خروج</button>
                 </div>
             </div>

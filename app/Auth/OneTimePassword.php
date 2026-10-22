@@ -8,8 +8,11 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * SMS login codes (ADR 0004): 6 digits, stored hashed in the cache, valid
+ * SMS one-time codes (ADR 0004): 6 digits, stored hashed in the cache, valid
  * for 2 minutes, 5 wrong tries, and a new code at most once a minute.
+ *
+ * A code is tied to a user, a purpose and a mobile: a login code goes to the
+ * user's own mobile, a confirmation code to the new mobile they want to set.
  */
 class OneTimePassword
 {
@@ -21,38 +24,49 @@ class OneTimePassword
 
     public const MAX_ATTEMPTS = 5;
 
+    public const PURPOSE_LOGIN = 'login';
+
+    public const PURPOSE_CONFIRM_MOBILE = 'confirm-mobile';
+
     public function __construct(private Cache $cache, private SmsSender $sms) {}
 
     /**
-     * Seconds until a new code may be sent to the user; 0 when it may be sent now.
+     * Seconds until a new code may be sent; 0 when it may be sent now.
      */
-    public function secondsUntilResend(User $user): int
+    public function secondsUntilResend(User $user, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): int
     {
-        $sentAt = $this->cache->get($this->key($user))['sent_at'] ?? null;
+        $sentAt = $this->cache->get($this->key($user, $purpose, $mobile))['sent_at'] ?? null;
 
         return $sentAt === null ? 0 : max(0, $sentAt + self::RESEND_AFTER_SECONDS - now()->getTimestamp());
     }
 
-    public function send(User $user): void
+    /**
+     * @param  string|null  $mobile  where to send; defaults to the user's own mobile
+     */
+    public function send(User $user, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): void
     {
         $code = str_pad((string) random_int(0, 10 ** self::LENGTH - 1), self::LENGTH, '0', STR_PAD_LEFT);
 
-        $this->cache->put($this->key($user), [
+        $this->cache->put($this->key($user, $purpose, $mobile), [
             'hash' => Hash::make($code),
             'sent_at' => now()->getTimestamp(),
             'attempts' => 0,
         ], self::TTL_SECONDS);
 
-        $this->sms->send($user->mobile, 'کد ورود شما به '.config('app.name').": {$code}");
+        $message = $purpose === self::PURPOSE_LOGIN
+            ? 'کد ورود شما به '.config('app.name').": {$code}"
+            : 'کد تأیید شماره موبایل در '.config('app.name').": {$code}";
+
+        $this->sms->send($mobile ?? $user->mobile, $message);
     }
 
     /**
      * Checks the code; a correct code is consumed, and too many wrong
      * tries throw the code away.
      */
-    public function verify(User $user, string $code): bool
+    public function verify(User $user, string $code, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): bool
     {
-        $key = $this->key($user);
+        $key = $this->key($user, $purpose, $mobile);
         $entry = $this->cache->get($key);
 
         if ($entry === null) {
@@ -76,8 +90,8 @@ class OneTimePassword
         return false;
     }
 
-    private function key(User $user): string
+    private function key(User $user, string $purpose, ?string $mobile): string
     {
-        return "otp:login:{$user->getKey()}";
+        return "otp:{$purpose}:{$user->getKey()}:".($mobile ?? $user->mobile);
     }
 }

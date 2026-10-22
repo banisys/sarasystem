@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Http\Middleware\MakeFilamentTenantCurrent;
 use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -13,6 +14,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -37,6 +39,13 @@ class AdminPanelProvider extends PanelProvider
                 MakeFilamentTenantCurrent::class,
             ], isPersistent: true)
             // No login page of its own: guests are sent to the shared /login (ADR 0004).
+            // The account page is the shared Inertia one (/profile).
+            ->userMenuItems([
+                Action::make('account')
+                    ->label('حساب کاربری')
+                    ->icon(Heroicon::OutlinedUserCircle)
+                    ->url(fn (): string => route('profile.edit')),
+            ])
             ->colors([
                 'primary' => Color::Violet,
             ])
