@@ -152,10 +152,11 @@ _(TODO: e.g. online classes (legacy: Adobe Connect), SMS, payment gateway.)_
 |---|---|---|---|
 | `laravel.test` | `sail-8.5/app` (PHP 8.5, node, composer, pdo_pgsql) | `APP_PORT` 8000, `VITE_PORT` 5174 | Image is reused from `../LMS` (built locally) |
 | `pgsql` | `postgres:18-alpine` | `FORWARD_DB_PORT` 5432 | DB `sarasystem`, user `sail` by default; data in volume `sail-pgsql` |
+| `adminer` | `adminer:latest` | `FORWARD_ADMINER_PORT` 8081 | DB web UI (phpMyAdmin is MySQL-only). Log in with system *PostgreSQL*, server `pgsql`, user/password from `.env` |
 
 `.env` (from `.env.example`) sets `DB_CONNECTION=pgsql` with `DB_HOST=pgsql`, `APP_LOCALE=fa`, `APP_FAKER_LOCALE=fa_IR` and the compose ports. The app timezone stays UTC; Jalali/Tehran display is a presentation concern.
 
-The ports are chosen so they don't clash with LMS (80, 5173, 3306, 8080), and both projects can run together. Defaults can be overridden in `.env`.
+The ports are chosen so they don't clash with LMS (80, 5173, 3306, 8080; Adminer uses 8081), and both projects can run together. Defaults can be overridden in `.env`.
 
 ## Deployment
 _(TODO: environments, how it's deployed.)_

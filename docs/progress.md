@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Adminer service in `docker-compose.yml` (DB web UI on http://localhost:8081).
 - 2026-10-23 — Inertia front end uses the Shabnam font too (one font across the whole system).
 - 2026-10-23 — Ported the LMS admin-panel UI (font Shabnam, theme + glass dark mode, colors, avatar, sidebar search, table top scroll, persisted filters, panel-wide defaults). Project name fixed to «سرا سیستم» (`APP_NAME`). 90 tests pass.
 - 2026-10-23 — Module infrastructure (ADR 0005): core stays in `app/`, business areas in `Modules/`; Filament discovery per enabled module, `Module::Page` Inertia pages (browser + tests), `Modules` PHPUnit suite, `@` Vite alias, custom nwidart stubs (`--inertia`, tenant routes, no API/Blade). Verified with a temporary module, then removed.
