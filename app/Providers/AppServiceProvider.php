@@ -8,7 +8,9 @@ use App\Sms\SmsSender;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\FileViewFinder;
 use InvalidArgumentException;
+use Nwidart\Modules\Facades\Module;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +33,14 @@ class AppServiceProvider extends ServiceProvider
         // Register Shield-generated policies for resources whose models live
         // outside App\Models (e.g. Spatie's Role), which Laravel can't discover.
         FilamentShield::enforcePolicies();
+
+        // Module Inertia pages are named "Module::Page"; let Inertia's page
+        // finder (used by tests) resolve them inside the module.
+        $this->app->afterResolving('inertia.view-finder', function (FileViewFinder $finder): void {
+            foreach (Module::allEnabled() as $module) {
+                $finder->addNamespace($module->getStudlyName(), $module->getExtraPath('resources/js/Pages'));
+            }
+        });
 
         // Installation-wide super admin (a flag, not a role: with permission
         // teams every role is held within a single tenant).

@@ -78,7 +78,8 @@ bootstrap/            app bootstrap, providers list
 config/               configuration (incl. filament-shield, permission, settings, modules, multitenancy)
 database/             core migrations (users, cache, jobs, permission, media, tags, settings), factories, seeders
 docs/                 project docs for humans and agents (this folder)
-Modules/              nwidart modules (none yet); merged into composer via wikimedia/composer-merge-plugin
+Modules/              business modules (ADR 0005; none yet); merged into composer via wikimedia/composer-merge-plugin
+stubs/nwidart-stubs/  our module generator templates (Inertia, tenant routes, no API/Blade)
 public/               web root
 resources/js/Pages/   Inertia Vue pages
 resources/views/      app.blade.php (Inertia root)
@@ -89,7 +90,18 @@ tests/                Feature + Unit tests (PHPUnit); TestCase calls withoutVite
 ```
 
 ## Modules
-_(TODO: module list and boundaries — to be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains).)_
+Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `app/`** and **business areas live in `Modules/{Name}`** (nwidart). The core never depends on a module.
+
+| Concern | How modules plug in |
+|---|---|
+| Admin panel | `Modules/{Name}/app/Filament/{Resources,Pages,Widgets}`, auto-discovered for enabled modules (`AdminPanelProvider::discoverModules()`). |
+| User panel | Pages in `Modules/{Name}/resources/js/Pages`, rendered as `Inertia::render('{Name}::Page')`. Shared layout: `@/Layouts/AppLayout.vue`. |
+| Routes | `Modules/{Name}/routes/web.php` with `['auth', 'auth.session', 'tenant']` (`tenant` = `EnsureTenantSelected`). |
+| Data | Module migrations are auto-discovered; tenant-owned models use `BelongsToTenant`. |
+| Tests | `Modules/{Name}/tests`, run by the `Modules` PHPUnit suite. |
+| Enable/disable | `modules_statuses.json`. |
+
+**Module list:** none yet. It will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy
 Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/unit (school, branch or department), all tenants share one database, users are global, roles are per tenant, and the tenant is chosen after login.

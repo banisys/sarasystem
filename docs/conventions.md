@@ -27,6 +27,16 @@ _(TODO: e.g. how errors are handled, how data fetching is done, where business l
 ## Patterns we avoid
 _(TODO: things that look tempting but we decided against — link ADR if any.)_
 
+## Creating a module ([ADR 0005](decisions/0005-modules.md))
+1. `docker compose exec -u sail laravel.test php artisan module:make {Name} --inertia`, then `… composer dump-autoload`.
+2. Delete the generated example controller/pages/routes you don't need; keep page names as `{Name}::Page`.
+3. Models whose rows belong to a tenant: `use BelongsToTenant` and give the table a `tenant_id` FK (see Tenancy rules).
+4. Admin screens go in `app/Filament/Resources` of the module. Then `php artisan shield:generate --all --panel=admin --ignore-existing-policies`.
+5. Tests go in `Modules/{Name}/tests` (extend `Tests\TestCase`, use `Tests\Concerns\InteractsWithTenants`) and must include a cross-tenant isolation test.
+6. Document the module in `docs/architecture.md` (module list) and, if it was ported, in `docs/legacy-lms.md` → Porting status.
+
+Business features never go in `app/`; the core in `app/` is only for platform concerns used by every module.
+
 ## Tenancy rules (see [ADR 0002](decisions/0002-tenancy-model.md))
 - A model whose rows belong to one tenant **must** `use BelongsToTenant`, and its table needs a `tenant_id` foreign key to `tenants`.
 - Never bypass the scope silently. `withoutTenantScope()` is only for code that has checked the user may see every tenant.

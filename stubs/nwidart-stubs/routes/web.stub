@@ -1,0 +1,9 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use $MODULE_NAMESPACE$\$STUDLY_NAME$\$CONTROLLER_NAMESPACE$\$STUDLY_NAME$Controller;
+
+// User-panel routes work inside the current tenant (docs/decisions/0002-tenancy-model.md).
+Route::middleware(['auth', 'auth.session', 'tenant'])->group(function () {
+    Route::resource('$PLURAL_LOWER_NAME$', $STUDLY_NAME$Controller::class)->names('$LOWER_NAME$');
+});

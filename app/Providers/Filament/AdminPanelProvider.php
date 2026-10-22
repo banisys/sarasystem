@@ -24,12 +24,13 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
+use Nwidart\Modules\Facades\Module;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return $this->discoverModules($panel)
             ->default()
             ->id('admin')
             ->path('cpadmin')
@@ -81,5 +82,24 @@ class AdminPanelProvider extends PanelProvider
                     ->scopeToTenant(false),
                 FilamentApexChartsPlugin::make(),
             ]);
+    }
+
+    /**
+     * Each enabled module contributes its own resources, pages and widgets
+     * from Modules/{Name}/app/Filament (docs/decisions/0005-modules.md).
+     * A disabled module adds nothing; a missing directory is skipped.
+     */
+    private function discoverModules(Panel $panel): Panel
+    {
+        foreach (Module::allEnabled() as $module) {
+            $name = $module->getStudlyName();
+
+            $panel
+                ->discoverResources(in: $module->getExtraPath('app/Filament/Resources'), for: "Modules\\{$name}\\Filament\\Resources")
+                ->discoverPages(in: $module->getExtraPath('app/Filament/Pages'), for: "Modules\\{$name}\\Filament\\Pages")
+                ->discoverWidgets(in: $module->getExtraPath('app/Filament/Widgets'), for: "Modules\\{$name}\\Filament\\Widgets");
+        }
+
+        return $panel;
     }
 }

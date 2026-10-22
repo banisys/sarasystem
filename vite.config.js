@@ -25,6 +25,8 @@ export default defineConfig(({ mode }) => {
         ],
         resolve: {
             alias: {
+                // `@/Layouts/AppLayout.vue` from anywhere, including module pages.
+                '@': path.resolve('resources/js'),
                 'ziggy-js': path.resolve('vendor/tightenco/ziggy'),
             },
         },

@@ -1,0 +1,18 @@
+<script setup>
+import { Head } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+
+defineProps({
+    // Add your props here
+});
+</script>
+
+<template>
+    <Head title="$PAGE_NAME$" />
+
+    <AppLayout>
+        <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <h1 class="text-xl font-bold text-gray-900">$STUDLY_NAME$ - $PAGE_NAME$</h1>
+        </div>
+    </AppLayout>
+</template>
