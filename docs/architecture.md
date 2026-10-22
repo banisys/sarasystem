@@ -9,7 +9,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 | Admin panel (staff) | Filament 5 + plugins (Shield, Impersonate, Settings, Tags, Media Library, Excel, Apex Charts, Jalali) |
 | Public site & user panel | Inertia.js + Vue 3 + Tailwind CSS |
 | Database | PostgreSQL |
-| Multi-tenancy | `spatie/laravel-multitenancy` *(tenant model TBD)* |
+| Multi-tenancy | `spatie/laravel-multitenancy`, single DB, tenant = branch/unit ([ADR 0002](decisions/0002-tenancy-model.md)) |
 | AI dev tooling | Laravel Boost |
 
 ## Applications / surfaces
@@ -63,9 +63,9 @@ tests/                Feature + Unit tests (PHPUnit); TestCase calls withoutVite
 _(TODO: module list and boundaries — to be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains).)_
 
 ## Tenancy
-_(TODO: tenant = organization or school? single DB or DB-per-tenant? how Filament panels and Shield permissions are scoped.)_
+Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/unit (school, branch or department), all tenants share one database (`tenant_id` + `BelongsToTenant` global scope), users are global, roles are per tenant (permission teams), and the tenant is chosen after login.
 
-Current state: `spatie/laravel-multitenancy` is installed and `config/multitenancy.php` is published, but tenancy is **not configured**. No landlord migration, tenant model or tenant finder exists yet. Spatie permission `teams` is off. Both wait for the tenancy ADR; changing `teams` later means editing the permission migration and running `migrate:fresh` (fine while there is no real data).
+Current state: **not implemented yet.** `spatie/laravel-multitenancy` is installed and its config published; there is no tenant model, migration or finder, and permission `teams` is still off.
 
 ## Data model
 _(TODO: main entities and their relations.)_

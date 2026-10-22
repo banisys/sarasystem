@@ -8,7 +8,9 @@ SaraSystem is an education management platform that combines three areas:
 
 It is a **redesign of the existing LMS project** (`../LMS`, see [legacy-lms.md](legacy-lms.md)): some features carry over, some are added, some are dropped.
 
-The current organization using it is the **Saraye Danesh (سرای دانش)** K-12 school chain in Iran: about 20 schools/branches plus a head office (ستاد), online/virtual schools, about 11k students and about 50k users. The legacy system is mainly used for SIS and school operations: students, classes, online sessions, exams, contracts/payments and staff HR.
+SaraSystem is a **generic product**: one installation serves one organization, which may be a school chain, a company (internal training) or a language institute with branches. The organization's units (schools / branches / departments) are **tenants** ([ADR 0002](decisions/0002-tenancy-model.md)). Features must not assume the organization is a school.
+
+The first deployment target is the **Saraye Danesh (سرای دانش)** K-12 school chain in Iran: about 20 schools/branches plus a head office (ستاد), online/virtual schools, about 11k students and about 50k users. The legacy system is mainly used for SIS and school operations: students, classes, online sessions, exams, contracts/payments and staff HR.
 
 ## Users
 From the legacy role list, grouped:
@@ -18,7 +20,7 @@ From the legacy role list, grouped:
 - **Other staff:** employees, janitors, building managers
 - **Students** and **parents**
 
-_(TODO: confirm which user groups SaraSystem targets; is it single-organization or multi-organization (SaaS)?)_
+The lists above are for a school deployment. A company deployment has trainees, trainers and training managers; a language institute has learners, teachers and branch managers. Roles are per tenant (a person can hold different roles in different tenants).
 
 ## Goals
 - _(TODO)_
@@ -33,6 +35,6 @@ _(TODO: confirm which user groups SaraSystem targets; is it single-organization 
 
 ## Constraints
 - Persian-first UI (RTL, Jalali dates); English also supported in LMS
-- Iranian education system: grade tree دبستان / متوسطه اول / متوسطه دوم with majors, and an academic year from Shahrivar to Mordad
+- Iranian education system for school deployments: grade tree دبستان / متوسطه اول / متوسطه دوم with majors, and an academic year from Shahrivar to Mordad. These must be optional/configurable, not hard-coded, because company and language-institute deployments don't have them.
 - Live legacy data must be migratable (production DB in `../LMS`, about 300 tables)
 - _(TODO: hosting, performance, legal, etc.)_

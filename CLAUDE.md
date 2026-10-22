@@ -1,6 +1,6 @@
 # SaraSystem
 
-> Education management platform combining LMS (learning), TMS (training management) and SIS (student information). It is a redesign of the legacy **LMS** project at `/home/ali/Projects/LMS` (`../LMS`) — use it as read-only reference; never modify it unless asked.
+> Generic education management platform combining LMS (learning), TMS (training management) and SIS (student information), for school chains, companies or language institutes. One installation serves one organization, and its schools/branches are tenants in a shared DB ([ADR 0002](docs/decisions/0002-tenancy-model.md)); never hard-code school-only assumptions. It is a redesign of the legacy **LMS** project at `/home/ali/Projects/LMS` (`../LMS`) — use it as read-only reference; never modify it unless asked.
 
 This file is loaded into every agent session. Keep it short; details live in `docs/`.
 
