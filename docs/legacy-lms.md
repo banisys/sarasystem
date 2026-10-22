@@ -64,6 +64,9 @@ So in practice the system is mainly a **SIS + school operations** tool: students
 - **Document types:** for staff hiring files (ID pages, national card, photo, degrees, military service, employment commitment, medical, …).
 - **Roles (~78):** superadmin, admin, ceo, school_manager, deputy_education, deputy_executive, disciplinaryDeputy, teacher, supervisorTeacher, supporter, student, parent, psychologist, consultant, school_finance, school_informatics, main_office_* (head office: education, finance, informatics, manager), employee, janitor, building_manager, exam_manager, content_creator, studentRegisterOfficer, adobe_host, … plus dead car/tour/sale roles.
 
+## Login in LMS
+Users log in through "connectors" (`user_register_key` rows): about 28k national code, about 33k `mobile_sms`, about 10k mobile and about 6k email. Many users have no email. This shaped [ADR 0004](decisions/0004-authentication.md).
+
 ## Known overlaps & oddities
 - Two exam systems: `schl_exam_*` (live) and `exam_*` (new, nearly empty).
 - Two course concepts: `Course` module (LMS courses, empty) and `School\Course` (`schl_courses`, school subjects; 556 rows).

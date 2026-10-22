@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Identifiers;
 use BezhanSalleh\FilamentShield\Support\Utils;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -11,6 +12,7 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,13 +20,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
  * Users are global (not tenant-scoped). Their place in each tenant comes from
  * the roles they hold there; see docs/decisions/0002-tenancy-model.md.
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'mobile', 'national_code', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasTenants
 {
@@ -56,6 +59,53 @@ class User extends Authenticatable implements FilamentUser, HasTenants
             'role_id',
             Role::query()->where('name', Utils::getPanelUserRoleName())->pluck('id'),
         );
+    }
+
+    /**
+     * Users matching a login identifier: email, mobile or national code
+     * (ADR 0004). More than one match means a shared mobile.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWhereLoginIdentifier(Builder $query, string $identifier): void
+    {
+        $identifier = trim(Identifiers::toLatinDigits($identifier));
+
+        if (str_contains($identifier, '@')) {
+            $query->where('email', Str::lower($identifier));
+
+            return;
+        }
+
+        $mobile = Identifiers::normalizeMobile($identifier);
+
+        $query->where(fn (Builder $query) => $query
+            ->where('national_code', $identifier)
+            ->when($mobile !== null, fn (Builder $query) => $query->orWhere('mobile', $mobile)));
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => filled($value) ? Str::lower(trim($value)) : null);
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function mobile(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => filled($value) ? (Identifiers::normalizeMobile($value) ?? $value) : null);
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function nationalCode(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => filled($value) ? Identifiers::toLatinDigits(trim($value)) : null);
     }
 
     /**
@@ -121,6 +171,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     {
         return [
             'email_verified_at' => 'datetime',
+            'mobile_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
         ];

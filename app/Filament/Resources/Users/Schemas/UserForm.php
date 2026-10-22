@@ -6,6 +6,8 @@ use App\Authorization\RoleAssignment;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Rules\IranianMobile;
+use App\Rules\NationalCode;
 use BezhanSalleh\FilamentShield\Support\Utils;
 use Closure;
 use Filament\Forms\Components\CheckboxList;
@@ -30,12 +32,29 @@ class UserForm
                             ->label('نام')
                             ->required()
                             ->maxLength(255),
+                        // Login identifiers (ADR 0004): at least one is required.
+                        TextInput::make('mobile')
+                            ->label('موبایل')
+                            ->tel()
+                            ->rule(new IranianMobile)
+                            ->requiredWithoutAll(['national_code', 'email'])
+                            ->helperText('ممکن است بین چند حساب مشترک باشد (مثلاً موبایل والد).')
+                            ->extraInputAttributes(['dir' => 'ltr']),
+                        TextInput::make('national_code')
+                            ->label('کد ملی')
+                            ->rule(new NationalCode)
+                            ->unique(ignoreRecord: true)
+                            ->requiredWithoutAll(['mobile', 'email'])
+                            ->validationMessages([
+                                'unique' => 'این کد ملی قبلاً ثبت شده است؛ از «افزودن کاربر موجود» استفاده کنید.',
+                            ])
+                            ->extraInputAttributes(['dir' => 'ltr']),
                         TextInput::make('email')
                             ->label('ایمیل')
                             ->email()
-                            ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
+                            ->requiredWithoutAll(['mobile', 'national_code'])
                             ->validationMessages([
                                 'unique' => 'این ایمیل قبلاً ثبت شده است؛ از «افزودن کاربر موجود» استفاده کنید.',
                             ])

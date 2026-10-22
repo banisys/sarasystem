@@ -19,9 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
         ]);
 
-        // TODO: point at the user-panel login once it exists; until then the
-        // only login page is the admin panel's.
-        $middleware->redirectGuestsTo(fn () => route('filament.admin.auth.login'));
+        // Guests go to the shared login page (ADR 0004); logged-in users who
+        // open a guest-only page (login) go to their dashboard.
+        $middleware->redirectGuestsTo(fn () => route('login'));
+        $middleware->redirectUsersTo(fn () => route('dashboard'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

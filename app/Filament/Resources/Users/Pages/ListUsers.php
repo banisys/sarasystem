@@ -43,18 +43,18 @@ class ListUsers extends ListRecords
             ->schema([
                 Select::make('user_id')
                     ->label('کاربر')
-                    ->helperText('جستجو با نام یا ایمیل، بین کاربرانی که در این '.config('sarasystem.tenant_label').' عضو نیستند.')
+                    ->helperText('جستجو با نام، موبایل، کد ملی یا ایمیل، بین کاربرانی که در این '.config('sarasystem.tenant_label').' عضو نیستند.')
                     ->searchable()
                     ->required()
                     ->getSearchResultsUsing(fn (string $search): array => User::query()
                         ->whereNot(fn ($query) => $query->inTenant(Tenant::current()))
                         ->where(fn ($query) => $query
                             ->where('name', 'ilike', "%{$search}%")
-                            ->orWhere('email', 'ilike', "%{$search}%"))
+                            ->orWhere(fn ($query) => $query->whereLoginIdentifier($search)))
                         ->orderBy('name')
                         ->limit(10)
                         ->get()
-                        ->mapWithKeys(fn (User $user): array => [$user->id => "{$user->name} ({$user->email})"])
+                        ->mapWithKeys(fn (User $user): array => [$user->id => $user->name.' ('.($user->national_code ?? $user->mobile ?? $user->email).')'])
                         ->all())
                     ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->name),
                 CheckboxList::make('roles')

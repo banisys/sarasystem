@@ -3,9 +3,12 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Sms\LogSmsSender;
+use App\Sms\SmsSender;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,7 +17,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(SmsSender::class, fn (): SmsSender => match (config('sms.driver')) {
+            'log' => new LogSmsSender,
+            default => throw new InvalidArgumentException('Unknown SMS driver ['.config('sms.driver').'].'),
+        });
     }
 
     /**

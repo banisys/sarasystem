@@ -51,6 +51,16 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - Vite ([vite.config.js](../vite.config.js)): the Vue plugin, Tailwind 4 and the `ziggy-js` alias pointing to `vendor/tightenco/ziggy`. The dev server listens on `0.0.0.0:VITE_PORT` (5174) inside the container.
 - Not decided yet: the Persian font (self-hosted Vazirmatn is the plan), the Jalali date picker for Vue, and how modules contribute their own Inertia pages.
 
+### Authentication ([ADR 0004](decisions/0004-authentication.md))
+- **One login page** at `/login` ([Auth/Login.vue](../resources/js/Pages/Auth/Login.vue)) for everyone. The Filament panel has no login of its own (`->login()` removed): guests hitting `/cpadmin/...` are redirected to `/login` and then back to the intended URL. Panel logout still works through Filament's logout route.
+- **Identifier:** mobile, national code or email in one field (`User::scopeWhereLoginIdentifier`, [Identifiers](../app/Support/Identifiers.php)). Mutators normalize them on save: mobile to `09xxxxxxxxx`, Latin digits, lowercase email. `users.mobile` is indexed but not unique; `national_code` and `email` are unique and nullable.
+- **Password:** [LoginRequest](../app/Http/Requests/Auth/LoginRequest.php). **SMS code:** `POST /login/code/send` ([SendLoginCodeController](../app/Http/Controllers/Auth/SendLoginCodeController.php)) and then `POST /login/code` ([OtpLoginRequest](../app/Http/Requests/Auth/OtpLoginRequest.php)). The codes are handled by [OneTimePassword](../app/Auth/OneTimePassword.php): hashed in the cache, 2 min TTL, 5 tries, 60 s resend. A code login sets `mobile_verified_at`.
+- Shared logic is in [ResolvesLoginUser](../app/Http/Requests/Auth/ResolvesLoginUser.php): rate limiting (5 failures per identifier + IP) and resolving the identifier to exactly one user (shared mobile → error).
+- **SMS:** `App\Sms\SmsSender`, bound in `AppServiceProvider` from `config('sms.driver')` (`SMS_DRIVER`). Only `log` exists, and it writes to `storage/logs/laravel.log`. Tests use `Tests\Fakes\FakeSmsSender`.
+- **After login:** `redirect()->intended(route('dashboard'))`. `/dashboard` and other tenant-bound user routes use [EnsureTenantSelected](../app/Http/Middleware/EnsureTenantSelected.php), which redirects to `/tenants/select` ([Tenants/Select.vue](../resources/js/Pages/Tenants/Select.vue)) when no tenant is current. Super admins can pick any active tenant.
+- **User-panel layout:** [AppLayout.vue](../resources/js/Layouts/AppLayout.vue) (app name, current tenant, switch link, admin-panel link if `auth.canAccessAdmin`, logout). Shared Inertia props: `appName`, `auth.{user,canAccessAdmin}`, `tenant.{current,available,label}`, `flash.status`.
+- `config/inertia.php` is published only to point page tests at `resources/js/Pages` (Inertia 3 defaults to `js/pages`).
+
 ## Directory map
 Laravel 13 skeleton plus the stack setup (2026-10-23). It will be updated as modules are added.
 ```
@@ -96,7 +106,7 @@ spatie-multitenancy's `tenant_finder` is **not used**: it runs before the sessio
 
 **Tenant label:** `config/sarasystem.php` (`TENANT_LABEL`, `TENANT_PLURAL_LABEL` in `.env`, default «شعبه»). Use it in the UI wherever the word for tenant appears; never hard-code «مدرسه» or «شعبه».
 
-**Not done yet:** the tenant picker page and login on the Inertia side (guests are temporarily redirected to the admin login).
+Web-side tenant picking after login is described under [Authentication](#authentication-adr-0004).
 
 ## Data model
 _(TODO: main entities and their relations.)_

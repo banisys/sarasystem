@@ -22,9 +22,17 @@ class UsersTable
                     ->label('نام')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('mobile')
+                    ->label('موبایل')
+                    ->searchable(),
+                TextColumn::make('national_code')
+                    ->label('کد ملی')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('email')
                     ->label('ایمیل')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('roles.display_name')
                     ->label('نقش‌ها')
                     ->badge(),

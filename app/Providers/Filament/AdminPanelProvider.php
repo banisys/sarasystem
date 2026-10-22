@@ -36,7 +36,7 @@ class AdminPanelProvider extends PanelProvider
             ->tenantMiddleware([
                 MakeFilamentTenantCurrent::class,
             ], isPersistent: true)
-            ->login()
+            // No login page of its own: guests are sent to the shared /login (ADR 0004).
             ->colors([
                 'primary' => Color::Violet,
             ])

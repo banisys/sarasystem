@@ -37,6 +37,9 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Supplementary contract | قرارداد تکمیلی | Extra contract attached to a main contract (`parent_id` set). |
 | School service | خدمات مدرسه | Items/services sold to students (books, packages), requested via service requests. |
 | Leave | مرخصی | Staff leave request, approved through leave groups/operators. |
+| National code | کد ملی | 10-digit Iranian national ID with a check digit; a login identifier (`users.national_code`, unique). |
+| Login identifier | شناسه‌ی ورود | Mobile, national code or email, typed in one field on `/login` (ADR 0004). |
+| OTP / login code | کد یکبارمصرف | 6-digit SMS code for logging in without a password. |
 | Staff / panel user | کارمند | A user holding the `panel_user` role in a tenant; only staff (and super admins) can enter the admin panel, and only for their tenants. |
 | Super admin | مدیر کل سیستم | `users.is_super_admin`: installation-wide, bypasses all permission checks, manages tenants. |
 | Cartable | کارتابل | Approval inbox/workflow: records waiting for a user's review, routed through entity groups and verifiers. |
