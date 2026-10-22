@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Authorization\RoleAssignment;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -55,12 +56,16 @@ class UserResource extends Resource
     }
 
     /**
-     * Only a super admin may edit a super admin; otherwise a tenant manager
-     * could take over an installation-wide account through its password.
+     * Besides the Update:User permission, the actor must be allowed to manage
+     * this particular user (ADR 0003): every role the user holds anywhere must
+     * be assignable by the actor, and super admins only by super admins.
+     * Editing your own account is allowed; your own roles are locked in the form.
      */
     public static function canEdit(Model $record): bool
     {
-        if ($record->is_super_admin && ! auth()->user()?->is_super_admin) {
+        $actor = auth()->user();
+
+        if (! $record->is($actor) && ! RoleAssignment::canManage($actor, $record, Tenant::current())) {
             return false;
         }
 

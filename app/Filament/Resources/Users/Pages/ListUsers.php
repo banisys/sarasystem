@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\Users\Pages;
 
+use App\Authorization\RoleAssignment;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\Tenant;
 use App\Models\User;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\CheckboxList;
@@ -58,13 +60,18 @@ class ListUsers extends ListRecords
                 CheckboxList::make('roles')
                     ->label('نقش‌ها در این '.config('sarasystem.tenant_label'))
                     ->options(fn (): array => UserForm::assignableRoleOptions())
+                    ->rule(fn (): Closure => UserForm::onlyAssignableRolesRule())
                     ->required()
                     ->columns(3),
             ])
             ->action(function (array $data): void {
                 $user = User::findOrFail($data['user_id']);
+                $roleIds = collect($data['roles'])
+                    ->map(fn ($id): int => (int) $id)
+                    ->intersect(RoleAssignment::assignableRoleIds(auth()->user(), Tenant::current()));
+
                 $user->roles()->syncWithoutDetaching(
-                    collect($data['roles'])->mapWithKeys(fn ($roleId): array => [$roleId => ['tenant_id' => Tenant::current()->getKey()]])->all(),
+                    $roleIds->mapWithKeys(fn (int $roleId): array => [$roleId => ['tenant_id' => Tenant::current()->getKey()]])->all(),
                 );
 
                 Notification::make()

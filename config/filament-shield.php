@@ -199,9 +199,11 @@ return [
                 'delete',
             ],
         ],
-        // Tenants are super-admin-only (TenantPolicy); no role may grant them.
+        // Super-admin-only (TenantPolicy, RolePolicy); no role may grant them.
+        // See docs/decisions/0003-role-assignment-rules.md.
         'exclude' => [
             TenantResource::class,
+            RoleResource::class,
         ],
     ],
 

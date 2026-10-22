@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Authorization\RoleAssignment;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use BezhanSalleh\FilamentShield\Support\Utils;
+use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -60,8 +62,9 @@ class UserForm
 
     /**
      * Roles held in the current tenant. The `roles` relationship is already
-     * limited to the current permission team (= tenant), and saving writes
-     * the tenant id on the pivot so other tenants' roles are left untouched.
+     * limited to the current permission team (= tenant). Options and saving
+     * are limited to the roles the acting user may assign (ADR 0003), and
+     * saving writes the tenant id on the pivot so other tenants are untouched.
      */
     public static function rolesField(): CheckboxList
     {
@@ -70,28 +73,64 @@ class UserForm
             ->relationship(
                 name: 'roles',
                 titleAttribute: 'name',
-                modifyQueryUsing: fn (Builder $query) => $query->assignableIn(Tenant::current())->orderBy('name'),
+                modifyQueryUsing: fn (Builder $query) => $query
+                    ->whereKey(RoleAssignment::assignableRoleIds(auth()->user(), Tenant::current()))
+                    ->orderBy('name'),
             )
             ->getOptionLabelFromRecordUsing(fn (Role $record): string => static::roleLabel($record))
-            ->saveRelationshipsUsing(function (User $record, array $state): void {
-                $record->roles()->syncWithPivotValues($state, ['tenant_id' => Tenant::current()->getKey()]);
+            ->disabled(fn (?User $record): bool => static::isEditingOwnRoles($record))
+            ->rule(fn (): Closure => static::onlyAssignableRolesRule())
+            ->saveRelationshipsUsing(function (User $record, ?array $state): void {
+                if (static::isEditingOwnRoles($record)) {
+                    return;
+                }
+
+                $assignable = RoleAssignment::assignableRoleIds(auth()->user(), Tenant::current());
+                $kept = $record->roles()->pluck('roles.id')->diff($assignable);
+                $chosen = collect($state ?? [])->map(fn ($id): int => (int) $id)->intersect($assignable);
+
+                $record->roles()->syncWithPivotValues($chosen->merge($kept)->unique()->all(), ['tenant_id' => Tenant::current()->getKey()]);
             })
             ->required(fn (string $operation): bool => $operation === 'create')
-            ->helperText('«'.static::roleLabel(Utils::getPanelUserRoleName()).'» اجازه‌ی ورود به همین پنل را در این '.config('sarasystem.tenant_label').' می‌دهد.')
+            ->helperText(fn (?User $record): string => static::isEditingOwnRoles($record)
+                ? 'نقش‌های خودتان را نمی‌توانید تغییر دهید.'
+                : 'فقط نقش‌هایی نمایش داده می‌شوند که همه‌ی دسترسی‌هایشان را خودتان دارید. «'.static::roleLabel(Utils::getPanelUserRoleName()).'» اجازه‌ی ورود به همین پنل را در این '.config('sarasystem.tenant_label').' می‌دهد.')
             ->columns(3);
     }
 
     /**
-     * @return array<int, string> role id => label, for roles assignable in the current tenant
+     * Server-side check that every submitted role id is assignable by the
+     * acting user; Filament does not validate relationship options itself.
+     */
+    public static function onlyAssignableRolesRule(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            $assignable = RoleAssignment::assignableRoleIds(auth()->user(), Tenant::current());
+
+            if (collect($value ?? [])->map(fn ($id): int => (int) $id)->diff($assignable)->isNotEmpty()) {
+                $fail('شما اجازه‌ی دادن یکی از نقش‌های انتخاب‌شده را ندارید.');
+            }
+        };
+    }
+
+    /**
+     * @return array<int, string> role id => label, for roles the acting user may assign in the current tenant
      */
     public static function assignableRoleOptions(): array
     {
-        return Role::query()
-            ->assignableIn(Tenant::current())
-            ->orderBy('name')
-            ->get()
+        return RoleAssignment::assignableRoles(auth()->user(), Tenant::current())
             ->mapWithKeys(fn (Role $role): array => [$role->id => static::roleLabel($role)])
             ->all();
+    }
+
+    /**
+     * Nobody but a super admin changes their own roles (ADR 0003).
+     */
+    private static function isEditingOwnRoles(?User $record): bool
+    {
+        $actor = auth()->user();
+
+        return $record !== null && $record->is($actor) && ! $actor->is_super_admin;
     }
 
     public static function roleLabel(Role|string $role): string
