@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Filament\Resources\Tenants\TenantResource;
 use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
@@ -198,8 +199,9 @@ return [
                 'delete',
             ],
         ],
+        // Tenants are super-admin-only (TenantPolicy); no role may grant them.
         'exclude' => [
-            //
+            TenantResource::class,
         ],
     ],
 

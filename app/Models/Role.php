@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Role as BaseRole;
 
@@ -21,5 +22,19 @@ class Role extends BaseRole
     public function team(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+    /**
+     * Roles that can be assigned in the tenant: global ones and its own.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeAssignableIn(Builder $query, Tenant $tenant): void
+    {
+        $column = $query->qualifyColumn('tenant_id');
+
+        $query->where(fn (Builder $query) => $query
+            ->whereNull($column)
+            ->orWhere($column, $tenant->getKey()));
     }
 }

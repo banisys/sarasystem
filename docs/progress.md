@@ -10,13 +10,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Next
 - User-panel authentication on the Inertia side (login, password reset; decide Fortify vs. custom), then the tenant picker page. Remove the temporary `redirectGuestsTo` admin-login fallback in `bootstrap/app.php`.
-- Filament resources for tenants and users, including role assignment per tenant.
-- Configurable tenant label (مدرسه / شعبه / …) per installation.
 - Self-host a Persian font (e.g. `vazirmatn` npm package; user installs) for the Inertia front end.
 - Pick a Jalali date library/picker for Vue.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Admin panel resources: Tenants (super admin only, deactivate instead of delete) and Users (members of current tenant, roles per tenant, add existing user, remove from tenant, super-admin protection). Tenant label configurable via `config/sarasystem.php`. 36 tests pass.
 - 2026-10-23 — Tenancy implemented per ADR 0002: `Tenant` model and table, `BelongsToTenant` trait and fail-closed `TenantScope`, permission teams (`tenant_id`), super admin flag + `Gate::before`, Filament panel tenancy (`/cpadmin/{tenant}`), web-side session tenant + switch route, seeder (head office, `panel_user`, local super admin). Tests now run on PostgreSQL; 23 tests pass.
 - 2026-10-23 — Tenancy model decided → [ADR 0002](decisions/0002-tenancy-model.md); product framed as generic (school / company / language institute).
 - 2026-10-23 — Stack installed & wired (latest versions, all verified compatible with Laravel 13 / Filament 5): Filament 5.10 panel at `/cpadmin` with Shield + ApexCharts; Spatie permission/media/tags/settings migrations run; nwidart modules configured; spatie-multitenancy installed (not configured); Inertia 3 + Vue 3.5 + Ziggy with RTL root view and Welcome page; Laravel Boost (guidelines, skills, MCP via docker). Build and tests pass. Details in `architecture.md`.
@@ -29,6 +28,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- **Role escalation:** a user with `Update:User` can assign any role available in the tenant, including roles with more permissions than their own. A role hierarchy or an "assignable roles" rule is needed before real tenant managers get access.
+- User identity (name, email, password) is global: a manager in one tenant who edits a user also changes that account for every other tenant. Only super admins are protected. Decide whether identity edits should be restricted (e.g. to users who belong only to the manager's tenant).
+- Roles are shown by their technical name (`Str::headline`). They need a display label (Persian), e.g. a `label` column on `roles`.
 - `CLAUDE.md` Boost block still has one generic line recommending Laravel Cloud (from Boost's foundation rules); we don't use Cloud. It is regenerated, so don't hand-edit it.
 - Guests hitting `auth` routes on the web side are redirected to the admin login until the user-panel login exists.
 

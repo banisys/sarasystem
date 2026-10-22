@@ -29,7 +29,12 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
   - Impersonate action
 - **Access:** super admins (`users.is_super_admin`), plus users who hold Shield's `panel_user` role in at least one tenant. They see only those tenants (`User::getTenants()`/`canAccessTenant()`). Shield's `HasPanelShield` trait is deliberately **not** used, because it gives `panel_user` to every new user, and students and parents must not reach the admin panel. Shield's own `super_admin` role is disabled in `config/filament-shield.php`, because a role can't be installation-wide with teams.
 - **Roles UI (Shield):** `->centralApp()->scopeToTenant(false)`. It lists all roles, and the "team" field makes a role global (empty) or specific to one tenant. Assigning roles to users must pass the current tenant id (see the Shield README, "With Tenancy").
-- Shield policies live in `app/Policies`. `FilamentShield::enforcePolicies()` in `AppServiceProvider` registers the ones Laravel can't discover, such as `RolePolicy` for Spatie's `Role`. After adding resources, run `php artisan shield:generate --all --panel=admin`.
+- **Resources:**
+  | Resource | Scope | Who | Notes |
+  |---|---|---|---|
+  | [Tenants](../app/Filament/Resources/Tenants/TenantResource.php) (`/cpadmin/{tenant}/tenants`) | installation-wide, not tenant-scoped | super admin only ([TenantPolicy](../app/Policies/TenantPolicy.php) denies everyone, `Gate::before` lets the super admin through) | Excluded from Shield generation. Tenants are deactivated, never deleted. The labels come from `config('sarasystem.tenant_label')`. |
+  | [Users](../app/Filament/Resources/Users/UserResource.php) (`/cpadmin/{tenant}/users`) | members of the current tenant (`User::inTenant()`) | `ViewAny/Create/Update:User` permissions (Shield `UserPolicy`) | Identity fields (name, email, password) are global; the roles checkbox list edits roles **in the current tenant only** (`syncWithPivotValues` with `tenant_id`). Extra actions: «افزودن کاربر موجود» (gives roles here to an existing account instead of creating a duplicate) and «حذف از شعبه» (detaches only this tenant's roles). Only a super admin can see the `is_super_admin` toggle or edit a super admin. |
+- Shield policies live in `app/Policies`. `FilamentShield::enforcePolicies()` in `AppServiceProvider` registers the ones Laravel can't discover. After adding resources, run `php artisan shield:generate --all --panel=admin --ignore-existing-policies`. The flag keeps hand-written policies such as `TenantPolicy` intact. Permission keys look like `ViewAny:User`, `Create:User`.
 - Filament plugin assets in `public/{css,js,fonts}/…` are **not committed**. `composer install` and `composer update` republish them through `filament:upgrade` (post-autoload-dump), and a deploy that skips composer scripts must run `php artisan filament:assets` itself.
 
 ### Public site & user panel (Inertia)
@@ -82,7 +87,9 @@ Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/uni
 
 spatie-multitenancy's `tenant_finder` is **not used**: it runs before the session exists, so the middlewares above resolve the tenant instead. Queued jobs are tenant-aware by default (spatie config).
 
-**Not done yet:** the tenant picker page and login on the Inertia side (guests are temporarily redirected to the admin login), a configurable tenant label (مدرسه / شعبه), and a Filament resource for managing tenants.
+**Tenant label:** `config/sarasystem.php` (`TENANT_LABEL`, `TENANT_PLURAL_LABEL` in `.env`, default «شعبه»). Use it in the UI wherever the word for tenant appears; never hard-code «مدرسه» or «شعبه».
+
+**Not done yet:** the tenant picker page and login on the Inertia side (guests are temporarily redirected to the admin login).
 
 ## Data model
 _(TODO: main entities and their relations.)_

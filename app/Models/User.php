@@ -10,10 +10,12 @@ use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -54,6 +56,21 @@ class User extends Authenticatable implements FilamentUser, HasTenants
             'role_id',
             Role::query()->where('name', Utils::getPanelUserRoleName())->pluck('id'),
         );
+    }
+
+    /**
+     * Users holding any role in the tenant.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeInTenant(Builder $query, Tenant $tenant): void
+    {
+        $query->whereExists(fn (QueryBuilder $roles) => $roles
+            ->selectRaw('1')
+            ->from(config('permission.table_names.model_has_roles'))
+            ->whereColumn(config('permission.column_names.model_morph_key'), $query->qualifyColumn('id'))
+            ->where('model_type', $this->getMorphClass())
+            ->where('tenant_id', $tenant->getKey()));
     }
 
     public function canAccessPanel(Panel $panel): bool
