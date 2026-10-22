@@ -9,11 +9,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 
 
 ## Next
-- User pulls `postgres:18-alpine` (not available locally yet).
 - Create the Laravel 13 app in this repo. `composer create-project` needs an empty dir, so create it in a temp dir and move it in, then merge Laravel's `.gitignore` with ours. Set `DB_CONNECTION=pgsql`, `DB_HOST=pgsql`, `APP_PORT=8000`, `VITE_PORT=5174` in `.env`.
 - Install the stack packages from ADR 0001 (user runs installs; containers are offline).
 
 ## Done
+- 2026-10-22 — PostgreSQL 18.6 container running (`postgres:18-alpine`, pulled via ArvanCloud mirror).
 - 2026-10-22 — `git init` (branch `main`), `.gitignore`, `docker-compose.yml` (app + PostgreSQL 18).
 - 2026-10-22 — Tech stack decided → [ADR 0001](decisions/0001-tech-stack.md).
 - 2026-10-22 — Deep survey of `../LMS` (code + live DB, read-only): architecture concepts, module usage, domain facts, dead tables → `docs/legacy-lms.md`, `docs/glossary.md`, `docs/overview.md`.
