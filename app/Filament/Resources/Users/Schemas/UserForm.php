@@ -135,8 +135,10 @@ class UserForm
 
     public static function roleLabel(Role|string $role): string
     {
-        $name = $role instanceof Role ? $role->name : $role;
+        if (is_string($role)) {
+            $role = Role::query()->whereNull('tenant_id')->where('name', $role)->first() ?? $role;
+        }
 
-        return $name === Utils::getPanelUserRoleName() ? 'کارمند (ورود به پنل)' : Str::headline($name);
+        return $role instanceof Role ? $role->display_name : Str::headline($role);
     }
 }

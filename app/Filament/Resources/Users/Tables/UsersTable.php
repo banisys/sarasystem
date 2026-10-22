@@ -11,7 +11,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
 
 class UsersTable
 {
@@ -26,10 +25,9 @@ class UsersTable
                 TextColumn::make('email')
                     ->label('ایمیل')
                     ->searchable(),
-                TextColumn::make('roles.name')
+                TextColumn::make('roles.display_name')
                     ->label('نقش‌ها')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => Str::headline($state)),
+                    ->badge(),
                 IconColumn::make('is_super_admin')
                     ->label('مدیر کل')
                     ->boolean()

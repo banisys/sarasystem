@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role as BaseRole;
 
 /**
@@ -13,6 +15,17 @@ use Spatie\Permission\Models\Role as BaseRole;
  */
 class Role extends BaseRole
 {
+    /**
+     * The label shown in the UI: the Persian `label`, or the technical name
+     * made readable when no label is set.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function displayName(): Attribute
+    {
+        return Attribute::get(fn (): string => $this->label ?: Str::headline($this->name));
+    }
+
     /**
      * The tenant a tenant-specific role belongs to. Named "team" because
      * Shield's RoleResource reads `team.name`.

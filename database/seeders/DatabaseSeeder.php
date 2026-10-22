@@ -20,7 +20,9 @@ class DatabaseSeeder extends Seeder
     {
         // Global role (tenant_id NULL) marking staff who may use the admin panel
         // in the tenants where they hold it.
-        Role::findOrCreate(Utils::getPanelUserRoleName(), 'web');
+        Role::findOrCreate(Utils::getPanelUserRoleName(), 'web')
+            ->fill(['label' => 'کارمند (ورود به پنل)'])
+            ->save();
 
         Tenant::firstOrCreate(['slug' => 'head-office'], ['name' => 'ستاد']);
 

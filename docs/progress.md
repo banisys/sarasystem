@@ -15,6 +15,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Persian role labels: `roles.label` + `Role::display_name`; Shield RoleResource published and extended (label field/column, Jalali dates); users UI shows labels; seeder labels `panel_user`. 49 tests pass.
 - 2026-10-23 — Role assignment rules (ADR 0003): permission-subset rule, no managing stronger users (in any tenant), no changing own roles, role definitions super-admin only; server-side validation. 45 tests pass.
 - 2026-10-23 — Admin panel resources: Tenants (super admin only, deactivate instead of delete) and Users (members of current tenant, roles per tenant, add existing user, remove from tenant, super-admin protection). Tenant label configurable via `config/sarasystem.php`. 36 tests pass.
 - 2026-10-23 — Tenancy implemented per ADR 0002: `Tenant` model and table, `BelongsToTenant` trait and fail-closed `TenantScope`, permission teams (`tenant_id`), super admin flag + `Gate::before`, Filament panel tenancy (`/cpadmin/{tenant}`), web-side session tenant + switch route, seeder (head office, `panel_user`, local super admin). Tests now run on PostgreSQL; 23 tests pass.
@@ -30,7 +31,6 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Known issues / tech debt
 - User identity (name, email, password) is global. Since ADR 0003 a manager can only edit users who are not "bigger" than them anywhere, but a manager can still change, for example, the password of a teacher who also teaches in another branch. Decide later whether password resets should go through the user (email/SMS reset) instead.
-- Roles are shown by their technical name (`Str::headline`). They need a display label (Persian), e.g. a `label` column on `roles`.
 - `CLAUDE.md` Boost block still has one generic line recommending Laravel Cloud (from Boost's foundation rules); we don't use Cloud. It is regenerated, so don't hand-edit it.
 - Guests hitting `auth` routes on the web side are redirected to the admin login until the user-panel login exists.
 
