@@ -39,13 +39,11 @@ html:not(.dark) .fi-sidebar {
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* More room between the breadcrumbs and the page title. */
+/* More room between the breadcrumbs and the page title. (LMS also gave the
+   header actions margin-bottom: -5rem; in Filament 5 that pulls them under
+   the table, hidden behind it, so they keep their place beside the title.) */
 .fi-header .fi-breadcrumbs {
     margin-bottom: 4rem;
-}
-
-.fi-header-actions-ctn {
-    margin-bottom: -5rem;
 }
 
 /* Table header toolbar: Filament packs search, the filter trigger and the
