@@ -21,6 +21,16 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 
 ### Admin panel (Filament)
 - Provider: [app/Providers/Filament/AdminPanelProvider.php](../app/Providers/Filament/AdminPanelProvider.php). The panel id is `admin`, the path is `cpadmin`, the brand comes from `APP_NAME` and the primary color is Violet.
+- **Look and feel** (ported from LMS):
+  - Font **Shabnam** (Light), self-hosted in `resources/fonts`, set with `->font('Shabnam', provider: LocalFontProvider::class)`.
+  - Custom theme [resources/css/filament/admin/theme.css](../resources/css/filament/admin/theme.css) (`->viteTheme()`): topography watermark, white sidebar, toolbar spacing, filter dropdown above the sidebar.
+  - Frosted-glass dark mode in [glass.css](../resources/css/filament/admin/glass.css), switched on by one `@import` line.
+  - Colors violet / rose / emerald / amber, initials avatar ([InitialsAvatarProvider](../app/Filament/Support/InitialsAvatarProvider.php)), SPA mode, collapsible sidebar.
+- **Render hooks** ([resources/views/filament/admin](../resources/views/filament/admin)): a sidebar menu search with history and collapse-all, remembered open state of collapsible filters, and a second horizontal scrollbar above wide tables.
+- **Panel-wide component defaults** (`AdminPanelProvider::configureComponentDefaults()`), which a component's own calls override:
+  - Tables: filters in a dropdown, 25 rows per page, newest first, every column toggleable.
+  - Numeric inputs are LTR with thousands separators.
+  - Searchable selects preload and show 10 options.
 - **Panel tenancy:** URLs are `/cpadmin/{tenant-slug}/…` and Filament shows a tenant switcher. See [Tenancy](#tenancy).
 - Registered plugins: Shield (roles & permissions UI) and ApexCharts. The other Filament packages are used per component and need no panel registration:
   - Jalali: `->jalali()` on DatePicker/DateTimePicker, `->jalaliDate()` on TextColumn/TextEntry

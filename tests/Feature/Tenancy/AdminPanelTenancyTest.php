@@ -65,6 +65,18 @@ class AdminPanelTenancyTest extends TestCase
         $this->actingAs($admin)->get("/cpadmin/{$tenant->slug}/shield/roles/create")->assertOk();
     }
 
+    public function test_the_panel_uses_the_project_font_and_ui_hooks(): void
+    {
+        $tenant = Tenant::factory()->create();
+
+        $this->actingAs(User::factory()->superAdmin()->create())
+            ->get("/cpadmin/{$tenant->slug}/users")
+            ->assertOk()
+            ->assertSee('--font-family: \'Shabnam\'', escape: false)
+            ->assertSee('fi-nav-search-input', escape: false)
+            ->assertSee('fi-ta-top-scroll', escape: false);
+    }
+
     public function test_super_admin_can_open_any_active_tenant_but_not_inactive_ones(): void
     {
         $active = Tenant::factory()->create();

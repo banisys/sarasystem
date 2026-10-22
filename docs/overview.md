@@ -1,7 +1,7 @@
 # Overview
 
 ## What it is
-SaraSystem is an education management platform that combines three areas:
+SaraSystem (Persian name: **سرا سیستم**; not «سارا») is an education management platform that combines three areas:
 - **LMS** (Learning Management System): courses, content, exams, learner progress
 - **TMS** (Training Management System): planning and running training programs, trainers, enrollments
 - **SIS** (Student Information System): schools, students, classes, attendance, grades, report cards, parents

@@ -1,0 +1,182 @@
+/*
+ * "Glazzed"-style dark mode for the admin panel: a blurred, colorful
+ * backdrop (navy, teal, plum, red) behind dark translucent frosted panes,
+ * blue accents and slate grays instead of the panel's violet/gray, light
+ * headings. Light mode is left exactly as it was — every rule is scoped to
+ * html.dark.
+ *
+ * Imported from theme.css; removing that @import line turns it all off.
+ *
+ * backdrop-filter makes an element the containing block of its position:fixed
+ * descendants. Filament's dropdowns float with floating-ui (which accounts for
+ * that), but a table whose filters use FiltersLayout::Modal renders the modal
+ * inside .fi-ta-ctn — the panel keeps the collapsible filters above content.
+ */
+
+/* Blue accents and slate grays (Tailwind's palettes). html.dark outweighs the
+   :root variables Filament prints for the panel's colors. */
+html.dark {
+    --primary-50: oklch(97% 0.014 254.604);
+    --primary-100: oklch(93.2% 0.032 255.585);
+    --primary-200: oklch(88.2% 0.059 254.128);
+    --primary-300: oklch(80.9% 0.105 251.813);
+    --primary-400: oklch(70.7% 0.165 254.624);
+    --primary-500: oklch(62.3% 0.214 259.815);
+    --primary-600: oklch(54.6% 0.245 262.881);
+    --primary-700: oklch(48.8% 0.243 264.376);
+    --primary-800: oklch(42.4% 0.199 265.638);
+    --primary-900: oklch(37.9% 0.146 265.522);
+    --primary-950: oklch(28.2% 0.091 267.935);
+
+    --gray-50: oklch(98.4% 0.003 247.858);
+    --gray-100: oklch(96.8% 0.007 247.896);
+    --gray-200: oklch(92.9% 0.013 255.508);
+    --gray-300: oklch(86.9% 0.022 252.894);
+    --gray-400: oklch(70.4% 0.04 256.788);
+    --gray-500: oklch(55.4% 0.046 257.417);
+    --gray-600: oklch(44.6% 0.043 257.281);
+    --gray-700: oklch(37.2% 0.044 257.287);
+    --gray-800: oklch(27.9% 0.041 260.031);
+    --gray-900: oklch(20.8% 0.042 265.755);
+    --gray-950: oklch(12.9% 0.042 264.695);
+
+    --glass-pane: rgb(15 23 42 / 0.42);
+    --glass-bar: rgb(10 16 30 / 0.55);
+    --glass-float: rgb(17 25 44 / 0.88);
+    --glass-line: rgb(255 255 255 / 0.08);
+    --glass-blur: blur(22px) saturate(140%);
+}
+
+/* The backdrop: soft color fields like Glazzed's blurred photo, fixed. */
+html.dark body.fi-body {
+    background-color: #1b2536;
+    background-image:
+        radial-gradient(ellipse 60% 45% at 85% 5%, rgb(37 70 160 / 0.85), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 15% 10%, rgb(52 72 98 / 0.9), transparent 70%),
+        radial-gradient(ellipse 45% 40% at 95% 45%, rgb(150 45 85 / 0.7), transparent 70%),
+        radial-gradient(ellipse 45% 40% at 5% 55%, rgb(130 45 50 / 0.65), transparent 70%),
+        radial-gradient(ellipse 55% 40% at 55% 50%, rgb(90 60 120 / 0.55), transparent 70%),
+        radial-gradient(ellipse 70% 45% at 40% 100%, rgb(40 140 155 / 0.75), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 95% 95%, rgb(45 90 150 / 0.7), transparent 70%);
+    background-attachment: fixed;
+}
+
+/* No topography watermark over the backdrop (theme.css). */
+html.dark body.fi-body > div.fi-layout > div.fi-main-ctn.fi-main-ctn-sidebar-open {
+    background-image: none;
+}
+
+/* Panes. */
+html.dark .fi-section:not(.fi-section-not-contained):not(.fi-aside),
+html.dark .fi-section.fi-aside:not(.fi-section-not-contained) > .fi-section-content-ctn,
+html.dark .fi-ta-ctn,
+html.dark .fi-tabs:not(.fi-contained),
+/* Contained form tabs/wizards (edit pages), table repeaters. */
+html.dark .fi-sc-tabs.fi-contained,
+html.dark .fi-sc-wizard.fi-contained,
+html.dark .fi-sc-wizard:not(.fi-contained) > .fi-sc-wizard-header,
+html.dark .fi-fo-table-repeater > table,
+html.dark .fi-in-table-repeatable > table,
+html.dark .fi-callout,
+html.dark .fi-empty-state:not(.fi-empty-state-not-contained),
+html.dark .fi-wi-stats-overview-stat,
+html.dark .fi-simple-main {
+    background-color: var(--glass-pane);
+    backdrop-filter: var(--glass-blur);
+    border-radius: 0.25rem;
+    box-shadow: none;
+    --tw-ring-color: var(--glass-line);
+}
+
+html.dark .fi-ta-ctn .fi-ta-record {
+    background-color: transparent;
+}
+
+/* Header bars of panes, as Glazzed's card titles. */
+html.dark .fi-section:not(.fi-section-not-contained) > .fi-section-header {
+    border-bottom: 1px solid var(--glass-line);
+}
+
+/* Top bar and sidebar: darker glass. */
+html.dark .fi-topbar,
+html.dark body.fi-body .fi-sidebar {
+    background-color: var(--glass-bar);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: none;
+    --tw-ring-color: var(--glass-line);
+}
+
+html.dark body.fi-body .fi-sidebar {
+    border-inline-end: 1px solid var(--glass-line);
+}
+
+/* Sidebar rows: full-width bands with a blue edge on the current page.
+   The edge is an inset shadow, not a border: a border would push the row's
+   content (including the group's connector line and bullet) 3px inward. */
+html.dark .fi-sidebar .fi-sidebar-item-btn {
+    border-radius: 0;
+}
+
+html.dark .fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background-color: rgb(255 255 255 / 0.1);
+    box-shadow: inset 3px 0 0 var(--primary-500);
+}
+
+html.dark .fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-btn:dir(rtl) {
+    box-shadow: inset -3px 0 0 var(--primary-500);
+}
+
+/* Menu search box, collapse-all button and search-history chips at the top
+   of the sidebar (sidebar-nav-search.blade.php): styled like Filament's own
+   dark inputs (.fi-input-wrp: white/5 fill, white/20 ring, primary focus
+   ring) instead of solid gray. */
+html.dark .fi-sidebar .fi-nav-search-input,
+html.dark .fi-sidebar .fi-nav-collapse-all-btn,
+html.dark .fi-sidebar .fi-nav-search-history-chip {
+    background-color: rgb(255 255 255 / 0.05);
+    border-color: rgb(255 255 255 / 0.2);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+html.dark .fi-sidebar .fi-nav-search-input {
+    color: #fff;
+}
+
+html.dark .fi-sidebar .fi-nav-search-input::placeholder {
+    color: var(--gray-500);
+}
+
+html.dark .fi-sidebar .fi-nav-collapse-all-btn:hover,
+html.dark .fi-sidebar .fi-nav-search-history-chip:hover {
+    background-color: rgb(255 255 255 / 0.1);
+    border-color: rgb(255 255 255 / 0.3);
+}
+
+html.dark .fi-sidebar .fi-nav-search-input:focus {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 1px var(--primary-500);
+}
+
+/* Floating layers: denser glass so they stay readable. */
+html.dark .fi-dropdown-panel,
+html.dark .fi-global-search-results-ctn,
+html.dark .fi-no-notification:not(.fi-inline),
+html.dark .fi-modal .fi-modal-window {
+    background-color: var(--glass-float);
+    backdrop-filter: var(--glass-blur);
+    --tw-ring-color: var(--glass-line);
+}
+
+/* Sticky header/footer of slide-overs: same tone as the window, so content
+   scrolling under them stays hidden. */
+html.dark .fi-modal .fi-modal-window .fi-modal-header,
+html.dark .fi-modal .fi-modal-window .fi-modal-footer {
+    background-color: rgb(17 25 44 / 0.96);
+}
+
+/* Light, airy headings. */
+html.dark .fi-header-heading,
+html.dark .fi-section-header-heading,
+html.dark .fi-ta-header-heading {
+    font-weight: 300;
+}

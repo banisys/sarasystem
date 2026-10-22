@@ -87,7 +87,8 @@ Code is never copied directly; see [conventions.md → Porting from LMS](convent
 
 | LMS part | Status | Lives in SaraSystem at |
 |---|---|---|
-| _(none yet)_ | | |
+| Admin panel UI (font Shabnam, theme + glass dark mode, colors, initials avatar, sidebar menu search, table top scrollbar, persisted filters, panel-wide table/field defaults) | ported 2026-10-23 | `app/Providers/Filament/AdminPanelProvider.php`, `resources/css/filament/admin/`, `resources/views/filament/admin/`, `app/Filament/Support/InitialsAvatarProvider.php` |
+| — not ported: year/school/instance topbar switchers (replaced by Filament tenancy), `LegacyNavigation`, blog editor CSS (comes with a Blog module) | | |
 
 ## How to inspect LMS
 - Code: read files under `../LMS/Modules/<Module>/app/{Models,Filament,Http,Libraries,Bridge}`.

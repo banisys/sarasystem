@@ -1,0 +1,79 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+/* Frosted-glass dark mode; delete this line to turn it off. */
+@import './glass.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../Modules/*/app/Filament/**/*';
+@source '../../../../Modules/*/resources/views/filament/**/*';
+
+/* Panel font (ported from LMS). Registered with ->font('Shabnam', provider:
+   LocalFontProvider::class) in AdminPanelProvider, which sets Filament's
+   --font-family; only the Light weight exists, used for all text. */
+@font-face {
+    font-family: 'Shabnam';
+    src:
+        url('../../../fonts/Shabnam-Light.woff2') format('woff2'),
+        url('../../../fonts/Shabnam-Light.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Subtle topography watermark behind the main panel content, tinted with the
+   violet primary color, with a lighter-opacity variant for dark mode. */
+body > div.fi-layout > div.fi-main-ctn.fi-main-ctn-sidebar-open {
+    background-repeat: repeat;
+    background-size: 220px 220px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%238b5cf6' stroke-opacity='0.07' stroke-width='1.25'%3E%3Cpath d='M0 35 Q27.5 10 55 35 T110 35 T165 35 T220 35'/%3E%3Cpath d='M0 75 Q27.5 55 55 75 T110 75 T165 75 T220 75'/%3E%3Cpath d='M0 115 Q27.5 90 55 115 T110 115 T165 115 T220 115'/%3E%3Cpath d='M0 155 Q27.5 135 55 155 T110 155 T165 155 T220 155'/%3E%3Cpath d='M0 195 Q27.5 170 55 195 T110 195 T165 195 T220 195'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html.dark body > div.fi-layout > div.fi-main-ctn.fi-main-ctn-sidebar-open {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23c4b5fd' stroke-opacity='0.05' stroke-width='1.25'%3E%3Cpath d='M0 35 Q27.5 10 55 35 T110 35 T165 35 T220 35'/%3E%3Cpath d='M0 75 Q27.5 55 55 75 T110 75 T165 75 T220 75'/%3E%3Cpath d='M0 115 Q27.5 90 55 115 T110 115 T165 115 T220 115'/%3E%3Cpath d='M0 155 Q27.5 135 55 155 T110 155 T165 155 T220 155'/%3E%3Cpath d='M0 195 Q27.5 170 55 195 T110 195 T165 195 T220 195'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* White sidebar with a light elevation shadow separating it from the
+   patterned content area; light mode only. */
+html:not(.dark) .fi-sidebar {
+    background-color: #fff;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* More room between the breadcrumbs and the page title. */
+.fi-header .fi-breadcrumbs {
+    margin-bottom: 4rem;
+}
+
+.fi-header-actions-ctn {
+    margin-bottom: -5rem;
+}
+
+/* Table header toolbar: Filament packs search, the filter trigger and the
+   column manager at gap-x-4, which reads as icons stuck together. Only the
+   toolbar's own groups are widened, not the controls' internals. */
+.fi-ta-header-toolbar > * {
+    column-gap: 2rem;
+}
+
+/* Collapsible table filters open below their trigger, so opening and closing
+   is one click on the same spot (Filament renders the form before the button). */
+.fi-ta-filters-above-content-ctn .fi-ta-filters-trigger-action-ctn {
+    order: -1;
+    margin-top: 0 !important;
+}
+
+.fi-ta-filters-above-content-ctn.fi-open .fi-ta-filters {
+    margin-top: 0.75rem;
+}
+
+/* Dropdowns opening over the sidebar: the wide filters dropdown can run into
+   the sticky sidebar (z-20), and the glass panes (backdrop-filter) trap its
+   z-index. From lg up, where the sidebar sits beside the content, the content
+   column is raised one layer above it; below lg the sidebar is an overlay and
+   must stay on top. */
+@media (min-width: 64rem) {
+    .fi-main-ctn {
+        position: relative;
+        z-index: 21;
+    }
+}

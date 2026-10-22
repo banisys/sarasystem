@@ -10,11 +10,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Next
 - Real SMS provider driver (choose provider: Kavenegar / Ghasedak / …; credentials from the user).
-- Self-host a Persian font (e.g. `vazirmatn` npm package; user installs) for the Inertia front end.
+- Persian font for the Inertia front end: reuse Shabnam (already in `resources/fonts`) or another one? (`resources/css/app.css` still says Vazirmatn.)
 - Pick a Jalali date library/picker for Vue.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Ported the LMS admin-panel UI (font Shabnam, theme + glass dark mode, colors, avatar, sidebar search, table top scroll, persisted filters, panel-wide defaults). Project name fixed to «سرا سیستم» (`APP_NAME`). 90 tests pass.
 - 2026-10-23 — Module infrastructure (ADR 0005): core stays in `app/`, business areas in `Modules/`; Filament discovery per enabled module, `Module::Page` Inertia pages (browser + tests), `Modules` PHPUnit suite, `@` Vite alias, custom nwidart stubs (`--inertia`, tenant routes, no API/Blade). Verified with a temporary module, then removed.
 - 2026-10-23 — Profile page (`/profile`): email, SMS-confirmed mobile change, password change (no current password within 15 min of an SMS login), `auth.session` logs out other sessions, link in the Filament user menu. 89 tests pass.
 - 2026-10-23 — Authentication (ADR 0004): one `/login` for everyone (Filament login removed), identifier = mobile / national code / email, password or SMS code (log driver), rate limiting, tenant picker + dashboard + user-panel layout. 78 tests pass.
