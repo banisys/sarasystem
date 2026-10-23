@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Modules\Site\Filament\Resources\SitePages\Pages\CreatePage;
 use Modules\Site\Filament\Resources\SitePages\Pages\EditPage;
 use Modules\Site\Filament\Resources\SitePages\Pages\ListPages;
+use Modules\Site\Filament\Resources\SitePages\Pages\PageBuilder;
 use Modules\Site\Filament\Resources\SitePages\Schemas\PageForm;
 use Modules\Site\Filament\Resources\SitePages\Tables\PagesTable;
 use Modules\Site\Models\Page;
@@ -82,6 +83,7 @@ class PageResource extends Resource
             'index' => ListPages::route('/'),
             'create' => CreatePage::route('/create'),
             'edit' => EditPage::route('/{record}/edit'),
+            'builder' => PageBuilder::route('/{record}/builder'),
         ];
     }
 }

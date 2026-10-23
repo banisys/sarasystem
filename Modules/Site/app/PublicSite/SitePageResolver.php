@@ -7,6 +7,7 @@ use App\PublicSite\PageResolver;
 use App\PublicSite\PublicSite;
 use Inertia\Inertia;
 use Modules\Site\Models\Page;
+use Modules\Site\Widgets\Widgets;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -25,6 +26,7 @@ class SitePageResolver implements PageResolver
         return Inertia::render('Site::Page', [
             ...PublicSite::layoutProps($tenant),
             'page' => $page->only('title', 'path'),
+            'widgets' => Widgets::render($page->content ?? []),
         ])->toResponse(request());
     }
 }

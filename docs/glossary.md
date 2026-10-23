@@ -44,6 +44,8 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Super admin | مدیر کل سیستم | Holder of the global `super_admin` role (in any tenant): installation-wide, bypasses all permission checks, manages tenants and role definitions. |
 | Primary tenant | شعبه‌ی اصلی | The one tenant whose public home page is the site root `/` (ADR 0009); chosen by a super admin. |
 | Site page | صفحه | A public page of one tenant's site at a path such as `/about-us` (`Site` module, ADR 0010); the page at `/` is the tenant's home page, which every tenant has. Its content will be made of widgets. |
+| Widget | ویجت | A building block of a site page's content (HTML, …), placed in order with the page builder (ADR 0011). Not the same as a Filament dashboard widget. |
+| Page builder | صفحه‌ساز | The admin screen where a site page's widgets are added and ordered (`pages/{id}/builder`, ADR 0011). |
 | Impersonation | ورود با حساب کاربر | A super admin temporarily logged in as another user, with a way back to their own account (ADR 0008). |
 | Cartable | کارتابل | Approval inbox/workflow: records waiting for a user's review, routed through entity groups and verifiers. |
 | Entity group | گروه | Group of users used for routing approvals (verifiers) and access. |

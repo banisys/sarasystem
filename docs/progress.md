@@ -6,7 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Page builder (`Site` module, ADR 0010): step 1 (pages) done; step 2 = widgets for page content.
+- Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
 - Real SMS provider driver (choose provider: Kavenegar / Ghasedak / …; credentials from the user).
@@ -14,6 +14,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Site: widgets are managed in the page builder «صفحه‌ساز» (`/cpadmin/{tenant}/pages/{id}/builder`), reached only from its row action in the page list; not in the page edit form. 156 tests pass.
+- 2026-10-23 — Site widgets (ADR 0011): page content = ordered widgets (`site_pages.content`, Filament Builder «افزودن ویجت»); first widget HTML (CodeEditor, sanitized with symfony/html-sanitizer on save and on view; https iframes allowed). 155 tests pass.
 - 2026-10-23 — Site: every tenant has a home page (`/`) in the page list: created with the tenant (existing ones by migration), listed first, fixed path, not deletable; unpublished → default home page. 152 tests pass.
 - 2026-10-23 — First module `Site`, page builder step 1 (ADR 0010): pages per tenant with a chosen path (`/about-us`; `/` replaces the home page), list/create/edit/delete in «وب‌سایت → صفحه‌ها», public pages with a static header/footer (`PublicLayout.vue`). Public URLs now go through a core fallback route and module `PageResolver`s. Fixed: the panel's id is set before module discovery (enabling a module gave a 500). 147 tests pass.
 - 2026-10-23 — Tenant home pages (ADR 0009): `/{slug}` per tenant, the primary tenant (chosen in the Tenants list, star) at `/`; reserved slugs. ADR 0008 corrected: `stechstudio/filament-impersonate` was already installed (ADR 0001) and is now unused. 131 tests pass.
@@ -48,6 +50,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- `symfony/html-sanitizer` is used by the HTML widget but only installed as a Filament dependency; add it to `composer.json` (`composer require symfony/html-sanitizer`).
 - Site pages: no preview of unpublished pages; Latin-only paths.
 - Demo roles have no `*:Page` permissions yet; only super admins see «صفحه‌ها» until roles are given them (Shield role editor).
 - `stechstudio/filament-impersonate` is installed but unused (our own impersonation, ADR 0008); remove it with `composer remove stechstudio/filament-impersonate` once approved.

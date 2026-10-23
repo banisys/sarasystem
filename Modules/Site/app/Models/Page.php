@@ -17,7 +17,7 @@ use Modules\Site\Database\Factories\PageFactory;
  * Every tenant has a home page at "/", made with the tenant and never
  * deleted (ADR 0010).
  */
-#[Fillable(['tenant_id', 'title', 'path', 'is_published'])]
+#[Fillable(['tenant_id', 'title', 'path', 'is_published', 'content'])]
 class Page extends Model
 {
     /** @use HasFactory<PageFactory> */
@@ -106,6 +106,7 @@ class Page extends Model
     {
         return [
             'is_published' => 'boolean',
+            'content' => 'array',
         ];
     }
 }

@@ -11,6 +11,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Modules\Site\Filament\Resources\SitePages\PageResource;
 use Modules\Site\Models\Page;
 
 class PagesTable
@@ -45,6 +46,10 @@ class PagesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('builder')
+                    ->label('صفحه‌ساز')
+                    ->icon(Heroicon::OutlinedSquare2Stack)
+                    ->url(fn (Page $record): string => PageResource::getUrl('builder', ['record' => $record])),
                 Action::make('view')
                     ->label('مشاهده در سایت')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
