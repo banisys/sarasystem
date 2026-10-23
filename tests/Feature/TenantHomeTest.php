@@ -15,15 +15,15 @@ class TenantHomeTest extends TestCase
     {
         $primary = Tenant::factory()->create(['name' => 'ستاد']);
         $primary->makePrimary();
-        $west = Tenant::factory()->create(['name' => 'شعبه غرب', 'slug' => 'west']);
+        Tenant::factory()->create(['name' => 'شعبه غرب', 'slug' => 'west']);
         Tenant::factory()->inactive()->create(['name' => 'بسته']);
 
         $this->get('/')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Tenants/Home')
-                ->where('home.name', 'ستاد')
-                ->where('otherTenants', [['name' => 'شعبه غرب', 'url' => route('tenants.home', $west)]]));
+                ->where('site.tenant.name', 'ستاد')
+                ->where('site.otherTenants', [['name' => 'شعبه غرب', 'url' => url('/west')]]));
     }
 
     public function test_each_tenant_has_a_home_page_at_its_slug(): void
@@ -35,7 +35,8 @@ class TenantHomeTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Tenants/Home')
-                ->where('home.name', 'شعبه غرب'));
+                ->where('site.tenant.name', 'شعبه غرب')
+                ->where('site.tenant.url', url('/west')));
     }
 
     public function test_the_primary_tenants_slug_redirects_to_the_site_root(): void

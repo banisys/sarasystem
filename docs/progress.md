@@ -6,7 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- 
+- Page builder (`Site` module, ADR 0010): step 1 (pages) done; step 2 = widgets for page content.
 
 ## Next
 - Real SMS provider driver (choose provider: Kavenegar / Ghasedak / …; credentials from the user).
@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — First module `Site`, page builder step 1 (ADR 0010): pages per tenant with a chosen path (`/about-us`; `/` replaces the home page), list/create/edit/delete in «وب‌سایت → صفحه‌ها», public pages with a static header/footer (`PublicLayout.vue`). Public URLs now go through a core fallback route and module `PageResolver`s. Fixed: the panel's id is set before module discovery (enabling a module gave a 500). 147 tests pass.
 - 2026-10-23 — Tenant home pages (ADR 0009): `/{slug}` per tenant, the primary tenant (chosen in the Tenants list, star) at `/`; reserved slugs. ADR 0008 corrected: `stechstudio/filament-impersonate` was already installed (ADR 0001) and is now unused. 131 tests pass.
 - 2026-10-23 — Impersonation (ADR 0008): super admins can log in as another user from the user edit page and return with «بازگشت به حساب خودم» (bar in the panel and the user panel). 121 tests pass.
 - 2026-10-23 — Users: list shows the number of tenants each user belongs to (sortable, names in tooltip); the edit page lists all their tenants with their roles in each. 113 tests pass.
@@ -46,6 +47,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Site pages: no preview of unpublished pages; Latin-only paths.
+- Demo roles have no `*:Page` permissions yet; only super admins see «صفحه‌ها» until roles are given them (Shield role editor).
 - `stechstudio/filament-impersonate` is installed but unused (our own impersonation, ADR 0008); remove it with `composer remove stechstudio/filament-impersonate` once approved.
 - Adding a top-level route (e.g. `/news`) hides an existing tenant whose slug is the same; `Tenant::reservedSlugs()` only blocks new slugs.
 - Impersonation has no per-action audit trail; actions are recorded as the impersonated user (only start/end are logged).

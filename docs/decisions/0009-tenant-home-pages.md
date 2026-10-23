@@ -1,7 +1,7 @@
 # 0009 — Tenant home pages and the primary tenant
 
 - **Date:** 2026-10-23
-- **Status:** accepted
+- **Status:** accepted (routing amended by [ADR 0010](0010-site-pages.md))
 
 ## Context
 Every tenant (school / branch) needs its own public home page. One of them, the organization's main one, should be the site root (`/`) instead of `/head-office`. The super admin chooses which one.
@@ -13,8 +13,8 @@ Every tenant (school / branch) needs its own public home page. One of them, the 
 
 ## Decision
 - `tenants.is_primary` (boolean, unique where true). `Tenant::primary()` returns the active primary tenant; `Tenant::makePrimary()` moves the flag in a transaction. A migration makes the oldest tenant primary, and the seeder makes the head office primary when none is.
-- Routes ([TenantHomeController](../../app/Http/Controllers/TenantHomeController.php)): `/` shows the primary tenant's home page (the old `Welcome` page when there is no primary); `/{slug}` shows any other active tenant's page; the primary tenant's own slug redirects to `/`; inactive or unknown slugs are 404. `Tenant::homeUrl()` builds the right URL.
-- `/{slug}` is the **last** route in `routes/web.php`, so every other route wins. To keep a tenant from being unreachable, slugs may not be one of `Tenant::reservedSlugs()`: the first segment of every registered route plus every entry in `public/`.
+- Routes (now [PublicSiteController](../../app/Http/Controllers/PublicSiteController.php), see ADR 0010): `/` shows the primary tenant's home page (the old `Welcome` page when there is no primary); `/{slug}` shows any other active tenant's page; the primary tenant's own slug redirects to `/`; inactive or unknown slugs are 404. `Tenant::homeUrl()` builds the right URL.
+- `/{slug}` was the last route in `routes/web.php` (since ADR 0010 a fallback route), so every other route wins. To keep a tenant from being unreachable, slugs may not be one of `Tenant::reservedSlugs()`: the first segment of every registered route plus every entry in `public/`.
 - In the panel's Tenants list: an «اصلی» star column and the row actions «تعیین به‌عنوان اصلی» and «صفحه‌ی خانه». The primary tenant can't be deactivated (make another one primary first).
 - The home page does not make its tenant current; it only shows it. Tenant content on the public site is a later decision.
 

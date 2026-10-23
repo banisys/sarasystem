@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\PublicSite\PublicSite;
+use Closure;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -20,6 +22,9 @@ use Spatie\Multitenancy\Models\Tenant as BaseTenant;
 #[Fillable(['name', 'slug', 'is_active'])]
 class Tenant extends BaseTenant
 {
+    /** @var list<Closure(): iterable<string>> */
+    protected static array $slugReservers = [];
+
     protected function casts(): array
     {
         return [
@@ -52,16 +57,40 @@ class Tenant extends BaseTenant
      */
     public function homeUrl(): string
     {
-        return $this->is_primary ? route('home') : route('tenants.home', $this);
+        return PublicSite::url($this);
     }
 
     /**
-     * Slugs a tenant may not take, because /{slug} would clash with another
-     * route or a public directory (cpadmin, login, build, ...).
+     * Let a module reserve more slugs, e.g. the first segments of the
+     * primary tenant's public pages (ADR 0010).
+     *
+     * @param  Closure(): iterable<string>  $callback
+     */
+    public static function reserveSlugsUsing(Closure $callback): void
+    {
+        static::$slugReservers[] = $callback;
+    }
+
+    /**
+     * Slugs a tenant may not take: routeSlugs() plus those reserved by
+     * modules (reserveSlugsUsing()).
      *
      * @return list<string>
      */
     public static function reservedSlugs(): array
+    {
+        $moduleSlugs = collect(static::$slugReservers)->flatMap(fn (Closure $callback): iterable => $callback());
+
+        return collect(static::routeSlugs())->merge($moduleSlugs)->unique()->values()->all();
+    }
+
+    /**
+     * First URL segments taken by the app: the first segment of every route
+     * and every entry in public/ (cpadmin, login, build, ...).
+     *
+     * @return list<string>
+     */
+    public static function routeSlugs(): array
     {
         $routeSegments = collect(Route::getRoutes()->getRoutes())
             ->map(fn ($route): string => Str::before(ltrim($route->uri(), '/'), '/'))

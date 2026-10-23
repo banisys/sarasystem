@@ -48,9 +48,8 @@ class AdminPanelProvider extends PanelProvider
     {
         $this->configureComponentDefaults();
 
-        return $this->discoverModules($panel)
-            ->default()
-            ->id('admin')
+        // The id comes first: discovering module components needs it.
+        return $this->discoverModules($panel->default()->id('admin'))
             ->path('cpadmin')
             ->brandName(fn (): string => config('app.name'))
             ->tenant(Tenant::class, slugAttribute: 'slug')

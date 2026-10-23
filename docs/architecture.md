@@ -51,7 +51,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - **Resources:**
   | Resource | Scope | Who | Notes |
   |---|---|---|---|
-  | [Tenants](../app/Filament/Resources/Tenants/TenantResource.php) (`/cpadmin/{tenant}/tenants`) | installation-wide, not tenant-scoped | super admin only ([TenantPolicy](../app/Policies/TenantPolicy.php) denies everyone, `Gate::before` lets the super admin through) | Excluded from Shield generation. Tenants are deactivated, never deleted. One tenant is **primary** (star column, «تعیین به‌عنوان اصلی»; it can't be deactivated), and «صفحه‌ی خانه» opens a tenant's public page ([ADR 0009](decisions/0009-tenant-home-pages.md)). Slugs may not clash with routes (`Tenant::reservedSlugs()`). The labels come from `config('sarasystem.tenant_label')`. |
+  | [Tenants](../app/Filament/Resources/Tenants/TenantResource.php) (`/cpadmin/{tenant}/tenants`) | installation-wide, not tenant-scoped | super admin only ([TenantPolicy](../app/Policies/TenantPolicy.php) denies everyone, `Gate::before` lets the super admin through) | Excluded from Shield generation. Tenants are deactivated, never deleted. One tenant is **primary** (star column, «تعیین به‌عنوان اصلی»; it can't be deactivated), and «صفحه‌ی خانه» opens a tenant's public page ([ADR 0009](decisions/0009-tenant-home-pages.md)). Slugs may not clash with routes or page paths (`Tenant::reservedSlugs()`). The labels come from `config('sarasystem.tenant_label')`. |
   | [Users](../app/Filament/Resources/Users/UserResource.php) (`/cpadmin/{tenant}/users`) | members of the current tenant (`User::inTenant()`) | `ViewAny/Create/Update:User` permissions (Shield `UserPolicy`) | Identity fields (name, email, password) are global; the roles checkbox list edits roles **in the current tenant only** (`syncWithPivotValues` with `tenant_id`). The list has a «تعداد شعبه‌ها» column (`User::withTenantsCount()`, sortable, tooltip with the tenant names), and the edit page has a «عضویت در شعبه‌ها» section listing every tenant of the user with their roles there (`User::memberships()`). Extra actions: «افزودن کاربر موجود» (gives roles here to an existing account instead of creating a duplicate) and «حذف از شعبه» (detaches only this tenant's roles). Super admin is the `super_admin` role in the same checkbox list; only super admins see it, and they can't remove it from themselves. Only a super admin can edit a super admin. Who can assign/edit what follows ADR 0003. |
 - **Pages:** [AccessMap](../app/Filament/Pages/AccessMap.php) «نقشه‌ی دسترسی» (`/cpadmin/{tenant}/access-map`, super admin only): who holds which role in which tenant, across all tenants. It has three views: tenant cards (roles → users, each user links to their edit page in that tenant, with a tooltip listing all their memberships), a user × tenant matrix (first 200 rows), and per role (permissions, holders per tenant). Filters: tenant, role (keeps the holders' other roles), name / mobile / national code. `panel_user` appears as a "panel" icon next to the user, not as a role group.
 - Shield policies live in `app/Policies`. `FilamentShield::enforcePolicies()` in `AppServiceProvider` registers the ones Laravel can't discover. After adding resources, run `php artisan shield:generate --all --panel=admin --ignore-existing-policies`. The flag keeps hand-written policies such as `TenantPolicy` intact. Permission keys look like `ViewAny:User`, `Create:User`.
@@ -63,7 +63,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - Shared props: [HandleInertiaRequests](../app/Http/Middleware/HandleInertiaRequests.php) shares `auth.user` (`id`, `name`, `email`). It is appended to the `web` middleware group in `bootstrap/app.php`.
 - Vite ([vite.config.js](../vite.config.js)): the Vue plugin, Tailwind 4 and the `ziggy-js` alias pointing to `vendor/tightenco/ziggy`. The dev server listens on `0.0.0.0:VITE_PORT` (5174) inside the container.
 - Font: **Shabnam**, the same self-hosted font as the admin panel (`@font-face` + Tailwind `--font-sans` in `resources/css/app.css`).
-- **Tenant home pages** ([ADR 0009](decisions/0009-tenant-home-pages.md), [TenantHomeController](../app/Http/Controllers/TenantHomeController.php), [Tenants/Home.vue](../resources/js/Pages/Tenants/Home.vue)): `/` is the primary tenant's page (or `Welcome` when none is primary), `/{slug}` every other active tenant's; the primary's own slug redirects to `/`. `/{slug}` is the last route in `routes/web.php`.
+- **Public site** ([ADR 0009](decisions/0009-tenant-home-pages.md), [ADR 0010](decisions/0010-site-pages.md), [PublicSiteController](../app/Http/Controllers/PublicSiteController.php), [app/PublicSite](../app/PublicSite)): `/` and a fallback route serve every public URL. `/{slug}/...` is a non-primary tenant's site, everything else the primary tenant's. Modules answer through tagged `PageResolver`s (the `Site` module's pages); otherwise `/` is the default home page ([Tenants/Home.vue](../resources/js/Pages/Tenants/Home.vue), or `Welcome` with no primary tenant) and anything else 404. Public pages use [PublicLayout.vue](../resources/js/Layouts/PublicLayout.vue) (static header/footer, `site` prop from `PublicSite::layoutProps()`).
 - Not decided yet: the Jalali date picker for Vue.
 
 ### Authentication ([ADR 0004](decisions/0004-authentication.md))
@@ -112,12 +112,18 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 |---|---|
 | Admin panel | `Modules/{Name}/app/Filament/{Resources,Pages,Widgets}`, auto-discovered for enabled modules (`AdminPanelProvider::discoverModules()`). |
 | User panel | Pages in `Modules/{Name}/resources/js/Pages`, rendered as `Inertia::render('{Name}::Page')`. Shared layout: `@/Layouts/AppLayout.vue`. |
+| Public site | Tag a `App\PublicSite\PageResolver` with `PublicSite::RESOLVER_TAG`; reserve URL segments with `Tenant::reserveSlugsUsing()` (ADR 0010). |
 | Routes | `Modules/{Name}/routes/web.php` with `['auth', 'auth.session', 'tenant']` (`tenant` = `EnsureTenantSelected`). |
 | Data | Module migrations are auto-discovered; tenant-owned models use `BelongsToTenant`. |
 | Tests | `Modules/{Name}/tests`, run by the `Modules` PHPUnit suite. |
 | Enable/disable | `modules_statuses.json`. |
 
-**Module list:** none yet. It will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
+**Module list:**
+| Module | What | Notes |
+|---|---|---|
+| [Site](../Modules/Site) | Public pages of each tenant's site (page builder; widgets come next) | `site_pages`, `Page` model, `PageResource` («وب‌سایت → صفحه‌ها»), `SitePageResolver`, `Site::Page`. [ADR 0010](decisions/0010-site-pages.md). |
+
+Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy
 Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/unit (school, branch or department), all tenants share one database, users are global, roles are per tenant, and the tenant is chosen after login.

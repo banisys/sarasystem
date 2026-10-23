@@ -43,6 +43,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Staff / panel user | کارمند | A user holding the `panel_user` role in a tenant; only staff (and super admins) can enter the admin panel, and only for their tenants. |
 | Super admin | مدیر کل سیستم | Holder of the global `super_admin` role (in any tenant): installation-wide, bypasses all permission checks, manages tenants and role definitions. |
 | Primary tenant | شعبه‌ی اصلی | The one tenant whose public home page is the site root `/` (ADR 0009); chosen by a super admin. |
+| Site page | صفحه | A public page of one tenant's site at a path such as `/about-us` (`Site` module, ADR 0010); a page at `/` is the tenant's home page. Its content will be made of widgets. |
 | Impersonation | ورود با حساب کاربر | A super admin temporarily logged in as another user, with a way back to their own account (ADR 0008). |
 | Cartable | کارتابل | Approval inbox/workflow: records waiting for a user's review, routed through entity groups and verifiers. |
 | Entity group | گروه | Group of users used for routing approvals (verifiers) and access. |

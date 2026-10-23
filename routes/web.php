@@ -4,13 +4,13 @@ use App\Http\Controllers\Auth\LeaveImpersonationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SendLoginCodeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\SwitchTenantController;
-use App\Http\Controllers\TenantHomeController;
 use App\Http\Middleware\EnsureTenantSelected;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', [TenantHomeController::class, 'primary'])->name('home');
+Route::get('/', PublicSiteController::class)->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -42,8 +42,7 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     });
 });
 
-// Public home page of each tenant (ADR 0009). Last, so every other route
-// wins; Tenant::reservedSlugs() keeps tenant slugs off those routes.
-Route::get('/{tenant:slug}', [TenantHomeController::class, 'show'])
-    ->where('tenant', '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('tenants.home');
+// Public site (ADR 0009, ADR 0010): /{tenant-slug}/... and the primary
+// tenant's /... A fallback route, so every other route (modules' too) wins;
+// Tenant::reservedSlugs() keeps tenant slugs off those routes.
+Route::fallback(PublicSiteController::class);
