@@ -51,3 +51,14 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Cartable | کارتابل | Approval inbox/workflow: records waiting for a user's review, routed through entity groups and verifiers. |
 | Entity group | گروه | Group of users used for routing approvals (verifiers) and access. |
 | Block | بلوک / ویجت | A configurable widget placed in theme regions (header, sidebar, …) per route and instance. |
+
+## Exams (`Exam` module, [ADR 0013](decisions/0013-exams.md))
+| Term | Persian | Meaning |
+|---|---|---|
+| Question bank | بانک سؤال | A named set of questions of one tenant. A question can be in several banks. |
+| Choice / written question | چندگزینه‌ای / تشریحی | A choice question has options with exactly one correct and is graded automatically; a written (descriptive) answer is graded by staff. |
+| Exam section | بخش آزمون | One row of an exam's «سؤال‌ها»: take N active questions from one bank when an attempt starts. |
+| Participant | شرکت‌کننده | Who may take an exam: users chosen by name, or holders of a chosen role in the exam's tenant. |
+| Attempt | شرکت در آزمون | One sitting of an exam by a user. It keeps a copy of the questions as they were served; its score is set once every answer is graded. |
+| Grace time | زمان ارفاق | Minutes after an attempt's deadline during which answers are still accepted (slow connections). After it the attempt closes with its saved answers. |
+| Negative marking | نمره‌ی منفی | Every N wrong choice answers cancel one right one (a wrong answer costs 1/N of its question's score). |

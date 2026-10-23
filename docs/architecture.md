@@ -79,7 +79,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
   - **Password:** the current password is required, except within 15 minutes of an SMS-code login ([RecentCodeLogin](../app/Auth/RecentCodeLogin.php)). That is the forgotten-password path.
   - Authenticated web routes use `auth.session`, so a password change logs out the user's other sessions.
 - **Impersonation** ([ADR 0008](decisions/0008-impersonation.md), [Impersonation](../app/Auth/Impersonation.php)): a super admin can log in as another (non-super-admin) user from the user edit page («ورود با این کاربر»). A bar on every page («بازگشت به حساب خودم», [panel view](../resources/views/filament/admin/impersonation-banner.blade.php) and `AppLayout.vue`) posts to `/impersonation/leave`, which logs them back in and returns to the edit page.
-- **User-panel layout:** [AppLayout.vue](../resources/js/Layouts/AppLayout.vue) (app name, current tenant, switch link, admin-panel link if `auth.canAccessAdmin`, logout). Shared Inertia props: `appName`, `auth.{user,impersonator,canAccessAdmin}`, `tenant.{current,available,label}`, `flash.status`.
+- **User-panel layout:** [AppLayout.vue](../resources/js/Layouts/AppLayout.vue) (app name, current tenant, switch link, admin-panel link if `auth.canAccessAdmin`, logout). Shared Inertia props: `appName`, `auth.{user,impersonator,canAccessAdmin}`, `tenant.{current,available,label}`, `navigation` (module links in the header), `flash.status`.
 - `config/inertia.php` is published only to point page tests at `resources/js/Pages` (Inertia 3 defaults to `js/pages`).
 
 ## Directory map
@@ -94,7 +94,7 @@ bootstrap/            app bootstrap, providers list
 config/               configuration (incl. filament-shield, permission, settings, modules, multitenancy)
 database/             core migrations (users, cache, jobs, permission, media, tags, settings), factories, seeders
 docs/                 project docs for humans and agents (this folder)
-Modules/              business modules (ADR 0005; none yet); merged into composer via wikimedia/composer-merge-plugin
+Modules/              business modules (ADR 0005): Site, Exam; merged into composer via wikimedia/composer-merge-plugin
 stubs/nwidart-stubs/  our module generator templates (Inertia, tenant routes, no API/Blade)
 public/               web root
 resources/js/Pages/   Inertia Vue pages
@@ -111,7 +111,7 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 | Concern | How modules plug in |
 |---|---|
 | Admin panel | `Modules/{Name}/app/Filament/{Resources,Pages,Widgets}`, auto-discovered for enabled modules (`AdminPanelProvider::discoverModules()`). |
-| User panel | Pages in `Modules/{Name}/resources/js/Pages`, rendered as `Inertia::render('{Name}::Page')`. Shared layout: `@/Layouts/AppLayout.vue`. |
+| User panel | Pages in `Modules/{Name}/resources/js/Pages`, rendered as `Inertia::render('{Name}::Page')`. Shared layout: `@/Layouts/AppLayout.vue`; header links with `UserPanel::navigationUsing()` ([app/UserPanel](../app/UserPanel/UserPanel.php), shared prop `navigation`; ADR 0013). |
 | Public site | Tag a `App\PublicSite\PageResolver` with `PublicSite::RESOLVER_TAG`; reserve URL segments with `Tenant::reserveSlugsUsing()` (ADR 0010); header links with `PublicSite::navigationUsing()` (ADR 0012). |
 | Tenants list | Row actions with `TenantResource::addRecordActionsUsing()` (ADR 0012). |
 | Routes | `Modules/{Name}/routes/web.php` with `['auth', 'auth.session', 'tenant']` (`tenant` = `EnsureTenantSelected`). |
@@ -123,6 +123,7 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 | Module | What | Notes |
 |---|---|---|
 | [Site](../Modules/Site) | Public pages of each tenant's site (page builder); every tenant has a home page (`/`) created with it; page content is made of widgets; site menus | `site_pages` (`content` jsonb), `Page` model, `PageResource` («وب‌سایت → صفحه‌ها»; widgets in the page builder «صفحه‌ساز» `pages/{id}/builder`, from the row action), `SitePageResolver`, `Site::Page`; widget types in `Modules/Site/app/Widgets` + `resources/js/Widgets` (HTML so far); menus `site_menus` / `site_menu_items`, `MenuResource` («وب‌سایت → منوها», item tree `menus/{id}/items`), each tenant's header menu `site_tenant_menus` (row action «منوی سایت» in the tenants list). [ADR 0010](decisions/0010-site-pages.md), [ADR 0011](decisions/0011-site-widgets.md), [ADR 0012](decisions/0012-site-menus.md). |
+| [Exam](../Modules/Exam) | Online exams of each tenant: question banks, choice / written questions, exams drawing questions from banks, participants (users and roles), attempts with autosave and time-out, automatic + manual grading, results | `exam_question_banks`, `exam_questions` (`options` jsonb), `exams`, `exam_sections`, `exam_participant_users/roles`, `exam_attempts`, `exam_attempt_answers` (copy of each served question). Rules in [ExamTaking](../Modules/Exam/app/Services/ExamTaking.php). Admin group «آزمون» (exams, results + grading, questions, banks); user panel `/exams` (`Exam::Index`, `Exam::Show`). [ADR 0013](decisions/0013-exams.md). |
 
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
@@ -140,7 +141,7 @@ Decided in [ADR 0002](decisions/0002-tenancy-model.md): a tenant is a branch/uni
 | Membership | `User::tenants()` / `Tenant::users()` | No separate table: a user belongs to a tenant when they hold any role there. `User::staffTenants()` is the subset where they hold `panel_user`. |
 | Super admin | Global `super_admin` role + `User::isSuperAdmin()` + `Gate::before` in `AppServiceProvider` | Holding the role in **any** tenant makes the user installation-wide: they pass every check and see all active tenants. Only super admins can assign it. `super_admin` and `panel_user` are system roles (`Role::isSystemRole()`): they can't be deleted or renamed. See [ADR 0007](decisions/0007-super-admin-role.md). |
 | Admin panel | `->tenant(Tenant::class, slugAttribute: 'slug')` + [MakeFilamentTenantCurrent](../app/Http/Middleware/MakeFilamentTenantCurrent.php) (persistent tenant middleware) | Filament picks the tenant from the URL, and the middleware makes it spatie's current tenant, which also switches the permission team. |
-| Web / Inertia | [ResolveCurrentTenant](../app/Http/Middleware/ResolveCurrentTenant.php) (web group) + `POST /tenants/{slug}/switch` | The tenant id is kept in the session. It is auto-selected when the user has exactly one tenant, and dropped if the user no longer belongs to it. Shared Inertia props: `tenant.current`, `tenant.available`. |
+| Web / Inertia | [ResolveCurrentTenant](../app/Http/Middleware/ResolveCurrentTenant.php) (web group, runs before route-model binding: `bootstrap/app.php`) + `POST /tenants/{slug}/switch` | The tenant id is kept in the session, and tenant-owned route parameters (`{exam}`) are bound inside the current tenant. It is auto-selected when the user has exactly one tenant, and dropped if the user no longer belongs to it. Shared Inertia props: `tenant.current`, `tenant.available`. |
 
 spatie-multitenancy's `tenant_finder` is **not used**: it runs before the session exists, so the middlewares above resolve the tenant instead. Queued jobs are tenant-aware by default (spatie config).
 

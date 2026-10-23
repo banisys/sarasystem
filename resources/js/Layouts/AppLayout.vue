@@ -44,6 +44,16 @@ function leaveImpersonation() {
                     >
                         تغییر {{ tenant.label }}
                     </Link>
+                    <nav v-if="page.props.navigation?.length" class="flex items-center gap-4 text-sm">
+                        <Link
+                            v-for="link in page.props.navigation"
+                            :key="link.url"
+                            :href="link.url"
+                            class="text-gray-700 hover:text-violet-700"
+                        >
+                            {{ link.title }}
+                        </Link>
+                    </nav>
                 </div>
 
                 <div class="flex items-center gap-4 text-sm">

@@ -89,6 +89,8 @@ Code is never copied directly; see [conventions.md → Porting from LMS](convent
 |---|---|---|
 | Admin panel UI (font Shabnam, theme + glass dark mode, colors, initials avatar, sidebar menu search, table top scrollbar, persisted filters, panel-wide table/field defaults) | ported 2026-10-23 | `app/Providers/Filament/AdminPanelProvider.php`, `resources/css/filament/admin/`, `resources/views/filament/admin/`, `app/Filament/Support/InitialsAvatarProvider.php` |
 | Core menus (`/cpadmin/core/menu`: root menus + item tree, `MenuBlock`) | ported 2026-10-23, redesigned ([ADR 0012](decisions/0012-site-menus.md)): menus made in a tenant's panel, one chosen per tenant in the tenants list and shown in the site header (no menu block); link types page / url / none; no languages, icons/images or route links | `Modules/Site` (`Menu`, `MenuItem`, `TenantMenu`, `Filament/Resources/SiteMenus`, `Filament/Actions/ChooseTenantMenuAction`), `resources/js/Components/Public/NavMenu.vue` |
+| Exam: online exams (`exam_*`, `Models/CourseExam`, `ExamAttemptService`) | ported 2026-10-23, redesigned ([ADR 0013](decisions/0013-exams.md)): standalone module, participants (users/roles), manual grading of written answers, autosave, time window, copy of served questions per attempt; options as jsonb, no relational/all-answers types | `Modules/Exam` |
+| — not ported from Exam: `schl_exam_*` (activity scores entered by teachers, exam balances `schl_exam_balances`): they need School and come with it; `score_notebook_status` / `exam_impacted_value` (report card) | | |
 | — not ported: year/school/instance topbar switchers (replaced by Filament tenancy), `LegacyNavigation`, blog editor CSS (comes with a Blog module) | | |
 
 ## How to inspect LMS

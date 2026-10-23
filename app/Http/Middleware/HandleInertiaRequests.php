@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Auth\Impersonation;
 use App\Models\Tenant;
+use App\UserPanel\UserPanel;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -52,6 +53,8 @@ class HandleInertiaRequests extends Middleware
                 'available' => fn () => $this->availableTenants($request),
                 'label' => config('sarasystem.tenant_label'),
             ],
+            // Module links for the user-panel header (UserPanel::navigationUsing()).
+            'navigation' => fn (): array => UserPanel::navigation($request->user(), Tenant::current()),
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),
             ],
