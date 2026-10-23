@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Support\InitialsAvatarProvider;
 use App\Filament\Support\PanelTable;
+use App\Http\Controllers\SwitchPanelTenantController;
 use App\Http\Middleware\MakeFilamentTenantCurrent;
 use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -36,6 +37,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 use Nwidart\Modules\Facades\Module;
@@ -55,6 +57,9 @@ class AdminPanelProvider extends PanelProvider
             ->tenantMiddleware([
                 MakeFilamentTenantCurrent::class,
             ], isPersistent: true)
+            // Switching tenant from the tenant menu keeps the current page
+            // (tenant-menu-same-page render hook).
+            ->authenticatedTenantRoutes(fn () => Route::get('switch-tenant', SwitchPanelTenantController::class)->name('switch-tenant'))
             // No login page of its own: guests are sent to the shared /login (ADR 0004).
             // The account page is the shared Inertia one (/profile).
             ->userMenuItems([
@@ -80,6 +85,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_START, fn (): View => view('filament.admin.sidebar-nav-search'))
             // Collapsible table filters stay open across reloads when left open.
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.persist-filters-open'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.tenant-menu-same-page'))
             // Second horizontal scrollbar above every wide table.
             ->renderHook(TablesRenderHook::TOOLBAR_AFTER, fn (): View => view('filament.admin.table-top-scroll'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

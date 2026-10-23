@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Admin panel: switching tenant from the tenant menu stays on the same page (e.g. `/cpadmin/head-office/users` → `/cpadmin/west/users`); record pages and pages without access there fall back to the list / dashboard. 108 tests pass.
 - 2026-10-23 — Local demo data (`DemoSeeder`, run by `db:seed` locally): 3 branches, 8 roles with labels/permissions, 35 users (password `password`). 101 tests pass.
 - 2026-10-23 — Super admin is now the global `super_admin` role instead of `users.is_super_admin` (ADR 0007). A migration moves existing flags to the role in the head office. Only super admins assign it, no self-removal, system roles protected. 100 tests pass.
 - 2026-10-23 — Admin panel: list pages have no search box any more; users, tenants and roles get text filters instead (`TextFilter`, Persian digits allowed). 96 tests pass.
