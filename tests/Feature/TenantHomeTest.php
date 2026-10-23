@@ -20,8 +20,8 @@ class TenantHomeTest extends TestCase
 
         $this->get('/')
             ->assertOk()
+            // The component depends on the modules (a Site home page or the default one).
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->component('Tenants/Home')
                 ->where('site.tenant.name', 'ستاد')
                 ->where('site.otherTenants', [['name' => 'شعبه غرب', 'url' => url('/west')]]));
     }
@@ -33,8 +33,8 @@ class TenantHomeTest extends TestCase
 
         $this->get('/west')
             ->assertOk()
+            // The component depends on the modules (a Site home page or the default one).
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->component('Tenants/Home')
                 ->where('site.tenant.name', 'شعبه غرب')
                 ->where('site.tenant.url', url('/west')));
     }

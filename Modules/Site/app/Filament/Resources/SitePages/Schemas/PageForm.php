@@ -52,10 +52,14 @@ class PageForm
                         },
                     ])
                     ->dehydrateStateUsing(fn (?string $state): string => Page::normalizePath($state))
-                    ->extraInputAttributes(['dir' => 'ltr']),
+                    ->extraInputAttributes(['dir' => 'ltr'])
+                    // The home page always stays at "/".
+                    ->disabled(fn (?Page $record): bool => (bool) $record?->isHome()),
                 Toggle::make('is_published')
                     ->label('منتشر شده')
-                    ->helperText('صفحه‌ی منتشرنشده برای بازدیدکننده‌ها پیدا نمی‌شود.'),
+                    ->helperText(fn (?Page $record): string => $record?->isHome()
+                        ? 'اگر منتشر نشده باشد، صفحه‌ی خانه‌ی پیش‌فرض نمایش داده می‌شود.'
+                        : 'صفحه‌ی منتشرنشده برای بازدیدکننده‌ها پیدا نمی‌شود.'),
             ]);
     }
 

@@ -14,7 +14,8 @@ use Modules\Site\Database\Factories\PageFactory;
 
 /**
  * One public page of a tenant's site, at PublicSite::url($tenant, $path).
- * A page at "/" replaces the tenant's default home page (ADR 0010).
+ * Every tenant has a home page at "/", made with the tenant and never
+ * deleted (ADR 0010).
  */
 #[Fillable(['tenant_id', 'title', 'path', 'is_published'])]
 class Page extends Model
@@ -22,13 +23,37 @@ class Page extends Model
     /** @use HasFactory<PageFactory> */
     use BelongsToTenant, HasFactory;
 
+    public const HOME_PATH = '/';
+
     public const PATH_PATTERN = '/^\/$|^(\/[a-z0-9]+(?:-[a-z0-9]+)*)+$/';
 
     protected $table = 'site_pages';
 
+    protected static function booted(): void
+    {
+        static::deleting(fn (self $page): bool => ! $page->isHome());
+    }
+
     protected static function newFactory(): PageFactory
     {
         return PageFactory::new();
+    }
+
+    /**
+     * The tenant's home page, created (published, titled with the tenant's
+     * name) if it does not exist yet.
+     */
+    public static function ensureHomeFor(Tenant $tenant): self
+    {
+        return static::withoutTenantScope()->firstOrCreate(
+            ['tenant_id' => $tenant->getKey(), 'path' => self::HOME_PATH],
+            ['title' => $tenant->name, 'is_published' => true],
+        );
+    }
+
+    public function isHome(): bool
+    {
+        return $this->path === self::HOME_PATH;
     }
 
     /**

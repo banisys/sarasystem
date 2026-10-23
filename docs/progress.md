@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Site: every tenant has a home page (`/`) in the page list: created with the tenant (existing ones by migration), listed first, fixed path, not deletable; unpublished → default home page. 152 tests pass.
 - 2026-10-23 — First module `Site`, page builder step 1 (ADR 0010): pages per tenant with a chosen path (`/about-us`; `/` replaces the home page), list/create/edit/delete in «وب‌سایت → صفحه‌ها», public pages with a static header/footer (`PublicLayout.vue`). Public URLs now go through a core fallback route and module `PageResolver`s. Fixed: the panel's id is set before module discovery (enabling a module gave a 500). 147 tests pass.
 - 2026-10-23 — Tenant home pages (ADR 0009): `/{slug}` per tenant, the primary tenant (chosen in the Tenants list, star) at `/`; reserved slugs. ADR 0008 corrected: `stechstudio/filament-impersonate` was already installed (ADR 0001) and is now unused. 131 tests pass.
 - 2026-10-23 — Impersonation (ADR 0008): super admins can log in as another user from the user edit page and return with «بازگشت به حساب خودم» (bar in the panel and the user panel). 121 tests pass.

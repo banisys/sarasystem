@@ -21,7 +21,8 @@ class EditPage extends EditRecord
                 ->color('gray')
                 ->url(fn (): string => $this->getRecord()->url(), shouldOpenInNewTab: true)
                 ->visible(fn (): bool => $this->getRecord()->is_published),
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->hidden(fn (): bool => $this->getRecord()->isHome()),
         ];
     }
 }

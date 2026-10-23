@@ -49,6 +49,9 @@ class SiteServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
+        // Every tenant has a home page in its page list (ADR 0010).
+        Tenant::created(fn (Tenant $tenant) => Page::ensureHomeFor($tenant));
+
         // A new tenant slug must not hide the pages under /{slug} of
         // whichever tenant is (or becomes) primary (ADR 0010).
         Tenant::reserveSlugsUsing(fn (): array => Page::withoutTenantScope()

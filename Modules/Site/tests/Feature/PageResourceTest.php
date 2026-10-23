@@ -149,4 +149,33 @@ class PageResourceTest extends TestCase
         Livewire::test(ListPages::class)
             ->assertActionHasUrl(TestAction::make('view')->table($page), url("/{$this->tenant->slug}/about-us"));
     }
+
+    public function test_the_home_page_is_listed_first_and_cannot_be_deleted_or_moved(): void
+    {
+        $home = Page::withoutTenantScope()->where('tenant_id', $this->tenant->id)->where('path', '/')->sole();
+        $other = Page::factory()->for($this->tenant)->create(['path' => '/about-us']);
+        $this->actingInPanel($this->editor, $this->tenant);
+
+        Livewire::test(ListPages::class)
+            ->assertCanSeeTableRecords([$home, $other], inOrder: true)
+            ->assertActionHidden(TestAction::make('delete')->table($home))
+            ->assertActionVisible(TestAction::make('delete')->table($other));
+
+        Livewire::test(EditPage::class, ['record' => $home->getRouteKey()])
+            ->assertActionHidden('delete')
+            ->assertFormFieldDisabled('path')
+            ->fillForm(['title' => 'خانه'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('/', $home->fresh()->path);
+        $this->assertSame('خانه', $home->fresh()->title);
+    }
+
+    public function test_a_new_tenant_gets_a_home_page(): void
+    {
+        $tenant = Tenant::factory()->create(['name' => 'شعبه شرق']);
+
+        $this->assertDatabaseHas('site_pages', ['tenant_id' => $tenant->id, 'path' => '/', 'title' => 'شعبه شرق', 'is_published' => true]);
+    }
 }

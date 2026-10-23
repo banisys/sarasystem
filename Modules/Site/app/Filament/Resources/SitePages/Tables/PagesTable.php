@@ -19,9 +19,12 @@ class PagesTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('tenant'))
+            // The home page first, then the newest.
+            ->defaultSort(fn ($query) => $query->orderByRaw('path = ? desc', [Page::HOME_PATH])->latest())
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')
+                    ->description(fn (Page $record): ?string => $record->isHome() ? 'صفحه‌ی خانه' : null)
                     ->sortable(),
                 TextColumn::make('path')
                     ->label('آدرس')
@@ -47,7 +50,8 @@ class PagesTable
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                     ->url(fn (Page $record): string => $record->url(), shouldOpenInNewTab: true)
                     ->visible(fn (Page $record): bool => $record->is_published),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->hidden(fn (Page $record): bool => $record->isHome()),
             ]);
     }
 }

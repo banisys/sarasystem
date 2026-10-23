@@ -121,7 +121,7 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 **Module list:**
 | Module | What | Notes |
 |---|---|---|
-| [Site](../Modules/Site) | Public pages of each tenant's site (page builder; widgets come next) | `site_pages`, `Page` model, `PageResource` («وب‌سایت → صفحه‌ها»), `SitePageResolver`, `Site::Page`. [ADR 0010](decisions/0010-site-pages.md). |
+| [Site](../Modules/Site) | Public pages of each tenant's site (page builder; widgets come next); every tenant has a home page (`/`) created with it | `site_pages`, `Page` model, `PageResource` («وب‌سایت → صفحه‌ها»), `SitePageResolver`, `Site::Page`. [ADR 0010](decisions/0010-site-pages.md). |
 
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
