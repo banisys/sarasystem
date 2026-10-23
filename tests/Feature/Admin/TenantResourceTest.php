@@ -6,6 +6,7 @@ use App\Filament\Resources\Tenants\Pages\ManageTenants;
 use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\CreateAction;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Concerns\InteractsWithTenants;
@@ -58,5 +59,42 @@ class TenantResourceTest extends TestCase
         Livewire::test(ManageTenants::class)
             ->callAction(CreateAction::class, ['name' => 'x', 'slug' => 'taken'])
             ->assertHasFormErrors(['slug' => 'unique']);
+    }
+
+    public function test_slug_may_not_hide_another_route(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->callAction(CreateAction::class, ['name' => 'x', 'slug' => 'cpadmin'])
+            ->assertHasFormErrors(['slug' => 'not_in']);
+    }
+
+    public function test_super_admin_makes_a_tenant_primary(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $tenant->makePrimary();
+        $west = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->assertActionHidden(TestAction::make('makePrimary')->table($tenant))
+            ->callAction(TestAction::make('makePrimary')->table($west));
+
+        $this->assertTrue(Tenant::primary()->is($west));
+        $this->assertFalse($tenant->fresh()->is_primary);
+    }
+
+    public function test_the_primary_tenant_cannot_be_deactivated(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $tenant->makePrimary();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->callAction(TestAction::make('edit')->table($tenant), ['is_active' => false]);
+
+        $this->assertTrue($tenant->fresh()->is_active);
     }
 }

@@ -7,7 +7,7 @@
 Support and testing need to see the system exactly as a given user sees it (their tenants, roles, menus), and then go back to the own account without logging out and in again.
 
 ## Options considered
-- **A package** (`lab404/laravel-impersonate`, `stechstudio/filament-impersonate`) — ready-made, but a new dependency, and it does not know our rules: super admin as a role (ADR 0007), the web-side tenant in the session, `auth.session` and the SMS-login password-reset window (ADR 0004).
+- **`stechstudio/filament-impersonate`** — chosen in ADR 0001 and installed, but never wired up. It is built around a Filament-only flow and does not know our rules: super admin as a role (ADR 0007), the web-side tenant in the session, the SMS-login password-reset window (ADR 0004), and a way back from the Inertia user panel. Each would need an override.
 - **Our own small service** — about 100 lines, fits those rules exactly.
 
 ## Decision
@@ -19,6 +19,7 @@ Own service, [Impersonation](../../app/Auth/Impersonation.php):
 - Start and end are written to the application log.
 
 ## Consequences
+- `stechstudio/filament-impersonate` is unused since this decision (it only registers `/filament-impersonate/leave`); it can be removed with `composer remove stechstudio/filament-impersonate`.
 - Everything done while impersonating is recorded as done by the target user; there is no audit trail per action yet, only the log lines.
 - Logging out while impersonating ends the whole session (the super admin is logged out too).
 - If later managers should impersonate within their own tenants, extend `Impersonation::canImpersonate()` and restrict the target's tenants; that needs a new decision.

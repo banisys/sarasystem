@@ -5,11 +5,12 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SendLoginCodeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SwitchTenantController;
+use App\Http\Controllers\TenantHomeController;
 use App\Http\Middleware\EnsureTenantSelected;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
+Route::get('/', [TenantHomeController::class, 'primary'])->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -40,3 +41,9 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
         Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
     });
 });
+
+// Public home page of each tenant (ADR 0009). Last, so every other route
+// wins; Tenant::reservedSlugs() keeps tenant slugs off those routes.
+Route::get('/{tenant:slug}', [TenantHomeController::class, 'show'])
+    ->where('tenant', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('tenants.home');

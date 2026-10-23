@@ -20,7 +20,7 @@ SaraSystem is a redesign of `../LMS` (Laravel 13 + Filament 5 + Blade themes + M
 | Modularity | `nwidart/laravel-modules` |
 | Multi-tenancy | `spatie/laravel-multitenancy` |
 | Roles & permissions | `bezhansalleh/filament-shield` (on `spatie/laravel-permission`) |
-| Impersonation | `stechstudio/filament-impersonate` |
+| Impersonation | ~~`stechstudio/filament-impersonate`~~ — replaced by our own service, see [ADR 0008](0008-impersonation.md) |
 | Settings | `spatie/laravel-settings` + `filament/spatie-laravel-settings-plugin` |
 | Tags | `spatie/laravel-tags` + `filament/spatie-laravel-tags-plugin` |
 | Media / uploads | `spatie/laravel-medialibrary` + `filament/spatie-laravel-media-library-plugin` |

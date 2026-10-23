@@ -6,9 +6,11 @@ use App\Filament\Resources\Tenants\Pages\ManageTenants;
 use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -58,10 +60,16 @@ class TenantResource extends Resource
                     ->maxLength(100)
                     ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                     ->unique(ignoreRecord: true)
+                    // /{slug} is the tenant's home page and must not hide another route.
+                    ->notIn(fn (): array => Tenant::reservedSlugs())
+                    ->validationMessages(['not_in' => 'این شناسه برای بخش دیگری از سامانه رزرو است.'])
                     ->extraInputAttributes(['dir' => 'ltr']),
                 Toggle::make('is_active')
                     ->label('فعال')
-                    ->helperText('غیرفعال کردن جای حذف: دسترسی همه به آن بسته می‌شود ولی داده‌ها می‌مانند.')
+                    ->helperText(fn (?Tenant $record): string => $record?->is_primary
+                        ? 'اصلی را نمی‌توان غیرفعال کرد؛ اول یکی دیگر را اصلی کنید.'
+                        : 'غیرفعال کردن جای حذف: دسترسی همه به آن بسته می‌شود ولی داده‌ها می‌مانند.')
+                    ->disabled(fn (?Tenant $record): bool => (bool) $record?->is_primary)
                     ->default(true),
             ]);
     }
@@ -76,6 +84,11 @@ class TenantResource extends Resource
                     ->sortable(),
                 TextColumn::make('slug')
                     ->label('شناسه در آدرس'),
+                IconColumn::make('is_primary')
+                    ->label('اصلی')
+                    ->tooltip('صفحه‌ی خانه‌ی اصلی، آدرس اصلی سایت (/) است.')
+                    ->icon(fn (bool $state): ?Heroicon => $state ? Heroicon::Star : null)
+                    ->color('warning'),
                 IconColumn::make('is_active')
                     ->label('فعال')
                     ->boolean(),
@@ -92,6 +105,22 @@ class TenantResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('home')
+                    ->label('صفحه‌ی خانه')
+                    ->icon(Heroicon::OutlinedHome)
+                    ->url(fn (Tenant $record): string => $record->homeUrl(), shouldOpenInNewTab: true)
+                    ->visible(fn (Tenant $record): bool => $record->is_active),
+                Action::make('makePrimary')
+                    ->label('تعیین به‌عنوان اصلی')
+                    ->icon(Heroicon::OutlinedStar)
+                    ->requiresConfirmation()
+                    ->modalDescription('صفحه‌ی خانه‌ی این مورد در آدرس اصلی سایت (/) نمایش داده می‌شود.')
+                    ->visible(fn (Tenant $record): bool => $record->is_active && ! $record->is_primary)
+                    ->action(function (Tenant $record): void {
+                        $record->makePrimary();
+
+                        Notification::make()->title("«{$record->name}» اصلی شد.")->success()->send();
+                    }),
             ]);
     }
 

@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Tenant home pages (ADR 0009): `/{slug}` per tenant, the primary tenant (chosen in the Tenants list, star) at `/`; reserved slugs. ADR 0008 corrected: `stechstudio/filament-impersonate` was already installed (ADR 0001) and is now unused. 131 tests pass.
 - 2026-10-23 — Impersonation (ADR 0008): super admins can log in as another user from the user edit page and return with «بازگشت به حساب خودم» (bar in the panel and the user panel). 121 tests pass.
 - 2026-10-23 — Users: list shows the number of tenants each user belongs to (sortable, names in tooltip); the edit page lists all their tenants with their roles in each. 113 tests pass.
 - 2026-10-23 — Admin panel page «نقشه‌ی دسترسی» (`AccessMap`, super admin only): tenants, users and roles and how they connect, in three views (by tenant / user × tenant matrix / by role) with filters. 111 tests pass.
@@ -45,6 +46,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- `stechstudio/filament-impersonate` is installed but unused (our own impersonation, ADR 0008); remove it with `composer remove stechstudio/filament-impersonate` once approved.
+- Adding a top-level route (e.g. `/news`) hides an existing tenant whose slug is the same; `Tenant::reservedSlugs()` only blocks new slugs.
 - Impersonation has no per-action audit trail; actions are recorded as the impersonated user (only start/end are logged).
 - User identity (name, email, password) is global. Since ADR 0003 a manager can only edit users who are not "bigger" than them anywhere, but a manager can still change, for example, the password of a teacher who also teaches in another branch. Decide later whether password resets should go through the user (email/SMS reset) instead.
 - `CLAUDE.md` Boost block still has one generic line recommending Laravel Cloud (from Boost's foundation rules); we don't use Cloud. It is regenerated, so don't hand-edit it.

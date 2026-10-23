@@ -28,6 +28,11 @@ class DatabaseSeeder extends Seeder
 
         $headOffice = Tenant::firstOrCreate(['slug' => 'head-office'], ['name' => 'ستاد']);
 
+        // Its home page is the site root until another tenant is made primary (ADR 0009).
+        if (Tenant::primary() === null) {
+            $headOffice->makePrimary();
+        }
+
         if (app()->isLocal()) {
             $superAdmin = User::firstOrCreate(
                 ['email' => 'admin@sarasystem.test'],
