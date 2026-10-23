@@ -28,22 +28,55 @@ class Widgets
     }
 
     /**
-     * Stored content → what the public page renders. Unknown types (e.g. of
-     * a removed widget) are skipped.
+     * Content with the common fields filled in, for the page builder form.
+     * Widgets saved before those fields existed get the type as title and
+     * stay visible (a Toggle would read a missing value as "off").
+     *
+     * @param  array<array{type?: string, data?: array<string, mixed>}>  $content
+     * @return array<array{type?: string, data?: array<string, mixed>}>
+     */
+    public static function withDefaults(array $content): array
+    {
+        $widgets = static::all();
+
+        return array_map(function (array $item) use ($widgets): array {
+            $widget = $widgets[$item['type'] ?? ''] ?? null;
+
+            if ($widget !== null) {
+                $item['data'] = [
+                    'title' => $widget::label(),
+                    'show_title' => false,
+                    'is_visible' => true,
+                    ...array_filter($item['data'] ?? [], fn (mixed $value): bool => $value !== null),
+                ];
+            }
+
+            return $item;
+        }, $content);
+    }
+
+    /**
+     * Stored content → what the public page renders. Hidden widgets and
+     * unknown types (e.g. of a removed widget) are skipped.
      *
      * @param  list<array{type?: string, data?: array<string, mixed>}>  $content
-     * @return list<array{component: string, props: array<string, mixed>}>
+     * @return list<array{component: string, title: string|null, props: array<string, mixed>}>
      */
     public static function render(array $content): array
     {
         $widgets = static::all();
 
         return collect($content)
-            ->filter(fn (array $item): bool => isset($widgets[$item['type'] ?? '']))
-            ->map(fn (array $item): array => [
-                'component' => $widgets[$item['type']]::component(),
-                'props' => $widgets[$item['type']]::props($item['data'] ?? []),
-            ])
+            ->filter(fn (array $item): bool => isset($widgets[$item['type'] ?? '']) && Widget::isVisible($item['data'] ?? []))
+            ->map(function (array $item) use ($widgets): array {
+                $data = $item['data'] ?? [];
+
+                return [
+                    'component' => $widgets[$item['type']]::component(),
+                    'title' => ($data['show_title'] ?? false) && filled($data['title'] ?? null) ? $data['title'] : null,
+                    'props' => $widgets[$item['type']]::props($data),
+                ];
+            })
             ->values()
             ->all();
     }

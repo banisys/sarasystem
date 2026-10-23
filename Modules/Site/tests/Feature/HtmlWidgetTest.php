@@ -50,9 +50,10 @@ class HtmlWidgetTest extends TestCase
         Page::factory()->for($tenant)->create([
             'path' => '/about-us',
             'content' => [
-                ['type' => 'html', 'data' => ['html' => '<p>اول</p><script>alert(1)</script>']],
+                ['type' => 'html', 'data' => ['title' => 'معرفی', 'show_title' => true, 'is_visible' => true, 'html' => '<p>اول</p><script>alert(1)</script>']],
                 ['type' => 'removed-widget', 'data' => []],
-                ['type' => 'html', 'data' => ['html' => '<p>دوم</p>']],
+                ['type' => 'html', 'data' => ['title' => 'پنهان', 'is_visible' => false, 'html' => '<p>مخفی</p>']],
+                ['type' => 'html', 'data' => ['title' => 'بی‌عنوان در سایت', 'show_title' => false, 'html' => '<p>دوم</p>']],
             ],
         ]);
 
@@ -61,8 +62,8 @@ class HtmlWidgetTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Site::Page')
                 ->where('widgets', [
-                    ['component' => 'Html', 'props' => ['html' => '<p>اول</p>']],
-                    ['component' => 'Html', 'props' => ['html' => '<p>دوم</p>']],
+                    ['component' => 'Html', 'title' => 'معرفی', 'props' => ['html' => '<p>اول</p>']],
+                    ['component' => 'Html', 'title' => null, 'props' => ['html' => '<p>دوم</p>']],
                 ]));
     }
 
@@ -80,7 +81,9 @@ class HtmlWidgetTest extends TestCase
         // Widgets are edited in the page builder only, reached from the list.
         $this->get(PageResource::getUrl('builder', ['record' => $page], tenant: $tenant))
             ->assertOk()
-            ->assertSee('افزودن ویجت');
+            ->assertSee('افزودن ویجت')
+            // Widget headers only, edited in a modal: no bodies, nothing to expand.
+            ->assertSee('[&_.fi-fo-builder-item-content]:hidden', false);
         $this->get(PageResource::getUrl('edit', ['record' => $page], tenant: $tenant))
             ->assertOk()
             ->assertDontSee('افزودن ویجت')
@@ -89,13 +92,17 @@ class HtmlWidgetTest extends TestCase
             ->assertActionHasUrl(TestAction::make('builder')->table($page), PageResource::getUrl('builder', ['record' => $page], tenant: $tenant));
 
         Livewire::test(PageBuilder::class, ['record' => $page->getRouteKey()])
-            ->fillForm(['content' => [
-                ['type' => 'html', 'data' => ['html' => '<p onclick="x()">خوش آمدید</p>']],
-            ]])
+            ->callAction(
+                TestAction::make('add')->schemaComponent('content')->arguments(['block' => 'html']),
+                ['title' => 'خوش‌آمد', 'show_title' => true, 'is_visible' => true, 'html' => '<p onclick="x()">خوش آمدید</p>'],
+            )
+            ->assertHasNoActionErrors()
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertEquals([['type' => 'html', 'data' => ['html' => '<p>خوش آمدید</p>']]], $page->fresh()->content);
+        $this->assertEquals([['type' => 'html', 'data' => [
+            'title' => 'خوش‌آمد', 'show_title' => true, 'is_visible' => true, 'html' => '<p>خوش آمدید</p>',
+        ]]], $page->fresh()->content);
     }
 
     public function test_saving_the_page_settings_keeps_the_widgets(): void
@@ -116,5 +123,66 @@ class HtmlWidgetTest extends TestCase
 
         $this->assertSame('عنوان تازه', $page->fresh()->title);
         $this->assertEquals($content, $page->fresh()->content);
+    }
+
+    public function test_a_widget_needs_a_title_and_can_be_hidden_from_its_header(): void
+    {
+        Builder::fake();
+        $tenant = Tenant::factory()->create();
+        $this->roleWithPermissions('site_editor', ['ViewAny:Page', 'View:Page', 'Update:Page']);
+        $editor = User::factory()->create();
+        $this->makeStaff($editor, $tenant);
+        $this->grantRole($editor, $tenant, 'site_editor');
+        $page = Page::factory()->for($tenant)->create([
+            'content' => [['type' => 'html', 'data' => ['title' => 'بنر', 'show_title' => false, 'is_visible' => true, 'html' => '<p>x</p>']]],
+        ]);
+        $this->actingInPanel($editor, $tenant);
+
+        Livewire::test(PageBuilder::class, ['record' => $page->getRouteKey()])
+            ->callAction(
+                TestAction::make('add')->schemaComponent('content')->arguments(['block' => 'html']),
+                ['title' => '', 'html' => '<p>y</p>'],
+            )
+            ->assertHasActionErrors(['title' => 'required']);
+
+        $builder = Livewire::test(PageBuilder::class, ['record' => $page->getRouteKey()]);
+        $itemKey = array_key_first($builder->get('data.content'));
+        $builder->assertSeeHtml('<bdi>بنر</bdi>')
+            ->assertDontSee('— مخفی')
+            ->callAction(TestAction::make('toggleVisibility')->schemaComponent('content')->arguments(['item' => $itemKey]));
+
+        // The browser only gets the re-rendered builder back (Filament
+        // partials); it must show the new state at once, before saving.
+        $this->assertStringContainsString('— مخفی', implode('', $builder->effects['partials'] ?? []));
+
+        $builder->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertFalse($page->fresh()->content[0]['data']['is_visible']);
+    }
+
+    public function test_widgets_saved_before_the_common_fields_open_visible_and_titled(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+        $page = Page::factory()->for($tenant)->create(['content' => [
+            ['type' => 'html', 'data' => ['html' => '<p>قدیمی</p>']],
+            ['type' => 'html', 'data' => ['html' => '<p>دومی</p>']],
+        ]]);
+
+        Livewire::test(PageBuilder::class, ['record' => $page->getRouteKey()])
+            // Title first, then the type in parentheses; no «درج» between widgets.
+            ->assertSeeHtmlInOrder(['<bdi>HTML</bdi>', '(<bdi>HTML</bdi>)'])
+            ->assertDontSee('— مخفی')
+            ->assertDontSee("mountAction('addBetween'", false)
+            ->assertDontSee("mountAction('clone'", false)
+            ->assertDontSee('fi-fo-builder-item-header-expand-action', false)
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertEquals(
+            ['title' => 'HTML', 'show_title' => false, 'is_visible' => true, 'html' => '<p>قدیمی</p>'],
+            $page->fresh()->content[0]['data'],
+        );
     }
 }

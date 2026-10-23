@@ -4,7 +4,7 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
 
 defineProps({
     page: { type: Object, required: true },
-    // [{component, props}] in page order; see Modules\Site\Widgets\Widgets::render().
+    // [{component, title, props}] in page order, visible ones only; see Modules\Site\Widgets\Widgets::render().
     widgets: { type: Array, required: true },
 });
 
@@ -25,7 +25,10 @@ const components = Object.fromEntries(
             <h1 class="text-2xl font-bold text-gray-900">{{ page.title }}</h1>
 
             <div v-if="widgets.length" class="mt-6 space-y-6">
-                <component :is="components[widget.component]" v-for="(widget, index) in widgets" :key="index" v-bind="widget.props" />
+                <section v-for="(widget, index) in widgets" :key="index">
+                    <h2 v-if="widget.title" class="mb-3 text-xl font-bold text-gray-900">{{ widget.title }}</h2>
+                    <component :is="components[widget.component]" v-bind="widget.props" />
+                </section>
             </div>
         </article>
     </PublicLayout>
