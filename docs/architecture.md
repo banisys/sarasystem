@@ -63,7 +63,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - Shared props: [HandleInertiaRequests](../app/Http/Middleware/HandleInertiaRequests.php) shares `auth.user` (`id`, `name`, `email`). It is appended to the `web` middleware group in `bootstrap/app.php`.
 - Vite ([vite.config.js](../vite.config.js)): the Vue plugin, Tailwind 4 and the `ziggy-js` alias pointing to `vendor/tightenco/ziggy`. The dev server listens on `0.0.0.0:VITE_PORT` (5174) inside the container.
 - Font: **Shabnam**, the same self-hosted font as the admin panel (`@font-face` + Tailwind `--font-sans` in `resources/css/app.css`).
-- **Public site** ([ADR 0009](decisions/0009-tenant-home-pages.md), [ADR 0010](decisions/0010-site-pages.md), [PublicSiteController](../app/Http/Controllers/PublicSiteController.php), [app/PublicSite](../app/PublicSite)): `/` and a fallback route serve every public URL. `/{slug}/...` is a non-primary tenant's site, everything else the primary tenant's. Modules answer through tagged `PageResolver`s (the `Site` module's pages); otherwise `/` is the default home page ([Tenants/Home.vue](../resources/js/Pages/Tenants/Home.vue), or `Welcome` with no primary tenant) and anything else 404. Public pages use [PublicLayout.vue](../resources/js/Layouts/PublicLayout.vue) (static header/footer, `site` prop from `PublicSite::layoutProps()`).
+- **Public site** ([ADR 0009](decisions/0009-tenant-home-pages.md), [ADR 0010](decisions/0010-site-pages.md), [PublicSiteController](../app/Http/Controllers/PublicSiteController.php), [app/PublicSite](../app/PublicSite)): `/` and a fallback route serve every public URL. `/{slug}/...` is a non-primary tenant's site, everything else the primary tenant's. Modules answer through tagged `PageResolver`s (the `Site` module's pages); otherwise `/` is the default home page ([Tenants/Home.vue](../resources/js/Pages/Tenants/Home.vue), or `Welcome` with no primary tenant) and anything else 404. Public pages use [PublicLayout.vue](../resources/js/Layouts/PublicLayout.vue) (static header/footer, `site` prop from `PublicSite::layoutProps()`; header links from modules in `site.navigation`, [NavMenu.vue](../resources/js/Components/Public/NavMenu.vue)).
 - Not decided yet: the Jalali date picker for Vue.
 
 ### Authentication ([ADR 0004](decisions/0004-authentication.md))
@@ -112,7 +112,8 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 |---|---|
 | Admin panel | `Modules/{Name}/app/Filament/{Resources,Pages,Widgets}`, auto-discovered for enabled modules (`AdminPanelProvider::discoverModules()`). |
 | User panel | Pages in `Modules/{Name}/resources/js/Pages`, rendered as `Inertia::render('{Name}::Page')`. Shared layout: `@/Layouts/AppLayout.vue`. |
-| Public site | Tag a `App\PublicSite\PageResolver` with `PublicSite::RESOLVER_TAG`; reserve URL segments with `Tenant::reserveSlugsUsing()` (ADR 0010). |
+| Public site | Tag a `App\PublicSite\PageResolver` with `PublicSite::RESOLVER_TAG`; reserve URL segments with `Tenant::reserveSlugsUsing()` (ADR 0010); header links with `PublicSite::navigationUsing()` (ADR 0012). |
+| Tenants list | Row actions with `TenantResource::addRecordActionsUsing()` (ADR 0012). |
 | Routes | `Modules/{Name}/routes/web.php` with `['auth', 'auth.session', 'tenant']` (`tenant` = `EnsureTenantSelected`). |
 | Data | Module migrations are auto-discovered; tenant-owned models use `BelongsToTenant`. |
 | Tests | `Modules/{Name}/tests`, run by the `Modules` PHPUnit suite. |
@@ -121,7 +122,7 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 **Module list:**
 | Module | What | Notes |
 |---|---|---|
-| [Site](../Modules/Site) | Public pages of each tenant's site (page builder); every tenant has a home page (`/`) created with it; page content is made of widgets | `site_pages` (`content` jsonb), `Page` model, `PageResource` («وب‌سایت → صفحه‌ها»; widgets in the page builder «صفحه‌ساز» `pages/{id}/builder`, from the row action), `SitePageResolver`, `Site::Page`; widget types in `Modules/Site/app/Widgets` + `resources/js/Widgets` (HTML so far). [ADR 0010](decisions/0010-site-pages.md), [ADR 0011](decisions/0011-site-widgets.md). |
+| [Site](../Modules/Site) | Public pages of each tenant's site (page builder); every tenant has a home page (`/`) created with it; page content is made of widgets; site menus | `site_pages` (`content` jsonb), `Page` model, `PageResource` («وب‌سایت → صفحه‌ها»; widgets in the page builder «صفحه‌ساز» `pages/{id}/builder`, from the row action), `SitePageResolver`, `Site::Page`; widget types in `Modules/Site/app/Widgets` + `resources/js/Widgets` (HTML so far); menus `site_menus` / `site_menu_items`, `MenuResource` («وب‌سایت → منوها», item tree `menus/{id}/items`), each tenant's header menu `site_tenant_menus` (row action «منوی سایت» in the tenants list). [ADR 0010](decisions/0010-site-pages.md), [ADR 0011](decisions/0011-site-widgets.md), [ADR 0012](decisions/0012-site-menus.md). |
 
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 

@@ -88,6 +88,7 @@ Code is never copied directly; see [conventions.md → Porting from LMS](convent
 | LMS part | Status | Lives in SaraSystem at |
 |---|---|---|
 | Admin panel UI (font Shabnam, theme + glass dark mode, colors, initials avatar, sidebar menu search, table top scrollbar, persisted filters, panel-wide table/field defaults) | ported 2026-10-23 | `app/Providers/Filament/AdminPanelProvider.php`, `resources/css/filament/admin/`, `resources/views/filament/admin/`, `app/Filament/Support/InitialsAvatarProvider.php` |
+| Core menus (`/cpadmin/core/menu`: root menus + item tree, `MenuBlock`) | ported 2026-10-23, redesigned ([ADR 0012](decisions/0012-site-menus.md)): menus made in a tenant's panel, one chosen per tenant in the tenants list and shown in the site header (no menu block); link types page / url / none; no languages, icons/images or route links | `Modules/Site` (`Menu`, `MenuItem`, `TenantMenu`, `Filament/Resources/SiteMenus`, `Filament/Actions/ChooseTenantMenuAction`), `resources/js/Components/Public/NavMenu.vue` |
 | — not ported: year/school/instance topbar switchers (replaced by Filament tenancy), `LegacyNavigation`, blog editor CSS (comes with a Blog module) | | |
 
 ## How to inspect LMS

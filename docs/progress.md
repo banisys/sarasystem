@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Site menus, ported from the LMS menu section and redesigned (ADR 0012): «وب‌سایت → منوها» per tenant, an item tree page (`menus/{id}/items`) with add / submenu / edit / delete in modals and drag-and-drop between levels; links to a site page, any safe address, or none. Each tenant's site header shows the menu chosen for it in the tenants list (row action «منوی سایت»; any tenant's menu, e.g. the head office's). Core hooks `TenantResource::addRecordActionsUsing()` and `PublicSite::navigationUsing()`. 171 tests pass.
 - 2026-10-23 — Fixed: the page builder's show/hide button did nothing in the browser (missing partial re-render), and widgets saved before titles/visibility existed loaded as hidden and without a title (save failed). 158 tests pass.
 - 2026-10-23 — Page builder: widgets listed as headers only (no fold/expand, no «درج» between items, no clone button; title first, type small in parentheses); add/edit in a modal (block previews); every widget has a title («نمایش عنوان در سایت» optional) and «نمایش در سایت» (eye button in the item header too); hidden widgets are not rendered. 157 tests pass.
 - 2026-10-23 — Site: widgets are managed in the page builder «صفحه‌ساز» (`/cpadmin/{tenant}/pages/{id}/builder`), reached only from its row action in the page list; not in the page edit form. 156 tests pass.
@@ -53,6 +54,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Known issues / tech debt
 - Site pages: no preview of unpublished pages; Latin-only paths.
+- Site menus: one menu per tenant, header only (no footer menu); drag-and-drop in the item tree is covered by tests of `moveItem()` but not checked in a browser yet. Demo roles have no `*:Menu` permissions.
 - Demo roles have no `*:Page` permissions yet; only super admins see «صفحه‌ها» until roles are given them (Shield role editor).
 - `stechstudio/filament-impersonate` is installed but unused (our own impersonation, ADR 0008); remove it with `composer remove stechstudio/filament-impersonate` once approved.
 - Adding a top-level route (e.g. `/news`) hides an existing tenant whose slug is the same; `Tenant::reservedSlugs()` only blocks new slugs.

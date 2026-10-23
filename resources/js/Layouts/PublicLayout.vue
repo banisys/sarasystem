@@ -1,6 +1,7 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import NavMenu from '@/Components/Public/NavMenu.vue';
 
 // The static header and footer of every public page (ADR 0010); the
 // `site` prop comes from App\PublicSite\PublicSite::layoutProps().
@@ -21,6 +22,9 @@ const user = computed(() => page.props.auth.user);
                     {{ user ? 'ورود به داشبورد' : 'ورود' }}
                 </Link>
             </div>
+            <nav v-if="site.navigation.length" class="mx-auto max-w-5xl px-4 pb-3">
+                <NavMenu :items="site.navigation" />
+            </nav>
         </header>
 
         <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8">

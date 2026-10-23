@@ -2,11 +2,14 @@
 
 namespace Modules\Site\Providers;
 
+use App\Filament\Resources\Tenants\TenantResource;
 use App\Models\Tenant;
 use App\PublicSite\PublicSite;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Str;
+use Modules\Site\Filament\Actions\ChooseTenantMenuAction;
 use Modules\Site\Models\Page;
+use Modules\Site\Models\TenantMenu;
 use Modules\Site\PublicSite\SitePageResolver;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -60,6 +63,11 @@ class SiteServiceProvider extends ModuleServiceProvider
             ->filter()
             ->unique()
             ->all());
+
+        // Each tenant's site header shows the menu chosen for it in the
+        // tenants list (ADR 0012).
+        TenantResource::addRecordActionsUsing('site-menu', fn (): array => [ChooseTenantMenuAction::make()]);
+        PublicSite::navigationUsing('site-menu', fn (Tenant $tenant): array => TenantMenu::menuOf($tenant)?->publicItems() ?? []);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Filament\Resources\Tenants\Pages\ManageTenants;
 use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
 use BackedEnum;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
@@ -34,6 +35,23 @@ class TenantResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 90;
+
+    /**
+     * @var array<string, Closure(): iterable<Action>>
+     */
+    protected static array $recordActionFactories = [];
+
+    /**
+     * Let a module add row actions to the tenants list, e.g. choosing the
+     * tenant's site menu (ADR 0012). The core never depends on a module.
+     * Registering a name again replaces it (the app boots once per test).
+     *
+     * @param  Closure(): iterable<Action>  $callback
+     */
+    public static function addRecordActionsUsing(string $name, Closure $callback): void
+    {
+        static::$recordActionFactories[$name] = $callback;
+    }
 
     public static function getModelLabel(): string
     {
@@ -121,6 +139,7 @@ class TenantResource extends Resource
 
                         Notification::make()->title("«{$record->name}» اصلی شد.")->success()->send();
                     }),
+                ...collect(static::$recordActionFactories)->flatMap(fn (Closure $callback): iterable => $callback())->all(),
             ]);
     }
 
