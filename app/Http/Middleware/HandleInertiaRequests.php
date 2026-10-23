@@ -69,7 +69,7 @@ class HandleInertiaRequests extends Middleware
             return [];
         }
 
-        $query = $user->is_super_admin ? Tenant::query() : $user->tenants();
+        $query = $user->isSuperAdmin() ? Tenant::query() : $user->tenants();
 
         return $query->active()->orderBy('name')->get(['tenants.id', 'tenants.name', 'tenants.slug'])
             ->map->only('id', 'name', 'slug')

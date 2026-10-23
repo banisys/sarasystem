@@ -23,17 +23,18 @@ class DatabaseSeeder extends Seeder
         $panelUserRole = Role::findOrCreate(Utils::getPanelUserRoleName(), 'web');
         $panelUserRole->fill(['label' => 'کارمند (ورود به پنل)'])->save();
 
+        // Global role whose holders are installation-wide super admins (ADR 0007).
+        Role::findOrCreate(Role::SUPER_ADMIN, 'web')->fill(['label' => 'مدیر کل سیستم'])->save();
+
         $headOffice = Tenant::firstOrCreate(['slug' => 'head-office'], ['name' => 'ستاد']);
 
         if (app()->isLocal()) {
             $superAdmin = User::firstOrCreate(
                 ['email' => 'admin@sarasystem.test'],
-                ['name' => 'Super Admin', 'password' => 'password', 'is_super_admin' => true],
+                ['name' => 'Super Admin', 'password' => 'password'],
             );
 
-            // Membership in a tenant means holding a role there, so the super
-            // admin gets panel_user in the head office to show up in its users list.
-            $headOffice->execute(fn () => $superAdmin->assignRole($panelUserRole));
+            $headOffice->execute(fn () => $superAdmin->assignRole([Role::SUPER_ADMIN, $panelUserRole]));
         }
     }
 }

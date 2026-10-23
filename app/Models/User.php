@@ -62,6 +62,41 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     }
 
     /**
+     * Tenants in which the user holds the super_admin role. Holding it in any
+     * tenant makes the user super admin of the whole installation (ADR 0007).
+     *
+     * @return BelongsToMany<Tenant, $this>
+     */
+    public function superAdminTenants(): BelongsToMany
+    {
+        return $this->tenants()->wherePivotIn(
+            'role_id',
+            Role::query()->whereNull('tenant_id')->where('name', Role::SUPER_ADMIN)->pluck('id'),
+        );
+    }
+
+    /**
+     * Installation-wide super admin: passes every permission check
+     * (Gate::before), sees every tenant and manages tenants and role
+     * definitions. Read from the loaded superAdminTenants relation, so it
+     * costs one query per user instance.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->superAdminTenants->isNotEmpty();
+    }
+
+    /**
+     * Give the user the super_admin role, held in the given tenant.
+     */
+    public function makeSuperAdmin(Tenant $tenant): void
+    {
+        $tenant->execute(fn () => $this->unsetRelation('roles')->assignRole(Role::SUPER_ADMIN));
+
+        $this->unsetRelation('roles')->unsetRelation('superAdminTenants');
+    }
+
+    /**
      * Users matching a login identifier: email, mobile or national code
      * (ADR 0004). More than one match means a shared mobile.
      *
@@ -125,7 +160,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_super_admin || $this->staffTenants()->exists();
+        return $this->isSuperAdmin() || $this->staffTenants()->exists();
     }
 
     /**
@@ -133,7 +168,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
      */
     public function getTenants(Panel $panel): Collection
     {
-        if ($this->is_super_admin) {
+        if ($this->isSuperAdmin()) {
             return Tenant::query()->active()->orderBy('name')->get();
         }
 
@@ -146,7 +181,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
             return false;
         }
 
-        return $this->is_super_admin || $this->staffTenants()->whereKey($tenant->getKey())->exists();
+        return $this->isSuperAdmin() || $this->staffTenants()->whereKey($tenant->getKey())->exists();
     }
 
     /**
@@ -159,7 +194,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
             return false;
         }
 
-        return $this->is_super_admin || $this->tenants()->whereKey($tenant->getKey())->exists();
+        return $this->isSuperAdmin() || $this->tenants()->whereKey($tenant->getKey())->exists();
     }
 
     /**
@@ -173,7 +208,6 @@ class User extends Authenticatable implements FilamentUser, HasTenants
             'email_verified_at' => 'datetime',
             'mobile_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_super_admin' => 'boolean',
         ];
     }
 }

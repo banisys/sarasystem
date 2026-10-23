@@ -60,6 +60,7 @@ class RoleResource extends Resource
                                     )
                                     ->required()
                                     ->maxLength(255)
+                                    ->disabled(fn (?Role $record): bool => (bool) $record?->isSystemRole())
                                     ->helperText('کلید فنی انگلیسی که در کد استفاده می‌شود؛ مثلاً teacher')
                                     ->extraInputAttributes(['dir' => 'ltr']),
 
@@ -72,7 +73,8 @@ class RoleResource extends Resource
                                     ->label(__('filament-shield::filament-shield.field.guard_name'))
                                     ->default(Utils::getFilamentAuthGuard())
                                     ->nullable()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->disabled(fn (?Role $record): bool => (bool) $record?->isSystemRole()),
 
                                 Select::make(config('permission.column_names.team_foreign_key'))
                                     ->label(__('filament-shield::filament-shield.field.team'))
@@ -133,8 +135,10 @@ class RoleResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->hidden(fn (Role $record): bool => $record->isSystemRole()),
             ])
+            ->checkIfRecordIsSelectableUsing(fn (Role $record): bool => ! $record->isSystemRole())
             ->toolbarActions([
                 DeleteBulkAction::make(),
             ]);

@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -105,7 +106,7 @@ class UserResourceTest extends TestCase
 
         $user = User::where('email', 'new.teacher@example.com')->firstOrFail();
         $this->assertEquals([$this->tenant->id], $user->tenants()->pluck('tenants.id')->all());
-        $this->assertFalse($user->is_super_admin);
+        $this->assertFalse($user->isSuperAdmin());
     }
 
     public function test_editing_roles_leaves_the_users_roles_in_other_tenants_alone(): void
@@ -138,9 +139,47 @@ class UserResourceTest extends TestCase
         $user = User::factory()->create();
         $this->grantRole($user, $this->tenant, 'teacher');
         $this->actingInPanel($this->manager, $this->tenant);
+        $superAdminRole = Role::findByName(Role::SUPER_ADMIN, 'web');
+
+        $this->assertArrayNotHasKey($superAdminRole->id, UserForm::assignableRoleOptions());
 
         Livewire::test(EditUser::class, ['record' => $user->getRouteKey()])
-            ->assertFormFieldIsHidden('is_super_admin');
+            ->fillForm(['roles' => [$superAdminRole->id]])
+            ->call('save')
+            ->assertHasFormErrors(['roles']);
+
+        $this->assertFalse($user->fresh()->isSuperAdmin());
+    }
+
+    public function test_a_super_admin_makes_another_user_super_admin_with_the_role(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $user = User::factory()->create();
+        $this->grantRole($user, $this->tenant, 'teacher');
+        $this->actingInPanel($admin, $this->tenant);
+        $superAdminRole = Role::findByName(Role::SUPER_ADMIN, 'web');
+
+        Livewire::test(EditUser::class, ['record' => $user->getRouteKey()])
+            ->fillForm(['roles' => [$superAdminRole->id]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue($user->fresh()->isSuperAdmin());
+        $this->assertTrue($user->fresh()->canAccessTenant($this->otherTenant));
+    }
+
+    public function test_a_super_admin_cannot_take_super_admin_away_from_themselves(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $headOffice = $admin->superAdminTenants->first();
+        $this->actingInPanel($admin, $headOffice);
+
+        Livewire::test(EditUser::class, ['record' => $admin->getRouteKey()])
+            ->fillForm(['roles' => []])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue($admin->fresh()->isSuperAdmin());
     }
 
     public function test_removing_from_the_tenant_keeps_other_tenants(): void

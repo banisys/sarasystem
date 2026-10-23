@@ -9,7 +9,6 @@ use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -33,10 +32,6 @@ class UsersTable
                 TextColumn::make('roles.display_name')
                     ->label('نقش‌ها')
                     ->badge(),
-                IconColumn::make('is_super_admin')
-                    ->label('مدیر کل')
-                    ->boolean()
-                    ->visible(fn (): bool => (bool) auth()->user()?->is_super_admin),
                 TextColumn::make('created_at')
                     ->label('ایجاد')
                     ->jalaliDateTime()

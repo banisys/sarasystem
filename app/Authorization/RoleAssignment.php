@@ -25,9 +25,13 @@ class RoleAssignment
     {
         $roles = Role::query()->assignableIn($tenant)->with('permissions')->orderBy('name')->get();
 
-        if ($actor->is_super_admin) {
+        if ($actor->isSuperAdmin()) {
             return $roles;
         }
+
+        // super_admin carries no permissions, so the subset rule alone would
+        // let anyone hand it out (ADR 0007).
+        $roles = $roles->reject(fn (Role $role): bool => $role->name === Role::SUPER_ADMIN && $role->tenant_id === null);
 
         $own = static::permissionIdsIn($actor, $tenant);
 
@@ -50,11 +54,11 @@ class RoleAssignment
      */
     public static function canManage(User $actor, User $target, Tenant $tenant): bool
     {
-        if ($actor->is_super_admin) {
+        if ($actor->isSuperAdmin()) {
             return true;
         }
 
-        if ($target->is_super_admin) {
+        if ($target->isSuperAdmin()) {
             return false;
         }
 

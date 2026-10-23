@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Tenancy;
 
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,5 +64,28 @@ class TenantRolesTest extends TestCase
 
         $this->assertTrue(Gate::forUser($admin)->allows('anything-at-all'));
         $this->assertFalse(Gate::forUser($user)->allows('anything-at-all'));
+    }
+
+    public function test_the_super_admin_role_counts_in_every_tenant(): void
+    {
+        [$branch, $other] = Tenant::factory()->count(2)->create();
+        $user = User::factory()->create();
+
+        $user->makeSuperAdmin($branch);
+
+        $this->assertTrue($user->isSuperAdmin());
+        $this->assertTrue($user->canAccessTenant($other));
+        $this->assertTrue($other->execute(fn () => Gate::forUser($user)->allows('anything-at-all')));
+    }
+
+    public function test_system_roles_cannot_be_deleted_or_renamed(): void
+    {
+        $role = Role::findByName(Role::SUPER_ADMIN, 'web');
+
+        $role->delete();
+        $role->update(['name' => 'renamed']);
+
+        $this->assertTrue($role->fresh()->exists);
+        $this->assertSame(Role::SUPER_ADMIN, $role->fresh()->name);
     }
 }

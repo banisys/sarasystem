@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use BezhanSalleh\FilamentShield\Support\Utils;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,33 @@ use Spatie\Permission\Models\Role as BaseRole;
  */
 class Role extends BaseRole
 {
+    /**
+     * Global role whose holders are installation-wide super admins, in
+     * whichever tenant they hold it (ADR 0007).
+     */
+    public const string SUPER_ADMIN = 'super_admin';
+
+    /**
+     * Roles the code relies on by name. They can't be deleted, and their
+     * name, guard and tenant can't change (also enforced by booted()).
+     */
+    public function isSystemRole(): bool
+    {
+        return static::isSystemRoleName($this->getOriginal('name'), $this->getOriginal('tenant_id'));
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(fn (Role $role): bool => ! $role->isSystemRole());
+
+        static::updating(fn (Role $role): bool => ! ($role->isSystemRole() && $role->isDirty(['name', 'guard_name', 'tenant_id'])));
+    }
+
+    private static function isSystemRoleName(?string $name, mixed $tenantId): bool
+    {
+        return $tenantId === null && in_array($name, [self::SUPER_ADMIN, Utils::getPanelUserRoleName()], true);
+    }
+
     /**
      * The label shown in the UI: the Persian `label`, or the technical name
      * made readable when no label is set.

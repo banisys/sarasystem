@@ -70,9 +70,9 @@ return [
     |
     */
 
-    // Disabled: with permission teams a role is always held within one tenant, so the
-    // installation-wide super admin is the users.is_super_admin flag (Gate::before in
-    // AppServiceProvider) instead of a role. See docs/decisions/0002-tenancy-model.md.
+    // Disabled: Shield's check (hasRole) only sees the current tenant's roles. Our
+    // super_admin role counts in whichever tenant it is held (User::isSuperAdmin(),
+    // Gate::before in AppServiceProvider). See docs/decisions/0007-super-admin-role.md.
     'super_admin' => [
         'enabled' => false,
         'name' => 'super_admin',

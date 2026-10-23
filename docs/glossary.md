@@ -41,7 +41,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Login identifier | شناسه‌ی ورود | Mobile, national code or email, typed in one field on `/login` (ADR 0004). |
 | OTP / login code | کد یکبارمصرف | 6-digit SMS code for logging in without a password. |
 | Staff / panel user | کارمند | A user holding the `panel_user` role in a tenant; only staff (and super admins) can enter the admin panel, and only for their tenants. |
-| Super admin | مدیر کل سیستم | `users.is_super_admin`: installation-wide, bypasses all permission checks, manages tenants. |
+| Super admin | مدیر کل سیستم | Holder of the global `super_admin` role (in any tenant): installation-wide, bypasses all permission checks, manages tenants and role definitions. |
 | Cartable | کارتابل | Approval inbox/workflow: records waiting for a user's review, routed through entity groups and verifiers. |
 | Entity group | گروه | Group of users used for routing approvals (verifiers) and access. |
 | Block | بلوک / ویجت | A configurable widget placed in theme regions (header, sidebar, …) per route and instance. |

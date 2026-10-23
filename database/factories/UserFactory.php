@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -34,11 +35,15 @@ class UserFactory extends Factory
     }
 
     /**
-     * Installation-wide super admin (bypasses all permission checks).
+     * Installation-wide super admin: holds the super_admin role in the head
+     * office (ADR 0007).
      */
     public function superAdmin(): static
     {
-        return $this->state(['is_super_admin' => true]);
+        return $this->afterCreating(fn (User $user) => $user->makeSuperAdmin(
+            Tenant::query()->where('slug', 'head-office')->first()
+                ?? Tenant::factory()->create(['name' => 'ستاد', 'slug' => 'head-office']),
+        ));
     }
 
     /**

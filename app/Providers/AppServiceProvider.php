@@ -42,8 +42,8 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // Installation-wide super admin (a flag, not a role: with permission
-        // teams every role is held within a single tenant).
-        Gate::before(fn (User $user): ?bool => $user->is_super_admin ? true : null);
+        // Installation-wide super admin: holds the super_admin role in any
+        // tenant (ADR 0007).
+        Gate::before(fn (User $user): ?bool => $user->isSuperAdmin() ? true : null);
     }
 }

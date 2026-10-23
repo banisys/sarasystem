@@ -1,0 +1,5 @@
+mikhaam yek seri tenant, role va user baraam besaazi baraaye test
+3tenant
+role: HQ member(kaarman setaad), tenent principal, teacher, supporter, supervisor, parent, student, user
+motanaaseb baa har role 1 yaa chandtaa user
+

@@ -12,7 +12,6 @@ use BezhanSalleh\FilamentShield\Support\Utils;
 use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
@@ -67,10 +66,6 @@ class UserForm
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'برای تغییر ندادن، خالی بگذارید.' : null),
-                        Toggle::make('is_super_admin')
-                            ->label('مدیر کل سیستم')
-                            ->helperText('دسترسی کامل به همه‌ی '.config('sarasystem.tenant_plural_label').' و همه‌ی بخش‌ها.')
-                            ->visible(fn (): bool => (bool) auth()->user()?->is_super_admin),
                     ]),
                 Section::make(fn (): string => 'نقش‌ها در '.Tenant::current()?->name)
                     ->schema([
@@ -98,6 +93,7 @@ class UserForm
             )
             ->getOptionLabelFromRecordUsing(fn (Role $record): string => static::roleLabel($record))
             ->disabled(fn (?User $record): bool => static::isEditingOwnRoles($record))
+            ->disableOptionWhen(fn (string $value, ?User $record): bool => $record?->is(auth()->user()) && static::isSuperAdminRole((int) $value))
             ->rule(fn (): Closure => static::onlyAssignableRolesRule())
             ->saveRelationshipsUsing(function (User $record, ?array $state): void {
                 if (static::isEditingOwnRoles($record)) {
@@ -106,6 +102,11 @@ class UserForm
 
                 $assignable = RoleAssignment::assignableRoleIds(auth()->user(), Tenant::current());
                 $kept = $record->roles()->pluck('roles.id')->diff($assignable);
+
+                // A super admin can't take super_admin away from themselves (ADR 0007).
+                if ($record->is(auth()->user())) {
+                    $kept = $kept->merge($record->roles()->where('name', Role::SUPER_ADMIN)->whereNull('roles.tenant_id')->pluck('roles.id'));
+                }
                 $chosen = collect($state ?? [])->map(fn ($id): int => (int) $id)->intersect($assignable);
 
                 $record->roles()->syncWithPivotValues($chosen->merge($kept)->unique()->all(), ['tenant_id' => Tenant::current()->getKey()]);
@@ -149,7 +150,12 @@ class UserForm
     {
         $actor = auth()->user();
 
-        return $record !== null && $record->is($actor) && ! $actor->is_super_admin;
+        return $record !== null && $record->is($actor) && ! $actor->isSuperAdmin();
+    }
+
+    private static function isSuperAdminRole(int $roleId): bool
+    {
+        return Role::query()->whereKey($roleId)->whereNull('tenant_id')->where('name', Role::SUPER_ADMIN)->exists();
     }
 
     public static function roleLabel(Role|string $role): string

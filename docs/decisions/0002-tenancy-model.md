@@ -35,6 +35,6 @@ SaraSystem is a **generic product**. One installation serves one organization, a
 ## Implementation notes
 - The implementation is documented in [architecture.md → Tenancy](../architecture.md#tenancy).
 - spatie-multitenancy runs in single-DB mode. Its tenant finder is not used, because it runs before the session exists. Middlewares resolve the tenant instead. Switch task: permission team id.
-- The installation-wide super admin is a `users.is_super_admin` flag with `Gate::before`, not a role, because with teams every role assignment belongs to one tenant.
+- ~~The installation-wide super admin is a `users.is_super_admin` flag with `Gate::before`.~~ Replaced by [ADR 0007](0007-super-admin-role.md): a global `super_admin` role that counts in whichever tenant it is held.
 - Filament admin panel: use Filament panel tenancy (`->tenant(Tenant::class)`, tenant switcher, `User::getTenants()`/`canAccessTenant()`). A tenant middleware calls `$tenant->makeCurrent()` and sets the permission team id, so that Filament, the spatie current tenant and Shield all agree.
 - Inertia side: after login, a tenant picker page (skipped when there is only one tenant), stored in the session, with the same `makeCurrent()` path.
