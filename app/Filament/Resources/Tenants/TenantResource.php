@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Tenants;
 
 use App\Filament\Resources\Tenants\Pages\ManageTenants;
+use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -72,11 +73,9 @@ class TenantResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->label('نام')
-                    ->searchable()
                     ->sortable(),
                 TextColumn::make('slug')
-                    ->label('شناسه در آدرس')
-                    ->searchable(),
+                    ->label('شناسه در آدرس'),
                 IconColumn::make('is_active')
                     ->label('فعال')
                     ->boolean(),
@@ -87,6 +86,8 @@ class TenantResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                TextFilter::make('name')->label('نام'),
+                TextFilter::make('slug')->label('شناسه در آدرس'),
                 TernaryFilter::make('is_active')->label('فعال'),
             ])
             ->recordActions([

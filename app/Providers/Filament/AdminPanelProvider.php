@@ -125,10 +125,13 @@ class AdminPanelProvider extends PanelProvider
         // Row actions in a dropdown in the first column, no row click (PanelTable).
         $this->app->bind(Table::class, PanelTable::class);
 
-        // Filters in a dropdown beside the column manager (any AboveContent*
-        // layout puts the trigger on its own row), 25 rows per page, and
-        // newest records first when the model keeps timestamps.
+        // No search box (text lookups are filters, see TextFilter; a table
+        // can opt back in with ->searchable()). Filters in a dropdown beside
+        // the column manager (any AboveContent* layout puts the trigger on its
+        // own row), 25 rows per page, and newest records first when the model
+        // keeps timestamps.
         Table::configureUsing(fn (Table $table) => $table
+            ->searchable(false)
             ->filtersLayout(FiltersLayout::Dropdown)
             ->filtersFormColumns(['sm' => 2, 'lg' => 3, 'xl' => 4])
             ->filtersFormWidth(Width::SixExtraLarge)

@@ -59,6 +59,16 @@ class PanelTableTest extends TestCase
         $this->assertSame(25, $table->getDefaultPaginationPageOption());
     }
 
+    public function test_tables_have_no_search_box(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        foreach ([ListUsers::class, ManageTenants::class] as $page) {
+            $this->assertFalse(Livewire::test($page)->instance()->getTable()->isSearchable());
+        }
+    }
+
     public function test_top_bar_has_no_global_search(): void
     {
         $this->assertNull(Filament::getPanel('admin')->getGlobalSearchProvider());

@@ -28,7 +28,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
   - Colors violet / rose / emerald / amber, initials avatar ([InitialsAvatarProvider](../app/Filament/Support/InitialsAvatarProvider.php)), SPA mode, collapsible sidebar, no global search in the top bar (the sidebar menu search replaces it).
 - **Render hooks** ([resources/views/filament/admin](../resources/views/filament/admin)): a sidebar menu search with history and collapse-all, remembered open state of collapsible filters, and a second horizontal scrollbar above wide tables.
 - **Panel-wide component defaults** (`AdminPanelProvider::configureComponentDefaults()`), which a component's own calls override:
-  - Tables: filters in a dropdown, 25 rows per page, newest first, every column toggleable.
+  - Tables: no search box (look-ups are filters; text look-ups use [TextFilter](../app/Filament/Support/TextFilter.php), which reads Persian digits as Latin; a table can opt back in with `->searchable()`), filters in a dropdown, 25 rows per page, newest first, every column toggleable.
   - Every table is a [PanelTable](../app/Filament/Support/PanelTable.php) (bound in place of Filament's `Table`): row actions are one dropdown (⋮) in the first column (ungrouped actions are wrapped in an `ActionGroup` automatically), and clicking a row does nothing, so cell text can be selected and copied. Resources just pass their actions to `->recordActions([...])` as usual. See [ADR 0006](decisions/0006-panel-table-behavior.md).
   - Numeric inputs are LTR with thousands separators.
   - Searchable selects preload and show 10 options.

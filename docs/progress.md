@@ -14,6 +14,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-23 — Admin panel: list pages have no search box any more; users, tenants and roles get text filters instead (`TextFilter`, Persian digits allowed). 96 tests pass.
 - 2026-10-23 — Admin panel: removed the top-bar global search; all table row actions are one dropdown in the first column and row click is off, so cell text can be copied (`PanelTable`). 94 tests pass.
 - 2026-10-23 — Admin panel: removed the LMS `margin-bottom: -5rem` on page header actions; in Filament 5 it hid the header buttons (e.g. «ایجاد کاربر») behind the table, showing as a blue glow in dark mode.
 - 2026-10-23 — Seeder gives the local super admin the `panel_user` role in the head office, so they appear in its users list (membership = holding a role in the tenant). Re-running the seeder is safe.

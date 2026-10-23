@@ -8,6 +8,7 @@ use App\Filament\Resources\Roles\Pages\CreateRole;
 use App\Filament\Resources\Roles\Pages\EditRole;
 use App\Filament\Resources\Roles\Pages\ListRoles;
 use App\Filament\Resources\Roles\Pages\ViewRole;
+use App\Filament\Support\TextFilter;
 use App\Models\Role;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use BezhanSalleh\FilamentShield\Support\Utils;
@@ -103,8 +104,7 @@ class RoleResource extends Resource
                 TextColumn::make('label')
                     ->weight(FontWeight::Medium)
                     ->label('عنوان')
-                    ->state(fn (Role $record): string => $record->display_name)
-                    ->searchable(['label', 'name']),
+                    ->state(fn (Role $record): string => $record->display_name),
                 TextColumn::make('name')
                     ->label(__('filament-shield::filament-shield.column.name'))
                     ->fontFamily(FontFamily::Mono)
@@ -118,7 +118,6 @@ class RoleResource extends Resource
                     ->badge()
                     ->color(fn (mixed $state): string => str($state)->contains('Global') ? 'gray' : 'primary')
                     ->label(__('filament-shield::filament-shield.column.team'))
-                    ->searchable()
                     ->visible(fn (): bool => static::shield()->isCentralApp() && Utils::isTenancyEnabled()),
                 TextColumn::make('permissions_count')
                     ->badge()
@@ -130,7 +129,7 @@ class RoleResource extends Resource
                     ->jalaliDateTime(),
             ])
             ->filters([
-                //
+                TextFilter::make('label')->label('عنوان')->attributes(['label', 'name']),
             ])
             ->recordActions([
                 EditAction::make(),

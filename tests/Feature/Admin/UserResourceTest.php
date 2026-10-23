@@ -52,6 +52,26 @@ class UserResourceTest extends TestCase
             ->assertCanNotSeeTableRecords([$outsider]);
     }
 
+    public function test_the_list_is_narrowed_by_text_filters(): void
+    {
+        $sara = User::factory()->create(['name' => 'Sara Ahmadi', 'mobile' => '09121234567']);
+        $this->grantRole($sara, $this->tenant, 'teacher');
+        $reza = User::factory()->create(['name' => 'Reza Karimi', 'mobile' => '09359876543']);
+        $this->grantRole($reza, $this->tenant, 'teacher');
+
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::test(ListUsers::class)
+            ->filterTable('name', ['value' => 'sara'])
+            ->assertCanSeeTableRecords([$sara])
+            ->assertCanNotSeeTableRecords([$reza]);
+
+        Livewire::test(ListUsers::class)
+            ->filterTable('mobile', ['value' => '۰۹۳۵'])
+            ->assertCanSeeTableRecords([$reza])
+            ->assertCanNotSeeTableRecords([$sara]);
+    }
+
     public function test_staff_without_the_user_permission_cannot_open_the_list(): void
     {
         $staff = User::factory()->create();

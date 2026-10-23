@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Tables;
 
 use App\Filament\Resources\Users\UserResource;
+use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -20,18 +21,14 @@ class UsersTable
             ->columns([
                 TextColumn::make('name')
                     ->label('نام')
-                    ->searchable()
                     ->sortable(),
                 TextColumn::make('mobile')
-                    ->label('موبایل')
-                    ->searchable(),
+                    ->label('موبایل'),
                 TextColumn::make('national_code')
                     ->label('کد ملی')
-                    ->searchable()
                     ->toggleable(),
                 TextColumn::make('email')
                     ->label('ایمیل')
-                    ->searchable()
                     ->toggleable(),
                 TextColumn::make('roles.display_name')
                     ->label('نقش‌ها')
@@ -45,6 +42,12 @@ class UsersTable
                     ->jalaliDateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                TextFilter::make('name')->label('نام'),
+                TextFilter::make('mobile')->label('موبایل'),
+                TextFilter::make('national_code')->label('کد ملی'),
+                TextFilter::make('email')->label('ایمیل'),
             ])
             ->recordActions([
                 EditAction::make(),
