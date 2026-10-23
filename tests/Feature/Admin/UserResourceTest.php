@@ -73,6 +73,34 @@ class UserResourceTest extends TestCase
             ->assertCanNotSeeTableRecords([$sara]);
     }
 
+    public function test_the_list_shows_in_how_many_tenants_each_user_is_a_member(): void
+    {
+        $teacher = User::factory()->create();
+        $this->grantRole($teacher, $this->tenant, 'teacher');
+        $this->grantRole($teacher, $this->tenant, 'manager');
+        $this->grantRole($teacher, $this->otherTenant, 'teacher');
+
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::test(ListUsers::class)
+            ->assertTableColumnStateSet('tenants_count', 2, $teacher)
+            ->assertTableColumnStateSet('tenants_count', 1, $this->manager)
+            ->sortTable('tenants_count', 'desc')
+            ->assertCanSeeTableRecords([$teacher, $this->manager], inOrder: true);
+    }
+
+    public function test_the_edit_page_lists_the_users_tenants_and_roles_there(): void
+    {
+        $user = User::factory()->create();
+        $this->grantRole($user, $this->tenant, 'teacher');
+        $this->grantRole($user, $this->otherTenant, 'teacher');
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::test(EditUser::class, ['record' => $user->getRouteKey()])
+            ->assertSee($this->tenant->name.' (همین '.config('sarasystem.tenant_label').'): Teacher')
+            ->assertSee($this->otherTenant->name.': Teacher');
+    }
+
     public function test_staff_without_the_user_permission_cannot_open_the_list(): void
     {
         $staff = User::factory()->create();

@@ -11,12 +11,14 @@ use Filament\Actions\EditAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UsersTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->withTenantsCount()->with('tenants:id,name'))
             ->columns([
                 TextColumn::make('name')
                     ->label('نام')
@@ -32,6 +34,12 @@ class UsersTable
                 TextColumn::make('roles.display_name')
                     ->label('نقش‌ها')
                     ->badge(),
+                TextColumn::make('tenants_count')
+                    ->label('تعداد '.config('sarasystem.tenant_plural_label'))
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter()
+                    ->tooltip(fn (User $record): string => $record->tenants->sortBy('name')->pluck('name')->join('، ')),
                 TextColumn::make('created_at')
                     ->label('ایجاد')
                     ->jalaliDateTime()

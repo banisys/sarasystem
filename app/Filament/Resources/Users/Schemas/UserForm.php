@@ -12,6 +12,7 @@ use BezhanSalleh\FilamentShield\Support\Utils;
 use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,6 +71,17 @@ class UserForm
                 Section::make(fn (): string => 'نقش‌ها در '.Tenant::current()?->name)
                     ->schema([
                         static::rolesField(),
+                    ]),
+                Section::make('عضویت در '.config('sarasystem.tenant_plural_label'))
+                    ->description('نقش‌های این کاربر در همه‌ی '.config('sarasystem.tenant_plural_label').'.')
+                    ->visibleOn('edit')
+                    ->schema([
+                        TextEntry::make('memberships')
+                            ->hiddenLabel()
+                            ->state(fn (User $record): array => static::membershipLines($record))
+                            ->listWithLineBreaks()
+                            ->bulleted()
+                            ->placeholder('—'),
                     ]),
             ]);
     }
@@ -156,6 +168,29 @@ class UserForm
     private static function isSuperAdminRole(int $roleId): bool
     {
         return Role::query()->whereKey($roleId)->whereNull('tenant_id')->where('name', Role::SUPER_ADMIN)->exists();
+    }
+
+    /**
+     * "شعبه شمال (همین شعبه): معلم، مدیر" per tenant the user belongs to.
+     *
+     * @return list<string>
+     */
+    public static function membershipLines(User $user): array
+    {
+        return $user->memberships()
+            ->map(function (array $membership): string {
+                $tenant = $membership['tenant'];
+                $notes = array_filter([
+                    $tenant->is(Tenant::current()) ? 'همین '.config('sarasystem.tenant_label') : null,
+                    $tenant->is_active ? null : 'غیرفعال',
+                ]);
+
+                return $tenant->name
+                    .($notes === [] ? '' : ' ('.implode('، ', $notes).')')
+                    .': '.$membership['roles']->map(fn (Role $role): string => $role->display_name)->join('، ');
+            })
+            ->values()
+            ->all();
     }
 
     public static function roleLabel(Role|string $role): string

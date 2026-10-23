@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -156,6 +158,46 @@ class User extends Authenticatable implements FilamentUser, HasTenants
             ->whereColumn(config('permission.column_names.model_morph_key'), $query->qualifyColumn('id'))
             ->where('model_type', $this->getMorphClass())
             ->where('tenant_id', $tenant->getKey()));
+    }
+
+    /**
+     * The user's tenants (by name), each with the roles held there.
+     *
+     * @return SupportCollection<int, array{tenant: Tenant, roles: Collection<int, Role>}>
+     */
+    public function memberships(): SupportCollection
+    {
+        $rows = DB::table(config('permission.table_names.model_has_roles'))
+            ->where(config('permission.column_names.model_morph_key'), $this->getKey())
+            ->where('model_type', $this->getMorphClass())
+            ->get(['tenant_id', 'role_id']);
+
+        $roles = Role::query()->whereKey($rows->pluck('role_id')->unique())->get()->keyBy('id');
+
+        return Tenant::query()->whereKey($rows->pluck('tenant_id')->unique())->orderBy('name')->get()
+            ->map(fn (Tenant $tenant): array => [
+                'tenant' => $tenant,
+                'roles' => $roles->only($rows->where('tenant_id', $tenant->getKey())->pluck('role_id')->all())->values(),
+            ]);
+    }
+
+    /**
+     * Adds `tenants_count`: the number of tenants in which the user holds
+     * any role.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWithTenantsCount(Builder $query): void
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->qualifyColumn('*'));
+        }
+
+        $query->selectSub(fn (QueryBuilder $roles) => $roles
+            ->selectRaw('count(distinct tenant_id)')
+            ->from(config('permission.table_names.model_has_roles'))
+            ->whereColumn(config('permission.column_names.model_morph_key'), $query->qualifyColumn('id'))
+            ->where('model_type', $this->getMorphClass()), 'tenants_count');
     }
 
     public function canAccessPanel(Panel $panel): bool
