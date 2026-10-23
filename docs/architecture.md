@@ -77,7 +77,8 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
   - **Mobile:** the new number is saved only after a code sent *to it* is confirmed (`OneTimePassword::PURPOSE_CONFIRM_MOBILE`; codes are tied to user + purpose + mobile).
   - **Password:** the current password is required, except within 15 minutes of an SMS-code login ([RecentCodeLogin](../app/Auth/RecentCodeLogin.php)). That is the forgotten-password path.
   - Authenticated web routes use `auth.session`, so a password change logs out the user's other sessions.
-- **User-panel layout:** [AppLayout.vue](../resources/js/Layouts/AppLayout.vue) (app name, current tenant, switch link, admin-panel link if `auth.canAccessAdmin`, logout). Shared Inertia props: `appName`, `auth.{user,canAccessAdmin}`, `tenant.{current,available,label}`, `flash.status`.
+- **Impersonation** ([ADR 0008](decisions/0008-impersonation.md), [Impersonation](../app/Auth/Impersonation.php)): a super admin can log in as another (non-super-admin) user from the user edit page («ورود با این کاربر»). A bar on every page («بازگشت به حساب خودم», [panel view](../resources/views/filament/admin/impersonation-banner.blade.php) and `AppLayout.vue`) posts to `/impersonation/leave`, which logs them back in and returns to the edit page.
+- **User-panel layout:** [AppLayout.vue](../resources/js/Layouts/AppLayout.vue) (app name, current tenant, switch link, admin-panel link if `auth.canAccessAdmin`, logout). Shared Inertia props: `appName`, `auth.{user,impersonator,canAccessAdmin}`, `tenant.{current,available,label}`, `flash.status`.
 - `config/inertia.php` is published only to point page tests at `resources/js/Pages` (Inertia 3 defaults to `js/pages`).
 
 ## Directory map

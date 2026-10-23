@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\LeaveImpersonationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SendLoginCodeController;
 use App\Http\Controllers\ProfileController;
@@ -22,6 +23,7 @@ Route::middleware('guest')->group(function () {
 // auth.session logs a session out once the user's password changes elsewhere.
 Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::post('/impersonation/leave', LeaveImpersonationController::class)->name('impersonation.leave');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile/email', [ProfileController::class, 'updateEmail'])->name('profile.email');

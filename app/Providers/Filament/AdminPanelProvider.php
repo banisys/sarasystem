@@ -83,6 +83,8 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             // Search box (with history and collapse-all) at the top of the sidebar menu.
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_START, fn (): View => view('filament.admin.sidebar-nav-search'))
+            // "Back to my account" bar while impersonating a user (ADR 0008).
+            ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.impersonation-banner'))
             // Collapsible table filters stay open across reloads when left open.
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.persist-filters-open'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.tenant-menu-same-page'))

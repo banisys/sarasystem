@@ -5,14 +5,31 @@ import { computed } from 'vue';
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const tenant = computed(() => page.props.tenant);
+const impersonator = computed(() => page.props.auth.impersonator);
 
 function logout() {
     router.post(route('logout'));
+}
+
+function leaveImpersonation() {
+    router.post(route('impersonation.leave'));
 }
 </script>
 
 <template>
     <div class="min-h-screen bg-gray-50">
+        <div
+            v-if="impersonator"
+            class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-amber-500 px-4 py-2 text-sm text-white"
+        >
+            <span>
+                شما ({{ impersonator.name }}) با حساب <strong>{{ user?.name }}</strong> وارد شده‌اید.
+            </span>
+            <button type="button" class="rounded-md bg-white/20 px-3 py-1 font-medium hover:bg-white/30" @click="leaveImpersonation">
+                بازگشت به حساب خودم
+            </button>
+        </div>
+
         <header class="border-b border-gray-200 bg-white">
             <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div class="flex items-center gap-3">

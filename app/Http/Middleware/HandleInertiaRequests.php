@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Auth\Impersonation;
 use App\Models\Tenant;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
@@ -42,6 +43,8 @@ class HandleInertiaRequests extends Middleware
             'appName' => config('app.name'),
             'auth' => [
                 'user' => fn () => $request->user()?->only('id', 'name', 'email', 'mobile'),
+                // The super admin behind an impersonation (ADR 0008), if any.
+                'impersonator' => fn () => Impersonation::impersonator()?->only('id', 'name'),
                 'canAccessAdmin' => fn (): bool => (bool) $request->user()?->canAccessPanel(Filament::getPanel('admin')),
             ],
             'tenant' => [
