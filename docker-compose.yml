@@ -66,6 +66,10 @@ services:
 networks:
     sail:
         driver: bridge
+        ipam:
+            config:
+                # Must be inside 172.16.0.0/12, which the host's sshuttle VPN excludes (see docs/conventions.md)
+                - subnet: '${SAIL_SUBNET:-172.16.60.0/24}'
 
 volumes:
     sail-pgsql:
