@@ -6,6 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
+- Module `Employee` (ADR 0014): hiring is a multi-step process. Step 1 is done (public «همکاری با ما» form + applicants list). Next: the review steps (statuses, transition log, who approves) and creating the user on hiring.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
@@ -14,6 +15,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-25 — «همکاری با ما»: the mobile is confirmed by an SMS code before the form is saved (kept in the session for 60 min). An open application can only be updated from its own mobile, so knowing a national code no longer lets anyone overwrite it. `OneTimePassword` now also takes a guest owner instead of a user. 213 tests pass.
+- 2026-10-25 — Module `Employee`, hiring step 1 (ADR 0014), inspired by the LMS employee preregister form: public form at `/careers` on the primary tenant's site (Inertia, inside the site layout), stored in `employee_job_applications` without creating a user. Education/work history as jsonb, PDF résumé on the private disk, one open application per national code across tenants (re-sending updates it), honeypot + 10/hour/IP rate limit. Admin group «همکاری با ما» (primary tenant's panel only): applicants list/view/résumé download and job positions. New core rule `App\Rules\JalaliDate`. 208 tests pass.
 - 2026-10-25 — Fixed `localhost:8000` not loading on this machine: no `.env` (fresh clone → production, no APP_KEY, empty DB; now created, key generated, migrated and seeded), and the Docker network had been given `192.168.48.0/20`, which sshuttle tunnels. `docker-compose.yml` now pins the subnet (`SAIL_SUBNET`, default `172.16.60.0/24`). See `conventions.md` → Working environment.
 - 2026-10-25 — `docker/vpn-proxy/install.sh`: per-machine setup that gives Docker containers internet through the host's sshuttle VPN (host-network tinyproxy + `~/.docker/config.json` proxies). Verified on this machine: packagist and youtube return 200 from `laravel.test`. See `conventions.md` → Working environment.
 - 2026-10-23 — Module `Exam` (online exams), ported from LMS `exam_*` and redesigned as a standalone module (ADR 0013): question banks, choice / written questions, exams drawing N questions per bank, participants by user or role, time window, attempts with autosave, countdown and time-out (grace minutes), negative marking, retake rules, manual grading of written answers in «نتایج آزمون‌ها», result visibility. User panel `/exams` with a header link (new core hook `UserPanel::navigationUsing()`). Fixed: `ResolveCurrentTenant` now runs before route-model binding (tenant-owned route parameters gave 404). 189 tests pass.
@@ -56,6 +59,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Job applications: demo roles have no `*:JobApplication` / `*:JobPosition` permissions and there are no demo job positions, so `/careers` shows «موقعیت شغلی خالی نداریم» until positions are added. Dates are typed as text (no Jalali picker yet). Not checked in a browser beyond the page loading.
+- No Persian validation translations (`lang/fa/validation.php` missing): Filament and Inertia forms show Laravel's English messages unless a request defines its own (as `StoreJobApplicationRequest` does). Publish/translate them or install `laravel-lang`.
+- `public/css`, `public/js`, `public/fonts` are owned by root on this machine, so `filament:upgrade` (run after `composer dump-autoload`) fails with a tempnam error. Fix with `sudo chown -R $USER: public`.
 - Exams: questions are plain text (no images/formulas); abandoned attempts are closed lazily (no scheduler yet); seeing an attempt's answers needs `Update:ExamAttempt`; demo roles have no `*:Exam`/`*:Question`/`*:QuestionBank`/`*:ExamAttempt` permissions and there is no demo exam; the participant pages are covered by tests but not checked in a browser yet. LMS `schl_exam_*` (activity scores, exam balances) waits for a School module.
 - Site pages: no preview of unpublished pages; Latin-only paths.
 - Site menus: one menu per tenant, header only (no footer menu); drag-and-drop in the item tree is covered by tests of `moveItem()` but not checked in a browser yet. Demo roles have no `*:Menu` permissions.

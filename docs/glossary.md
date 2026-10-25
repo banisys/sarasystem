@@ -62,3 +62,10 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Attempt | شرکت در آزمون | One sitting of an exam by a user. It keeps a copy of the questions as they were served; its score is set once every answer is graded. |
 | Grace time | زمان ارفاق | Minutes after an attempt's deadline during which answers are still accepted (slow connections). After it the attempt closes with its saved answers. |
 | Negative marking | نمره‌ی منفی | Every N wrong choice answers cancel one right one (a wrong answer costs 1/N of its question's score). |
+
+## Hiring
+| Term | Persian | Meaning |
+|---|---|---|
+| Job application | درخواست همکاری / متقاضی همکاری | What someone sends through the public «همکاری با ما» form (`JobApplication`, [ADR 0014](decisions/0014-job-applications.md)). Open until it is rejected or the applicant is hired; one open application per national code. LMS called it «پیش ثبت نام کارمند» (employee preregister). |
+| Job position | موقعیت شغلی | A job offered in the «همکاری با ما» form (`JobPosition`). In LMS these were the school admin roles. |
+| Foreign national code | کد اتباع | 12-digit identifier of a foreign national, used instead of the کد ملی. |

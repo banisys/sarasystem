@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Hash;
  * SMS one-time codes (ADR 0004): 6 digits, stored hashed in the cache, valid
  * for 2 minutes, 5 wrong tries, and a new code at most once a minute.
  *
- * A code is tied to a user, a purpose and a mobile: a login code goes to the
+ * A code is tied to an owner, a purpose and a mobile: a login code goes to the
  * user's own mobile, a confirmation code to the new mobile they want to set.
+ * The owner is a user, or a string naming a visitor without an account
+ * (e.g. "guest" for a public form); then the mobile must be given.
  */
 class OneTimePassword
 {
@@ -33,7 +35,7 @@ class OneTimePassword
     /**
      * Seconds until a new code may be sent; 0 when it may be sent now.
      */
-    public function secondsUntilResend(User $user, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): int
+    public function secondsUntilResend(User|string $user, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): int
     {
         $sentAt = $this->cache->get($this->key($user, $purpose, $mobile))['sent_at'] ?? null;
 
@@ -43,7 +45,7 @@ class OneTimePassword
     /**
      * @param  string|null  $mobile  where to send; defaults to the user's own mobile
      */
-    public function send(User $user, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): void
+    public function send(User|string $user, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): void
     {
         $code = str_pad((string) random_int(0, 10 ** self::LENGTH - 1), self::LENGTH, '0', STR_PAD_LEFT);
 
@@ -57,14 +59,14 @@ class OneTimePassword
             ? 'کد ورود شما به '.config('app.name').": {$code}"
             : 'کد تأیید شماره موبایل در '.config('app.name').": {$code}";
 
-        $this->sms->send($mobile ?? $user->mobile, $message);
+        $this->sms->send($this->mobileOf($user, $mobile), $message);
     }
 
     /**
      * Checks the code; a correct code is consumed, and too many wrong
      * tries throw the code away.
      */
-    public function verify(User $user, string $code, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): bool
+    public function verify(User|string $user, string $code, string $purpose = self::PURPOSE_LOGIN, ?string $mobile = null): bool
     {
         $key = $this->key($user, $purpose, $mobile);
         $entry = $this->cache->get($key);
@@ -90,8 +92,15 @@ class OneTimePassword
         return false;
     }
 
-    private function key(User $user, string $purpose, ?string $mobile): string
+    private function key(User|string $user, string $purpose, ?string $mobile): string
     {
-        return "otp:{$purpose}:{$user->getKey()}:".($mobile ?? $user->mobile);
+        $owner = $user instanceof User ? $user->getKey() : $user;
+
+        return "otp:{$purpose}:{$owner}:".$this->mobileOf($user, $mobile);
+    }
+
+    private function mobileOf(User|string $user, ?string $mobile): string
+    {
+        return $mobile ?? ($user instanceof User ? $user->mobile : throw new \InvalidArgumentException('A code for a visitor needs a mobile.'));
     }
 }
