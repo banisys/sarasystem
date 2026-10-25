@@ -3,7 +3,8 @@
 ## Working environment
 _(Carried over from how the user works on LMS; confirm once the SaraSystem stack is decided.)_
 - Development runs in Docker (Laravel Sail for LMS); run project commands inside the container.
-- Containers have **no internet access**. If a package needs installing, give the user the exact command and let them run it.
+- Containers have **no internet access** by default. If a package needs installing, give the user the exact command and let them run it.
+  - The user's VPN is `sshuttle`, which only tunnels the host's own traffic. [docker/vpn-proxy/install.sh](../docker/vpn-proxy/install.sh) gives all containers internet while the VPN runs: a tinyproxy container on the host network (`vpn-proxy`, files in `~/docker-vpn-proxy`) plus `proxies` in `~/.docker/config.json`. It is per machine (run once on each), not part of `docker-compose.yml`. The sshuttle command must exclude `172.16.0.0/12`; don't change it otherwise (`-l 0.0.0.0` broke the VPN).
 - The user pulls Docker images through the ArvanCloud mirror and then tags them with the standard name, so `docker-compose.yml` keeps standard image names. Example: `docker pull docker.arvancloud.ir/postgres:18-alpine && docker tag docker.arvancloud.ir/postgres:18-alpine postgres:18-alpine`.
 - Talk to the user in Persian (Persian script); code, identifiers and these docs stay in English.
 - **Laravel Boost** is installed: use its MCP tools (`search-docs`, `database-schema`, `database-query`, logs) before guessing about Laravel, Filament or Inertia APIs. Its guidelines sit at the bottom of `CLAUDE.md` and its skills in `.claude/skills/`. Our rules in `CLAUDE.md` take precedence.
