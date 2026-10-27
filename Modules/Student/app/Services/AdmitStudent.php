@@ -3,6 +3,7 @@
 namespace Modules\Student\Services;
 
 use App\Authorization\RoleAssignment;
+use App\Documents\ApplicantDocuments;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -60,6 +61,9 @@ class AdmitStudent
             ]);
 
             $preregistration->update(['status' => PreregistrationStatus::Admitted]);
+
+            // The applicant's documents stay with the learner (ADR 0019).
+            app(ApplicantDocuments::class)->accepted($preregistration, $student);
 
             return $student;
         });

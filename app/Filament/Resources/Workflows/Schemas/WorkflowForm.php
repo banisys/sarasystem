@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Support\Identifiers;
 use App\Workflow\AssigneeType;
 use App\Workflow\StepAction;
+use App\Workflow\StepExtension;
+use App\Workflow\WorkflowStepExtensions;
 use App\Workflow\WorkflowSubjects;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
@@ -18,6 +20,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -75,7 +78,7 @@ class WorkflowForm
     }
 
     /**
-     * @return array<int, Field>
+     * @return array<int, Field|Group>
      */
     private static function stepFields(): array
     {
@@ -135,6 +138,14 @@ class WorkflowForm
                 ->default([StepAction::Reject->value, StepAction::Return->value])
                 ->columns(3)
                 ->columnSpanFull(),
+            // Settings modules add to a step, e.g. its documents (ADR 0019).
+            ...collect(WorkflowStepExtensions::all())
+                ->map(fn (StepExtension $extension): Group => Group::make($extension->designerFields())
+                    ->statePath('extensions.'.$extension->key())
+                    ->columns(2)
+                    ->columnSpanFull())
+                ->values()
+                ->all(),
         ];
     }
 

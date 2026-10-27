@@ -67,6 +67,11 @@ class WorkflowEngine
         $this->act($case, $actor, function (WorkflowCase $case, WorkflowSubject $handler) use ($actor, $comment, $data): void {
             $from = $case->current_step;
 
+            // e.g. the step's documents are not uploaded or checked yet (ADR 0019).
+            foreach (WorkflowStepExtensions::all() as $extension) {
+                $extension->beforeApprove($case, $case->currentStep());
+            }
+
             if (! $case->isLastStep()) {
                 $this->log($case, $actor, CaseActionType::Approved, $from, $from + 1, $comment);
                 $this->enter($case, $from + 1, $handler);

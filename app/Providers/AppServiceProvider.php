@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Documents\ApplicantDocuments;
+use App\Documents\NoApplicantDocuments;
 use App\Models\User;
 use App\Sms\LogSmsSender;
 use App\Sms\SmsSender;
@@ -23,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
             'log' => new LogSmsSender,
             default => throw new InvalidArgumentException('Unknown SMS driver ['.config('sms.driver').'].'),
         });
+
+        // The Document module binds its own (ADR 0019); bindIf, whichever registers first.
+        $this->app->bindIf(ApplicantDocuments::class, NoApplicantDocuments::class);
     }
 
     /**

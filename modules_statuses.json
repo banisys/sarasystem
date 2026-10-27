@@ -2,5 +2,6 @@
     "Site": true,
     "Exam": true,
     "Employee": true,
-    "Student": true
+    "Student": true,
+    "Document": true
 }

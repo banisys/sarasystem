@@ -3,6 +3,7 @@
 namespace Modules\Student\Http\Requests;
 
 use App\CustomFields\ResolvedForm;
+use App\Documents\ApplicantDocuments;
 use App\Models\Tenant;
 use App\Rules\IranianMobile;
 use App\Rules\JalaliDate;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Student\Documents\LearnerDocumentHolder;
 use Modules\Student\Enums\Gender;
 use Modules\Student\Enums\Nationality;
 use Modules\Student\Forms\PreregistrationForm;
@@ -130,7 +132,23 @@ class StorePreregistrationRequest extends FormRequest
             'city' => $form->rulesFor('city', ['string', 'max:100']),
             'address' => $form->rulesFor('address', ['string', 'min:10', 'max:300']),
             ...$form->customRules(),
+            // Documents the applicant uploads for the chosen program (ADR 0019).
+            ...app(ApplicantDocuments::class)->rules(LearnerDocumentHolder::KEY, $this->programId(), $this->openPreregistration()),
         ];
+    }
+
+    public function programId(): ?int
+    {
+        return is_numeric($this->input('program_id')) ? (int) $this->input('program_id') : null;
+    }
+
+    /**
+     * The open preregistration of the typed national code; its documents
+     * need not be sent again.
+     */
+    public function openPreregistration(): ?Preregistration
+    {
+        return filled($this->input('national_code')) ? Preregistration::openFor((string) $this->input('national_code')) : null;
     }
 
     /**
@@ -182,7 +200,7 @@ class StorePreregistrationRequest extends FormRequest
      */
     public function preregistrationData(): array
     {
-        $data = $this->safe()->except([ResolvedForm::INPUT]);
+        $data = $this->safe()->except([ResolvedForm::INPUT, ApplicantDocuments::INPUT, ApplicantDocuments::EXPIRY_INPUT]);
 
         return [
             ...array_fill_keys(['preferred_tenant_id', 'father_name', 'phone', 'email', 'postal_code', 'city', 'address'], null),
@@ -212,6 +230,7 @@ class StorePreregistrationRequest extends FormRequest
                 'string' => ':attribute نباید بیشتر از :max حرف باشد.',
                 'numeric' => ':attribute نباید بیشتر از :max باشد.',
                 'array' => 'بیشتر از :max مورد در «:attribute» نمی‌شود.',
+                'file' => 'حجم :attribute نباید بیشتر از :max کیلوبایت باشد.',
             ],
             'min' => [
                 'string' => ':attribute باید دست‌کم :min حرف باشد.',
@@ -228,6 +247,9 @@ class StorePreregistrationRequest extends FormRequest
             'in' => ':attribute انتخاب‌شده معتبر نیست.',
             'boolean' => ':attribute معتبر نیست.',
             'accepted' => '«:attribute» را تیک بزنید.',
+            'required_with' => ':attribute را وارد کنید.',
+            'file' => ':attribute باید فایل باشد.',
+            'mimes' => 'نوع فایل «:attribute» مجاز نیست (:values).',
         ];
     }
 
@@ -253,6 +275,7 @@ class StorePreregistrationRequest extends FormRequest
             'city' => 'شهر',
             'address' => 'نشانی',
             ...$this->preregistrationForm()->customAttributes(),
+            ...app(ApplicantDocuments::class)->attributes(LearnerDocumentHolder::KEY, $this->programId()),
         ];
     }
 }

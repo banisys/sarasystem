@@ -3,6 +3,7 @@
 namespace Modules\Student\Http\Controllers;
 
 use App\Auth\OneTimePassword;
+use App\Documents\ApplicantDocuments;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\PublicSite\PublicSite;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Student\Documents\LearnerDocumentHolder;
 use Modules\Student\Enums\Gender;
 use Modules\Student\Enums\Nationality;
 use Modules\Student\Enums\PreregistrationStatus;
@@ -36,7 +38,7 @@ class PreregistrationController extends Controller
 
     public const SUBMITTED_MESSAGE = 'پیش‌ثبت‌نام شما ثبت شد. همکاران ما پس از بررسی با شما تماس می‌گیرند.';
 
-    public function create(PreregistrationMobile $applicantMobile): Response
+    public function create(PreregistrationMobile $applicantMobile, ApplicantDocuments $documents): Response
     {
         $tenant = $this->primaryTenant();
         $programs = $tenant->execute(fn () => Program::query()->active()->ordered()->get(['id', 'tenant_id', 'title', 'description']));
@@ -47,9 +49,12 @@ class PreregistrationController extends Controller
             'programs' => $programs->map(fn (Program $program): array => [
                 ...$program->only(['id', 'title', 'description']),
                 'form' => PreregistrationForm::for($tenant, $program)->toArray(),
+                // Documents the applicant uploads for it (ADR 0019).
+                'documents' => $documents->fields(LearnerDocumentHolder::KEY, $program->id),
             ])->all(),
             // Until a program is chosen.
             'form' => PreregistrationForm::for($tenant)->toArray(),
+            'documents' => $documents->fields(LearnerDocumentHolder::KEY, null),
             'sections' => (new PreregistrationForm)->sections(),
             'options' => [
                 'nationalities' => self::options(Nationality::class),
@@ -109,7 +114,7 @@ class PreregistrationController extends Controller
      * StorePreregistrationRequest); otherwise a new one is filed with the
      * primary tenant and its program's workflow starts.
      */
-    public function store(Request $request, PreregistrationMobile $applicantMobile, WorkflowEngine $engine): RedirectResponse
+    public function store(Request $request, PreregistrationMobile $applicantMobile, WorkflowEngine $engine, ApplicantDocuments $documents): RedirectResponse
     {
         $tenant = $this->primaryTenant();
 
@@ -119,9 +124,10 @@ class PreregistrationController extends Controller
 
         $form = app(StorePreregistrationRequest::class);
 
-        $tenant->execute(fn () => DB::transaction(function () use ($form, $engine): void {
+        $tenant->execute(fn () => DB::transaction(function () use ($form, $engine, $documents): void {
             $preregistration = Preregistration::openFor($form->validated('national_code')) ?? new Preregistration(['status' => PreregistrationStatus::Submitted]);
             $preregistration->fill($form->preregistrationData())->save();
+            $documents->store($preregistration, (array) $form->file(ApplicantDocuments::INPUT, []), (array) $form->input(ApplicantDocuments::EXPIRY_INPUT, []));
 
             // A new preregistration starts its program's admission workflow;
             // a resent one is noted in the running case (ADR 0016).

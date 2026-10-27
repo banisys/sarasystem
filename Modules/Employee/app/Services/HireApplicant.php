@@ -3,6 +3,7 @@
 namespace Modules\Employee\Services;
 
 use App\Authorization\RoleAssignment;
+use App\Documents\ApplicantDocuments;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -60,6 +61,9 @@ class HireApplicant
             ]);
 
             $application->update(['status' => ApplicationStatus::Hired]);
+
+            // The applicant's documents stay with the employee (ADR 0019).
+            app(ApplicantDocuments::class)->accepted($application, $employee);
 
             return $employee;
         });

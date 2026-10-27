@@ -71,6 +71,12 @@
                                     <x-filament::badge :color="$action['color']" size="sm">{{ $action['label'] }}</x-filament::badge>
                                 @endforeach
                             </div>
+                            @foreach ($step['notes'] as $note)
+                                <div class="flex items-start gap-1 text-xs text-gray-600 dark:text-gray-300">
+                                    <x-filament::icon icon="heroicon-m-document-text" class="h-4 w-4 shrink-0 text-gray-400" />
+                                    <span>{{ $note }}</span>
+                                </div>
+                            @endforeach
                             @if ($step['returns'])
                                 <div class="flex items-center gap-1 text-xs text-warning-600 dark:text-warning-400">
                                     <x-filament::icon icon="heroicon-m-arrow-uturn-up" class="h-4 w-4" />

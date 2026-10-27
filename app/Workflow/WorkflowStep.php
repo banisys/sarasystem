@@ -14,6 +14,7 @@ final readonly class WorkflowStep
 {
     /**
      * @param  list<StepAction>  $actions
+     * @param  array<string, array<string, mixed>>  $extensions  settings of module step extensions, by key (StepExtension)
      */
     public function __construct(
         public string $name,
@@ -22,10 +23,11 @@ final readonly class WorkflowStep
         public ?int $roleId,
         public ?int $userId,
         public array $actions,
+        public array $extensions = [],
     ) {}
 
     /**
-     * @param  array{name?: string, tenant_id?: int|string, assignee_type?: string, role_id?: int|string|null, user_id?: int|string|null, actions?: list<string>}  $data
+     * @param  array{name?: string, tenant_id?: int|string, assignee_type?: string, role_id?: int|string|null, user_id?: int|string|null, actions?: list<string>, extensions?: array<string, array<string, mixed>>|null}  $data
      */
     public static function fromArray(array $data): self
     {
@@ -38,11 +40,12 @@ final readonly class WorkflowStep
             roleId: $assigneeType === AssigneeType::Role && filled($data['role_id'] ?? null) ? (int) $data['role_id'] : null,
             userId: $assigneeType === AssigneeType::User && filled($data['user_id'] ?? null) ? (int) $data['user_id'] : null,
             actions: array_values(array_filter(array_map(fn (string $action): ?StepAction => StepAction::tryFrom($action), $data['actions'] ?? []))),
+            extensions: array_filter((array) ($data['extensions'] ?? []), 'is_array'),
         );
     }
 
     /**
-     * @return array{name: string, tenant_id: int, assignee_type: string, role_id: int|null, user_id: int|null, actions: list<string>}
+     * @return array{name: string, tenant_id: int, assignee_type: string, role_id: int|null, user_id: int|null, actions: list<string>, extensions: array<string, array<string, mixed>>}
      */
     public function toArray(): array
     {
@@ -53,7 +56,18 @@ final readonly class WorkflowStep
             'role_id' => $this->roleId,
             'user_id' => $this->userId,
             'actions' => array_map(fn (StepAction $action): string => $action->value, $this->actions),
+            'extensions' => $this->extensions,
         ];
+    }
+
+    /**
+     * A step extension's settings in this step.
+     *
+     * @return array<string, mixed>
+     */
+    public function extension(string $key): array
+    {
+        return $this->extensions[$key] ?? [];
     }
 
     public function allows(StepAction $action): bool

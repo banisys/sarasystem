@@ -1,7 +1,8 @@
 <script setup>
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import CustomFieldInput from '@/Components/CustomFieldInput.vue';
+import DocumentUploads from '@/Components/DocumentUploads.vue';
 import JalaliDateInput from '@/Components/JalaliDateInput.vue';
 import VerifiedMobileInput from '@/Components/VerifiedMobileInput.vue';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
@@ -12,6 +13,8 @@ const props = defineProps({
     positions: { type: Array, required: true },
     // The form for all positions, until one is chosen.
     form: { type: Object, required: true },
+    // Documents to upload until a position is chosen; each position has its own `documents` (ADR 0019).
+    documents: { type: Array, default: () => [] },
     // Section key => heading; added fields go at the end of their section.
     sections: { type: Object, required: true },
     options: { type: Object, required: true },
@@ -49,6 +52,8 @@ const form = useForm({
     work_history: props.form.modes.work_history === 'required' ? [emptyWork()] : [],
     resume: null,
     custom: {},
+    documents: {},
+    document_expiry: {},
     [props.honeypot]: '',
 });
 
@@ -59,6 +64,9 @@ const selectedPosition = computed(() => props.positions.find((position) => posit
 
 // Which built-in fields are asked, and the added fields, for the chosen position.
 const currentForm = computed(() => selectedPosition.value?.form ?? props.form);
+const currentDocuments = computed(() => selectedPosition.value?.documents ?? props.documents);
+// Bumped after saving, to empty the file inputs.
+const documentsKey = ref(0);
 const asks = (key) => (currentForm.value.modes[key] ?? 'required') !== 'hidden';
 const requires = (key) => (currentForm.value.modes[key] ?? 'required') === 'required';
 const optional = (key) => (requires(key) ? '' : ' (اختیاری)');
@@ -93,6 +101,9 @@ function submit() {
             form.education = [];
             form.work_history = [];
             form.custom = {};
+            form.documents = {};
+            form.document_expiry = {};
+            documentsKey.value += 1;
             prepareForm();
             const resume = document.getElementById('resume');
             if (resume) resume.value = '';
@@ -447,6 +458,22 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                             :error-class="errorClass"
                         />
                     </div>
+                </section>
+
+                <section v-if="currentDocuments.length" :class="sectionClass">
+                    <h2 class="font-bold text-gray-900">مدارک</h2>
+                    <p class="mt-1 text-sm text-gray-500">اگر درخواستتان را قبلاً فرستاده‌اید، مدارکی را که فرستاده‌اید لازم نیست دوباره بفرستید.</p>
+                    <DocumentUploads
+                        :key="documentsKey"
+                        v-model:files="form.documents"
+                        v-model:expiry="form.document_expiry"
+                        class="mt-4"
+                        :fields="currentDocuments"
+                        :errors="form.errors"
+                        :input-class="inputClass"
+                        :label-class="labelClass"
+                        :error-class="errorClass"
+                    />
                 </section>
 
                 <div class="flex items-center gap-4">

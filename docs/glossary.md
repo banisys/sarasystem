@@ -78,3 +78,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Program | برنامه‌ی آموزشی | What people preregister for, defined by the organization: «پایه هفتم», «کارشناسی کامپیوتر», «زبان انگلیسی - مقدماتی», «دوره‌ی بدو خدمت» (`Program`). Each has an optional admission workflow and its own form setup. |
 | Preregistration | پیش‌ثبت‌نام / متقاضی ثبت‌نام | What someone sends through the public «پیش‌ثبت‌نام» form for a program (`Preregistration`). Open until it is rejected or the applicant is admitted; one open preregistration per national code. |
 | Admission | پذیرش | The workflow a preregistration goes through; its last approval creates the user and the learner row in the chosen tenant. |
+| Document type | نوع مدرک | A kind of document people have (کارت ملی، شناسنامه، مدرک تحصیلی…), defined once in the head office with who it is for, who uploads and who checks it, and for whom it is required ([ADR 0019](decisions/0019-documents.md)). |
+| Document | مدرک | One person's files of one document type, pending / approved / rejected, maybe with an expiry date. Attached to the applicant record, then to the employee / learner. |
+| Document holder | دارنده‌ی مدرک | A kind of person who has documents (employee, learner), described by its module to the core (`DocumentHolder`). |
+| Step extension | تنظیمات اضافه‌ی مرحله | Work a module adds to workflow steps, e.g. documents to upload or check before the step can be approved (`StepExtension`, ADR 0019). |

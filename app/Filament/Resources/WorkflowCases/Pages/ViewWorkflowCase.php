@@ -9,6 +9,7 @@ use App\Workflow\AssigneeType;
 use App\Workflow\StepAction;
 use App\Workflow\WorkflowActionDenied;
 use App\Workflow\WorkflowEngine;
+use App\Workflow\WorkflowStepExtensions;
 use App\Workflow\WorkflowSubject;
 use App\Workflow\WorkflowSubjects;
 use Closure;
@@ -49,6 +50,8 @@ class ViewWorkflowCase extends ViewRecord
             $this->returnAction(),
             $this->rejectAction(),
             $this->editAction(),
+            // e.g. the step's documents (ADR 0019).
+            ...collect(WorkflowStepExtensions::all())->flatMap->caseActions()->all(),
             ActionGroup::make([
                 $this->claimAction(),
                 $this->releaseAction(),

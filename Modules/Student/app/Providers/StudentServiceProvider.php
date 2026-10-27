@@ -3,10 +3,12 @@
 namespace Modules\Student\Providers;
 
 use App\CustomFields\CustomForms;
+use App\Documents\DocumentHolders;
 use App\Workflow\WorkflowSubjects;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Student\Documents\LearnerDocumentHolder;
 use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Workflow\PreregistrationSubject;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -47,5 +49,8 @@ class StudentServiceProvider extends ModuleServiceProvider
 
         // Each organization sets up the «پیش‌ثبت‌نام» form (ADR 0017).
         CustomForms::register(new PreregistrationForm);
+
+        // Learners and applicants have documents (ADR 0019).
+        DocumentHolders::register(new LearnerDocumentHolder);
     }
 }

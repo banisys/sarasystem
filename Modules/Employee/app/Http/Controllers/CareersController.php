@@ -3,6 +3,7 @@
 namespace Modules\Employee\Http\Controllers;
 
 use App\Auth\OneTimePassword;
+use App\Documents\ApplicantDocuments;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\PublicSite\PublicSite;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Employee\Documents\EmployeeDocumentHolder;
 use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Enums\EducationLevel;
 use Modules\Employee\Enums\Gender;
@@ -39,7 +41,7 @@ class CareersController extends Controller
 
     public const SUBMITTED_MESSAGE = 'درخواست همکاری شما ثبت شد. همکاران ما پس از بررسی با شما تماس می‌گیرند.';
 
-    public function create(ApplicantMobile $applicantMobile): Response
+    public function create(ApplicantMobile $applicantMobile, ApplicantDocuments $documents): Response
     {
         $tenant = $this->primaryTenant();
         [$minBirthYear, $maxBirthYear] = StoreJobApplicationRequest::birthYearRange();
@@ -51,9 +53,12 @@ class CareersController extends Controller
             'positions' => $positions->map(fn (JobPosition $position): array => [
                 ...$position->only(['id', 'title', 'description']),
                 'form' => JobApplicationForm::for($tenant, $position)->toArray(),
+                // Documents the applicant uploads for it (ADR 0019).
+                'documents' => $documents->fields(EmployeeDocumentHolder::KEY, $position->id),
             ])->all(),
             // Until a position is chosen.
             'form' => JobApplicationForm::for($tenant)->toArray(),
+            'documents' => $documents->fields(EmployeeDocumentHolder::KEY, null),
             'sections' => (new JobApplicationForm)->sections(),
             'options' => [
                 'nationalities' => self::options(Nationality::class),
@@ -116,7 +121,7 @@ class CareersController extends Controller
      * StoreJobApplicationRequest); otherwise a new application is filed with
      * the primary tenant and its position's workflow starts.
      */
-    public function store(Request $request, ApplicantMobile $applicantMobile, WorkflowEngine $engine): RedirectResponse
+    public function store(Request $request, ApplicantMobile $applicantMobile, WorkflowEngine $engine, ApplicantDocuments $documents): RedirectResponse
     {
         $tenant = $this->primaryTenant();
 
@@ -126,7 +131,7 @@ class CareersController extends Controller
 
         $form = app(StoreJobApplicationRequest::class);
 
-        $tenant->execute(fn () => DB::transaction(function () use ($form, $engine): void {
+        $tenant->execute(fn () => DB::transaction(function () use ($form, $engine, $documents): void {
             $position = JobPosition::query()->findOrFail($form->validated('job_position_id'));
             $application = JobApplication::openFor($form->validated('national_code')) ?? new JobApplication(['status' => ApplicationStatus::Submitted]);
 
@@ -142,6 +147,8 @@ class CareersController extends Controller
                     ->usingFileName('resume.pdf')
                     ->toMediaCollection(JobApplication::RESUME_COLLECTION);
             }
+
+            $documents->store($application, (array) $form->file(ApplicantDocuments::INPUT, []), (array) $form->input(ApplicantDocuments::EXPIRY_INPUT, []));
 
             // A new application starts its position's hiring workflow; a
             // resent one is noted in the running case (ADR 0016).

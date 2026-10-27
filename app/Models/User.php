@@ -161,6 +161,22 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     }
 
     /**
+     * Ids of the roles the user holds in the tenant.
+     *
+     * @return list<int>
+     */
+    public function roleIdsIn(Tenant $tenant): array
+    {
+        return DB::table(config('permission.table_names.model_has_roles'))
+            ->where(config('permission.column_names.model_morph_key'), $this->getKey())
+            ->where('model_type', $this->getMorphClass())
+            ->where('tenant_id', $tenant->getKey())
+            ->pluck('role_id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    /**
      * The user's tenants (by name), each with the roles held there.
      *
      * @return SupportCollection<int, array{tenant: Tenant, roles: Collection<int, Role>}>

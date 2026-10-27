@@ -16,6 +16,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-28 — Module `Document` ([ADR 0019](decisions/0019-documents.md)): documents of employees and learners.
+  - **Document types** («مدارک → انواع مدرک», head office only): for employees and/or learners, file kind and limits, expiry date, applicant upload, **roles that upload** and **roles that check**, required for nobody / everyone / chosen job positions or programs.
+  - **Documents** («مدارک → مدارک», per tenant): upload for an applicant or member, view files (signed 30-minute links), approve, reject with a reason, upload again; filters for status and expiry. Applicants' documents move to the employee / learner on acceptance.
+  - **Workflows:** each step can name documents to upload and documents to check; the step can't be approved until that is done. The assignee does it in the cartable («بارگذاری مدارک», «بررسی مدارک»); the diagram lists them and the cartable shows a «مدارک» section.
+  - **Public forms:** «همکاری با ما» and «پیش‌ثبت‌نام» ask the documents marked for applicants, per chosen position / program (`DocumentUploads.vue`).
+  - **Core:** `app/Documents` (holders, `ApplicantDocuments`), workflow `StepExtension`s (step `extensions`), `User::roleIdsIn()`. Employee / Student register holders and don't depend on the module.
+  - Sample data: `php artisan module:seed Document` (5 types; the first step of the demo hiring and admission workflows uploads/checks them). 319 tests pass.
 - 2026-10-27 — Module `Student`: learners, preregistration and admission ([ADR 0018](decisions/0018-student-preregistration.md)), built like hiring and for any organization (not only schools):
   - **Learner** = whoever is put into classes: pupil, university student, institute trainee or employee in training. Its name is set per installation (`LEARNER_LABEL`, default «فراگیر»). A learner row is the membership in a tenant (code, status, dates), with no school data.
   - **Public form** «پیش‌ثبت‌نام» at `/preregister` (primary tenant only) for one of the organization's **programs** («پایه هفتم», «زبان انگلیسی - مقدماتی», …). Only generic fields are built in; the organization adds its own (the local demo adds the LMS school form's birth certificate, birth place, previous school and last average). Mobile confirmed by SMS; one open preregistration per national code; customizable per program (ADR 0017).
@@ -88,6 +95,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Documents (ADR 0019):
+  - Not checked in a browser yet (covered by Livewire and HTTP tests): the screens, the cartable actions, the step designer fields and the upload sections of `/careers` and `/preregister`.
+  - No documents tab on the employee / learner pages; no reminders before expiry; re-uploads don't keep old versions.
+  - Demo roles have no `*:Document` / `*:DocumentType` permissions; only super admins see the «مدارک» screens until roles get them (uploading/checking itself follows the type's roles).
 - Learner admission (ADR 0018):
   - Not checked in a browser yet: `/preregister`, the programs screens and the workflow (covered by tests). `/careers` now uses the shared `VerifiedMobileInput.vue`; also not re-checked in a browser.
   - No classes yet: admission creates a tenant-level learner row only; adding learners to classes comes with the class/education features.

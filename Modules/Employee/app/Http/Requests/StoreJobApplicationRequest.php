@@ -3,6 +3,7 @@
 namespace Modules\Employee\Http\Requests;
 
 use App\CustomFields\ResolvedForm;
+use App\Documents\ApplicantDocuments;
 use App\Models\Tenant;
 use App\Rules\IranianMobile;
 use App\Rules\JalaliDate;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Employee\Documents\EmployeeDocumentHolder;
 use Modules\Employee\Enums\EducationLevel;
 use Modules\Employee\Enums\Gender;
 use Modules\Employee\Enums\MilitaryStatus;
@@ -131,7 +133,26 @@ class StoreJobApplicationRequest extends FormRequest
             ...$this->workHistoryRules(),
             'resume' => $form->rulesFor('resume', ['file', 'mimes:pdf', 'max:'.self::RESUME_MAX_KILOBYTES]),
             ...$form->customRules(),
+            // Documents the applicant uploads for the chosen position (ADR 0019).
+            ...app(ApplicantDocuments::class)->rules(EmployeeDocumentHolder::KEY, $this->positionId(), $this->openApplication()),
         ];
+    }
+
+    /**
+     * The chosen position's id, if one is chosen.
+     */
+    public function positionId(): ?int
+    {
+        return is_numeric($this->input('job_position_id')) ? (int) $this->input('job_position_id') : null;
+    }
+
+    /**
+     * The open application of the typed national code; its documents need
+     * not be sent again.
+     */
+    public function openApplication(): ?JobApplication
+    {
+        return filled($this->input('national_code')) ? JobApplication::openFor((string) $this->input('national_code')) : null;
     }
 
     /**
@@ -232,7 +253,7 @@ class StoreJobApplicationRequest extends FormRequest
      */
     public function applicationData(): array
     {
-        $data = $this->safe()->except(['resume', 'job_position_id', ResolvedForm::INPUT]);
+        $data = $this->safe()->except(['resume', 'job_position_id', ResolvedForm::INPUT, ApplicantDocuments::INPUT, ApplicantDocuments::EXPIRY_INPUT]);
         $universityFields = fn (array $row): bool => EducationLevel::from($row['level'])->isUniversity();
 
         return [
@@ -287,7 +308,7 @@ class StoreJobApplicationRequest extends FormRequest
                 'string' => ':attribute نباید بیشتر از :max حرف باشد.',
                 'numeric' => ':attribute نباید بیشتر از :max باشد.',
                 'array' => 'بیشتر از :max مورد در «:attribute» نمی‌شود.',
-                'file' => 'حجم :attribute نباید بیشتر از ۱۰ مگابایت باشد.',
+                'file' => 'حجم :attribute نباید بیشتر از :max کیلوبایت باشد.',
             ],
             'min' => [
                 'string' => ':attribute باید دست‌کم :min حرف باشد.',
@@ -301,7 +322,8 @@ class StoreJobApplicationRequest extends FormRequest
             'exists' => ':attribute انتخاب‌شده معتبر نیست.',
             'enum' => ':attribute انتخاب‌شده معتبر نیست.',
             'file' => ':attribute باید فایل باشد.',
-            'mimes' => ':attribute باید فایل PDF باشد.',
+            'mimes' => 'نوع فایل «:attribute» مجاز نیست (:values).',
+            'required_with' => ':attribute را وارد کنید.',
             'array' => ':attribute معتبر نیست.',
             'in' => ':attribute انتخاب‌شده معتبر نیست.',
             'boolean' => ':attribute معتبر نیست.',
@@ -347,6 +369,7 @@ class StoreJobApplicationRequest extends FormRequest
             'work_history.*.company_phone' => 'تلفن محل کار',
             'resume' => 'فایل رزومه',
             ...$this->jobForm()->customAttributes(),
+            ...app(ApplicantDocuments::class)->attributes(EmployeeDocumentHolder::KEY, $this->positionId()),
         ];
     }
 }

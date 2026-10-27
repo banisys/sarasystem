@@ -4,6 +4,7 @@ namespace App\Filament\Resources\WorkflowCases\Schemas;
 
 use App\Filament\Workflow\CaseHistory;
 use App\Models\WorkflowCase;
+use App\Workflow\WorkflowStepExtensions;
 use App\Workflow\WorkflowSubjects;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -36,6 +37,8 @@ class WorkflowCaseInfolist
                     ->relationship('subject')
                     ->schema(fn (Section $component): array => WorkflowSubjects::find(self::case($component)->subject_type)?->details() ?? [])
                     ->columns(1),
+                // e.g. the documents of the case (ADR 0019).
+                ...collect(WorkflowStepExtensions::all())->flatMap->caseDetails()->all(),
                 Section::make('تاریخچه')
                     ->collapsible()
                     ->schema([CaseHistory::make()]),

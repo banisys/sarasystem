@@ -7,7 +7,9 @@ use App\Models\Workflow;
 use App\Workflow\AssigneeType;
 use App\Workflow\CaseStatus;
 use App\Workflow\StepAction;
+use App\Workflow\StepExtension;
 use App\Workflow\WorkflowStep;
+use App\Workflow\WorkflowStepExtensions;
 use App\Workflow\WorkflowSubjects;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -35,7 +37,7 @@ class ViewWorkflow extends ViewRecord
     }
 
     /**
-     * @return list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, openCases: int}>
+     * @return list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, notes: list<string>, openCases: int}>
      */
     public function steps(): array
     {
@@ -64,6 +66,11 @@ class ViewWorkflow extends ViewRecord
                 ],
                 'rejects' => $step->allows(StepAction::Reject),
                 'returns' => $step->allows(StepAction::Return) && $index > 0,
+                // e.g. the step's documents (ADR 0019).
+                'notes' => collect(WorkflowStepExtensions::all())
+                    ->flatMap(fn (StepExtension $extension): array => $extension->summary($step, $this->workflow()->subject_type))
+                    ->values()
+                    ->all(),
                 'openCases' => (int) ($openCases[$index] ?? 0),
             ])
             ->all();
