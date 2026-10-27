@@ -17,12 +17,13 @@ use Modules\Employee\Enums\MilitaryStatus;
 use Modules\Employee\Http\Controllers\CareersController;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
+use Modules\Employee\Tests\Concerns\SubmitsJobApplications;
 use Tests\Fakes\FakeSmsSender;
 use Tests\TestCase;
 
 class CareersFormTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, SubmitsJobApplications;
 
     private Tenant $primary;
 
@@ -287,51 +288,6 @@ class CareersFormTest extends TestCase
         }
 
         $this->post('/careers', [CareersController::HONEYPOT => 'x'])->assertTooManyRequests();
-    }
-
-    /**
-     * Confirm the mobile by SMS in this session, as the form does.
-     */
-    private function verifyMobile(string $mobile = '09121234567'): void
-    {
-        $this->travel(2)->minutes();
-        $this->post('/careers/mobile/code', ['mobile' => $mobile])->assertSessionHasNoErrors();
-        $this->post('/careers/mobile/verify', ['mobile' => $mobile, 'code' => $this->sms->lastCodeFor($mobile)])->assertSessionHasNoErrors();
-    }
-
-    /**
-     * @param  array<string, mixed>  $overrides
-     * @return array<string, mixed>
-     */
-    private function validData(array $overrides = []): array
-    {
-        return [
-            'job_position_id' => $this->position->id,
-            'first_name' => 'زهرا',
-            'last_name' => 'احمدی',
-            'father_name' => 'علی',
-            'nationality' => 'iranian',
-            'national_code' => JobApplicationFactory::nationalCode(),
-            'birth_date' => '1369/01/05',
-            'gender' => Gender::Female->value,
-            'military_status' => '',
-            'mobile' => '09121234567',
-            'phone' => '02112345678',
-            'email' => 'zahra@example.com',
-            'postal_code' => '1234567890',
-            'address' => 'تهران، خیابان آزادی، پلاک ۱۰',
-            'education' => [[
-                'level' => 'bachelor', 'major' => 'ریاضی', 'orientation' => 'محض', 'average' => '17.25', 'rank' => '',
-                'graduation_date' => '1394/04/31', 'university_type' => 'state', 'university' => 'دانشگاه تهران',
-            ]],
-            'work_history' => [[
-                'company_name' => 'مدرسه نمونه', 'job_position' => 'معلم', 'start_date' => '1395/07/01', 'end_date' => '',
-                'termination_reason' => '', 'company_phone' => '',
-            ]],
-            'resume' => self::pdf(),
-            CareersController::HONEYPOT => '',
-            ...$overrides,
-        ];
     }
 
     public static function pdf(): UploadedFile

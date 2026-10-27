@@ -34,6 +34,8 @@ class StoreJobApplicationRequest extends FormRequest
 
     public const RESUME_MAX_KILOBYTES = 10240;
 
+    public const UNDER_REVIEW_MESSAGE = 'درخواست شما در حال بررسی است و دیگر نمی‌توان آن را تغییر داد.';
+
     /**
      * Allowed Jalali birth years: 16 to 69 years old, as in LMS.
      *
@@ -122,7 +124,8 @@ class StoreJobApplicationRequest extends FormRequest
     /**
      * A job may not end before it starts. The mobile must have been
      * confirmed by SMS in this session, and an open application may only be
-     * updated from the mobile it was sent with (ADR 0014).
+     * updated from the mobile it was sent with (ADR 0014), and only until a
+     * reviewer has it (ADR 0016).
      *
      * @return array<int, callable(Validator): void>
      */
@@ -154,6 +157,8 @@ class StoreJobApplicationRequest extends FormRequest
 
             if ($open !== null && $open->mobile !== $mobile) {
                 $validator->errors()->add('national_code', 'برای این کد ملی درخواستی با شماره‌ی '.ApplicantMobile::mask($open->mobile).' ثبت شده است. برای ویرایش آن با همان شماره اقدام کنید.');
+            } elseif ($open !== null && ! $open->canBeUpdatedByApplicant()) {
+                $validator->errors()->add('national_code', self::UNDER_REVIEW_MESSAGE);
             }
         }];
     }

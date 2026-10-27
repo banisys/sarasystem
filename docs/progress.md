@@ -6,14 +6,20 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Module `Employee` (ADR 0014): hiring is a multi-step process. Step 1 is done (public «همکاری با ما» form + applicants list). Next: the review steps (statuses, transition log, who approves) and creating the user on hiring.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
+- Workflows: cancel / reassign a running case (super admin or workflow owner), per-step deadlines and reminders, attachments on notes, a monitor of all running cases.
+- Use workflows for the next approval flows (leave, contracts).
 - Real SMS provider driver (choose provider: Kavenegar / Ghasedak / …; credentials from the user).
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-26 — Approval workflows and the cartable (ADR 0016), with hiring as the first workflow:
+  - **Engine (core):** `WorkflowEngine` checks the assignee and the step they saw, writes the history and sends bell notifications (`notifications` table, `->databaseNotifications()`). Running cases keep a copy of their steps. Modules plug in with `WorkflowSubject`.
+  - **Admin screens:** «کارتابل → فرایندها» designer: steps go to a role or a person in a tenant, with reject / return / edit chosen per step. «کارتابل من» lists cases waiting for the user in the current tenant: approve, return, reject, edit, claim / release, note.
+  - **Hiring:** each job position may have a workflow, which a new «همکاری با ما» application starts. The applicant can resend the form only until a reviewer has it. The final approval asks where and how the person is hired, then creates or reuses the user, gives roles there (ADR 0003 rules) and creates an `Employee` («کارکنان → کارمندان», new).
+  - 246 tests pass.
 - 2026-10-26 — Jalali date picker for Vue forms (ADR 0015): `JalaliDateInput` component (type or pick from a calendar popup; month/year selects, today, clear), no new package, built on the browser's `Intl` persian calendar. Used for all dates of «همکاری با ما» (birth date limited to the allowed birth years).
 - 2026-10-25 — «همکاری با ما»: the mobile is confirmed by an SMS code before the form is saved (kept in the session for 60 min). An open application can only be updated from its own mobile, so knowing a national code no longer lets anyone overwrite it. `OneTimePassword` now also takes a guest owner instead of a user. 213 tests pass.
 - 2026-10-25 — Module `Employee`, hiring step 1 (ADR 0014), inspired by the LMS employee preregister form: public form at `/careers` on the primary tenant's site (Inertia, inside the site layout), stored in `employee_job_applications` without creating a user. Education/work history as jsonb, PDF résumé on the private disk, one open application per national code across tenants (re-sending updates it), honeypot + 10/hour/IP rate limit. Admin group «همکاری با ما» (primary tenant's panel only): applicants list/view/résumé download and job positions. New core rule `App\Rules\JalaliDate`. 208 tests pass.
@@ -59,6 +65,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Workflows (ADR 0016):
+  - No cancel or reassign of a running case: a case whose step role was deleted, or whose step person left, stays stuck.
+  - No conditions, parallel approvals or deadlines.
+  - A case that moved on while someone had it open gives "not found" on their next click.
+  - Not checked in a browser yet (covered by Livewire tests).
+  - Demo data has no workflow and no `*:Workflow` / `*:Employee` permissions on demo roles. To try it, log in as the super admin, make a workflow in «کارتابل → فرایندها» and choose it on a job position.
+- Hiring: education and work history can't be edited in a workflow (personal and contact fields only). A head-office approver hiring into a branch where they hold no roles can only give permission-less roles there (ADR 0003).
 - Job applications: demo roles have no `*:JobApplication` / `*:JobPosition` permissions and there are no demo job positions, so `/careers` shows «موقعیت شغلی خالی نداریم» until positions are added. Not checked in a browser beyond the page loading.
 - `JalaliDateInput` is not checked in a browser yet (conversions tested in Node over 1921–2080); date only, no time or range picker.
 - No Persian validation translations (`lang/fa/validation.php` missing): Filament and Inertia forms show Laravel's English messages unless a request defines its own (as `StoreJobApplicationRequest` does). Publish/translate them or install `laravel-lang`.

@@ -25,7 +25,7 @@ Hiring an employee is a process with several steps. The first step is the public
 - **Module `Employee`.** Applications live in `employee_job_applications` (`JobApplication`). No user is created; that happens when someone is hired (later step).
   - Fixed fields are columns.
   - Education and work history are jsonb arrays, with dates stored as Gregorian `Y-m-d`.
-- **Status.** `status` is an enum (`ApplicationStatus`); review steps are added to it as they are built. `closed_at` is set by the model when the status is a closing one (rejected, hired).
+- **Status.** `status` is an enum (`ApplicationStatus`), driven by the hiring workflow since ADR 0016. `closed_at` is set by the model when the status is a closing one (rejected, hired).
 - **One open application per national code** in the whole installation:
   - A partial unique index (`national_code WHERE closed_at IS NULL`) enforces it.
   - Sending the form again while one is open **updates** that application, whatever tenant it is in, and replaces the résumé, but only from the mobile it was sent with. Otherwise the form says which number to use (masked, `0912***4567`).
@@ -53,7 +53,7 @@ Hiring an employee is a process with several steps. The first step is the public
 - **Résumé:** a PDF of at most 10 MB, stored with medialibrary on the private `local` disk and downloaded only through the admin panel.
 
 ## Consequences
-- Later steps add statuses and, when needed, a log table of transitions. Once review steps exist, decide whether re-applying is allowed while an application is under review.
+- The review steps are a workflow ([ADR 0016](0016-workflows.md)): statuses `in_review` / `hired` / `rejected` follow the case, the history is the case's. Re-sending the form is allowed only until a reviewer has the application.
 - Unlike LMS, knowing someone's national code is not enough to overwrite their application: it takes the code sent to their mobile. An applicant who lost that number cannot update their open application; staff must close it first.
 - Every application costs at least one SMS.
 - If the primary tenant changes, existing applications stay with the old one and are no longer shown in any panel.

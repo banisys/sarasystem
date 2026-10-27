@@ -3,11 +3,14 @@
 namespace Modules\Employee\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Scopes\TenantScope;
+use App\Models\WorkflowCase;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Modules\Employee\Database\Factories\JobApplicationFactory;
 use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Enums\Gender;
@@ -88,6 +91,33 @@ class JobApplication extends Model implements HasMedia
     public function jobPosition(): BelongsTo
     {
         return $this->belongsTo(JobPosition::class);
+    }
+
+    /**
+     * The hiring workflow's case (ADR 0016); the latest one if it was
+     * started again.
+     *
+     * @return MorphOne<WorkflowCase, $this>
+     */
+    public function workflowCase(): MorphOne
+    {
+        return $this->morphOne(WorkflowCase::class, 'subject')->withoutGlobalScope(TenantScope::class)->latestOfMany();
+    }
+
+    /**
+     * Whether sending the form again may still change the application: not
+     * once a reviewer has it, i.e. after the first step was approved or
+     * while someone has claimed it (ADR 0016).
+     */
+    public function canBeUpdatedByApplicant(): bool
+    {
+        $case = $this->workflowCase;
+
+        if ($case === null || ! $case->isInProgress()) {
+            return $this->status === ApplicationStatus::Submitted;
+        }
+
+        return $case->current_step === 0 && $case->claimed_by_id === null;
     }
 
     public function fullName(): string

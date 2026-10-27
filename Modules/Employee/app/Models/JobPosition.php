@@ -3,17 +3,20 @@
 namespace Modules\Employee\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Workflow;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Employee\Database\Factories\JobPositionFactory;
 
 /**
- * A job people can apply for in the «همکاری با ما» form (ADR 0014).
+ * A job people can apply for in the «همکاری با ما» form (ADR 0014). Its
+ * workflow, if any, runs on each new application (ADR 0016).
  */
-#[Fillable(['tenant_id', 'title', 'description', 'is_active', 'sort'])]
+#[Fillable(['tenant_id', 'workflow_id', 'title', 'description', 'is_active', 'sort'])]
 class JobPosition extends Model
 {
     /** @use HasFactory<JobPositionFactory> */
@@ -40,6 +43,14 @@ class JobPosition extends Model
     public function scopeOrdered(Builder $query): void
     {
         $query->orderBy('sort')->orderBy('title');
+    }
+
+    /**
+     * @return BelongsTo<Workflow, $this>
+     */
+    public function workflow(): BelongsTo
+    {
+        return $this->belongsTo(Workflow::class);
     }
 
     /**

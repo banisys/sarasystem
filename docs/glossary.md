@@ -48,7 +48,11 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Site menu | منو | A named tree of links of one tenant's site (to its pages, to any address, or a title over a submenu), made in «وب‌سایت → منوها» and chosen per tenant in the tenants list («منوی سایت»), shown in that tenant's site header (ADR 0012). |
 | Page builder | صفحه‌ساز | The admin screen where a site page's widgets are added and ordered (`pages/{id}/builder`, ADR 0011). |
 | Impersonation | ورود با حساب کاربر | A super admin temporarily logged in as another user, with a way back to their own account (ADR 0008). |
-| Cartable | کارتابل | Approval inbox/workflow: records waiting for a user's review, routed through entity groups and verifiers. |
+| Cartable | کارتابل | Approval inbox: records waiting for a user's review. In LMS routed through entity groups and verifiers; in SaraSystem «کارتابل من» lists the workflow cases whose current step is the user's (ADR 0016). |
+| Workflow | فرایند | An approval process designed in the admin panel: ordered steps, each sent to a role or a person in a tenant, with the actions allowed there (ADR 0016). Hiring uses one per job position. |
+| Workflow case | پرونده | One record (e.g. a job application) going through a workflow; it has a current step, an assignee and a history. |
+| Claim | برداشتن کار | Taking a case so it leaves the cartable of the step role's other holders; release gives it back. |
+| Employee | کارمند | A person employed in a tenant (`employees`): personnel code, employment type, status, dates; created by the last approval of a hiring workflow. Not the same as "staff" (panel access). |
 | Entity group | گروه | Group of users used for routing approvals (verifiers) and access. |
 | Block | بلوک / ویجت | A configurable widget placed in theme regions (header, sidebar, …) per route and instance. |
 

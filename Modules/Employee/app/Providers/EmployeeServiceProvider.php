@@ -2,9 +2,11 @@
 
 namespace Modules\Employee\Providers;
 
+use App\Workflow\WorkflowSubjects;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Employee\Workflow\JobApplicationSubject;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class EmployeeServiceProvider extends ModuleServiceProvider
@@ -37,5 +39,8 @@ class EmployeeServiceProvider extends ModuleServiceProvider
         // codes sent or checked, per hour per IP (ADR 0014).
         RateLimiter::for('careers', fn (Request $request): Limit => Limit::perHour(10)->by($request->ip()));
         RateLimiter::for('careers-mobile', fn (Request $request): Limit => Limit::perHour(10)->by($request->ip()));
+
+        // Hiring runs as a workflow (ADR 0016).
+        WorkflowSubjects::register(new JobApplicationSubject);
     }
 }

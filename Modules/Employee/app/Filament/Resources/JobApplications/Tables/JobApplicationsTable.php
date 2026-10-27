@@ -9,12 +9,14 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Filament\Actions\DownloadResumeAction;
+use Modules\Employee\Models\JobApplication;
 
 class JobApplicationsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('workflowCase'))
             ->columns([
                 TextColumn::make('first_name')
                     ->label('نام')
@@ -33,6 +35,10 @@ class JobApplicationsTable
                     ->label('وضعیت')
                     ->badge()
                     ->sortable(),
+                TextColumn::make('current_step')
+                    ->label('مرحله‌ی فعلی')
+                    ->state(fn (JobApplication $record): ?string => $record->workflowCase?->currentStep()?->name)
+                    ->placeholder('—'),
                 TextColumn::make('created_at')
                     ->label('تاریخ درخواست')
                     ->jalaliDateTime()

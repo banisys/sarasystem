@@ -79,6 +79,8 @@ class AdminPanelProvider extends PanelProvider
             ->spa()
             // No global search box in the top bar; the sidebar has its own menu search.
             ->globalSearch(false)
+            // The bell: e.g. a case reaching someone's cartable (ADR 0016).
+            ->databaseNotifications()
             ->sidebarCollapsibleOnDesktop()
             // Search box (with history and collapse-all) at the top of the sidebar menu.
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_START, fn (): View => view('filament.admin.sidebar-nav-search'))

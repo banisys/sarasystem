@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\PublicSite\PublicSite;
 use App\Rules\IranianMobile;
 use App\Support\Identifiers;
+use App\Workflow\WorkflowEngine;
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -102,10 +103,11 @@ class CareersController extends Controller
 
     /**
      * Applying again while an application is open updates it, wherever it
-     * is (from the same mobile only, see StoreJobApplicationRequest);
-     * otherwise a new application is filed with the primary tenant.
+     * is (from the same mobile and before review only, see
+     * StoreJobApplicationRequest); otherwise a new application is filed with
+     * the primary tenant and its position's workflow starts.
      */
-    public function store(Request $request, ApplicantMobile $applicantMobile): RedirectResponse
+    public function store(Request $request, ApplicantMobile $applicantMobile, WorkflowEngine $engine): RedirectResponse
     {
         $tenant = $this->primaryTenant();
 
@@ -115,7 +117,7 @@ class CareersController extends Controller
 
         $form = app(StoreJobApplicationRequest::class);
 
-        $tenant->execute(fn () => DB::transaction(function () use ($form): void {
+        $tenant->execute(fn () => DB::transaction(function () use ($form, $engine): void {
             $position = JobPosition::query()->findOrFail($form->validated('job_position_id'));
             $application = JobApplication::openFor($form->validated('national_code')) ?? new JobApplication(['status' => ApplicationStatus::Submitted]);
 
@@ -128,6 +130,16 @@ class CareersController extends Controller
             $application->addMedia($form->file('resume'))
                 ->usingFileName('resume.pdf')
                 ->toMediaCollection(JobApplication::RESUME_COLLECTION);
+
+            // A new application starts its position's hiring workflow; a
+            // resent one is noted in the running case (ADR 0016).
+            $case = $application->workflowCase;
+
+            if ($case?->isInProgress()) {
+                $engine->recordSubjectUpdate($case, 'متقاضی فرم را دوباره فرستاد.');
+            } elseif ($application->wasRecentlyCreated && $position->workflow?->is_active) {
+                $engine->start($position->workflow, $application);
+            }
         }));
 
         $applicantMobile->forget();

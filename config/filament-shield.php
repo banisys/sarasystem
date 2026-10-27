@@ -3,6 +3,7 @@
 declare(strict_types=1);
 use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Tenants\TenantResource;
+use App\Filament\Resources\WorkflowCases\WorkflowCaseResource;
 use App\Models\Tenant;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -204,6 +205,8 @@ return [
         'exclude' => [
             TenantResource::class,
             RoleResource::class,
+            // The cartable: access comes from step assignments (ADR 0016).
+            WorkflowCaseResource::class,
         ],
     ],
 

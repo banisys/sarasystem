@@ -15,7 +15,7 @@ class JobPositionsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->withCount('applications'))
+            ->modifyQueryUsing(fn ($query) => $query->with('workflow')->withCount('applications'))
             ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
@@ -25,6 +25,9 @@ class JobPositionsTable
                 IconColumn::make('is_active')
                     ->label('در فرم')
                     ->boolean(),
+                TextColumn::make('workflow.name')
+                    ->label('فرایند استخدام')
+                    ->placeholder('بدون فرایند'),
                 TextColumn::make('applications_count')
                     ->label('تعداد درخواست‌ها')
                     ->sortable(),

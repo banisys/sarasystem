@@ -1,0 +1,60 @@
+<?php
+
+namespace Modules\Employee\Filament\Resources\Employees;
+
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+use Modules\Employee\Filament\Resources\Employees\Pages\ListEmployees;
+use Modules\Employee\Filament\Resources\Employees\Schemas\EmployeeForm;
+use Modules\Employee\Filament\Resources\Employees\Tables\EmployeesTable;
+use Modules\Employee\Models\Employee;
+use UnitEnum;
+
+/**
+ * Employees of the current tenant (ADR 0016). They are created by hiring
+ * workflows; employment details are edited in a modal.
+ */
+class EmployeeResource extends Resource
+{
+    protected static ?string $model = Employee::class;
+
+    // See JobPositionResource.
+    protected static bool $isScopedToTenant = false;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
+
+    protected static string|UnitEnum|null $navigationGroup = 'کارکنان';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $slug = 'employees';
+
+    protected static ?string $modelLabel = 'کارمند';
+
+    protected static ?string $pluralModelLabel = 'کارمندان';
+
+    public static function form(Schema $schema): Schema
+    {
+        return EmployeeForm::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return EmployeesTable::configure($table);
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListEmployees::route('/'),
+        ];
+    }
+}
