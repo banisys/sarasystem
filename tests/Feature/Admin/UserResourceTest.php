@@ -224,6 +224,22 @@ class UserResourceTest extends TestCase
         $this->assertSame(['teacher'], $this->roleNamesIn($user, $this->otherTenant));
     }
 
+    public function test_accounts_are_deleted_from_the_list_not_the_edit_page(): void
+    {
+        $this->roleWithPermissions('manager', ['ViewAny:User', 'View:User', 'Create:User', 'Update:User', 'Delete:User']);
+        $user = User::factory()->create();
+        $this->grantRole($user, $this->tenant, 'teacher');
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::test(EditUser::class, ['record' => $user->getRouteKey()])->assertActionDoesNotExist('delete');
+
+        Livewire::test(ListUsers::class)
+            ->assertActionHidden(TestAction::make('delete')->table($this->manager))
+            ->callAction(TestAction::make('delete')->table($user));
+
+        $this->assertModelMissing($user);
+    }
+
     public function test_an_existing_user_is_added_to_the_tenant_without_a_new_account(): void
     {
         $user = User::factory()->create();

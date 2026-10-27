@@ -7,6 +7,7 @@ use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -55,6 +56,11 @@ class UsersTable
             ->recordActions([
                 EditAction::make(),
                 static::removeFromTenantAction(),
+                // Deleting is done here, not on the edit page (ADR 0006).
+                DeleteAction::make()
+                    ->label('حذف حساب')
+                    ->modalDescription('حساب کاربری از سامانه و از همه‌ی '.config('sarasystem.tenant_plural_label').' حذف می‌شود. برای برداشتن فقط از این '.config('sarasystem.tenant_label').' «حذف از '.config('sarasystem.tenant_label').'» را بزنید.')
+                    ->visible(fn (User $record): bool => $record->isNot(auth()->user()) && UserResource::canEdit($record)),
             ]);
     }
 

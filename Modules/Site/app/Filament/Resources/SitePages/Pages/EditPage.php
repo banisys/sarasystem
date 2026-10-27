@@ -3,7 +3,6 @@
 namespace Modules\Site\Filament\Resources\SitePages\Pages;
 
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 use Modules\Site\Filament\Resources\SitePages\PageResource;
@@ -21,8 +20,6 @@ class EditPage extends EditRecord
                 ->color('gray')
                 ->url(fn (): string => $this->getRecord()->url(), shouldOpenInNewTab: true)
                 ->visible(fn (): bool => $this->getRecord()->is_published),
-            DeleteAction::make()
-                ->hidden(fn (): bool => $this->getRecord()->isHome()),
         ];
     }
 }

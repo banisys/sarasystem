@@ -161,8 +161,9 @@ class PageResourceTest extends TestCase
             ->assertActionHidden(TestAction::make('delete')->table($home))
             ->assertActionVisible(TestAction::make('delete')->table($other));
 
+        // Deleting is in the list only (ADR 0006).
         Livewire::test(EditPage::class, ['record' => $home->getRouteKey()])
-            ->assertActionHidden('delete')
+            ->assertActionDoesNotExist('delete')
             ->assertFormFieldDisabled('path')
             ->fillForm(['title' => 'خانه'])
             ->call('save')

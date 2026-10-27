@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Roles\Pages;
 
 use App\Filament\Resources\Roles\RoleResource;
-use App\Models\Role;
 use BezhanSalleh\FilamentShield\Support\Utils;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -18,14 +16,6 @@ class EditRole extends EditRecord
     public Collection $permissions;
 
     protected static string $resource = RoleResource::class;
-
-    protected function getActions(): array
-    {
-        return [
-            DeleteAction::make()
-                ->hidden(fn (Role $record): bool => $record->isSystemRole()),
-        ];
-    }
 
     #[Override]
     protected function mutateFormDataBeforeSave(array $data): array

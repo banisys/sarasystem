@@ -15,6 +15,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-27 — Admin panel: no delete button on edit pages any more (users, roles, workflows, site pages, exams, questions, exam attempts); deleting is a row action in each list (ADR 0006). Users got «حذف حساب» in their list (not for yourself). 247 tests pass.
 - 2026-10-26 — Approval workflows and the cartable (ADR 0016), with hiring as the first workflow:
   - **Engine (core):** `WorkflowEngine` checks the assignee and the step they saw, writes the history and sends bell notifications (`notifications` table, `->databaseNotifications()`). Running cases keep a copy of their steps. Modules plug in with `WorkflowSubject`.
   - **Admin screens:** «کارتابل → فرایندها» designer: steps go to a role or a person in a tenant, with reject / return / edit chosen per step. «کارتابل من» lists cases waiting for the user in the current tenant: approve, return, reject, edit, claim / release, note.

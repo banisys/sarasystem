@@ -6,7 +6,6 @@ use App\Auth\Impersonation;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\User;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -33,7 +32,6 @@ class EditUser extends EditRecord
                     $panel = Filament::getPanel('admin');
                     $this->redirect($record->canAccessPanel($panel) ? url($panel->getPath()) : route('dashboard'));
                 }),
-            DeleteAction::make(),
         ];
     }
 }

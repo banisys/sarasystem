@@ -2,7 +2,6 @@
 
 namespace Modules\Exam\Filament\Resources\ExamAttempts\Pages;
 
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Modules\Exam\Filament\Resources\ExamAttempts\ExamAttemptResource;
 use Modules\Exam\Models\ExamAttempt;
@@ -29,14 +28,6 @@ class GradeExamAttempt extends EditRecord
             app(ExamTaking::class)->finish($attempt, timedOut: true);
             $this->fillForm();
         }
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            DeleteAction::make()
-                ->modalDescription('این شرکت و پاسخ‌هایش حذف می‌شود و یک بار از دفعات شرکت کاربر کم می‌شود.'),
-        ];
     }
 
     protected function afterSave(): void
