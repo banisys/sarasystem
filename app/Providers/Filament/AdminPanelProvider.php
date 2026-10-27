@@ -23,6 +23,7 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
+use Filament\Support\View\Components\ModalComponent;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
@@ -154,6 +155,14 @@ class AdminPanelProvider extends PanelProvider
                     ? $query->orderBy($model->qualifyColumn($model->getCreatedAtColumn()), $direction)
                     : null;
             }, 'desc'));
+
+        // Modals (actions, slide-overs, confirmations) close only with the ×
+        // button in their header: not by clicking outside or pressing Escape,
+        // so a half-filled form is not lost by a stray click. A modal can opt
+        // back in with ->closeModalByClickingAway() / ->closeModalByEscaping().
+        ModalComponent::closeButton();
+        ModalComponent::closedByClickingAway(false);
+        ModalComponent::closedByEscaping(false);
 
         // Every column can be hidden from the column manager; a column that
         // must stay visible opts out with ->toggleable(false).

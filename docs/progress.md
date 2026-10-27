@@ -16,6 +16,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-27 — Admin panel: modals (actions, confirmations, slide-overs) close only with the × button in their header, not by clicking outside or pressing Escape (`ModalComponent` defaults in `AdminPanelProvider`). 320 tests pass.
 - 2026-10-28 — Module `Document` ([ADR 0019](decisions/0019-documents.md)): documents of employees and learners.
   - **Document types** («مدارک → انواع مدرک», head office only): for employees and/or learners, file kind and limits, expiry date, applicant upload, **roles that upload** and **roles that check**, required for nobody / everyone / chosen job positions or programs.
   - **Documents** («مدارک → مدارک», per tenant): upload for an applicant or member, view files (signed 30-minute links), approve, reject with a reason, upload again; filters for status and expiry. Applicants' documents move to the employee / learner on acceptance.
