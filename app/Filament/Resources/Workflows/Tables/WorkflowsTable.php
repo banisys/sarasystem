@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Workflows\Tables;
 
 use App\Filament\Support\TextFilter;
-use App\Models\Workflow;
 use App\Workflow\CaseStatus;
 use App\Workflow\WorkflowSubjects;
 use Filament\Actions\DeleteAction;
@@ -31,9 +30,6 @@ class WorkflowsTable
                 TextColumn::make('subject_type')
                     ->label('برای')
                     ->formatStateUsing(fn (string $state): string => WorkflowSubjects::find($state)?->label() ?? $state),
-                TextColumn::make('steps')
-                    ->label('مرحله‌ها')
-                    ->state(fn (Workflow $record): string => collect($record->stepList())->pluck('name')->implode(' ← ')),
                 IconColumn::make('is_active')
                     ->label('فعال')
                     ->boolean(),
