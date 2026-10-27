@@ -21,13 +21,13 @@ use Modules\Student\Enums\Nationality;
 use Modules\Student\Enums\PreregistrationStatus;
 use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Http\Requests\StorePreregistrationRequest;
-use Modules\Student\Models\Grade;
 use Modules\Student\Models\Preregistration;
-use Modules\Student\Support\GuardianMobile;
+use Modules\Student\Models\Program;
+use Modules\Student\Support\PreregistrationMobile;
 
 /**
- * The public student «پیش‌ثبت‌نام» form at /preregister, on the primary
- * tenant's site only (ADR 0018).
+ * The public «پیش‌ثبت‌نام» form at /preregister, on the primary tenant's
+ * site only (ADR 0018).
  */
 class PreregistrationController extends Controller
 {
@@ -36,25 +36,19 @@ class PreregistrationController extends Controller
 
     public const SUBMITTED_MESSAGE = 'پیش‌ثبت‌نام شما ثبت شد. همکاران ما پس از بررسی با شما تماس می‌گیرند.';
 
-    public function create(GuardianMobile $guardianMobile): Response
+    public function create(PreregistrationMobile $applicantMobile): Response
     {
         $tenant = $this->primaryTenant();
-        $stages = $tenant->execute(fn () => Grade::query()
-            ->active()
-            ->stages()
-            ->ordered()
-            ->with(['children' => fn ($query) => $query->active()->ordered()])
-            ->get());
+        $programs = $tenant->execute(fn () => Program::query()->active()->ordered()->get(['id', 'tenant_id', 'title', 'description']));
 
         return Inertia::render('Student::Preregister', [
             ...PublicSite::layoutProps($tenant),
-            // Each with its grades and the form as set up for it (ADR 0017).
-            'stages' => $stages->map(fn (Grade $stage): array => [
-                ...$stage->only(['id', 'title', 'description']),
-                'grades' => $stage->children->map->only(['id', 'title'])->all(),
-                'form' => PreregistrationForm::for($tenant, $stage)->toArray(),
+            // Each with the form as set up for it (ADR 0017).
+            'programs' => $programs->map(fn (Program $program): array => [
+                ...$program->only(['id', 'title', 'description']),
+                'form' => PreregistrationForm::for($tenant, $program)->toArray(),
             ])->all(),
-            // Until a stage is chosen.
+            // Until a program is chosen.
             'form' => PreregistrationForm::for($tenant)->toArray(),
             'sections' => (new PreregistrationForm)->sections(),
             'options' => [
@@ -62,13 +56,16 @@ class PreregistrationController extends Controller
                 'genders' => self::options(Gender::class),
                 'tenants' => StorePreregistrationRequest::preferredTenants()->map->only(['id', 'name'])->all(),
             ],
-            'tenantLabel' => config('sarasystem.tenant_label'),
+            'labels' => [
+                'tenant' => config('sarasystem.tenant_label'),
+                'learner' => config('sarasystem.learner_label'),
+            ],
             'limits' => [
                 'birthYears' => StorePreregistrationRequest::birthYearRange(),
             ],
             'honeypot' => self::HONEYPOT,
             'mobileVerification' => [
-                'verifiedMobile' => $guardianMobile->verified(),
+                'verifiedMobile' => $applicantMobile->verified(),
                 'codeLength' => OneTimePassword::LENGTH,
                 'resendAfterSeconds' => OneTimePassword::RESEND_AFTER_SECONDS,
             ],
@@ -76,30 +73,30 @@ class PreregistrationController extends Controller
     }
 
     /**
-     * Sends a code to the family's mobile; the form is saved only with a
+     * Sends a code to the applicant's mobile; the form is saved only with a
      * confirmed mobile.
      */
-    public function sendCode(Request $request, GuardianMobile $guardianMobile): RedirectResponse
+    public function sendCode(Request $request, PreregistrationMobile $applicantMobile): RedirectResponse
     {
         $this->primaryTenant();
         $mobile = $this->validatedMobile($request);
 
-        if (($wait = $guardianMobile->secondsUntilResend($mobile)) > 0) {
+        if (($wait = $applicantMobile->secondsUntilResend($mobile)) > 0) {
             throw ValidationException::withMessages(['mobile' => "{$wait} ثانیه‌ی دیگر می‌توانید کد جدید بگیرید."]);
         }
 
-        $guardianMobile->sendCode($mobile);
+        $applicantMobile->sendCode($mobile);
 
         return back();
     }
 
-    public function verifyCode(Request $request, GuardianMobile $guardianMobile): RedirectResponse
+    public function verifyCode(Request $request, PreregistrationMobile $applicantMobile): RedirectResponse
     {
         $this->primaryTenant();
         $mobile = $this->validatedMobile($request);
         $request->validate(['code' => ['required', 'string']], ['code.required' => 'کد پیامک‌شده را وارد کنید.']);
 
-        if (! $guardianMobile->verify($mobile, Identifiers::toLatinDigits($request->string('code')->trim()->toString()))) {
+        if (! $applicantMobile->verify($mobile, Identifiers::toLatinDigits($request->string('code')->trim()->toString()))) {
             throw ValidationException::withMessages(['code' => 'کد وارد شده درست نیست یا منقضی شده است.']);
         }
 
@@ -110,9 +107,9 @@ class PreregistrationController extends Controller
      * Sending the form again while a preregistration is open updates it,
      * wherever it is (from the same mobile and before review only, see
      * StorePreregistrationRequest); otherwise a new one is filed with the
-     * primary tenant and its stage's workflow starts.
+     * primary tenant and its program's workflow starts.
      */
-    public function store(Request $request, GuardianMobile $guardianMobile, WorkflowEngine $engine): RedirectResponse
+    public function store(Request $request, PreregistrationMobile $applicantMobile, WorkflowEngine $engine): RedirectResponse
     {
         $tenant = $this->primaryTenant();
 
@@ -126,10 +123,10 @@ class PreregistrationController extends Controller
             $preregistration = Preregistration::openFor($form->validated('national_code')) ?? new Preregistration(['status' => PreregistrationStatus::Submitted]);
             $preregistration->fill($form->preregistrationData())->save();
 
-            // A new preregistration starts its stage's admission workflow;
+            // A new preregistration starts its program's admission workflow;
             // a resent one is noted in the running case (ADR 0016).
             $case = $preregistration->workflowCase;
-            $workflow = $form->grade()->stage()->workflow;
+            $workflow = $form->program()->workflow;
 
             if ($case?->isInProgress()) {
                 $engine->recordSubjectUpdate($case, 'فرم پیش‌ثبت‌نام دوباره فرستاده شد.');
@@ -138,7 +135,7 @@ class PreregistrationController extends Controller
             }
         }));
 
-        $guardianMobile->forget();
+        $applicantMobile->forget();
 
         return to_route('preregister.create')->with('status', self::SUBMITTED_MESSAGE);
     }

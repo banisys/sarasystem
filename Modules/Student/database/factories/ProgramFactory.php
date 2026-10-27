@@ -4,32 +4,25 @@ namespace Modules\Student\Database\Factories;
 
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Modules\Student\Models\Grade;
+use Modules\Student\Models\Program;
 
 /**
- * @extends Factory<Grade>
+ * @extends Factory<Program>
  */
-class GradeFactory extends Factory
+class ProgramFactory extends Factory
 {
-    protected $model = Grade::class;
+    protected $model = Program::class;
 
     /**
-     * A stage; use childOf() for a grade.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
             'tenant_id' => Tenant::factory(),
-            'title' => fake()->unique()->word(),
+            'title' => fake()->unique()->words(2, true),
             'is_active' => true,
         ];
-    }
-
-    public function childOf(Grade $stage): static
-    {
-        return $this->state(['tenant_id' => $stage->tenant_id, 'parent_id' => $stage->id]);
     }
 
     public function inactive(): static

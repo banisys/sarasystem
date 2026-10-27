@@ -13,12 +13,14 @@ use Modules\Student\Database\Factories\StudentFactory;
 use Modules\Student\Enums\StudentStatus;
 
 /**
- * A person studying in a tenant (ADR 0018). Identity (name, mobile,
- * national code) is the global user's; this row holds the enrollment in
- * one tenant. Created when a preregistration is approved at the last step
- * of its admission workflow.
+ * A learner of a tenant (ADR 0018): a pupil, a university student, an
+ * institute's trainee or a company's employee in training; the person who
+ * is put into classes. Identity (name, mobile, national code) is the global
+ * user's; this row holds the membership as a learner in one tenant. Created
+ * when a preregistration is approved at the last step of its admission
+ * workflow.
  */
-#[Fillable(['tenant_id', 'user_id', 'preregistration_id', 'grade_id', 'grade_title', 'student_code', 'status', 'enrolled_at', 'left_at'])]
+#[Fillable(['tenant_id', 'user_id', 'preregistration_id', 'student_code', 'status', 'enrolled_at', 'left_at'])]
 class Student extends Model
 {
     /** @use HasFactory<StudentFactory> */
@@ -35,16 +37,6 @@ class Student extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Grades are the primary tenant's (ADR 0018).
-     *
-     * @return BelongsTo<Grade, $this>
-     */
-    public function grade(): BelongsTo
-    {
-        return $this->belongsTo(Grade::class)->withoutGlobalScope(TenantScope::class);
     }
 
     /**

@@ -2,17 +2,15 @@
 
 namespace Modules\Student\Filament\Resources\Students\Schemas;
 
-use App\Models\Tenant;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Modules\Student\Enums\StudentStatus;
-use Modules\Student\Models\Grade;
 
 /**
- * Enrollment details only; the person's identity is edited on the user.
+ * Membership details only; the person's identity is edited on the user.
  */
 class StudentForm
 {
@@ -20,13 +18,8 @@ class StudentForm
     {
         return $schema
             ->components([
-                Select::make('grade_id')
-                    ->label('پایه')
-                    // Grades are the primary tenant's (ADR 0018).
-                    ->options(fn (): array => ($primary = Tenant::primary()) ? Grade::selectOptions($primary->getKey()) : [])
-                    ->required(),
                 TextInput::make('student_code')
-                    ->label('کد دانش‌آموزی')
+                    ->label('کد '.config('sarasystem.learner_label'))
                     ->maxLength(20)
                     ->unique(ignoreRecord: true),
                 Select::make('status')

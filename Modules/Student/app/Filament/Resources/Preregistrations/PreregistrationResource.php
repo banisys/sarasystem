@@ -25,7 +25,7 @@ class PreregistrationResource extends Resource
 
     protected static ?string $model = Preregistration::class;
 
-    // See GradeResource.
+    // See ProgramResource.
     protected static bool $isScopedToTenant = false;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserPlus;

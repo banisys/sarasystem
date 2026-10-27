@@ -11,13 +11,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Student\Database\Seeders\AdmissionDemoSeeder;
 use Modules\Student\Enums\StudentStatus;
-use Modules\Student\Filament\Resources\Grades\GradeResource;
-use Modules\Student\Filament\Resources\Grades\Pages\ListGrades;
 use Modules\Student\Filament\Resources\Preregistrations\Pages\ListPreregistrations;
 use Modules\Student\Filament\Resources\Preregistrations\PreregistrationResource;
+use Modules\Student\Filament\Resources\Programs\Pages\ListPrograms;
+use Modules\Student\Filament\Resources\Programs\ProgramResource;
 use Modules\Student\Filament\Resources\Students\Pages\ListStudents;
-use Modules\Student\Models\Grade;
+use Modules\Student\Filament\Resources\Students\StudentResource;
+use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Models\Preregistration;
+use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
@@ -40,7 +42,7 @@ class StudentAdminTest extends TestCase
         $this->primary->makePrimary();
         $this->west = Tenant::factory()->create();
 
-        $permissions = collect(['Preregistration', 'Grade', 'Student'])
+        $permissions = collect(['Preregistration', 'Program', 'Student'])
             ->flatMap(fn (string $subject): array => ["ViewAny:{$subject}", "View:{$subject}", "Create:{$subject}", "Update:{$subject}", "Delete:{$subject}"])
             ->all();
         $this->roleWithPermissions('admissions', $permissions);
@@ -56,13 +58,13 @@ class StudentAdminTest extends TestCase
     {
         $ownPreregistration = Preregistration::factory()->for($this->primary)->create();
         $foreignPreregistration = Preregistration::factory()->for($this->west)->create();
-        $ownGrade = Grade::factory()->for($this->primary)->create();
-        $foreignGrade = Grade::factory()->for($this->west)->create();
+        $ownProgram = Program::factory()->for($this->primary)->create();
+        $foreignProgram = Program::factory()->for($this->west)->create();
 
         $this->actingInPanel($this->manager, $this->primary);
 
         Livewire::test(ListPreregistrations::class)->assertCanSeeTableRecords([$ownPreregistration])->assertCanNotSeeTableRecords([$foreignPreregistration]);
-        Livewire::test(ListGrades::class)->assertCanSeeTableRecords([$ownGrade])->assertCanNotSeeTableRecords([$foreignGrade]);
+        Livewire::test(ListPrograms::class)->assertCanSeeTableRecords([$ownProgram])->assertCanNotSeeTableRecords([$foreignProgram]);
 
         $this->get(PreregistrationResource::getUrl('view', ['record' => $foreignPreregistration], tenant: $this->primary))->assertNotFound();
     }
@@ -72,12 +74,12 @@ class StudentAdminTest extends TestCase
         $this->actingAs($this->manager);
 
         $this->get(PreregistrationResource::getUrl('index', tenant: $this->primary))->assertOk();
-        $this->get(GradeResource::getUrl('index', tenant: $this->primary))->assertOk();
+        $this->get(ProgramResource::getUrl('index', tenant: $this->primary))->assertOk();
         $this->get(PreregistrationResource::getUrl('index', tenant: $this->west))->assertForbidden();
-        $this->get(GradeResource::getUrl('index', tenant: $this->west))->assertForbidden();
+        $this->get(ProgramResource::getUrl('index', tenant: $this->west))->assertForbidden();
     }
 
-    public function test_the_students_list_shows_only_the_current_tenants_students(): void
+    public function test_the_learners_list_shows_only_the_current_tenants_learners(): void
     {
         $own = Student::factory()->for($this->west)->create();
         $foreign = Student::factory()->for($this->primary)->create();
@@ -87,17 +89,15 @@ class StudentAdminTest extends TestCase
         Livewire::test(ListStudents::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$foreign]);
     }
 
-    public function test_a_students_grade_and_status_are_edited_in_a_modal(): void
+    public function test_a_learners_status_is_edited_in_a_modal(): void
     {
-        $stage = Grade::factory()->for($this->primary)->create(['title' => 'متوسطه دوم']);
-        $tenth = Grade::factory()->childOf($stage)->create(['title' => 'دهم']);
         $student = Student::factory()->for($this->west)->create();
 
         $this->actingInPanel($this->manager, $this->west);
 
         Livewire::test(ListStudents::class)
             ->mountAction(TestAction::make('edit')->table($student))
-            ->setActionData(['grade_id' => $tenth->id, 'status' => StudentStatus::Left->value, 'left_at' => null])
+            ->setActionData(['student_code' => 'S-1', 'status' => StudentStatus::Left->value, 'left_at' => null])
             ->callMountedAction()
             ->assertHasActionErrors(['left_at' => 'required'])
             ->setActionData(['left_at' => now()->toDateString()])
@@ -105,24 +105,27 @@ class StudentAdminTest extends TestCase
             ->assertHasNoActionErrors();
 
         $student->refresh();
-        $this->assertSame('متوسطه دوم - دهم', $student->grade_title);
+        $this->assertSame('S-1', $student->student_code);
         $this->assertSame(StudentStatus::Left, $student->status);
     }
 
-    public function test_grades_are_created_under_a_stage(): void
+    public function test_the_learner_label_follows_the_installation(): void
     {
-        $stage = Grade::factory()->for($this->primary)->create(['title' => 'دبستان']);
+        config(['sarasystem.learner_label' => 'هنرآموز', 'sarasystem.learner_plural_label' => 'هنرآموزان']);
 
+        $this->assertSame('هنرآموزان', StudentResource::getPluralModelLabel());
+        $this->assertSame('هنرآموزان', StudentResource::getNavigationGroup());
+    }
+
+    public function test_programs_are_created_with_a_workflow(): void
+    {
         $this->actingInPanel($this->manager, $this->primary);
 
-        Livewire::test(ListGrades::class)
-            ->callAction('create', data: ['title' => 'اول', 'parent_id' => $stage->id, 'is_active' => true, 'sort' => 1])
+        Livewire::test(ListPrograms::class)
+            ->callAction('create', data: ['title' => 'کارشناسی کامپیوتر', 'is_active' => true])
             ->assertHasNoActionErrors();
 
-        $grade = Grade::query()->where('title', 'اول')->sole();
-        $this->assertSame($stage->id, $grade->parent_id);
-        $this->assertSame($this->primary->id, $grade->tenant_id);
-        $this->assertSame('دبستان - اول', $grade->fullTitle());
+        $this->assertSame($this->primary->id, Program::query()->where('title', 'کارشناسی کامپیوتر')->sole()->tenant_id);
     }
 
     public function test_staff_without_permission_cannot_see_preregistrations(): void
@@ -133,22 +136,27 @@ class StudentAdminTest extends TestCase
         $this->actingAs($clerk)->get(PreregistrationResource::getUrl('index', tenant: $this->primary))->assertForbidden();
     }
 
-    public function test_the_demo_seeder_adds_the_grades_and_an_admission_workflow_and_can_run_again(): void
+    public function test_the_demo_seeder_sets_up_a_schools_preregistration_and_can_run_again(): void
     {
         $this->seed(DemoSeeder::class);
-        Tenant::query()->where('slug', 'head-office')->sole()->makePrimary();
+        $headOffice = Tenant::query()->where('slug', 'head-office')->sole();
+        $headOffice->makePrimary();
         User::factory()->create(['email' => 'admin@sarasystem.test']);
 
         $this->seed(AdmissionDemoSeeder::class);
         $this->seed(AdmissionDemoSeeder::class);
 
-        $stages = Grade::withoutTenantScope()->stages()->with('children')->get();
-        $this->assertSame(['دبستان', 'متوسطه اول', 'متوسطه دوم'], $stages->sortBy('sort')->pluck('title')->values()->all());
-        $this->assertSame(12, $stages->sum(fn (Grade $stage): int => $stage->children->count()));
-
         $workflow = Workflow::withoutTenantScope()->sole();
         $this->assertSame(AdmissionDemoSeeder::WORKFLOW_NAME, $workflow->name);
         $this->assertCount(3, $workflow->stepList());
-        $this->assertTrue($stages->every(fn (Grade $stage): bool => $stage->workflow_id === $workflow->id));
+
+        $programs = Program::withoutTenantScope()->get();
+        $this->assertCount(12, $programs);
+        $this->assertTrue($programs->every(fn (Program $program): bool => $program->workflow_id === $workflow->id));
+
+        // The school-only questions are the organization's added fields.
+        $form = PreregistrationForm::for($headOffice->refresh());
+        $this->assertSame(['birth_certificate', 'birth_place', 'previous_school', 'last_average'], array_map(fn ($field) => $field->key, $form->fields));
+        $this->assertTrue($form->requires('father_name'));
     }
 }

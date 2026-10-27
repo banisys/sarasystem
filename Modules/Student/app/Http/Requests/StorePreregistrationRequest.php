@@ -16,16 +16,17 @@ use Illuminate\Validation\Validator;
 use Modules\Student\Enums\Gender;
 use Modules\Student\Enums\Nationality;
 use Modules\Student\Forms\PreregistrationForm;
-use Modules\Student\Models\Grade;
 use Modules\Student\Models\Preregistration;
-use Modules\Student\Support\GuardianMobile;
+use Modules\Student\Models\Program;
+use Modules\Student\Support\PreregistrationMobile;
 
 /**
- * The public student «پیش‌ثبت‌نام» form (ADR 0018). Rules follow the LMS
- * form; the Tehran district and Kanoon fields are dropped and the captcha
- * is replaced by an SMS check of the mobile (PreregistrationController::sendCode/verifyCode).
- * Which of the other fields are asked, and the added fields, follow the
- * organization's setup of the form for the chosen stage (ADR 0017).
+ * The public «پیش‌ثبت‌نام» form (ADR 0018). The built-in fields are the
+ * ones every kind of learner has, with the LMS student form's rules; the
+ * captcha is replaced by an SMS check of the mobile
+ * (PreregistrationController::sendCode/verifyCode). Which of them are
+ * asked, and the added fields, follow the organization's setup of the
+ * form for the chosen program (ADR 0017).
  */
 class StorePreregistrationRequest extends FormRequest
 {
@@ -33,10 +34,8 @@ class StorePreregistrationRequest extends FormRequest
 
     private ?ResolvedForm $preregistrationForm = null;
 
-    private Grade|false|null $grade = false;
-
     /**
-     * Allowed Jalali birth years: 4 to 19 years old, as in LMS.
+     * Allowed Jalali birth years: 3 to 90 years old, for any kind of learner.
      *
      * @return array{int, int}
      */
@@ -44,13 +43,13 @@ class StorePreregistrationRequest extends FormRequest
     {
         $year = Jalali::now()->getYear();
 
-        return [$year - 19, $year - 4];
+        return [$year - 90, $year - 3];
     }
 
     /**
-     * The tenants a family may name as the school they would like: the
+     * The tenants an applicant may name as the one they would like: the
      * active ones besides the primary tenant (usually a head office), or
-     * the primary tenant alone in a single-school installation.
+     * the primary tenant alone in a single-tenant installation.
      *
      * @return Collection<int, Tenant>
      */
@@ -80,46 +79,23 @@ class StorePreregistrationRequest extends FormRequest
             'phone' => $latin($this->input('phone')),
             'postal_code' => $latin($this->input('postal_code')),
             'birth_date' => $latin($this->input('birth_date')),
-            'birth_certificate_number' => $latin($this->input('birth_certificate_number')),
-            'last_average' => $latin($this->input('last_average')),
             ResolvedForm::INPUT => $this->preregistrationForm()->prepareCustomInput((array) $this->input(ResolvedForm::INPUT, [])),
         ]);
     }
 
     /**
-     * The chosen grade, or the chosen stage when it has no grades; null
-     * while nothing valid is chosen.
-     */
-    public function grade(): ?Grade
-    {
-        if ($this->grade === false) {
-            $tenant = Tenant::primary() ?? abort(404);
-            $grades = Grade::withoutTenantScope()->where('tenant_id', $tenant->getKey())->active();
-            $stage = is_numeric($this->input('stage_id')) ? (clone $grades)->stages()->find($this->input('stage_id')) : null;
-
-            $this->grade = match (true) {
-                $stage === null => null,
-                is_numeric($this->input('grade_id')) => (clone $grades)->where('parent_id', $stage->getKey())->find($this->input('grade_id')),
-                default => (clone $grades)->where('parent_id', $stage->getKey())->exists() ? null : $stage,
-            };
-        }
-
-        return $this->grade;
-    }
-
-    /**
-     * The form as set up for the chosen stage, or for all stages while
+     * The form as set up for the chosen program, or for all programs while
      * none (or an unknown one) is chosen.
      */
     public function preregistrationForm(): ResolvedForm
     {
         if ($this->preregistrationForm === null) {
             $tenant = Tenant::primary() ?? abort(404);
-            $stage = is_numeric($this->input('stage_id'))
-                ? Grade::withoutTenantScope()->where('tenant_id', $tenant->getKey())->active()->stages()->find($this->input('stage_id'))
+            $program = is_numeric($this->input('program_id'))
+                ? Program::withoutTenantScope()->where('tenant_id', $tenant->getKey())->active()->find($this->input('program_id'))
                 : null;
 
-            $this->preregistrationForm = PreregistrationForm::for($tenant, $stage);
+            $this->preregistrationForm = PreregistrationForm::for($tenant, $program);
         }
 
         return $this->preregistrationForm;
@@ -132,14 +108,11 @@ class StorePreregistrationRequest extends FormRequest
     {
         [$minBirthYear, $maxBirthYear] = self::birthYearRange();
         $form = $this->preregistrationForm();
-        $primaryId = Tenant::primary()?->getKey();
 
         return [
-            'stage_id' => ['required', Rule::exists('student_grades', 'id')
-                ->where('tenant_id', $primaryId)
-                ->whereNull('parent_id')
+            'program_id' => ['required', Rule::exists('student_programs', 'id')
+                ->where('tenant_id', Tenant::primary()?->getKey())
                 ->where('is_active', true)],
-            'grade_id' => ['nullable', 'integer'],
             'preferred_tenant_id' => $form->rulesFor('preferred_tenant', [Rule::in(self::preferredTenants()->modelKeys())]),
             'first_name' => ['required', 'string', 'max:50'],
             'last_name' => ['required', 'string', 'max:50'],
@@ -148,9 +121,7 @@ class StorePreregistrationRequest extends FormRequest
             'national_code' => $this->isIranian()
                 ? ['required', 'string', new NationalCode]
                 : ['required', 'digits:12'],
-            'birth_certificate_number' => $form->rulesFor('birth_certificate_number', ['string', 'max:50']),
             'birth_date' => $form->rulesFor('birth_date', ['string', new JalaliDate($minBirthYear, $maxBirthYear)]),
-            'birth_place' => $form->rulesFor('birth_place', ['string', 'max:100']),
             'gender' => ['required', Rule::enum(Gender::class)],
             'mobile' => ['required', 'string', new IranianMobile],
             'phone' => $form->rulesFor('phone', ['digits:11']),
@@ -158,34 +129,27 @@ class StorePreregistrationRequest extends FormRequest
             'postal_code' => $form->rulesFor('postal_code', ['digits:10']),
             'city' => $form->rulesFor('city', ['string', 'max:100']),
             'address' => $form->rulesFor('address', ['string', 'min:10', 'max:300']),
-            'previous_school' => $form->rulesFor('previous_school', ['string', 'max:150']),
-            'last_average' => $form->rulesFor('last_average', ['numeric', 'min:0', 'max:20']),
             ...$form->customRules(),
         ];
     }
 
     /**
-     * A stage with grades needs one of its grades. The mobile must have
-     * been confirmed by SMS in this session, and an open preregistration
-     * may only be updated from the mobile it was sent with, and only until
-     * a reviewer has it (ADR 0016).
+     * The mobile must have been confirmed by SMS in this session, and an
+     * open preregistration may only be updated from the mobile it was sent
+     * with, and only until a reviewer has it (ADR 0016).
      *
      * @return array<int, callable(Validator): void>
      */
     public function after(): array
     {
         return [function (Validator $validator): void {
-            if (! $validator->errors()->has('stage_id') && $this->grade() === null) {
-                $validator->errors()->add('grade_id', 'پایه‌ی تحصیلی را انتخاب کنید.');
-            }
-        }, function (Validator $validator): void {
             if ($validator->errors()->hasAny(['mobile', 'national_code'])) {
                 return;
             }
 
             $mobile = $this->input('mobile');
 
-            if ($mobile !== app(GuardianMobile::class)->verified()) {
+            if ($mobile !== app(PreregistrationMobile::class)->verified()) {
                 $validator->errors()->add('mobile', 'شماره موبایل را با کد پیامکی تأیید کنید.');
 
                 return;
@@ -194,11 +158,19 @@ class StorePreregistrationRequest extends FormRequest
             $open = Preregistration::openFor($this->input('national_code'));
 
             if ($open !== null && $open->mobile !== $mobile) {
-                $validator->errors()->add('national_code', 'برای این کد ملی پیش‌ثبت‌نامی با شماره‌ی '.GuardianMobile::mask($open->mobile).' ثبت شده است. برای ویرایش آن با همان شماره اقدام کنید.');
+                $validator->errors()->add('national_code', 'برای این کد ملی پیش‌ثبت‌نامی با شماره‌ی '.PreregistrationMobile::mask($open->mobile).' ثبت شده است. برای ویرایش آن با همان شماره اقدام کنید.');
             } elseif ($open !== null && ! $open->canBeUpdatedByApplicant()) {
                 $validator->errors()->add('national_code', self::UNDER_REVIEW_MESSAGE);
             }
         }];
+    }
+
+    /**
+     * The chosen program; only after validation.
+     */
+    public function program(): Program
+    {
+        return Program::withoutTenantScope()->findOrFail($this->validated('program_id'));
     }
 
     /**
@@ -210,14 +182,12 @@ class StorePreregistrationRequest extends FormRequest
      */
     public function preregistrationData(): array
     {
-        $data = $this->safe()->except(['stage_id', ResolvedForm::INPUT]);
-        $grade = $this->grade();
+        $data = $this->safe()->except([ResolvedForm::INPUT]);
 
         return [
-            ...array_fill_keys(['preferred_tenant_id', 'father_name', 'birth_certificate_number', 'birth_place', 'phone', 'email', 'postal_code', 'city', 'address', 'previous_school', 'last_average'], null),
+            ...array_fill_keys(['preferred_tenant_id', 'father_name', 'phone', 'email', 'postal_code', 'city', 'address'], null),
             ...$data,
-            'grade_id' => $grade->getKey(),
-            'grade_title' => $grade->fullTitle(),
+            'program_title' => $this->program()->title,
             'birth_date' => JalaliDate::toDate($data['birth_date'] ?? null),
             'custom_fields' => $this->preregistrationForm()->answers((array) $this->validated(ResolvedForm::INPUT, [])),
         ];
@@ -267,26 +237,21 @@ class StorePreregistrationRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'stage_id' => 'مقطع تحصیلی',
-            'grade_id' => 'پایه‌ی تحصیلی',
+            'program_id' => 'برنامه‌ی آموزشی',
             'preferred_tenant_id' => config('sarasystem.tenant_label').' مورد نظر',
             'first_name' => 'نام',
             'last_name' => 'نام خانوادگی',
             'father_name' => 'نام پدر',
             'nationality' => 'ملیت',
             'national_code' => $this->isIranian() ? 'کد ملی' : 'کد اتباع',
-            'birth_certificate_number' => 'شماره شناسنامه',
             'birth_date' => 'تاریخ تولد',
-            'birth_place' => 'محل تولد',
             'gender' => 'جنسیت',
             'mobile' => 'تلفن همراه',
-            'phone' => 'تلفن منزل',
+            'phone' => 'تلفن ثابت',
             'email' => 'ایمیل',
             'postal_code' => 'کد پستی',
             'city' => 'شهر',
-            'address' => 'نشانی منزل',
-            'previous_school' => 'نام مدرسه‌ی پیشین',
-            'last_average' => 'معدل ترم آخر',
+            'address' => 'نشانی',
             ...$this->preregistrationForm()->customAttributes(),
         ];
     }

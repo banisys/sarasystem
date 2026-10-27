@@ -23,7 +23,6 @@ class StudentFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'user_id' => User::factory(),
-            'grade_title' => 'متوسطه اول - هفتم',
             'status' => StudentStatus::Active,
             'enrolled_at' => now()->toDateString(),
         ];

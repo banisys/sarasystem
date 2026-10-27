@@ -47,7 +47,7 @@ class ViewPreregistration extends ViewRecord
                 Select::make('workflow_id')
                     ->label('فرایند')
                     ->options(fn (Preregistration $record): array => Workflow::query()->active()->for($record->getMorphClass())->orderBy('name')->pluck('name', 'id')->all())
-                    ->default(fn (Preregistration $record): ?int => $record->grade?->stage()->workflow_id)
+                    ->default(fn (Preregistration $record): ?int => $record->program?->workflow_id)
                     ->required(),
             ])
             ->action(function (array $data, Preregistration $record, WorkflowEngine $engine): void {

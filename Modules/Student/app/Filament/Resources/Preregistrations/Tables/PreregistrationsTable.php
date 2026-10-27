@@ -8,7 +8,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Student\Enums\PreregistrationStatus;
-use Modules\Student\Models\Grade;
 use Modules\Student\Models\Preregistration;
 
 class PreregistrationsTable
@@ -28,8 +27,8 @@ class PreregistrationsTable
                 TextColumn::make('mobile')
                     ->label('موبایل')
                     ->copyable(),
-                TextColumn::make('grade_title')
-                    ->label('مقطع و پایه')
+                TextColumn::make('program_title')
+                    ->label('برنامه‌ی آموزشی')
                     ->sortable(),
                 TextColumn::make('preferredTenant.name')
                     ->label(config('sarasystem.tenant_label').' مورد نظر')
@@ -57,9 +56,9 @@ class PreregistrationsTable
                 SelectFilter::make('status')
                     ->label('وضعیت')
                     ->options(PreregistrationStatus::class),
-                SelectFilter::make('grade_id')
-                    ->label('پایه')
-                    ->options(fn (): array => Grade::selectOptions((int) filament()->getTenant()?->getKey())),
+                SelectFilter::make('program_id')
+                    ->label('برنامه‌ی آموزشی')
+                    ->relationship('program', 'title'),
                 TextFilter::make('name')->label('نام')->attributes(['first_name', 'last_name']),
                 TextFilter::make('national_code')->label('کد ملی'),
                 TextFilter::make('mobile')->label('موبایل'),

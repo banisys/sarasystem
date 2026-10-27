@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Database\Seeders;
 
+use App\Models\FormCustomization;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -9,25 +10,27 @@ use App\Models\Workflow;
 use App\Workflow\AssigneeType;
 use App\Workflow\StepAction;
 use Illuminate\Database\Seeder;
-use Modules\Student\Models\Grade;
+use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Models\Preregistration;
+use Modules\Student\Models\Program;
 use RuntimeException;
 
 /**
- * The Iranian school grades and a sample admission workflow for local
- * development (ADR 0018), on top of the core DemoSeeder's tenants, roles
- * and users. Safe to run again: looks records up by title / name and
- * resets the steps.
+ * A school's preregistration for local development (ADR 0018), on top of
+ * the core DemoSeeder's tenants, roles and users: the grades as programs, a
+ * three-step admission workflow, and the school-only questions of the LMS
+ * student form (birth certificate, previous school, last average, …) as
+ * added fields of the form. Safe to run again: looks records up by title /
+ * name and resets the steps and the form setup.
  */
 class AdmissionDemoSeeder extends Seeder
 {
     public const WORKFLOW_NAME = 'پذیرش دانش‌آموز (نمونه)';
 
-    /** @var array<string, list<string>> stage => grades */
-    public const GRADES = [
-        'دبستان' => ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم'],
-        'متوسطه اول' => ['هفتم', 'هشتم', 'نهم'],
-        'متوسطه دوم' => ['دهم', 'یازدهم', 'دوازدهم'],
+    /** @var list<string> */
+    public const PROGRAMS = [
+        'پایه اول', 'پایه دوم', 'پایه سوم', 'پایه چهارم', 'پایه پنجم', 'پایه ششم',
+        'پایه هفتم', 'پایه هشتم', 'پایه نهم', 'پایه دهم', 'پایه یازدهم', 'پایه دوازدهم',
     ];
 
     public function run(): void
@@ -41,7 +44,7 @@ class AdmissionDemoSeeder extends Seeder
             $this->userStep('تأیید نهایی و ثبت‌نام', $headOffice, 'admin@sarasystem.test', [StepAction::Reject, StepAction::Return, StepAction::Edit]),
         ];
 
-        $headOffice->execute(function () use ($steps): void {
+        $headOffice->execute(function () use ($headOffice, $steps): void {
             $workflow = Workflow::query()->updateOrCreate(
                 ['name' => self::WORKFLOW_NAME, 'subject_type' => (new Preregistration)->getMorphClass()],
                 [
@@ -51,21 +54,25 @@ class AdmissionDemoSeeder extends Seeder
                 ],
             );
 
-            $stageSort = 0;
-
-            foreach (self::GRADES as $stageTitle => $grades) {
-                $stage = Grade::query()->updateOrCreate(
-                    ['title' => $stageTitle, 'parent_id' => null],
-                    ['workflow_id' => $workflow->getKey(), 'is_active' => true, 'sort' => ++$stageSort],
+            foreach (self::PROGRAMS as $sort => $title) {
+                Program::query()->updateOrCreate(
+                    ['title' => $title],
+                    ['workflow_id' => $workflow->getKey(), 'is_active' => true, 'sort' => $sort + 1],
                 );
-
-                foreach ($grades as $sort => $title) {
-                    Grade::query()->updateOrCreate(
-                        ['title' => $title, 'parent_id' => $stage->getKey()],
-                        ['is_active' => true, 'sort' => $sort + 1],
-                    );
-                }
             }
+
+            FormCustomization::query()->updateOrCreate(
+                ['tenant_id' => $headOffice->getKey(), 'form' => PreregistrationForm::KEY, 'owner_type' => null, 'owner_id' => null],
+                [
+                    'field_modes' => ['father_name' => 'required', 'phone' => 'required', 'city' => 'required', 'address' => 'required'],
+                    'fields' => [
+                        ['key' => 'birth_certificate', 'label' => 'شماره شناسنامه', 'type' => 'text', 'required' => true, 'section' => 'personal'],
+                        ['key' => 'birth_place', 'label' => 'محل تولد', 'type' => 'text', 'section' => 'personal'],
+                        ['key' => 'previous_school', 'label' => 'نام مدرسه‌ی پیشین', 'type' => 'text', 'required' => true, 'section' => 'other'],
+                        ['key' => 'last_average', 'label' => 'معدل ترم آخر', 'type' => 'number', 'section' => 'other'],
+                    ],
+                ],
+            );
         });
     }
 

@@ -18,8 +18,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Instance | | (legacy LMS) A site in LMS's multi-site setup. Each school branch is one instance; most data has `instance_id`. Maps to Tenant. |
 | School | مدرسه | (legacy LMS) `schl_schools`, tied to an instance. In SaraSystem a school is simply a Tenant. |
 | Academic year | سال تحصیلی | `schl_years`, from about 1 Shahrivar to 31 Mordad. Most operational data is year-scoped. |
-| Grade | پایه | Node in the grade tree: stage (دبستان، متوسطه اول، متوسطه دوم) → grade (هفتم…), with a major for upper secondary (تجربی، ریاضی، انسانی). In SaraSystem so far a two-level list for preregistration (`student_grades`, ADR 0018); a stage without grades (e.g. a language level) is chosen itself. |
-| Stage | مقطع | Top level of the grade tree (دبستان، متوسطه اول، …). It holds the admission workflow and its own setup of the preregistration form (ADR 0018). |
+| Grade | پایه | Node in the grade tree: stage (دبستان، متوسطه اول، متوسطه دوم) → grade (هفتم…), with a major for upper secondary (تجربی، ریاضی، انسانی). (legacy LMS; school-only, so not built into SaraSystem's learners: a school offers grades as programs, ADR 0018.) |
 | Shared / optional | مشترک | Grades or classes shared across grades/majors; a student can have optional classes besides the main class. |
 | Classroom | کلاس | A class of students in a school/grade/year (`schl_classrooms`). |
 | Classroom plan | برنامه کلاس | A course (subject) taught in a classroom by a teacher (+ supporter), possibly shared with other classrooms. |
@@ -75,6 +74,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Job application | درخواست همکاری / متقاضی همکاری | What someone sends through the public «همکاری با ما» form (`JobApplication`, [ADR 0014](decisions/0014-job-applications.md)). Open until it is rejected or the applicant is hired; one open application per national code. LMS called it «پیش ثبت نام کارمند» (employee preregister). |
 | Job position | موقعیت شغلی | A job offered in the «همکاری با ما» form (`JobPosition`). In LMS these were the school admin roles. |
 | Foreign national code | کد اتباع | 12-digit identifier of a foreign national, used instead of the کد ملی. |
-| Preregistration | پیش‌ثبت‌نام / متقاضی ثبت‌نام | What a family sends through the public «پیش‌ثبت‌نام» form (`Preregistration`, [ADR 0018](decisions/0018-student-preregistration.md)). Open until it is rejected or the student is admitted; one open preregistration per national code. |
-| Admission | پذیرش | The workflow a preregistration goes through; its last approval creates the user and the student row in the chosen tenant. |
-| Student | دانش‌آموز | A person studying in a tenant (`students`): grade, student code, status, dates; created by the last approval of an admission workflow. |
+| Learner | فراگیر (دانش‌آموز / دانشجو / هنرآموز / کارآموز) | A person or role put into classes so that education happens: a pupil, a university student, an institute's trainee or an employee in training (`Student` module, `students`, [ADR 0018](decisions/0018-student-preregistration.md)). One row per tenant: learner code, status, dates. Called as the installation says (`LEARNER_LABEL`). |
+| Program | برنامه‌ی آموزشی | What people preregister for, defined by the organization: «پایه هفتم», «کارشناسی کامپیوتر», «زبان انگلیسی - مقدماتی», «دوره‌ی بدو خدمت» (`Program`). Each has an optional admission workflow and its own form setup. |
+| Preregistration | پیش‌ثبت‌نام / متقاضی ثبت‌نام | What someone sends through the public «پیش‌ثبت‌نام» form for a program (`Preregistration`). Open until it is rejected or the applicant is admitted; one open preregistration per national code. |
+| Admission | پذیرش | The workflow a preregistration goes through; its last approval creates the user and the learner row in the chosen tenant. |

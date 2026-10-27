@@ -23,21 +23,19 @@ class PreregistrationFactory extends Factory
     {
         return [
             'tenant_id' => Tenant::factory(),
-            'grade_title' => 'متوسطه اول - هفتم',
+            'program_title' => 'زبان انگلیسی - مقدماتی',
             'status' => PreregistrationStatus::Submitted,
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'father_name' => fake()->firstNameMale(),
             'nationality' => Nationality::Iranian,
             'national_code' => self::nationalCode(),
-            'birth_certificate_number' => fake()->numerify('######'),
-            'birth_date' => fake()->dateTimeBetween('-15 years', '-7 years'),
+            'birth_date' => fake()->dateTimeBetween('-40 years', '-7 years'),
             'gender' => Gender::Male,
             'mobile' => '09'.fake()->numerify('#########'),
             'phone' => '021'.fake()->numerify('########'),
             'city' => 'تهران',
             'address' => fake()->address(),
-            'previous_school' => 'دبستان نمونه',
         ];
     }
 

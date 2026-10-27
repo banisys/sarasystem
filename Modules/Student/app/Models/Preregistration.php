@@ -18,17 +18,18 @@ use Modules\Student\Enums\Nationality;
 use Modules\Student\Enums\PreregistrationStatus;
 
 /**
- * A student preregistration sent through the public «پیش‌ثبت‌نام» form
- * (ADR 0018). No user is created until the student is admitted. A national
+ * A preregistration sent through the public «پیش‌ثبت‌نام» form (ADR 0018)
+ * for one of the organization's programs. No user is created until the
+ * learner is admitted. A national
  * code has at most one open preregistration (closed_at null) in the whole
  * installation.
  *
  * @property list<array{key: string, label: string, type: string, section: string|null, value: mixed}>|null $custom_fields answers to the fields the organization added (ADR 0017)
  */
 #[Fillable([
-    'tenant_id', 'grade_id', 'grade_title', 'preferred_tenant_id', 'status',
-    'first_name', 'last_name', 'father_name', 'nationality', 'national_code', 'birth_certificate_number', 'birth_date', 'birth_place', 'gender',
-    'mobile', 'phone', 'email', 'postal_code', 'city', 'address', 'previous_school', 'last_average', 'custom_fields',
+    'tenant_id', 'program_id', 'program_title', 'preferred_tenant_id', 'status',
+    'first_name', 'last_name', 'father_name', 'nationality', 'national_code', 'birth_date', 'gender',
+    'mobile', 'phone', 'email', 'postal_code', 'city', 'address', 'custom_fields',
 ])]
 class Preregistration extends Model
 {
@@ -70,17 +71,17 @@ class Preregistration extends Model
     }
 
     /**
-     * Grades are the primary tenant's, like the preregistration.
+     * Unscoped: the case is also open in other tenants' panels (cartable).
      *
-     * @return BelongsTo<Grade, $this>
+     * @return BelongsTo<Program, $this>
      */
-    public function grade(): BelongsTo
+    public function program(): BelongsTo
     {
-        return $this->belongsTo(Grade::class)->withoutGlobalScope(TenantScope::class);
+        return $this->belongsTo(Program::class)->withoutGlobalScope(TenantScope::class);
     }
 
     /**
-     * The school (tenant) the family would like, if asked.
+     * The tenant (school, branch, …) the applicant would like, if asked.
      *
      * @return BelongsTo<Tenant, $this>
      */
@@ -129,7 +130,6 @@ class Preregistration extends Model
             'nationality' => Nationality::class,
             'gender' => Gender::class,
             'birth_date' => 'date',
-            'last_average' => 'decimal:2',
             'custom_fields' => 'array',
         ];
     }

@@ -6,16 +6,17 @@ import JalaliDateInput from '@/Components/JalaliDateInput.vue';
 import VerifiedMobileInput from '@/Components/VerifiedMobileInput.vue';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 
-// The public student «پیش‌ثبت‌نام» form (ADR 0018); props from Modules\Student\Http\Controllers\PreregistrationController.
+// The public «پیش‌ثبت‌نام» form (ADR 0018); props from Modules\Student\Http\Controllers\PreregistrationController.
 const props = defineProps({
-    // Each with its `grades` and its `form`: {modes, fields} as the organization set it up for that stage (ADR 0017).
-    stages: { type: Array, required: true },
-    // The form for all stages, until one is chosen.
+    // Each with its `form`: {modes, fields} as the organization set it up for that program (ADR 0017).
+    programs: { type: Array, required: true },
+    // The form for all programs, until one is chosen.
     form: { type: Object, required: true },
     // Section key => heading; added fields go at the end of their section.
     sections: { type: Object, required: true },
     options: { type: Object, required: true },
-    tenantLabel: { type: String, required: true },
+    // What a tenant and a learner are called in this installation.
+    labels: { type: Object, required: true },
     limits: { type: Object, required: true },
     honeypot: { type: String, required: true },
     // {verifiedMobile, codeLength, resendAfterSeconds}: the mobile is confirmed by SMS before saving.
@@ -25,17 +26,14 @@ const props = defineProps({
 const status = computed(() => usePage().props.flash.status);
 
 const form = useForm({
-    stage_id: '',
-    grade_id: '',
+    program_id: '',
     preferred_tenant_id: '',
     first_name: '',
     last_name: '',
     father_name: '',
     nationality: 'iranian',
     national_code: '',
-    birth_certificate_number: '',
     birth_date: '',
-    birth_place: '',
     gender: '',
     mobile: '',
     phone: '',
@@ -43,25 +41,15 @@ const form = useForm({
     postal_code: '',
     city: '',
     address: '',
-    previous_school: '',
-    last_average: '',
     custom: {},
     [props.honeypot]: '',
 });
 
 const isIranian = computed(() => form.nationality === 'iranian');
-const selectedStage = computed(() => props.stages.find((stage) => stage.id === Number(form.stage_id)));
+const selectedProgram = computed(() => props.programs.find((program) => program.id === Number(form.program_id)));
 
-// A stage's grades; a stage without grades is chosen itself.
-watch(
-    () => form.stage_id,
-    () => {
-        form.grade_id = '';
-    },
-);
-
-// Which built-in fields are asked, and the added fields, for the chosen stage.
-const currentForm = computed(() => selectedStage.value?.form ?? props.form);
+// Which built-in fields are asked, and the added fields, for the chosen program.
+const currentForm = computed(() => selectedProgram.value?.form ?? props.form);
 const asks = (key) => (currentForm.value.modes[key] ?? 'required') !== 'hidden';
 const requires = (key) => (currentForm.value.modes[key] ?? 'required') === 'required';
 const optional = (key) => (requires(key) ? '' : ' (اختیاری)');
@@ -69,7 +57,6 @@ const lastSection = Object.keys(props.sections).at(-1);
 const fieldsIn = (section) =>
     currentForm.value.fields.filter((field) => field.section === section || (section === lastSection && !props.sections[field.section]));
 const customError = (field) => form.errors[`custom.${field.key}`] ?? form.errors[`custom.${field.key}.0`];
-const showsEducation = computed(() => asks('previous_school') || asks('last_average') || fieldsIn('education').length > 0);
 
 function prepareForm() {
     for (const field of currentForm.value.fields) {
@@ -100,18 +87,18 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
 </script>
 
 <template>
-    <Head title="پیش‌ثبت‌نام دانش‌آموز" />
+    <Head title="پیش‌ثبت‌نام" />
 
     <PublicLayout>
         <div class="mx-auto max-w-3xl space-y-6">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">پیش‌ثبت‌نام دانش‌آموز</h1>
+                <h1 class="text-2xl font-bold text-gray-900">پیش‌ثبت‌نام</h1>
                 <p class="mt-2 text-sm text-gray-600">فرم زیر را پر کنید. همکاران ما پس از بررسی با شما تماس می‌گیرند.</p>
             </div>
 
             <p v-if="status" class="rounded-lg bg-green-50 p-4 text-sm text-green-700">{{ status }}</p>
 
-            <p v-if="!stages.length" class="rounded-2xl bg-white p-6 text-gray-600 shadow-sm">
+            <p v-if="!programs.length" class="rounded-2xl bg-white p-6 text-gray-600 shadow-sm">
                 در حال حاضر پیش‌ثبت‌نام انجام نمی‌شود.
             </p>
 
@@ -123,27 +110,19 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                 </div>
 
                 <section :class="sectionClass">
-                    <h2 class="font-bold text-gray-900">مقطع و پایه</h2>
+                    <h2 class="font-bold text-gray-900">برنامه‌ی آموزشی</h2>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label for="stage_id" :class="labelClass">مقطع تحصیلی</label>
-                            <select id="stage_id" v-model="form.stage_id" :class="inputClass">
+                        <div class="sm:col-span-2">
+                            <label for="program_id" :class="labelClass">پیش‌ثبت‌نام برای</label>
+                            <select id="program_id" v-model="form.program_id" :class="inputClass">
                                 <option value="" disabled>انتخاب کنید</option>
-                                <option v-for="stage in stages" :key="stage.id" :value="stage.id">{{ stage.title }}</option>
+                                <option v-for="program in programs" :key="program.id" :value="program.id">{{ program.title }}</option>
                             </select>
-                            <p v-if="form.errors.stage_id" :class="errorClass">{{ form.errors.stage_id }}</p>
+                            <p v-if="selectedProgram?.description" class="mt-2 whitespace-pre-line text-sm text-gray-600">{{ selectedProgram.description }}</p>
+                            <p v-if="form.errors.program_id" :class="errorClass">{{ form.errors.program_id }}</p>
                         </div>
-                        <div v-if="selectedStage?.grades.length">
-                            <label for="grade_id" :class="labelClass">پایه تحصیلی</label>
-                            <select id="grade_id" v-model="form.grade_id" :class="inputClass">
-                                <option value="" disabled>انتخاب کنید</option>
-                                <option v-for="grade in selectedStage.grades" :key="grade.id" :value="grade.id">{{ grade.title }}</option>
-                            </select>
-                            <p v-if="form.errors.grade_id" :class="errorClass">{{ form.errors.grade_id }}</p>
-                        </div>
-                        <p v-if="selectedStage?.description" class="whitespace-pre-line text-sm text-gray-600 sm:col-span-2">{{ selectedStage.description }}</p>
                         <div v-if="asks('preferred_tenant') && options.tenants.length">
-                            <label for="preferred_tenant_id" :class="labelClass">{{ tenantLabel }} مورد نظر{{ optional('preferred_tenant') }}</label>
+                            <label for="preferred_tenant_id" :class="labelClass">{{ labels.tenant }} مورد نظر{{ optional('preferred_tenant') }}</label>
                             <select id="preferred_tenant_id" v-model="form.preferred_tenant_id" :class="inputClass">
                                 <option value="">{{ requires('preferred_tenant') ? 'انتخاب کنید' : 'فرقی نمی‌کند' }}</option>
                                 <option v-for="tenant in options.tenants" :key="tenant.id" :value="tenant.id">{{ tenant.name }}</option>
@@ -151,7 +130,7 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                             <p v-if="form.errors.preferred_tenant_id" :class="errorClass">{{ form.errors.preferred_tenant_id }}</p>
                         </div>
                         <CustomFieldInput
-                            v-for="field in fieldsIn('grade')"
+                            v-for="field in fieldsIn('program')"
                             :key="field.key"
                             v-model="form.custom[field.key]"
                             :field="field"
@@ -164,7 +143,7 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                 </section>
 
                 <section :class="sectionClass">
-                    <h2 class="font-bold text-gray-900">اطلاعات دانش‌آموز</h2>
+                    <h2 class="font-bold text-gray-900">اطلاعات {{ labels.learner }}</h2>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         <div>
                             <label for="first_name" :class="labelClass">نام</label>
@@ -209,11 +188,6 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                             />
                             <p v-if="form.errors.national_code" :class="errorClass">{{ form.errors.national_code }}</p>
                         </div>
-                        <div v-if="asks('birth_certificate_number')">
-                            <label for="birth_certificate_number" :class="labelClass">شماره شناسنامه{{ optional('birth_certificate_number') }}</label>
-                            <input id="birth_certificate_number" v-model="form.birth_certificate_number" type="text" dir="ltr" maxlength="50" :class="inputClass" />
-                            <p v-if="form.errors.birth_certificate_number" :class="errorClass">{{ form.errors.birth_certificate_number }}</p>
-                        </div>
                         <div v-if="asks('birth_date')">
                             <label for="birth_date" :class="labelClass">تاریخ تولد{{ optional('birth_date') }}</label>
                             <JalaliDateInput
@@ -224,11 +198,6 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                                 :input-class="inputClass"
                             />
                             <p v-if="form.errors.birth_date" :class="errorClass">{{ form.errors.birth_date }}</p>
-                        </div>
-                        <div v-if="asks('birth_place')">
-                            <label for="birth_place" :class="labelClass">محل تولد{{ optional('birth_place') }}</label>
-                            <input id="birth_place" v-model="form.birth_place" type="text" maxlength="100" :class="inputClass" />
-                            <p v-if="form.errors.birth_place" :class="errorClass">{{ form.errors.birth_place }}</p>
                         </div>
                         <CustomFieldInput
                             v-for="field in fieldsIn('personal')"
@@ -249,11 +218,11 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                         <VerifiedMobileInput
                             v-model="form.mobile"
                             class="sm:col-span-2"
-                            label="تلفن همراه (پدر، مادر یا سرپرست)"
+                            label="تلفن همراه"
                             :verification="mobileVerification"
                             :send-url="route('preregister.mobile.code')"
                             :verify-url="route('preregister.mobile.verify')"
-                            hint="برای ثبت پیش‌ثبت‌نام، شماره موبایل باید با کد پیامکی تأیید شود."
+                            hint="برای کودکان و نوجوانان، موبایل پدر، مادر یا سرپرست. برای ثبت پیش‌ثبت‌نام، شماره باید با کد پیامکی تأیید شود."
                             :error="form.errors.mobile"
                             :input-class="inputClass"
                             :label-class="labelClass"
@@ -261,7 +230,7 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                             @verified="form.clearErrors('mobile')"
                         />
                         <div v-if="asks('phone')">
-                            <label for="phone" :class="labelClass">تلفن منزل{{ optional('phone') }}</label>
+                            <label for="phone" :class="labelClass">تلفن ثابت{{ optional('phone') }}</label>
                             <input id="phone" v-model="form.phone" type="tel" dir="ltr" placeholder="02112345678" maxlength="11" :class="inputClass" />
                             <p v-if="form.errors.phone" :class="errorClass">{{ form.errors.phone }}</p>
                         </div>
@@ -281,7 +250,7 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                             <p v-if="form.errors.city" :class="errorClass">{{ form.errors.city }}</p>
                         </div>
                         <div v-if="asks('address')" class="sm:col-span-2">
-                            <label for="address" :class="labelClass">نشانی دقیق منزل{{ optional('address') }}</label>
+                            <label for="address" :class="labelClass">نشانی{{ optional('address') }}</label>
                             <textarea id="address" v-model="form.address" rows="2" maxlength="300" :class="inputClass" />
                             <p v-if="form.errors.address" :class="errorClass">{{ form.errors.address }}</p>
                         </div>
@@ -298,21 +267,11 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                     </div>
                 </section>
 
-                <section v-if="showsEducation" :class="sectionClass">
-                    <h2 class="font-bold text-gray-900">سوابق تحصیلی</h2>
+                <section v-if="fieldsIn('other').length" :class="sectionClass">
+                    <h2 class="font-bold text-gray-900">سایر اطلاعات</h2>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div v-if="asks('previous_school')">
-                            <label for="previous_school" :class="labelClass">نام مدرسه‌ی پیشین{{ optional('previous_school') }}</label>
-                            <input id="previous_school" v-model="form.previous_school" type="text" maxlength="150" :class="inputClass" />
-                            <p v-if="form.errors.previous_school" :class="errorClass">{{ form.errors.previous_school }}</p>
-                        </div>
-                        <div v-if="asks('last_average')">
-                            <label for="last_average" :class="labelClass">معدل ترم آخر{{ optional('last_average') }}</label>
-                            <input id="last_average" v-model="form.last_average" type="text" inputmode="decimal" dir="ltr" placeholder="18.75" :class="inputClass" />
-                            <p v-if="form.errors.last_average" :class="errorClass">{{ form.errors.last_average }}</p>
-                        </div>
                         <CustomFieldInput
-                            v-for="field in fieldsIn('education')"
+                            v-for="field in fieldsIn('other')"
                             :key="field.key"
                             v-model="form.custom[field.key]"
                             :field="field"

@@ -13,7 +13,7 @@ enum StudentStatus: string implements HasColor, HasLabel
 
     case Graduated = 'graduated';
 
-    /** Moved to another school or dropped out. */
+    /** Moved elsewhere or dropped out. */
     case Left = 'left';
 
     public function hasLeft(): bool
@@ -24,9 +24,9 @@ enum StudentStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Active => 'مشغول به تحصیل',
+            self::Active => 'فعال',
             self::Suspended => 'تعلیق',
-            self::Graduated => 'فارغ‌التحصیل',
+            self::Graduated => 'دانش‌آموخته',
             self::Left => 'انصراف / انتقال',
         };
     }

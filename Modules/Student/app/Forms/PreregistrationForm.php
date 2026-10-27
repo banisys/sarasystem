@@ -7,14 +7,17 @@ use App\CustomFields\CustomizableForm;
 use App\CustomFields\FieldMode;
 use App\CustomFields\ResolvedForm;
 use App\Models\Tenant;
-use Modules\Student\Models\Grade;
+use Modules\Student\Models\Program;
 
 /**
- * The student «پیش‌ثبت‌نام» form as each organization sets it up
- * (ADR 0017, ADR 0018), for all stages and per stage. The grade, name,
- * nationality, national code, gender and mobile are always asked: the
- * one-open-preregistration rule, the SMS check and admission depend on them.
- * Defaults follow the LMS form.
+ * The «پیش‌ثبت‌نام» form as each organization sets it up (ADR 0017,
+ * ADR 0018), for all programs and per program. Built-in fields are the
+ * ones every kind of learner has; what only some organizations ask (a
+ * school's previous school and last average, a university's entrance
+ * rank, a company's department) is added by the organization. The
+ * program, name, nationality, national code, gender and mobile are always
+ * asked: the one-open-preregistration rule, the SMS check and admission
+ * depend on them.
  */
 class PreregistrationForm extends CustomizableForm
 {
@@ -27,16 +30,16 @@ class PreregistrationForm extends CustomizableForm
 
     public function label(): string
     {
-        return 'پیش‌ثبت‌نام دانش‌آموز';
+        return 'پیش‌ثبت‌نام';
     }
 
     public function sections(): array
     {
         return [
-            'grade' => 'مقطع و پایه',
-            'personal' => 'اطلاعات دانش‌آموز',
+            'program' => 'برنامه‌ی آموزشی',
+            'personal' => 'اطلاعات فردی',
             'contact' => 'اطلاعات تماس',
-            'education' => 'سوابق تحصیلی',
+            'other' => 'سایر اطلاعات',
         ];
     }
 
@@ -44,25 +47,21 @@ class PreregistrationForm extends CustomizableForm
     {
         return [
             new BuiltInField('preferred_tenant', config('sarasystem.tenant_label').' مورد نظر', FieldMode::Optional),
-            new BuiltInField('father_name', 'نام پدر'),
-            new BuiltInField('birth_certificate_number', 'شماره شناسنامه'),
+            new BuiltInField('father_name', 'نام پدر', FieldMode::Optional),
             new BuiltInField('birth_date', 'تاریخ تولد'),
-            new BuiltInField('birth_place', 'محل تولد', FieldMode::Optional),
-            new BuiltInField('phone', 'تلفن منزل'),
+            new BuiltInField('phone', 'تلفن ثابت', FieldMode::Optional),
             new BuiltInField('email', 'ایمیل', FieldMode::Optional),
             new BuiltInField('postal_code', 'کد پستی', FieldMode::Optional),
-            new BuiltInField('city', 'شهر'),
-            new BuiltInField('address', 'نشانی منزل'),
-            new BuiltInField('previous_school', 'نام مدرسه‌ی پیشین'),
-            new BuiltInField('last_average', 'معدل ترم آخر', FieldMode::Optional),
+            new BuiltInField('city', 'شهر', FieldMode::Optional),
+            new BuiltInField('address', 'نشانی', FieldMode::Optional),
         ];
     }
 
     /**
-     * The form for a grade's stage of the primary tenant, or for all stages.
+     * The form for a program of the primary tenant, or for all programs.
      */
-    public static function for(Tenant $tenant, ?Grade $grade = null): ResolvedForm
+    public static function for(Tenant $tenant, ?Program $program = null): ResolvedForm
     {
-        return (new self)->resolve($tenant, $grade?->stage());
+        return (new self)->resolve($tenant, $program);
     }
 }

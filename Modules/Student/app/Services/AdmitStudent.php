@@ -10,45 +10,41 @@ use App\Workflow\WorkflowActionDenied;
 use Illuminate\Support\Str;
 use Modules\Student\Enums\PreregistrationStatus;
 use Modules\Student\Enums\StudentStatus;
-use Modules\Student\Models\Grade;
 use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Student;
 
 /**
- * The last step of admission (ADR 0018): the preregistered student becomes
- * a user (or an existing user with the same national code is reused), gets
- * roles in the chosen tenant and a student row there, and the
- * preregistration is closed as admitted. Runs inside the workflow engine's
+ * The last step of admission (ADR 0018): the applicant becomes a user (or
+ * an existing user with the same national code is reused), gets roles in
+ * the chosen tenant and a learner row there, and the preregistration is
+ * closed as admitted. Runs inside the workflow engine's
  * transaction.
  */
 class AdmitStudent
 {
-    /** The role offered by default, if the approver may give it. */
+    /** The role offered by default, if it exists and the approver may give it. */
     public const STUDENT_ROLE = 'student';
 
     /**
-     * @param  array{tenant_id: int|string, grade_id: int|string, role_ids?: list<int|string>, student_code?: string|null, enrolled_at: string}  $data
+     * @param  array{tenant_id: int|string, role_ids?: list<int|string>, student_code?: string|null, enrolled_at: string}  $data
      */
     public function admit(Preregistration $preregistration, User $actor, array $data): Student
     {
         $tenant = Tenant::query()->active()->find($data['tenant_id'])
-            ?? throw new WorkflowActionDenied('محل تحصیل انتخاب‌شده فعال نیست.');
-
-        $grade = Grade::withoutTenantScope()->where('tenant_id', $preregistration->tenant_id)->find($data['grade_id'])
-            ?? throw new WorkflowActionDenied('پایه‌ی انتخاب‌شده پیدا نشد.');
+            ?? throw new WorkflowActionDenied(config('sarasystem.tenant_label').' انتخاب‌شده فعال نیست.');
 
         $roles = $this->roles($actor, $tenant, $data['role_ids'] ?? []);
         $user = $this->user($preregistration, $actor, $tenant);
 
         if (Student::withoutTenantScope()->where('tenant_id', $tenant->getKey())->where('user_id', $user->getKey())->exists()) {
-            throw new WorkflowActionDenied("{$user->name} از قبل دانش‌آموز {$tenant->name} است.");
+            throw new WorkflowActionDenied("{$user->name} از قبل ".config('sarasystem.learner_label')." {$tenant->name} است.");
         }
 
         if (filled($data['student_code'] ?? null) && Student::withoutTenantScope()->where('student_code', $data['student_code'])->exists()) {
-            throw new WorkflowActionDenied('این کد دانش‌آموزی قبلاً به دانش‌آموز دیگری داده شده است.');
+            throw new WorkflowActionDenied('این کد '.config('sarasystem.learner_label').' قبلاً به شخص دیگری داده شده است.');
         }
 
-        return $tenant->execute(function () use ($tenant, $user, $roles, $preregistration, $grade, $data): Student {
+        return $tenant->execute(function () use ($tenant, $user, $roles, $preregistration, $data): Student {
             if ($roles !== []) {
                 $user->unsetRelation('roles')->assignRole($roles);
                 $user->unsetRelation('roles');
@@ -58,8 +54,6 @@ class AdmitStudent
                 'tenant_id' => $tenant->getKey(),
                 'user_id' => $user->getKey(),
                 'preregistration_id' => $preregistration->getKey(),
-                'grade_id' => $grade->getKey(),
-                'grade_title' => $grade->fullTitle(),
                 'student_code' => filled($data['student_code'] ?? null) ? $data['student_code'] : null,
                 'status' => StudentStatus::Active,
                 'enrolled_at' => $data['enrolled_at'],
@@ -72,7 +66,7 @@ class AdmitStudent
     }
 
     /**
-     * The student's account: the user with their national code, or a new
+     * The learner's account: the user with their national code, or a new
      * one. An existing user is only reused when the actor may manage them
      * (ADR 0003); their identity fields are left as they are.
      */
@@ -91,7 +85,7 @@ class AdmitStudent
         $user = new User([
             'name' => $preregistration->fullName(),
             'national_code' => $preregistration->national_code,
-            // Usually a parent's mobile; mobiles are not unique (siblings share one).
+            // A parent's mobile for a child; mobiles are not unique (siblings share one).
             'mobile' => $preregistration->mobile,
             // Email is unique; someone else's address is left out. The form may not ask it (ADR 0017).
             'email' => blank($preregistration->email) || User::query()->where('email', Str::lower($preregistration->email))->exists() ? null : $preregistration->email,

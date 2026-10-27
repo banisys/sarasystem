@@ -16,12 +16,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
-- 2026-10-27 — Module `Student`: student preregistration and admission ([ADR 0018](decisions/0018-student-preregistration.md)), built like hiring:
-  - **Public form** «پیش‌ثبت‌نام دانش‌آموز» at `/preregister` (primary tenant only), with the LMS `/school/preregister` fields: stage and grade, the school (tenant) the family would like, the student's identity, contact, previous school and last average. Tehran district and Kanoon are dropped (they can be added fields). The mobile is confirmed by SMS; one open preregistration per national code; customizable per stage (ADR 0017).
-  - **Admin:** «پیش‌ثبت‌نام → متقاضیان ثبت‌نام / مقاطع و پایه‌ها» in the primary tenant's panel (each stage has its admission workflow and form setup), «دانش‌آموزان» in every tenant.
-  - **Admission workflow:** a new preregistration starts its stage's workflow; the last approval creates or reuses the user, gives roles (`student` preselected) and creates the student row in the chosen tenant.
+- 2026-10-27 — Module `Student`: learners, preregistration and admission ([ADR 0018](decisions/0018-student-preregistration.md)), built like hiring and for any organization (not only schools):
+  - **Learner** = whoever is put into classes: pupil, university student, institute trainee or employee in training. Its name is set per installation (`LEARNER_LABEL`, default «فراگیر»). A learner row is the membership in a tenant (code, status, dates), with no school data.
+  - **Public form** «پیش‌ثبت‌نام» at `/preregister` (primary tenant only) for one of the organization's **programs** («پایه هفتم», «زبان انگلیسی - مقدماتی», …). Only generic fields are built in; the organization adds its own (the local demo adds the LMS school form's birth certificate, birth place, previous school and last average). Mobile confirmed by SMS; one open preregistration per national code; customizable per program (ADR 0017).
+  - **Admin:** «پیش‌ثبت‌نام → متقاضیان ثبت‌نام / برنامه‌های آموزشی» in the primary tenant's panel (each program has its admission workflow and form setup); the learners list in every tenant.
+  - **Admission workflow:** a new preregistration starts its program's workflow; the last approval creates or reuses the user, gives roles (`student` preselected) and creates the learner row in the chosen tenant.
   - **Core:** `App\Auth\GuestMobile` (shared with «همکاری با ما»), `OnlyInPrimaryTenant` moved to `app/Filament/Concerns`, `VerifiedMobileInput.vue` (used by `/careers` too), `users.national_code` widened to 12 for foreign nationals (hiring a foreign applicant failed before).
-  - Sample data: `php artisan module:seed Student`. 301 tests pass.
+  - Sample data: `php artisan module:seed Student`. 300 tests pass.
 - 2026-10-27 — Workflow «ویرایش اطلاعات» of a job application also edits the answers to added fields (ADR 0017): the fields (and required built-in fields) follow the position picked in the edit form; answers to fields the form no longer has are kept; the history shows one line per changed answer. Core: `CustomFieldInputs` (Filament inputs for added fields), `Answers::changes()`, and `WorkflowSubject::editData()` / `changes()` hooks. 265 tests pass.
 - 2026-10-27 — Customizable forms (ADR 0017), first used by «همکاری با ما»:
   - **Core** (`app/CustomFields`, `form_customizations`): any module can let each organization set up a form. Built-in fields can be required, optional or not asked, and the organization can add its own fields (text, long text, number, single / multiple choice, checkbox, Jalali date). This works for the whole form and per record. Answers are stored with a copy of their field.
@@ -87,10 +88,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
-- Student admission (ADR 0018):
-  - Not checked in a browser yet: `/preregister`, the grades screens and the workflow (covered by tests). `/careers` now uses the shared `VerifiedMobileInput.vue`; also not re-checked in a browser.
-  - No academic years or classes: admission creates a tenant-level student row only. Grades are the primary tenant's and may move to a later School module.
-  - Demo roles have no `*:Preregistration` / `*:Grade` / `*:Student` permissions; only super admins see these screens until roles get them.
+- Learner admission (ADR 0018):
+  - Not checked in a browser yet: `/preregister`, the programs screens and the workflow (covered by tests). `/careers` now uses the shared `VerifiedMobileInput.vue`; also not re-checked in a browser.
+  - No classes yet: admission creates a tenant-level learner row only; adding learners to classes comes with the class/education features.
+  - School data (grade, average, …) are added fields: not filterable, not structured for a later School module.
+  - Programs are the primary tenant's only.
+  - Demo roles have no `*:Preregistration` / `*:Program` / `*:Student` permissions; only super admins see these screens until roles get them.
   - Documents (birth certificate, photos) can't be uploaded (no file fields yet).
 - Customizable forms (ADR 0017):
   - No file fields and no conditional fields.

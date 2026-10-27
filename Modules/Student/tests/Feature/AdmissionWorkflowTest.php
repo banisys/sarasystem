@@ -21,8 +21,8 @@ use Modules\Student\Enums\PreregistrationStatus;
 use Modules\Student\Enums\StudentStatus;
 use Modules\Student\Filament\Resources\Preregistrations\Pages\ViewPreregistration;
 use Modules\Student\Http\Requests\StorePreregistrationRequest;
-use Modules\Student\Models\Grade;
 use Modules\Student\Models\Preregistration;
+use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
 use Modules\Student\Tests\Concerns\SubmitsPreregistrations;
 use Modules\Student\Workflow\PreregistrationSubject;
@@ -39,9 +39,7 @@ class AdmissionWorkflowTest extends TestCase
 
     private Tenant $west;
 
-    private Grade $stage;
-
-    private Grade $grade;
+    private Program $program;
 
     private FakeSmsSender $sms;
 
@@ -73,11 +71,10 @@ class AdmissionWorkflowTest extends TestCase
             $this->roleStep('بررسی مدارک', $this->primary, 'registrar'),
             $this->userStep('تأیید مدیر', $this->primary, $this->director),
         ]);
-        $this->stage = Grade::factory()->for($this->primary)->create(['title' => 'متوسطه اول', 'workflow_id' => $this->workflow->id]);
-        $this->grade = Grade::factory()->childOf($this->stage)->create(['title' => 'هفتم']);
+        $this->program = Program::factory()->for($this->primary)->create(['title' => 'زبان انگلیسی - مقدماتی', 'workflow_id' => $this->workflow->id]);
     }
 
-    public function test_a_new_preregistration_starts_its_stages_workflow(): void
+    public function test_a_new_preregistration_starts_its_programs_workflow(): void
     {
         $this->verifyMobile();
         $this->post('/preregister', $this->validData())->assertSessionHasNoErrors();
@@ -92,9 +89,9 @@ class AdmissionWorkflowTest extends TestCase
         $this->assertSame(1, $this->registrar->notifications()->count());
     }
 
-    public function test_a_stage_without_a_workflow_only_files_the_preregistration(): void
+    public function test_a_program_without_a_workflow_only_files_the_preregistration(): void
     {
-        $this->stage->update(['workflow_id' => null]);
+        $this->program->update(['workflow_id' => null]);
 
         $this->verifyMobile();
         $this->post('/preregister', $this->validData())->assertSessionHasNoErrors();
@@ -102,7 +99,7 @@ class AdmissionWorkflowTest extends TestCase
         $this->assertNull(Preregistration::withoutTenantScope()->sole()->workflowCase);
     }
 
-    public function test_the_family_can_resend_the_form_until_a_reviewer_has_it(): void
+    public function test_the_applicant_can_resend_the_form_until_a_reviewer_has_it(): void
     {
         $this->verifyMobile();
         $this->post('/preregister', $this->validData(['national_code' => '0013542419']))->assertSessionHasNoErrors();
@@ -125,20 +122,19 @@ class AdmissionWorkflowTest extends TestCase
 
     public function test_the_cartable_shows_the_preregistration(): void
     {
-        $case = $this->startCase(Preregistration::factory()->for($this->primary)->create(['first_name' => 'نیما', 'last_name' => 'باقری', 'previous_school' => 'دبستان فردوسی']));
+        $case = $this->startCase(Preregistration::factory()->for($this->primary)->create(['first_name' => 'نیما', 'last_name' => 'باقری', 'city' => 'رشت']));
 
         $this->actingAs($this->registrar)
             ->get(WorkflowCaseResource::getUrl('view', ['record' => $case], tenant: $this->primary))
             ->assertOk()
             ->assertSee('پیش‌ثبت‌نام نیما باقری')
-            ->assertSee('دبستان فردوسی');
+            ->assertSee('رشت');
     }
 
-    public function test_the_last_approval_admits_the_student_into_the_chosen_tenant(): void
+    public function test_the_last_approval_admits_the_learner_into_the_chosen_tenant(): void
     {
-        $eighth = Grade::factory()->childOf($this->stage)->create(['title' => 'هشتم']);
         $preregistration = Preregistration::factory()->for($this->primary)->create([
-            'national_code' => '0013542419', 'mobile' => '09121112233', 'grade_id' => $this->grade->id, 'preferred_tenant_id' => $this->west->id,
+            'national_code' => '0013542419', 'mobile' => '09121112233', 'program_id' => $this->program->id, 'preferred_tenant_id' => $this->west->id,
         ]);
         $case = $this->caseAtLastStep($preregistration);
         $student = $this->globalRole('student');
@@ -146,8 +142,8 @@ class AdmissionWorkflowTest extends TestCase
         $this->actingInPanel($this->director, $this->primary);
         Livewire::test(ViewWorkflowCase::class, ['record' => $case->getRouteKey()])
             ->mountAction('approve')
-            ->assertActionDataSet(['tenant_id' => $this->west->id, 'grade_id' => $this->grade->id, 'role_ids' => [$student->id]])
-            ->setActionData(['grade_id' => $eighth->id, 'enrolled_at' => '2026-09-23', 'student_code' => 'S-100'])
+            ->assertActionDataSet(['tenant_id' => $this->west->id, 'role_ids' => [$student->id]])
+            ->setActionData(['enrolled_at' => '2026-09-23', 'student_code' => 'S-100'])
             ->callMountedAction()
             ->assertHasNoActionErrors();
 
@@ -159,8 +155,7 @@ class AdmissionWorkflowTest extends TestCase
         $row = Student::withoutTenantScope()->sole();
         $this->assertSame($this->west->id, $row->tenant_id);
         $this->assertSame($user->id, $row->user_id);
-        $this->assertSame($eighth->id, $row->grade_id);
-        $this->assertSame('متوسطه اول - هشتم', $row->grade_title);
+        $this->assertSame($preregistration->id, $row->preregistration_id);
         $this->assertSame('S-100', $row->student_code);
         $this->assertSame(StudentStatus::Active, $row->status);
 
@@ -169,13 +164,13 @@ class AdmissionWorkflowTest extends TestCase
         $this->assertSame(CaseStatus::Completed, $case->refresh()->status);
     }
 
-    public function test_a_foreign_student_keeps_their_twelve_digit_code(): void
+    public function test_a_foreign_learner_keeps_their_twelve_digit_code(): void
     {
         $preregistration = Preregistration::factory()->for($this->primary)->create(['nationality' => 'foreign', 'national_code' => '123456789012']);
         $case = $this->caseAtLastStep($preregistration);
 
         app(WorkflowEngine::class)->approve($case, $this->director, null, [
-            'tenant_id' => $this->west->id, 'grade_id' => $this->grade->id, 'enrolled_at' => '2026-09-23',
+            'tenant_id' => $this->west->id, 'enrolled_at' => '2026-09-23',
         ]);
 
         $this->assertSame('123456789012', Student::withoutTenantScope()->sole()->user->national_code);
@@ -188,7 +183,7 @@ class AdmissionWorkflowTest extends TestCase
         $case = $this->caseAtLastStep(Preregistration::factory()->for($this->primary)->create(['national_code' => '0013542419']));
 
         app(WorkflowEngine::class)->approve($case, $this->director, null, [
-            'tenant_id' => $this->west->id, 'grade_id' => $this->grade->id, 'enrolled_at' => '2026-09-23',
+            'tenant_id' => $this->west->id, 'enrolled_at' => '2026-09-23',
         ]);
 
         $this->assertSame(1, User::query()->where('national_code', '0013542419')->count());
@@ -196,7 +191,7 @@ class AdmissionWorkflowTest extends TestCase
         $this->assertSame($child->id, Student::withoutTenantScope()->sole()->user_id);
     }
 
-    public function test_a_student_is_not_admitted_twice_into_one_tenant(): void
+    public function test_a_learner_is_not_admitted_twice_into_one_tenant(): void
     {
         $user = User::factory()->create(['national_code' => '0013542419']);
         Student::factory()->for($this->west)->for($user)->create();
@@ -205,7 +200,7 @@ class AdmissionWorkflowTest extends TestCase
         $this->expectException(WorkflowActionDenied::class);
 
         app(WorkflowEngine::class)->approve($case, $this->director, null, [
-            'tenant_id' => $this->west->id, 'grade_id' => $this->grade->id, 'enrolled_at' => '2026-09-23',
+            'tenant_id' => $this->west->id, 'enrolled_at' => '2026-09-23',
         ]);
     }
 
@@ -216,7 +211,7 @@ class AdmissionWorkflowTest extends TestCase
 
         try {
             app(WorkflowEngine::class)->approve($case, $this->director, null, [
-                'tenant_id' => $this->west->id, 'grade_id' => $this->grade->id, 'enrolled_at' => '2026-09-23', 'role_ids' => [$principal->id],
+                'tenant_id' => $this->west->id, 'enrolled_at' => '2026-09-23', 'role_ids' => [$principal->id],
             ]);
             $this->fail('Admission should have been refused.');
         } catch (WorkflowActionDenied $exception) {
@@ -227,25 +222,24 @@ class AdmissionWorkflowTest extends TestCase
         $this->assertSame(1, $case->refresh()->current_step);
     }
 
-    public function test_the_grade_and_answers_can_be_edited_in_the_workflow(): void
+    public function test_the_program_can_be_changed_in_the_workflow(): void
     {
-        $level = Grade::factory()->for($this->primary)->create(['title' => 'دبستان']);
-        $first = Grade::factory()->childOf($level)->create(['title' => 'اول']);
-        $preregistration = Preregistration::factory()->for($this->primary)->create(['grade_id' => $this->grade->id]);
+        $other = Program::factory()->for($this->primary)->create(['title' => 'زبان آلمانی - مقدماتی']);
+        $preregistration = Preregistration::factory()->for($this->primary)->create(['program_id' => $this->program->id]);
         $case = $this->startCase($preregistration);
 
         $this->actingInPanel($this->registrar, $this->primary);
         Livewire::test(ViewWorkflowCase::class, ['record' => $case->getRouteKey()])
             ->mountAction('editSubject')
-            ->assertActionDataSet(['grade_id' => $this->grade->id])
-            ->setActionData(['grade_id' => $first->id, 'city' => 'کرج'])
+            ->assertActionDataSet(['program_id' => $this->program->id])
+            ->setActionData(['program_id' => $other->id, 'city' => 'کرج'])
             ->callMountedAction()
             ->assertHasNoActionErrors();
 
         $preregistration->refresh();
-        $this->assertSame('دبستان - اول', $preregistration->grade_title);
+        $this->assertSame('زبان آلمانی - مقدماتی', $preregistration->program_title);
         $this->assertSame('کرج', $preregistration->city);
-        $this->assertSame('مقطع و پایه', $case->actions()->where('type', CaseActionType::Edited)->sole()->changes['grade_title']['label']);
+        $this->assertSame('عنوان برنامه‌ی آموزشی', $case->actions()->where('type', CaseActionType::Edited)->sole()->changes['program_title']['label']);
     }
 
     public function test_rejecting_closes_the_preregistration(): void
@@ -263,7 +257,7 @@ class AdmissionWorkflowTest extends TestCase
     {
         $this->roleWithPermissions('admissions', ['ViewAny:Preregistration', 'View:Preregistration', 'Update:Preregistration']);
         $this->grantRole($this->director, $this->primary, 'admissions');
-        $preregistration = Preregistration::factory()->for($this->primary)->create(['grade_id' => $this->grade->id]);
+        $preregistration = Preregistration::factory()->for($this->primary)->create(['program_id' => $this->program->id]);
 
         $this->actingInPanel($this->director, $this->primary);
         Livewire::test(ViewPreregistration::class, ['record' => $preregistration->getRouteKey()])

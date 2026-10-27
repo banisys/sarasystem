@@ -49,12 +49,12 @@ class PreregistrationInfolist
             Section::make('پیش‌ثبت‌نام')
                 ->columns(4)
                 ->schema([
-                    TextEntry::make('grade_title')->label('مقطع و پایه'),
+                    TextEntry::make('program_title')->label('برنامه‌ی آموزشی'),
                     TextEntry::make('preferredTenant.name')->label(config('sarasystem.tenant_label').' مورد نظر')->placeholder('—'),
                     TextEntry::make('status')->label('وضعیت')->badge(),
                     TextEntry::make('created_at')->label('تاریخ ثبت')->jalaliDateTime(),
                 ]),
-            Section::make('اطلاعات دانش‌آموز')
+            Section::make('اطلاعات فردی')
                 ->columns(4)
                 ->schema([
                     TextEntry::make('first_name')->label('نام'),
@@ -65,25 +65,17 @@ class PreregistrationInfolist
                     TextEntry::make('national_code')
                         ->label(fn (Preregistration $record): string => $record->nationality?->nationalCodeLabel() ?? Nationality::Iranian->nationalCodeLabel())
                         ->copyable(),
-                    TextEntry::make('birth_certificate_number')->label('شماره شناسنامه')->placeholder('—'),
                     TextEntry::make('birth_date')->label('تاریخ تولد')->jalaliDate()->placeholder('—'),
-                    TextEntry::make('birth_place')->label('محل تولد')->placeholder('—'),
                 ]),
             Section::make('اطلاعات تماس')
                 ->columns(4)
                 ->schema([
                     TextEntry::make('mobile')->label('تلفن همراه')->copyable(),
-                    TextEntry::make('phone')->label('تلفن منزل')->placeholder('—'),
+                    TextEntry::make('phone')->label('تلفن ثابت')->placeholder('—'),
                     TextEntry::make('email')->label('ایمیل')->copyable()->placeholder('—'),
                     TextEntry::make('postal_code')->label('کد پستی')->placeholder('—'),
                     TextEntry::make('city')->label('شهر')->placeholder('—'),
-                    TextEntry::make('address')->label('نشانی منزل')->placeholder('—')->columnSpan(3),
-                ]),
-            Section::make('سوابق تحصیلی')
-                ->columns(4)
-                ->schema([
-                    TextEntry::make('previous_school')->label('مدرسه‌ی پیشین')->placeholder('—'),
-                    TextEntry::make('last_average')->label('معدل ترم آخر')->placeholder('—'),
+                    TextEntry::make('address')->label('نشانی')->placeholder('—')->columnSpan(3),
                 ]),
             // Fields the organization added to the form (ADR 0017).
             CustomFieldAnswers::section('custom_fields'),

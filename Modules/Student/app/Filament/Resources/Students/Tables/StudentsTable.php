@@ -3,7 +3,6 @@
 namespace Modules\Student\Filament\Resources\Students\Tables;
 
 use App\Filament\Support\TextFilter;
-use App\Models\Tenant;
 use App\Support\Identifiers;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
@@ -13,7 +12,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Student\Enums\StudentStatus;
-use Modules\Student\Models\Grade;
 
 class StudentsTable
 {
@@ -31,12 +29,9 @@ class StudentsTable
                     ->label('موبایل')
                     ->copyable(),
                 TextColumn::make('student_code')
-                    ->label('کد دانش‌آموزی')
+                    ->label('کد '.config('sarasystem.learner_label'))
                     ->placeholder('—')
                     ->copyable(),
-                TextColumn::make('grade_title')
-                    ->label('پایه')
-                    ->sortable(),
                 TextColumn::make('status')
                     ->label('وضعیت')
                     ->badge(),
@@ -63,22 +58,13 @@ class StudentsTable
                                 ->orWhereLike('mobile', "%{$value}%"));
                         }
                     }),
-                TextFilter::make('student_code')->label('کد دانش‌آموزی'),
-                SelectFilter::make('grade_id')
-                    ->label('پایه')
-                    ->options(fn (): array => Grade::selectOptions((int) Tenant::primary()?->getKey())),
+                TextFilter::make('student_code')->label('کد '.config('sarasystem.learner_label')),
                 SelectFilter::make('status')
                     ->label('وضعیت')
                     ->options(StudentStatus::class),
             ])
             ->recordActions([
-                EditAction::make()
-                    // The grade title is a copy (ADR 0018); keep it in step with the grade.
-                    ->mutateDataUsing(function (array $data): array {
-                        $grade = Grade::withoutTenantScope()->find($data['grade_id'] ?? null);
-
-                        return $grade ? [...$data, 'grade_title' => $grade->fullTitle()] : $data;
-                    }),
+                EditAction::make(),
             ]);
     }
 }

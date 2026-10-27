@@ -8,17 +8,15 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Grades offered in the public preregistration form, the preregistrations
-     * sent through it and the students created when one is admitted at the
+     * Programs offered in the public preregistration form, the preregistrations
+     * sent through it and the learners created when one is admitted at the
      * last step of its workflow (docs/decisions/0018-student-preregistration.md).
      */
     public function up(): void
     {
-        Schema::create('student_grades', function (Blueprint $table) {
+        Schema::create('student_programs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained();
-            // Null for a stage (مقطع); a grade (پایه) points at its stage.
-            $table->foreignId('parent_id')->nullable()->constrained('student_grades')->cascadeOnDelete();
             $table->foreignId('workflow_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
@@ -30,8 +28,8 @@ return new class extends Migration
         Schema::create('student_preregistrations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained();
-            $table->foreignId('grade_id')->nullable()->constrained('student_grades')->nullOnDelete();
-            $table->string('grade_title');
+            $table->foreignId('program_id')->nullable()->constrained('student_programs')->nullOnDelete();
+            $table->string('program_title');
             $table->foreignId('preferred_tenant_id')->nullable()->constrained('tenants')->nullOnDelete();
             $table->string('status');
             $table->timestamp('closed_at')->nullable();
@@ -40,9 +38,7 @@ return new class extends Migration
             $table->string('father_name')->nullable();
             $table->string('nationality');
             $table->string('national_code', 12);
-            $table->string('birth_certificate_number', 50)->nullable();
             $table->date('birth_date')->nullable();
-            $table->string('birth_place', 100)->nullable();
             $table->string('gender');
             $table->string('mobile', 11)->index();
             $table->string('phone', 11)->nullable();
@@ -50,8 +46,6 @@ return new class extends Migration
             $table->string('postal_code', 10)->nullable();
             $table->string('city', 100)->nullable();
             $table->text('address')->nullable();
-            $table->string('previous_school', 150)->nullable();
-            $table->decimal('last_average', 4, 2)->nullable();
             $table->jsonb('custom_fields')->nullable();
             $table->timestamps();
 
@@ -66,8 +60,6 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained();
             $table->foreignId('user_id')->constrained();
             $table->foreignId('preregistration_id')->nullable()->constrained('student_preregistrations')->nullOnDelete();
-            $table->foreignId('grade_id')->nullable()->constrained('student_grades')->nullOnDelete();
-            $table->string('grade_title');
             $table->string('student_code', 20)->nullable()->unique();
             $table->string('status');
             $table->date('enrolled_at');
@@ -82,6 +74,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('students');
         Schema::dropIfExists('student_preregistrations');
-        Schema::dropIfExists('student_grades');
+        Schema::dropIfExists('student_programs');
     }
 };
