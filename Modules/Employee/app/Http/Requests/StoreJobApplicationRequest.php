@@ -2,6 +2,7 @@
 
 namespace Modules\Employee\Http\Requests;
 
+use App\CustomFields\ResolvedForm;
 use App\Models\Tenant;
 use App\Rules\IranianMobile;
 use App\Rules\JalaliDate;
@@ -17,7 +18,9 @@ use Modules\Employee\Enums\Gender;
 use Modules\Employee\Enums\MilitaryStatus;
 use Modules\Employee\Enums\Nationality;
 use Modules\Employee\Enums\UniversityType;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Models\JobApplication;
+use Modules\Employee\Models\JobPosition;
 use Modules\Employee\Support\ApplicantMobile;
 
 /**
@@ -25,6 +28,8 @@ use Modules\Employee\Support\ApplicantMobile;
  * the work history, home phone and konkur rank optional, military status
  * asked of Iranian men only and the university asked for university degrees only.
  * The mobile is confirmed by SMS beforehand (CareersController::sendCode/verifyCode).
+ * Which of the other fields are asked, and the added fields, follow the
+ * organization's setup of the form for the chosen position (ADR 0017).
  */
 class StoreJobApplicationRequest extends FormRequest
 {
@@ -35,6 +40,8 @@ class StoreJobApplicationRequest extends FormRequest
     public const RESUME_MAX_KILOBYTES = 10240;
 
     public const UNDER_REVIEW_MESSAGE = 'درخواست شما در حال بررسی است و دیگر نمی‌توان آن را تغییر داد.';
+
+    private ?ResolvedForm $jobForm = null;
 
     /**
      * Allowed Jalali birth years: 16 to 69 years old, as in LMS.
@@ -68,7 +75,26 @@ class StoreJobApplicationRequest extends FormRequest
             'birth_date' => $latin($this->input('birth_date')),
             'education' => array_map(fn ($row): mixed => is_array($row) ? array_map($latin, $row) : $row, (array) $this->input('education', [])),
             'work_history' => array_map(fn ($row): mixed => is_array($row) ? array_map($latin, $row) : $row, (array) $this->input('work_history', [])),
+            ResolvedForm::INPUT => $this->jobForm()->prepareCustomInput((array) $this->input(ResolvedForm::INPUT, [])),
         ]);
+    }
+
+    /**
+     * The form as set up for the chosen position, or for all positions
+     * while none (or an unknown one) is chosen.
+     */
+    public function jobForm(): ResolvedForm
+    {
+        if ($this->jobForm === null) {
+            $tenant = Tenant::primary() ?? abort(404);
+            $position = filled($this->input('job_position_id')) && is_numeric($this->input('job_position_id'))
+                ? JobPosition::withoutTenantScope()->where('tenant_id', $tenant->getKey())->active()->find($this->input('job_position_id'))
+                : null;
+
+            $this->jobForm = JobApplicationForm::for($tenant, $position);
+        }
+
+        return $this->jobForm;
     }
 
     /**
@@ -78,6 +104,7 @@ class StoreJobApplicationRequest extends FormRequest
     {
         [$minBirthYear, $maxBirthYear] = self::birthYearRange();
         $universityLevels = collect(EducationLevel::cases())->filter->isUniversity()->map->value->all();
+        $form = $this->jobForm();
 
         return [
             'job_position_id' => ['required', Rule::exists('employee_job_positions', 'id')
@@ -85,21 +112,42 @@ class StoreJobApplicationRequest extends FormRequest
                 ->where('is_active', true)],
             'first_name' => ['required', 'string', 'max:50'],
             'last_name' => ['required', 'string', 'max:50'],
-            'father_name' => ['required', 'string', 'max:50'],
+            'father_name' => $form->rulesFor('father_name', ['string', 'max:50']),
             'nationality' => ['required', Rule::enum(Nationality::class)],
             'national_code' => $this->isIranian()
                 ? ['required', 'string', new NationalCode]
                 : ['required', 'digits:12'],
-            'birth_date' => ['required', 'string', new JalaliDate($minBirthYear, $maxBirthYear)],
+            'birth_date' => $form->rulesFor('birth_date', ['string', new JalaliDate($minBirthYear, $maxBirthYear)]),
             'gender' => ['required', Rule::enum(Gender::class)],
-            'military_status' => [Rule::requiredIf($this->asksMilitaryStatus()), 'nullable', Rule::enum(MilitaryStatus::class)],
+            'military_status' => $form->asks('military_status')
+                ? [Rule::requiredIf($this->asksMilitaryStatus() && $form->requires('military_status')), 'nullable', Rule::enum(MilitaryStatus::class)]
+                : ['exclude'],
             'mobile' => ['required', 'string', new IranianMobile],
-            'phone' => ['nullable', 'digits:11'],
-            'email' => ['required', 'email', 'max:100'],
-            'postal_code' => ['required', 'digits:10'],
-            'address' => ['required', 'string', 'min:10', 'max:300'],
+            'phone' => $form->rulesFor('phone', ['digits:11']),
+            'email' => $form->rulesFor('email', ['email', 'max:100']),
+            'postal_code' => $form->rulesFor('postal_code', ['digits:10']),
+            'address' => $form->rulesFor('address', ['string', 'min:10', 'max:300']),
+            ...$this->educationRules($universityLevels),
+            ...$this->workHistoryRules(),
+            'resume' => $form->rulesFor('resume', ['file', 'mimes:pdf', 'max:'.self::RESUME_MAX_KILOBYTES]),
+            ...$form->customRules(),
+        ];
+    }
 
-            'education' => ['required', 'array', 'min:1', 'max:'.self::MAX_EDUCATION_ROWS],
+    /**
+     * @param  list<string>  $universityLevels
+     * @return array<string, mixed>
+     */
+    private function educationRules(array $universityLevels): array
+    {
+        if (! $this->jobForm()->asks('education')) {
+            return ['education' => ['exclude']];
+        }
+
+        return [
+            'education' => $this->jobForm()->requires('education')
+                ? ['required', 'array', 'min:1', 'max:'.self::MAX_EDUCATION_ROWS]
+                : ['nullable', 'array', 'max:'.self::MAX_EDUCATION_ROWS],
             'education.*.level' => ['required', Rule::enum(EducationLevel::class)],
             'education.*.major' => ['required', 'string', 'max:100'],
             'education.*.orientation' => ['nullable', 'string', 'max:100'],
@@ -108,16 +156,28 @@ class StoreJobApplicationRequest extends FormRequest
             'education.*.graduation_date' => ['required', 'string', new JalaliDate],
             'education.*.university_type' => ['nullable', 'required_if:education.*.level,'.implode(',', $universityLevels), Rule::enum(UniversityType::class)],
             'education.*.university' => ['nullable', 'required_if:education.*.level,'.implode(',', $universityLevels), 'string', 'max:150'],
+        ];
+    }
 
-            'work_history' => ['nullable', 'array', 'max:'.self::MAX_WORK_ROWS],
+    /**
+     * @return array<string, mixed>
+     */
+    private function workHistoryRules(): array
+    {
+        if (! $this->jobForm()->asks('work_history')) {
+            return ['work_history' => ['exclude']];
+        }
+
+        return [
+            'work_history' => $this->jobForm()->requires('work_history')
+                ? ['required', 'array', 'min:1', 'max:'.self::MAX_WORK_ROWS]
+                : ['nullable', 'array', 'max:'.self::MAX_WORK_ROWS],
             'work_history.*.company_name' => ['required', 'string', 'max:150'],
             'work_history.*.job_position' => ['required', 'string', 'max:150'],
             'work_history.*.start_date' => ['required', 'string', new JalaliDate],
             'work_history.*.end_date' => ['nullable', 'string', new JalaliDate],
             'work_history.*.termination_reason' => ['nullable', 'string', 'max:300'],
             'work_history.*.company_phone' => ['nullable', 'string', 'max:20'],
-
-            'resume' => ['required', 'file', 'mimes:pdf', 'max:'.self::RESUME_MAX_KILOBYTES],
         ];
     }
 
@@ -165,19 +225,21 @@ class StoreJobApplicationRequest extends FormRequest
 
     /**
      * The application's attributes: Jalali dates as Gregorian, fields that
-     * don't apply emptied.
+     * don't apply or are not asked emptied, the added fields' answers with
+     * a copy of each field.
      *
      * @return array<string, mixed>
      */
     public function applicationData(): array
     {
-        $data = $this->safe()->except(['resume', 'job_position_id']);
+        $data = $this->safe()->except(['resume', 'job_position_id', ResolvedForm::INPUT]);
         $universityFields = fn (array $row): bool => EducationLevel::from($row['level'])->isUniversity();
 
         return [
+            ...array_fill_keys(['father_name', 'phone', 'email', 'postal_code', 'address'], null),
             ...$data,
-            'birth_date' => JalaliDate::toDate($data['birth_date']),
-            'military_status' => $this->asksMilitaryStatus() ? $data['military_status'] : null,
+            'birth_date' => JalaliDate::toDate($data['birth_date'] ?? null),
+            'military_status' => $this->asksMilitaryStatus() ? ($data['military_status'] ?? null) : null,
             'education' => array_map(fn (array $row): array => [
                 'level' => $row['level'],
                 'major' => $row['major'],
@@ -187,7 +249,7 @@ class StoreJobApplicationRequest extends FormRequest
                 'graduation_date' => JalaliDate::toDate($row['graduation_date'])->toDateString(),
                 'university_type' => $universityFields($row) ? $row['university_type'] : null,
                 'university' => $universityFields($row) ? $row['university'] : null,
-            ], $data['education']),
+            ], $data['education'] ?? []),
             'work_history' => array_map(fn (array $row): array => [
                 'company_name' => $row['company_name'],
                 'job_position' => $row['job_position'],
@@ -196,6 +258,7 @@ class StoreJobApplicationRequest extends FormRequest
                 'termination_reason' => $row['termination_reason'] ?? null,
                 'company_phone' => $row['company_phone'] ?? null,
             ], $data['work_history'] ?? []),
+            'custom_fields' => $this->jobForm()->answers((array) $this->validated(ResolvedForm::INPUT, [])),
         ];
     }
 
@@ -206,7 +269,7 @@ class StoreJobApplicationRequest extends FormRequest
 
     public function asksMilitaryStatus(): bool
     {
-        return $this->isIranian() && $this->input('gender') === Gender::Male->value;
+        return $this->isIranian() && $this->input('gender') === Gender::Male->value && $this->jobForm()->asks('military_status');
     }
 
     /**
@@ -240,6 +303,9 @@ class StoreJobApplicationRequest extends FormRequest
             'file' => ':attribute باید فایل باشد.',
             'mimes' => ':attribute باید فایل PDF باشد.',
             'array' => ':attribute معتبر نیست.',
+            'in' => ':attribute انتخاب‌شده معتبر نیست.',
+            'boolean' => ':attribute معتبر نیست.',
+            'accepted' => '«:attribute» را تیک بزنید.',
         ];
     }
 
@@ -280,6 +346,7 @@ class StoreJobApplicationRequest extends FormRequest
             'work_history.*.termination_reason' => 'علت پایان همکاری',
             'work_history.*.company_phone' => 'تلفن محل کار',
             'resume' => 'فایل رزومه',
+            ...$this->jobForm()->customAttributes(),
         ];
     }
 }

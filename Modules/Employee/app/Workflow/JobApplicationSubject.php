@@ -3,6 +3,9 @@
 namespace Modules\Employee\Workflow;
 
 use App\Authorization\RoleAssignment;
+use App\CustomFields\Answers;
+use App\CustomFields\ResolvedForm;
+use App\Filament\CustomFields\CustomFieldInputs;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -10,6 +13,7 @@ use App\Models\WorkflowCase;
 use App\Rules\IranianMobile;
 use App\Workflow\WorkflowSubject;
 use BezhanSalleh\FilamentShield\Support\Utils;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
@@ -27,6 +31,7 @@ use Illuminate\Validation\Rule;
 use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Enums\EmploymentType;
 use Modules\Employee\Filament\Resources\JobApplications\Schemas\JobApplicationInfolist;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Models\Employee;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
@@ -118,18 +123,65 @@ class JobApplicationSubject extends WorkflowSubject
                     ->ordered()
                     ->pluck('title', 'id')
                     ->all())
-                ->required(),
+                ->required()
+                // Its form decides which fields are required and asked below.
+                ->live(),
             Grid::make(3)->schema([
                 TextInput::make('first_name')->label('نام')->required()->maxLength(50),
                 TextInput::make('last_name')->label('نام خانوادگی')->required()->maxLength(50),
-                TextInput::make('father_name')->label('نام پدر')->required()->maxLength(50),
+                TextInput::make('father_name')->label('نام پدر')->required(self::requires('father_name'))->maxLength(50),
                 TextInput::make('mobile')->label('تلفن همراه')->required()->rule(new IranianMobile),
-                TextInput::make('phone')->label('تلفن ثابت')->rule('nullable')->rule('digits:11'),
-                TextInput::make('email')->label('ایمیل')->required()->email()->maxLength(100),
-                TextInput::make('postal_code')->label('کد پستی')->required()->rule('digits:10'),
+                TextInput::make('phone')->label('تلفن ثابت')->required(self::requires('phone'))->rule('nullable')->rule('digits:11'),
+                TextInput::make('email')->label('ایمیل')->required(self::requires('email'))->email()->maxLength(100),
+                TextInput::make('postal_code')->label('کد پستی')->required(self::requires('postal_code'))->rule('nullable')->rule('digits:10'),
             ]),
-            Textarea::make('address')->label('نشانی')->required()->minLength(10)->maxLength(300)->rows(2),
+            Textarea::make('address')->label('نشانی')->required(self::requires('address'))->minLength(10)->maxLength(300)->rows(2),
+            Section::make('اطلاعات تکمیلی')
+                ->columns(2)
+                ->schema(fn (WorkflowCase $record, Get $get): array => CustomFieldInputs::components(self::formOf($record, $get('job_position_id'))))
+                ->visible(fn (WorkflowCase $record, Get $get): bool => self::formOf($record, $get('job_position_id'))->fields !== []),
         ];
+    }
+
+    /**
+     * @param  JobApplication  $subject
+     */
+    public function editData(Model $subject): array
+    {
+        return [...$subject->attributesToArray(), ResolvedForm::INPUT => CustomFieldInputs::state($subject->custom_fields)];
+    }
+
+    /**
+     * Whether the form, as set up for the application's position, requires
+     * the field (ADR 0017).
+     *
+     * @return Closure(WorkflowCase, Get): bool
+     */
+    private static function requires(string $field): Closure
+    {
+        return fn (WorkflowCase $record, Get $get): bool => self::formOf($record, $get('job_position_id'))->requires($field);
+    }
+
+    /**
+     * The form as set up for the position chosen in the edit form.
+     */
+    private static function formOf(WorkflowCase $record, mixed $positionId): ResolvedForm
+    {
+        /** @var JobApplication $application */
+        $application = $record->subject;
+
+        return self::formFor($application, $positionId);
+    }
+
+    private static function formFor(JobApplication $application, mixed $positionId): ResolvedForm
+    {
+        // The case may be open in another tenant's panel than the application's.
+        return JobApplicationForm::for(
+            Tenant::query()->findOrFail($application->tenant_id),
+            filled($positionId)
+                ? JobPosition::withoutTenantScope()->where('tenant_id', $application->tenant_id)->find($positionId)
+                : null,
+        );
     }
 
     /**
@@ -137,6 +189,7 @@ class JobApplicationSubject extends WorkflowSubject
      */
     public function saveEdit(Model $subject, array $data): void
     {
+        $custom = (array) ($data[ResolvedForm::INPUT] ?? []);
         $data = array_intersect_key($data, self::EDITABLE);
 
         if (isset($data['job_position_id']) && (int) $data['job_position_id'] !== $subject->job_position_id) {
@@ -144,7 +197,27 @@ class JobApplicationSubject extends WorkflowSubject
             $data['job_title'] = $position->title;
         }
 
+        $form = self::formFor($subject, $data['job_position_id'] ?? $subject->job_position_id);
+        $data['custom_fields'] = CustomFieldInputs::answers($form, $custom, $subject->custom_fields);
+
         $subject->fill($data)->save();
+    }
+
+    /**
+     * @param  JobApplication  $subject
+     */
+    public function changes(Model $subject, array $before): array
+    {
+        $changes = parent::changes($subject, $before);
+
+        // One entry per changed answer instead of the whole list.
+        unset($changes['custom_fields']);
+
+        if ($subject->wasChanged('custom_fields')) {
+            $changes += Answers::changes(json_decode($before['custom_fields'] ?? 'null', true), $subject->custom_fields);
+        }
+
+        return $changes;
     }
 
     public function attributeLabel(string $attribute): string

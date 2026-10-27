@@ -50,6 +50,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Impersonation | ورود با حساب کاربر | A super admin temporarily logged in as another user, with a way back to their own account (ADR 0008). |
 | Cartable | کارتابل | Approval inbox: records waiting for a user's review. In LMS routed through entity groups and verifiers; in SaraSystem «کارتابل من» lists the workflow cases whose current step is the user's (ADR 0016). |
 | Workflow | فرایند | An approval process designed in the admin panel: ordered steps, each sent to a role or a person in a tenant, with the actions allowed there (ADR 0016). Hiring uses one per job position. |
+| Customizable form | تنظیم فرم / فیلدهای فرم | A form each organization sets up for itself (ADR 0017): built-in fields required / optional / not asked («پرسیده نشود»), plus **added fields** («فیلدهای اضافه») of its own; for the whole form and per record (e.g. per job position). |
 | Workflow case | پرونده | One record (e.g. a job application) going through a workflow; it has a current step, an assignee and a history. |
 | Claim | برداشتن کار | Taking a case so it leaves the cartable of the step role's other holders; release gives it back. |
 | Employee | کارمند | A person employed in a tenant (`employees`): personnel code, employment type, status, dates; created by the last approval of a hiring workflow. Not the same as "staff" (panel access). |

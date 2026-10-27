@@ -2,10 +2,12 @@
 
 namespace Modules\Employee\Providers;
 
+use App\CustomFields\CustomForms;
 use App\Workflow\WorkflowSubjects;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Workflow\JobApplicationSubject;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -42,5 +44,8 @@ class EmployeeServiceProvider extends ModuleServiceProvider
 
         // Hiring runs as a workflow (ADR 0016).
         WorkflowSubjects::register(new JobApplicationSubject);
+
+        // Each organization sets up the «همکاری با ما» form (ADR 0017).
+        CustomForms::register(new JobApplicationForm);
     }
 }

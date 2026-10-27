@@ -3,6 +3,7 @@
 namespace Modules\Employee\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Concerns\HasFormCustomizations;
 use App\Models\Workflow;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,13 +15,14 @@ use Modules\Employee\Database\Factories\JobPositionFactory;
 
 /**
  * A job people can apply for in the «همکاری با ما» form (ADR 0014). Its
- * workflow, if any, runs on each new application (ADR 0016).
+ * workflow, if any, runs on each new application (ADR 0016). It may have
+ * its own setup of the form (ADR 0017).
  */
 #[Fillable(['tenant_id', 'workflow_id', 'title', 'description', 'is_active', 'sort'])]
 class JobPosition extends Model
 {
     /** @use HasFactory<JobPositionFactory> */
-    use BelongsToTenant, HasFactory;
+    use BelongsToTenant, HasFactory, HasFormCustomizations;
 
     protected $table = 'employee_job_positions';
 

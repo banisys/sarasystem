@@ -42,6 +42,7 @@ Hiring an employee is a process with several steps. The first step is the public
   - University type/name are asked for university degrees only.
   - Foreign applicants give a 12-digit code (کد اتباع).
   - Dates are Jalali strings, typed or picked with `JalaliDateInput` (ADR 0015), validated by `App\Rules\JalaliDate`.
+  - Since [ADR 0017](0017-customizable-forms.md), each organization can make most of these fields optional or leave them out, and add its own fields, for all positions or per position. The Kanoon section can come back that way as added fields.
 - **Mobile confirmed by SMS before saving** (added 2026-10-25, `ApplicantMobile`):
   - The applicant gets a code («ارسال کد تأیید», `POST /careers/mobile/code`) and types it back (`POST /careers/mobile/verify`).
   - The confirmed number is kept in the session for 60 minutes, so the rest of the form can be filled without hurry. Saving uses it up.

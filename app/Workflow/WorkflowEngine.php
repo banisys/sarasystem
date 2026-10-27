@@ -156,16 +156,10 @@ class WorkflowEngine
             $before = $subject->getRawOriginal();
             $handler->saveEdit($subject, $data);
 
-            $changes = collect($subject->getChanges())
-                ->except([$subject->getUpdatedAtColumn()])
-                ->mapWithKeys(fn (mixed $new, string $attribute): array => [$attribute => [
-                    'label' => $handler->attributeLabel($attribute),
-                    'old' => $before[$attribute] ?? null,
-                    'new' => $new,
-                ]]);
+            $changes = $handler->changes($subject, $before);
 
-            if ($changes->isNotEmpty()) {
-                $this->log($case, $actor, CaseActionType::Edited, $case->current_step, changes: $changes->all());
+            if ($changes !== []) {
+                $this->log($case, $actor, CaseActionType::Edited, $case->current_step, changes: $changes);
             }
         });
     }

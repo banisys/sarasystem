@@ -1,12 +1,18 @@
 <script setup>
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import CustomFieldInput from '@/Components/CustomFieldInput.vue';
 import JalaliDateInput from '@/Components/JalaliDateInput.vue';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 
 // The public «همکاری با ما» form (ADR 0014); props from Modules\Employee\Http\Controllers\CareersController.
 const props = defineProps({
+    // Each with its `form`: {modes, fields} as the organization set it up for that position (ADR 0017).
     positions: { type: Array, required: true },
+    // The form for all positions, until one is chosen.
+    form: { type: Object, required: true },
+    // Section key => heading; added fields go at the end of their section.
+    sections: { type: Object, required: true },
     options: { type: Object, required: true },
     limits: { type: Object, required: true },
     honeypot: { type: String, required: true },
@@ -38,9 +44,10 @@ const form = useForm({
     email: '',
     postal_code: '',
     address: '',
-    education: [emptyEducation()],
-    work_history: [],
+    education: props.form.modes.education === 'required' ? [emptyEducation()] : [],
+    work_history: props.form.modes.work_history === 'required' ? [emptyWork()] : [],
     resume: null,
+    custom: {},
     [props.honeypot]: '',
 });
 
@@ -48,6 +55,30 @@ const isIranian = computed(() => form.nationality === 'iranian');
 const asksMilitaryStatus = computed(() => isIranian.value && form.gender === 'male');
 const universityLevels = computed(() => props.options.educationLevels.filter((level) => level.university).map((level) => level.value));
 const selectedPosition = computed(() => props.positions.find((position) => position.id === Number(form.job_position_id)));
+
+// Which built-in fields are asked, and the added fields, for the chosen position.
+const currentForm = computed(() => selectedPosition.value?.form ?? props.form);
+const asks = (key) => (currentForm.value.modes[key] ?? 'required') !== 'hidden';
+const requires = (key) => (currentForm.value.modes[key] ?? 'required') === 'required';
+const optional = (key) => (requires(key) ? '' : ' (اختیاری)');
+const lastSection = Object.keys(props.sections).at(-1);
+const fieldsIn = (section) =>
+    currentForm.value.fields.filter((field) => field.section === section || (section === lastSection && !props.sections[field.section]));
+const customError = (field) => form.errors[`custom.${field.key}`] ?? form.errors[`custom.${field.key}.0`];
+const showsSection = (key, section) => asks(key) || fieldsIn(section).length > 0;
+
+function prepareForm() {
+    for (const field of currentForm.value.fields) {
+        if (!(field.key in form.custom)) {
+            form.custom[field.key] = field.type === 'multi_select' ? [] : field.type === 'checkbox' ? false : '';
+        }
+    }
+    if (requires('education') && !form.education.length) form.education.push(emptyEducation());
+    if (requires('work_history') && !form.work_history.length) form.work_history.push(emptyWork());
+}
+
+prepareForm();
+watch(currentForm, prepareForm);
 
 // Mobile confirmation: send a code, type it back; the confirmed number is
 // kept in the session (verifiedMobile) and locked in the form.
@@ -115,9 +146,12 @@ function submit() {
         preserveScroll: 'errors',
         onSuccess: () => {
             form.reset();
-            form.education = [emptyEducation()];
+            form.education = [];
             form.work_history = [];
-            document.getElementById('resume').value = '';
+            form.custom = {};
+            prepareForm();
+            const resume = document.getElementById('resume');
+            if (resume) resume.value = '';
         },
     });
 }
@@ -179,8 +213,8 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                             <input id="last_name" v-model="form.last_name" type="text" maxlength="50" :class="inputClass" />
                             <p v-if="form.errors.last_name" :class="errorClass">{{ form.errors.last_name }}</p>
                         </div>
-                        <div>
-                            <label for="father_name" :class="labelClass">نام پدر</label>
+                        <div v-if="asks('father_name')">
+                            <label for="father_name" :class="labelClass">نام پدر{{ optional('father_name') }}</label>
                             <input id="father_name" v-model="form.father_name" type="text" maxlength="50" :class="inputClass" />
                             <p v-if="form.errors.father_name" :class="errorClass">{{ form.errors.father_name }}</p>
                         </div>
@@ -204,8 +238,8 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                             />
                             <p v-if="form.errors.national_code" :class="errorClass">{{ form.errors.national_code }}</p>
                         </div>
-                        <div>
-                            <label for="birth_date" :class="labelClass">تاریخ تولد</label>
+                        <div v-if="asks('birth_date')">
+                            <label for="birth_date" :class="labelClass">تاریخ تولد{{ optional('birth_date') }}</label>
                             <JalaliDateInput
                                 id="birth_date"
                                 v-model="form.birth_date"
@@ -223,14 +257,24 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                             </select>
                             <p v-if="form.errors.gender" :class="errorClass">{{ form.errors.gender }}</p>
                         </div>
-                        <div v-if="asksMilitaryStatus">
-                            <label for="military_status" :class="labelClass">وضعیت نظام وظیفه</label>
+                        <div v-if="asksMilitaryStatus && asks('military_status')">
+                            <label for="military_status" :class="labelClass">وضعیت نظام وظیفه{{ optional('military_status') }}</label>
                             <select id="military_status" v-model="form.military_status" :class="inputClass">
                                 <option value="" disabled>انتخاب کنید</option>
                                 <option v-for="option in options.militaryStatuses" :key="option.value" :value="option.value">{{ option.label }}</option>
                             </select>
                             <p v-if="form.errors.military_status" :class="errorClass">{{ form.errors.military_status }}</p>
                         </div>
+                        <CustomFieldInput
+                            v-for="field in fieldsIn('personal')"
+                            :key="field.key"
+                            v-model="form.custom[field.key]"
+                            :field="field"
+                            :error="customError(field)"
+                            :input-class="inputClass"
+                            :label-class="labelClass"
+                            :error-class="errorClass"
+                        />
                     </div>
                 </section>
 
@@ -299,158 +343,214 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <label for="phone" :class="labelClass">تلفن ثابت (اختیاری)</label>
+                        <div v-if="asks('phone')">
+                            <label for="phone" :class="labelClass">تلفن ثابت{{ optional('phone') }}</label>
                             <input id="phone" v-model="form.phone" type="tel" dir="ltr" placeholder="02112345678" maxlength="11" :class="inputClass" />
                             <p v-if="form.errors.phone" :class="errorClass">{{ form.errors.phone }}</p>
                         </div>
-                        <div>
-                            <label for="email" :class="labelClass">ایمیل</label>
+                        <div v-if="asks('email')">
+                            <label for="email" :class="labelClass">ایمیل{{ optional('email') }}</label>
                             <input id="email" v-model="form.email" type="email" dir="ltr" maxlength="100" :class="inputClass" />
                             <p v-if="form.errors.email" :class="errorClass">{{ form.errors.email }}</p>
                         </div>
-                        <div>
-                            <label for="postal_code" :class="labelClass">کد پستی</label>
+                        <div v-if="asks('postal_code')">
+                            <label for="postal_code" :class="labelClass">کد پستی{{ optional('postal_code') }}</label>
                             <input id="postal_code" v-model="form.postal_code" type="text" inputmode="numeric" dir="ltr" maxlength="10" :class="inputClass" />
                             <p v-if="form.errors.postal_code" :class="errorClass">{{ form.errors.postal_code }}</p>
                         </div>
-                        <div class="sm:col-span-2">
-                            <label for="address" :class="labelClass">نشانی</label>
+                        <div v-if="asks('address')" class="sm:col-span-2">
+                            <label for="address" :class="labelClass">نشانی{{ optional('address') }}</label>
                             <textarea id="address" v-model="form.address" rows="2" maxlength="300" :class="inputClass" />
                             <p v-if="form.errors.address" :class="errorClass">{{ form.errors.address }}</p>
                         </div>
+                        <CustomFieldInput
+                            v-for="field in fieldsIn('contact')"
+                            :key="field.key"
+                            v-model="form.custom[field.key]"
+                            :field="field"
+                            :error="customError(field)"
+                            :input-class="inputClass"
+                            :label-class="labelClass"
+                            :error-class="errorClass"
+                        />
                     </div>
                 </section>
 
-                <section :class="sectionClass">
-                    <h2 class="font-bold text-gray-900">سوابق تحصیلی</h2>
-                    <p v-if="form.errors.education" :class="errorClass">{{ form.errors.education }}</p>
-                    <div class="mt-4 space-y-4">
-                        <div v-for="(row, index) in form.education" :key="index" :class="rowClass">
-                            <div class="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label :for="`education-${index}-level`" :class="labelClass">مقطع</label>
-                                    <select :id="`education-${index}-level`" v-model="row.level" :class="inputClass">
-                                        <option value="" disabled>انتخاب کنید</option>
-                                        <option v-for="option in options.educationLevels" :key="option.value" :value="option.value">{{ option.label }}</option>
-                                    </select>
-                                    <p v-if="form.errors[`education.${index}.level`]" :class="errorClass">{{ form.errors[`education.${index}.level`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`education-${index}-major`" :class="labelClass">رشته</label>
-                                    <input :id="`education-${index}-major`" v-model="row.major" type="text" maxlength="100" :class="inputClass" />
-                                    <p v-if="form.errors[`education.${index}.major`]" :class="errorClass">{{ form.errors[`education.${index}.major`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`education-${index}-orientation`" :class="labelClass">گرایش (اختیاری)</label>
-                                    <input :id="`education-${index}-orientation`" v-model="row.orientation" type="text" maxlength="100" :class="inputClass" />
-                                    <p v-if="form.errors[`education.${index}.orientation`]" :class="errorClass">{{ form.errors[`education.${index}.orientation`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`education-${index}-average`" :class="labelClass">معدل</label>
-                                    <input :id="`education-${index}-average`" v-model="row.average" type="text" inputmode="decimal" dir="ltr" placeholder="17.25" :class="inputClass" />
-                                    <p v-if="form.errors[`education.${index}.average`]" :class="errorClass">{{ form.errors[`education.${index}.average`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`education-${index}-rank`" :class="labelClass">رتبه کنکور (اختیاری)</label>
-                                    <input :id="`education-${index}-rank`" v-model="row.rank" type="text" inputmode="numeric" dir="ltr" :class="inputClass" />
-                                    <p v-if="form.errors[`education.${index}.rank`]" :class="errorClass">{{ form.errors[`education.${index}.rank`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`education-${index}-graduation_date`" :class="labelClass">تاریخ اخذ مدرک</label>
-                                    <JalaliDateInput :id="`education-${index}-graduation_date`" v-model="row.graduation_date" placeholder="1395/04/31" :input-class="inputClass" />
-                                    <p v-if="form.errors[`education.${index}.graduation_date`]" :class="errorClass">{{ form.errors[`education.${index}.graduation_date`] }}</p>
-                                </div>
-                                <template v-if="universityLevels.includes(row.level)">
+                <section v-if="showsSection('education', 'education')" :class="sectionClass">
+                    <h2 class="font-bold text-gray-900">سوابق تحصیلی{{ asks('education') ? optional('education') : '' }}</h2>
+                    <template v-if="asks('education')">
+                        <p v-if="!requires('education') && !form.education.length" class="mt-2 text-sm text-gray-500">اگر مدرک تحصیلی دارید، اضافه کنید.</p>
+                        <p v-if="form.errors.education" :class="errorClass">{{ form.errors.education }}</p>
+                        <div class="mt-4 space-y-4">
+                            <div v-for="(row, index) in form.education" :key="index" :class="rowClass">
+                                <div class="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label :for="`education-${index}-university_type`" :class="labelClass">نوع دانشگاه</label>
-                                        <select :id="`education-${index}-university_type`" v-model="row.university_type" :class="inputClass">
+                                        <label :for="`education-${index}-level`" :class="labelClass">مقطع</label>
+                                        <select :id="`education-${index}-level`" v-model="row.level" :class="inputClass">
                                             <option value="" disabled>انتخاب کنید</option>
-                                            <option v-for="option in options.universityTypes" :key="option.value" :value="option.value">{{ option.label }}</option>
+                                            <option v-for="option in options.educationLevels" :key="option.value" :value="option.value">{{ option.label }}</option>
                                         </select>
-                                        <p v-if="form.errors[`education.${index}.university_type`]" :class="errorClass">{{ form.errors[`education.${index}.university_type`] }}</p>
+                                        <p v-if="form.errors[`education.${index}.level`]" :class="errorClass">{{ form.errors[`education.${index}.level`] }}</p>
                                     </div>
                                     <div>
-                                        <label :for="`education-${index}-university`" :class="labelClass">نام دانشگاه</label>
-                                        <input :id="`education-${index}-university`" v-model="row.university" type="text" maxlength="150" :class="inputClass" />
-                                        <p v-if="form.errors[`education.${index}.university`]" :class="errorClass">{{ form.errors[`education.${index}.university`] }}</p>
+                                        <label :for="`education-${index}-major`" :class="labelClass">رشته</label>
+                                        <input :id="`education-${index}-major`" v-model="row.major" type="text" maxlength="100" :class="inputClass" />
+                                        <p v-if="form.errors[`education.${index}.major`]" :class="errorClass">{{ form.errors[`education.${index}.major`] }}</p>
                                     </div>
-                                </template>
+                                    <div>
+                                        <label :for="`education-${index}-orientation`" :class="labelClass">گرایش (اختیاری)</label>
+                                        <input :id="`education-${index}-orientation`" v-model="row.orientation" type="text" maxlength="100" :class="inputClass" />
+                                        <p v-if="form.errors[`education.${index}.orientation`]" :class="errorClass">{{ form.errors[`education.${index}.orientation`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`education-${index}-average`" :class="labelClass">معدل</label>
+                                        <input :id="`education-${index}-average`" v-model="row.average" type="text" inputmode="decimal" dir="ltr" placeholder="17.25" :class="inputClass" />
+                                        <p v-if="form.errors[`education.${index}.average`]" :class="errorClass">{{ form.errors[`education.${index}.average`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`education-${index}-rank`" :class="labelClass">رتبه کنکور (اختیاری)</label>
+                                        <input :id="`education-${index}-rank`" v-model="row.rank" type="text" inputmode="numeric" dir="ltr" :class="inputClass" />
+                                        <p v-if="form.errors[`education.${index}.rank`]" :class="errorClass">{{ form.errors[`education.${index}.rank`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`education-${index}-graduation_date`" :class="labelClass">تاریخ اخذ مدرک</label>
+                                        <JalaliDateInput :id="`education-${index}-graduation_date`" v-model="row.graduation_date" placeholder="1395/04/31" :input-class="inputClass" />
+                                        <p v-if="form.errors[`education.${index}.graduation_date`]" :class="errorClass">{{ form.errors[`education.${index}.graduation_date`] }}</p>
+                                    </div>
+                                    <template v-if="universityLevels.includes(row.level)">
+                                        <div>
+                                            <label :for="`education-${index}-university_type`" :class="labelClass">نوع دانشگاه</label>
+                                            <select :id="`education-${index}-university_type`" v-model="row.university_type" :class="inputClass">
+                                                <option value="" disabled>انتخاب کنید</option>
+                                                <option v-for="option in options.universityTypes" :key="option.value" :value="option.value">{{ option.label }}</option>
+                                            </select>
+                                            <p v-if="form.errors[`education.${index}.university_type`]" :class="errorClass">{{ form.errors[`education.${index}.university_type`] }}</p>
+                                        </div>
+                                        <div>
+                                            <label :for="`education-${index}-university`" :class="labelClass">نام دانشگاه</label>
+                                            <input :id="`education-${index}-university`" v-model="row.university" type="text" maxlength="150" :class="inputClass" />
+                                            <p v-if="form.errors[`education.${index}.university`]" :class="errorClass">{{ form.errors[`education.${index}.university`] }}</p>
+                                        </div>
+                                    </template>
+                                </div>
+                                <button v-if="form.education.length > (requires('education') ? 1 : 0)" type="button" class="mt-3 text-sm text-red-600 hover:text-red-800" @click="form.education.splice(index, 1)">
+                                    حذف این مدرک
+                                </button>
                             </div>
-                            <button v-if="form.education.length > 1" type="button" class="mt-3 text-sm text-red-600 hover:text-red-800" @click="form.education.splice(index, 1)">
-                                حذف این مدرک
-                            </button>
                         </div>
+                        <button
+                            v-if="form.education.length < limits.educationRows"
+                            type="button"
+                            :class="[linkButtonClass, 'mt-4']"
+                            @click="form.education.push(emptyEducation())"
+                        >
+                            + افزودن مدرک{{ form.education.length ? ' دیگر' : '' }}
+                        </button>
+                    </template>
+                    <div v-if="fieldsIn('education').length" class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <CustomFieldInput
+                            v-for="field in fieldsIn('education')"
+                            :key="field.key"
+                            v-model="form.custom[field.key]"
+                            :field="field"
+                            :error="customError(field)"
+                            :input-class="inputClass"
+                            :label-class="labelClass"
+                            :error-class="errorClass"
+                        />
                     </div>
-                    <button
-                        v-if="form.education.length < limits.educationRows"
-                        type="button"
-                        :class="[linkButtonClass, 'mt-4']"
-                        @click="form.education.push(emptyEducation())"
-                    >
-                        + افزودن مدرک دیگر
-                    </button>
                 </section>
 
-                <section :class="sectionClass">
-                    <h2 class="font-bold text-gray-900">سوابق کاری (اختیاری)</h2>
-                    <p v-if="!form.work_history.length" class="mt-2 text-sm text-gray-500">اگر سابقه‌ی کار دارید، اضافه کنید.</p>
-                    <p v-if="form.errors.work_history" :class="errorClass">{{ form.errors.work_history }}</p>
-                    <div class="mt-4 space-y-4">
-                        <div v-for="(row, index) in form.work_history" :key="index" :class="rowClass">
-                            <div class="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label :for="`work-${index}-company_name`" :class="labelClass">محل کار</label>
-                                    <input :id="`work-${index}-company_name`" v-model="row.company_name" type="text" maxlength="150" :class="inputClass" />
-                                    <p v-if="form.errors[`work_history.${index}.company_name`]" :class="errorClass">{{ form.errors[`work_history.${index}.company_name`] }}</p>
+                <section v-if="showsSection('work_history', 'work')" :class="sectionClass">
+                    <h2 class="font-bold text-gray-900">سوابق کاری{{ asks('work_history') ? optional('work_history') : '' }}</h2>
+                    <template v-if="asks('work_history')">
+                        <p v-if="!form.work_history.length" class="mt-2 text-sm text-gray-500">اگر سابقه‌ی کار دارید، اضافه کنید.</p>
+                        <p v-if="form.errors.work_history" :class="errorClass">{{ form.errors.work_history }}</p>
+                        <div class="mt-4 space-y-4">
+                            <div v-for="(row, index) in form.work_history" :key="index" :class="rowClass">
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label :for="`work-${index}-company_name`" :class="labelClass">محل کار</label>
+                                        <input :id="`work-${index}-company_name`" v-model="row.company_name" type="text" maxlength="150" :class="inputClass" />
+                                        <p v-if="form.errors[`work_history.${index}.company_name`]" :class="errorClass">{{ form.errors[`work_history.${index}.company_name`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`work-${index}-job_position`" :class="labelClass">سمت</label>
+                                        <input :id="`work-${index}-job_position`" v-model="row.job_position" type="text" maxlength="150" :class="inputClass" />
+                                        <p v-if="form.errors[`work_history.${index}.job_position`]" :class="errorClass">{{ form.errors[`work_history.${index}.job_position`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`work-${index}-start_date`" :class="labelClass">تاریخ شروع همکاری</label>
+                                        <JalaliDateInput :id="`work-${index}-start_date`" v-model="row.start_date" placeholder="1398/07/01" :input-class="inputClass" />
+                                        <p v-if="form.errors[`work_history.${index}.start_date`]" :class="errorClass">{{ form.errors[`work_history.${index}.start_date`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`work-${index}-end_date`" :class="labelClass">تاریخ پایان همکاری (اگر هنوز آنجا کار می‌کنید خالی بگذارید)</label>
+                                        <JalaliDateInput :id="`work-${index}-end_date`" v-model="row.end_date" placeholder="1402/06/31" :input-class="inputClass" />
+                                        <p v-if="form.errors[`work_history.${index}.end_date`]" :class="errorClass">{{ form.errors[`work_history.${index}.end_date`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`work-${index}-company_phone`" :class="labelClass">تلفن محل کار (اختیاری)</label>
+                                        <input :id="`work-${index}-company_phone`" v-model="row.company_phone" type="tel" dir="ltr" maxlength="20" :class="inputClass" />
+                                        <p v-if="form.errors[`work_history.${index}.company_phone`]" :class="errorClass">{{ form.errors[`work_history.${index}.company_phone`] }}</p>
+                                    </div>
+                                    <div>
+                                        <label :for="`work-${index}-termination_reason`" :class="labelClass">علت پایان همکاری (اختیاری)</label>
+                                        <input :id="`work-${index}-termination_reason`" v-model="row.termination_reason" type="text" maxlength="300" :class="inputClass" />
+                                        <p v-if="form.errors[`work_history.${index}.termination_reason`]" :class="errorClass">{{ form.errors[`work_history.${index}.termination_reason`] }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label :for="`work-${index}-job_position`" :class="labelClass">سمت</label>
-                                    <input :id="`work-${index}-job_position`" v-model="row.job_position" type="text" maxlength="150" :class="inputClass" />
-                                    <p v-if="form.errors[`work_history.${index}.job_position`]" :class="errorClass">{{ form.errors[`work_history.${index}.job_position`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`work-${index}-start_date`" :class="labelClass">تاریخ شروع همکاری</label>
-                                    <JalaliDateInput :id="`work-${index}-start_date`" v-model="row.start_date" placeholder="1398/07/01" :input-class="inputClass" />
-                                    <p v-if="form.errors[`work_history.${index}.start_date`]" :class="errorClass">{{ form.errors[`work_history.${index}.start_date`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`work-${index}-end_date`" :class="labelClass">تاریخ پایان همکاری (اگر هنوز آنجا کار می‌کنید خالی بگذارید)</label>
-                                    <JalaliDateInput :id="`work-${index}-end_date`" v-model="row.end_date" placeholder="1402/06/31" :input-class="inputClass" />
-                                    <p v-if="form.errors[`work_history.${index}.end_date`]" :class="errorClass">{{ form.errors[`work_history.${index}.end_date`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`work-${index}-company_phone`" :class="labelClass">تلفن محل کار (اختیاری)</label>
-                                    <input :id="`work-${index}-company_phone`" v-model="row.company_phone" type="tel" dir="ltr" maxlength="20" :class="inputClass" />
-                                    <p v-if="form.errors[`work_history.${index}.company_phone`]" :class="errorClass">{{ form.errors[`work_history.${index}.company_phone`] }}</p>
-                                </div>
-                                <div>
-                                    <label :for="`work-${index}-termination_reason`" :class="labelClass">علت پایان همکاری (اختیاری)</label>
-                                    <input :id="`work-${index}-termination_reason`" v-model="row.termination_reason" type="text" maxlength="300" :class="inputClass" />
-                                    <p v-if="form.errors[`work_history.${index}.termination_reason`]" :class="errorClass">{{ form.errors[`work_history.${index}.termination_reason`] }}</p>
-                                </div>
+                                <button
+                                    v-if="form.work_history.length > (requires('work_history') ? 1 : 0)"
+                                    type="button"
+                                    class="mt-3 text-sm text-red-600 hover:text-red-800"
+                                    @click="form.work_history.splice(index, 1)"
+                                >
+                                    حذف این سابقه
+                                </button>
                             </div>
-                            <button type="button" class="mt-3 text-sm text-red-600 hover:text-red-800" @click="form.work_history.splice(index, 1)">
-                                حذف این سابقه
-                            </button>
                         </div>
+                        <button
+                            v-if="form.work_history.length < limits.workRows"
+                            type="button"
+                            :class="[linkButtonClass, 'mt-4']"
+                            @click="form.work_history.push(emptyWork())"
+                        >
+                            + افزودن سابقه‌ی کاری
+                        </button>
+                    </template>
+                    <div v-if="fieldsIn('work').length" class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <CustomFieldInput
+                            v-for="field in fieldsIn('work')"
+                            :key="field.key"
+                            v-model="form.custom[field.key]"
+                            :field="field"
+                            :error="customError(field)"
+                            :input-class="inputClass"
+                            :label-class="labelClass"
+                            :error-class="errorClass"
+                        />
                     </div>
-                    <button
-                        v-if="form.work_history.length < limits.workRows"
-                        type="button"
-                        :class="[linkButtonClass, 'mt-4']"
-                        @click="form.work_history.push(emptyWork())"
-                    >
-                        + افزودن سابقه‌ی کاری
-                    </button>
                 </section>
 
-                <section :class="sectionClass">
-                    <h2 class="font-bold text-gray-900">رزومه</h2>
-                    <div class="mt-4">
-                        <label for="resume" :class="labelClass">فایل رزومه (PDF، حداکثر {{ limits.resumeMegabytes }} مگابایت)</label>
+                <section v-if="showsSection('resume', 'resume')" :class="sectionClass">
+                    <h2 class="font-bold text-gray-900">{{ asks('resume') ? 'رزومه' : 'سایر اطلاعات' }}</h2>
+                    <div v-if="asks('resume')" class="mt-4">
+                        <label for="resume" :class="labelClass">فایل رزومه{{ optional('resume') }} (PDF، حداکثر {{ limits.resumeMegabytes }} مگابایت)</label>
                         <input id="resume" type="file" accept="application/pdf,.pdf" :class="inputClass" @change="onResumePicked" />
                         <p v-if="form.errors.resume" :class="errorClass">{{ form.errors.resume }}</p>
+                    </div>
+                    <div v-if="fieldsIn('resume').length" class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <CustomFieldInput
+                            v-for="field in fieldsIn('resume')"
+                            :key="field.key"
+                            v-model="form.custom[field.key]"
+                            :field="field"
+                            :error="customError(field)"
+                            :input-class="inputClass"
+                            :label-class="labelClass"
+                            :error-class="errorClass"
+                        />
                     </div>
                 </section>
 

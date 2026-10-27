@@ -22,6 +22,7 @@ use Modules\Employee\Enums\Gender;
 use Modules\Employee\Enums\MilitaryStatus;
 use Modules\Employee\Enums\Nationality;
 use Modules\Employee\Enums\UniversityType;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Http\Requests\StoreJobApplicationRequest;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
@@ -42,10 +43,18 @@ class CareersController extends Controller
     {
         $tenant = $this->primaryTenant();
         [$minBirthYear, $maxBirthYear] = StoreJobApplicationRequest::birthYearRange();
+        $positions = $tenant->execute(fn () => JobPosition::query()->active()->ordered()->get(['id', 'tenant_id', 'title', 'description']));
 
         return Inertia::render('Employee::Careers', [
             ...PublicSite::layoutProps($tenant),
-            'positions' => $tenant->execute(fn (): array => JobPosition::query()->active()->ordered()->get(['id', 'title', 'description'])->all()),
+            // Each with the form as set up for it (ADR 0017).
+            'positions' => $positions->map(fn (JobPosition $position): array => [
+                ...$position->only(['id', 'title', 'description']),
+                'form' => JobApplicationForm::for($tenant, $position)->toArray(),
+            ])->all(),
+            // Until a position is chosen.
+            'form' => JobApplicationForm::for($tenant)->toArray(),
+            'sections' => (new JobApplicationForm)->sections(),
             'options' => [
                 'nationalities' => self::options(Nationality::class),
                 'genders' => self::options(Gender::class),
@@ -127,9 +136,12 @@ class CareersController extends Controller
                 'job_title' => $position->title,
             ])->save();
 
-            $application->addMedia($form->file('resume'))
-                ->usingFileName('resume.pdf')
-                ->toMediaCollection(JobApplication::RESUME_COLLECTION);
+            // The résumé may be optional or not asked (ADR 0017); a resent form keeps the old one.
+            if ($form->validated('resume') !== null) {
+                $application->addMedia($form->validated('resume'))
+                    ->usingFileName('resume.pdf')
+                    ->toMediaCollection(JobApplication::RESUME_COLLECTION);
+            }
 
             // A new application starts its position's hiring workflow; a
             // resent one is noted in the running case (ADR 0016).

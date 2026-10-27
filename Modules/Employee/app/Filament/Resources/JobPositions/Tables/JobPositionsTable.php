@@ -2,6 +2,7 @@
 
 namespace Modules\Employee\Filament\Resources\JobPositions\Tables;
 
+use App\Filament\CustomFields\CustomizeFormAction;
 use App\Filament\Support\TextFilter;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -9,6 +10,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Modules\Employee\Forms\JobApplicationForm;
 
 class JobPositionsTable
 {
@@ -42,6 +44,9 @@ class JobPositionsTable
             ])
             ->recordActions([
                 EditAction::make(),
+                // The form's setup for this position only (ADR 0017).
+                CustomizeFormAction::make('customizeForm', new JobApplicationForm, perRecord: true)
+                    ->authorize('update'),
                 DeleteAction::make()
                     ->modalDescription('درخواست‌هایی که برای این موقعیت ثبت شده‌اند حذف نمی‌شوند و عنوان شغل در آن‌ها می‌ماند.'),
             ]);

@@ -2,6 +2,7 @@
 
 namespace Modules\Employee\Filament\Resources\JobApplications\Schemas;
 
+use App\Filament\CustomFields\CustomFieldAnswers;
 use App\Filament\Workflow\CaseHistory;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -61,12 +62,12 @@ class JobApplicationInfolist
                 ->schema([
                     TextEntry::make('first_name')->label('نام'),
                     TextEntry::make('last_name')->label('نام خانوادگی'),
-                    TextEntry::make('father_name')->label('نام پدر'),
+                    TextEntry::make('father_name')->label('نام پدر')->placeholder('—'),
                     TextEntry::make('nationality')->label('ملیت'),
                     TextEntry::make('national_code')
                         ->label(fn (JobApplication $record): string => $record->nationality?->nationalCodeLabel() ?? Nationality::Iranian->nationalCodeLabel())
                         ->copyable(),
-                    TextEntry::make('birth_date')->label('تاریخ تولد')->jalaliDate(),
+                    TextEntry::make('birth_date')->label('تاریخ تولد')->jalaliDate()->placeholder('—'),
                     TextEntry::make('gender')->label('جنسیت'),
                     TextEntry::make('military_status')->label('وضعیت نظام وظیفه')->placeholder('—'),
                 ]),
@@ -75,15 +76,20 @@ class JobApplicationInfolist
                 ->schema([
                     TextEntry::make('mobile')->label('تلفن همراه')->copyable(),
                     TextEntry::make('phone')->label('تلفن ثابت')->placeholder('—'),
-                    TextEntry::make('email')->label('ایمیل')->copyable(),
-                    TextEntry::make('postal_code')->label('کد پستی'),
-                    TextEntry::make('address')->label('نشانی')->columnSpanFull(),
+                    TextEntry::make('email')->label('ایمیل')->copyable()->placeholder('—'),
+                    TextEntry::make('postal_code')->label('کد پستی')->placeholder('—'),
+                    TextEntry::make('address')->label('نشانی')->placeholder('—')->columnSpanFull(),
                 ]),
             Section::make('سوابق تحصیلی')
                 ->schema([
+                    TextEntry::make('no_education')
+                        ->hiddenLabel()
+                        ->state('سابقه‌ی تحصیلی ثبت نشده است.')
+                        ->visible(fn (JobApplication $record): bool => empty($record->education)),
                     RepeatableEntry::make('education')
                         ->hiddenLabel()
                         ->columns(4)
+                        ->visible(fn (JobApplication $record): bool => ! empty($record->education))
                         ->schema([
                             TextEntry::make('level')->label('مقطع')
                                 ->formatStateUsing(fn (?string $state): ?string => EducationLevel::tryFrom((string) $state)?->getLabel()),
@@ -116,6 +122,8 @@ class JobApplicationInfolist
                             TextEntry::make('termination_reason')->label('علت پایان همکاری')->placeholder('—'),
                         ]),
                 ]),
+            // Fields the organization added to the form (ADR 0017).
+            CustomFieldAnswers::section('custom_fields'),
         ];
     }
 }

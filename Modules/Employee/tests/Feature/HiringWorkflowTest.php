@@ -4,6 +4,7 @@ namespace Modules\Employee\Tests\Feature;
 
 use App\Filament\Resources\WorkflowCases\Pages\ViewWorkflowCase;
 use App\Filament\Resources\WorkflowCases\WorkflowCaseResource;
+use App\Models\FormCustomization;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -23,6 +24,7 @@ use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Enums\EmploymentType;
 use Modules\Employee\Filament\Resources\Employees\Pages\ListEmployees;
 use Modules\Employee\Filament\Resources\JobApplications\Pages\ViewJobApplication;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Http\Requests\StoreJobApplicationRequest;
 use Modules\Employee\Models\Employee;
 use Modules\Employee\Models\JobApplication;
@@ -170,6 +172,83 @@ class HiringWorkflowTest extends TestCase
         $this->assertSame(CaseStatus::Completed, $case->refresh()->status);
     }
 
+    public function test_an_applicant_without_an_email_is_hired_without_one(): void
+    {
+        // The organization's form may not ask for an email (ADR 0017).
+        $application = JobApplication::factory()->for($this->primary)->create(['national_code' => '0013542419', 'email' => null]);
+        $case = $this->caseAtLastStep($application);
+
+        $this->actingInPanel($this->director, $this->primary);
+        Livewire::test(ViewWorkflowCase::class, ['record' => $case->getRouteKey()])
+            ->callAction('approve', data: [
+                'tenant_id' => $this->primary->id,
+                'employment_type' => EmploymentType::FullTime->value,
+                'hired_at' => '2026-10-01',
+                'role_ids' => [],
+                'panel_access' => false,
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertNull(User::query()->where('national_code', '0013542419')->sole()->email);
+    }
+
+    public function test_answers_to_added_fields_can_be_edited_in_the_workflow(): void
+    {
+        $this->customize(null, [
+            ['key' => 'kanoon', 'label' => 'عضو کانون هستید؟', 'type' => 'select', 'required' => true, 'options' => ['بله', 'خیر']],
+            ['key' => 'start', 'label' => 'زمان آمادگی برای شروع', 'type' => 'date'],
+        ]);
+        $application = JobApplication::factory()->for($this->primary)->for($this->position)->create(['custom_fields' => [
+            ['key' => 'kanoon', 'label' => 'عضو کانون هستید؟', 'type' => 'select', 'section' => null, 'value' => 'خیر'],
+            ['key' => 'removed', 'label' => 'فیلد حذف‌شده', 'type' => 'text', 'section' => null, 'value' => 'بماند'],
+        ]]);
+        $case = $this->startCase($application);
+
+        $this->actingInPanel($this->recruiter, $this->primary);
+        Livewire::test(ViewWorkflowCase::class, ['record' => $case->getRouteKey()])
+            ->mountAction('editSubject')
+            ->assertActionDataSet(['custom.kanoon' => 'خیر'])
+            ->setActionData(['custom.kanoon' => null])
+            ->callMountedAction()
+            ->assertHasActionErrors(['custom.kanoon' => 'required'])
+            ->setActionData(['custom.kanoon' => 'بله', 'custom.start' => '2026-11-01'])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $answers = collect($application->refresh()->custom_fields)->keyBy('key');
+        $this->assertSame(['kanoon', 'start', 'removed'], $answers->keys()->all());
+        $this->assertSame('بله', $answers['kanoon']['value']);
+        $this->assertSame('2026-11-01', $answers['start']['value']);
+        $this->assertSame('بماند', $answers['removed']['value']);
+
+        $changes = $case->actions()->where('type', CaseActionType::Edited)->sole()->changes;
+        $this->assertEquals(['label' => 'عضو کانون هستید؟', 'old' => 'خیر', 'new' => 'بله'], $changes['custom.kanoon']);
+        $this->assertSame('1405/08/10', $changes['custom.start']['new']);
+        $this->assertArrayNotHasKey('custom_fields', $changes);
+    }
+
+    public function test_moving_an_application_to_another_position_asks_that_positions_fields(): void
+    {
+        $other = JobPosition::factory()->for($this->primary)->create(['title' => 'سرایدار']);
+        $this->customize($other, [['key' => 'shift', 'label' => 'شیفت شب را می‌پذیرم', 'type' => 'checkbox', 'required' => true]]);
+        $application = JobApplication::factory()->for($this->primary)->for($this->position)->create();
+        $case = $this->startCase($application);
+
+        $this->actingInPanel($this->recruiter, $this->primary);
+        Livewire::test(ViewWorkflowCase::class, ['record' => $case->getRouteKey()])
+            ->mountAction('editSubject')
+            ->setActionData(['job_position_id' => $other->id, 'custom.shift' => false])
+            ->callMountedAction()
+            ->assertHasActionErrors(['custom.shift'])
+            ->setActionData(['custom.shift' => true])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $application->refresh();
+        $this->assertSame('سرایدار', $application->job_title);
+        $this->assertEquals([['key' => 'shift', 'label' => 'شیفت شب را می‌پذیرم', 'type' => 'checkbox', 'section' => null, 'value' => true]], $application->custom_fields);
+    }
+
     public function test_an_existing_user_with_the_national_code_is_reused(): void
     {
         $parent = User::factory()->create(['national_code' => '0013542419', 'name' => 'نام قبلی']);
@@ -263,6 +342,21 @@ class HiringWorkflowTest extends TestCase
         $this->actingInPanel($manager, $this->west);
 
         Livewire::test(ListEmployees::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$foreign]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $fields
+     */
+    private function customize(?JobPosition $owner, array $fields): void
+    {
+        FormCustomization::withoutTenantScope()->create([
+            'tenant_id' => $this->primary->id,
+            'form' => JobApplicationForm::KEY,
+            'owner_type' => $owner?->getMorphClass(),
+            'owner_id' => $owner?->id,
+            'field_modes' => [],
+            'fields' => $fields,
+        ]);
     }
 
     private function startCase(JobApplication $application): WorkflowCase

@@ -129,7 +129,7 @@ class ViewWorkflowCase extends ViewRecord
             ->visible(fn (): bool => $this->allows(StepAction::Edit) && ($this->handler()?->editForm() ?? []) !== [])
             ->modalWidth('4xl')
             ->schema(fn (): array => $this->handler()?->editForm() ?? [])
-            ->fillForm(fn (): array => $this->subject()->attributesToArray())
+            ->fillForm(fn (): array => $this->handler()?->editData($this->subject()) ?? $this->subject()->attributesToArray())
             ->action(fn (array $data) => $this->run(
                 fn (WorkflowEngine $engine, User $user) => $engine->edit($this->case(), $user, $data),
                 'اطلاعات ذخیره شد',

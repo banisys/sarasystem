@@ -86,8 +86,8 @@ class HireApplicant
             'name' => $application->fullName(),
             'national_code' => $application->national_code,
             'mobile' => $application->mobile,
-            // Email is unique; someone else's address is left out.
-            'email' => User::query()->where('email', Str::lower($application->email))->exists() ? null : $application->email,
+            // Email is unique; someone else's address is left out. The form may not ask it (ADR 0017).
+            'email' => blank($application->email) || User::query()->where('email', Str::lower($application->email))->exists() ? null : $application->email,
             'password' => Str::password(32),
         ]);
         // The mobile was confirmed by SMS in the «همکاری با ما» form.

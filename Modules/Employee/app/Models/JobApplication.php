@@ -26,11 +26,12 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  *
  * @property array<int, array<string, mixed>> $education
  * @property array<int, array<string, mixed>> $work_history
+ * @property list<array{key: string, label: string, type: string, section: string|null, value: mixed}>|null $custom_fields answers to the fields the organization added (ADR 0017)
  */
 #[Fillable([
     'tenant_id', 'job_position_id', 'job_title', 'status',
     'first_name', 'last_name', 'father_name', 'nationality', 'national_code', 'birth_date', 'gender', 'military_status',
-    'mobile', 'phone', 'email', 'postal_code', 'address', 'education', 'work_history',
+    'mobile', 'phone', 'email', 'postal_code', 'address', 'education', 'work_history', 'custom_fields',
 ])]
 class JobApplication extends Model implements HasMedia
 {
@@ -136,6 +137,7 @@ class JobApplication extends Model implements HasMedia
             'birth_date' => 'date',
             'education' => 'array',
             'work_history' => 'array',
+            'custom_fields' => 'array',
         ];
     }
 }

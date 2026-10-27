@@ -92,12 +92,43 @@ abstract class WorkflowSubject
     }
 
     /**
+     * The edit form's starting state.
+     *
+     * @param  TModel  $subject
+     * @return array<string, mixed>
+     */
+    public function editData(Model $subject): array
+    {
+        return $subject->attributesToArray();
+    }
+
+    /**
      * @param  TModel  $subject
      * @param  array<string, mixed>  $data
      */
     public function saveEdit(Model $subject, array $data): void
     {
         $subject->fill($data)->save();
+    }
+
+    /**
+     * What an edit changed, for the case history: one entry per changed
+     * attribute.
+     *
+     * @param  TModel  $subject  just saved
+     * @param  array<string, mixed>  $before  its raw attributes before the edit
+     * @return array<string, array{label: string, old: mixed, new: mixed}>
+     */
+    public function changes(Model $subject, array $before): array
+    {
+        return collect($subject->getChanges())
+            ->except([$subject->getUpdatedAtColumn()])
+            ->mapWithKeys(fn (mixed $new, string $attribute): array => [$attribute => [
+                'label' => $this->attributeLabel($attribute),
+                'old' => $before[$attribute] ?? null,
+                'new' => $new,
+            ]])
+            ->all();
     }
 
     /**

@@ -9,12 +9,22 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
+- Use customizable forms (ADR 0017) in the next forms (student registration, enrollment). Possible additions: file fields, conditional fields.
 - Workflows: cancel / reassign a running case (super admin or workflow owner), per-step deadlines and reminders, attachments on notes, a monitor of all running cases.
 - Use workflows for the next approval flows (leave, contracts).
 - Real SMS provider driver (choose provider: Kavenegar / Ghasedak / …; credentials from the user).
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-27 — Workflow «ویرایش اطلاعات» of a job application also edits the answers to added fields (ADR 0017): the fields (and required built-in fields) follow the position picked in the edit form; answers to fields the form no longer has are kept; the history shows one line per changed answer. Core: `CustomFieldInputs` (Filament inputs for added fields), `Answers::changes()`, and `WorkflowSubject::editData()` / `changes()` hooks. 265 tests pass.
+- 2026-10-27 — Customizable forms (ADR 0017), first used by «همکاری با ما»:
+  - **Core** (`app/CustomFields`, `form_customizations`): any module can let each organization set up a form. Built-in fields can be required, optional or not asked, and the organization can add its own fields (text, long text, number, single / multiple choice, checkbox, Jalali date). This works for the whole form and per record. Answers are stored with a copy of their field.
+  - **Admin panel:** `CustomizeFormAction` and `CustomFieldAnswers`. **Vue:** `CustomFieldInput`.
+  - **Hiring:** in «همکاری با ما → موقعیت‌های شغلی», «تنظیم فرم همکاری با ما» sets up the form for all positions and the row action «فیلدهای فرم» sets it up for one position.
+    - Always asked: job, name, nationality, national code, gender and mobile.
+    - Can be left out or made optional: father name, birth date, military status, phone, email, postal code, address, education, work history and résumé.
+    - `/careers` switches the form when a position is picked. Answers are shown on the applicant's page and in the cartable.
+  - 263 tests pass.
 - 2026-10-27 — `brianium/paratest` (dev): the whole suite runs with `php artisan test --parallel` in about 5 s (was about 20 s), 249 tests pass.
 - 2026-10-27 — Workflows:
   - «نمایش فرایند» page per workflow (`workflows/{id}`), a flowchart of the steps with assignees, allowed actions, reject exits and open cases per step.
@@ -71,6 +81,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Customizable forms (ADR 0017):
+  - No file fields and no conditional fields.
+  - Answers to added fields can't be filtered in lists.
+  - Editing added fields in the workflow is covered by tests but not checked in a browser yet.
+  - The `/careers` form and the setup modal are covered by tests but not checked in a browser yet.
+- `node_modules` (and `node_modules/.vite-temp`) are owned by root on this machine, so `npm run build` fails with EACCES. Until it is fixed with `sudo chown -R $USER: node_modules`, use `npx vite build --configLoader runner`.
 - Workflows (ADR 0016):
   - No cancel or reassign of a running case: a case whose step role was deleted, or whose step person left, stays stuck.
   - No conditions, parallel approvals or deadlines.
