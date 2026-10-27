@@ -1,5 +1,6 @@
 {
     "Site": true,
     "Exam": true,
-    "Employee": true
+    "Employee": true,
+    "Student": true
 }

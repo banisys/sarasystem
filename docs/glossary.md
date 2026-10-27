@@ -18,7 +18,8 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Instance | | (legacy LMS) A site in LMS's multi-site setup. Each school branch is one instance; most data has `instance_id`. Maps to Tenant. |
 | School | مدرسه | (legacy LMS) `schl_schools`, tied to an instance. In SaraSystem a school is simply a Tenant. |
 | Academic year | سال تحصیلی | `schl_years`, from about 1 Shahrivar to 31 Mordad. Most operational data is year-scoped. |
-| Grade | پایه | Node in the grade tree: stage (دبستان، متوسطه اول، متوسطه دوم) → grade (هفتم…), with a major for upper secondary (تجربی، ریاضی، انسانی). |
+| Grade | پایه | Node in the grade tree: stage (دبستان، متوسطه اول، متوسطه دوم) → grade (هفتم…), with a major for upper secondary (تجربی، ریاضی، انسانی). In SaraSystem so far a two-level list for preregistration (`student_grades`, ADR 0018); a stage without grades (e.g. a language level) is chosen itself. |
+| Stage | مقطع | Top level of the grade tree (دبستان، متوسطه اول، …). It holds the admission workflow and its own setup of the preregistration form (ADR 0018). |
 | Shared / optional | مشترک | Grades or classes shared across grades/majors; a student can have optional classes besides the main class. |
 | Classroom | کلاس | A class of students in a school/grade/year (`schl_classrooms`). |
 | Classroom plan | برنامه کلاس | A course (subject) taught in a classroom by a teacher (+ supporter), possibly shared with other classrooms. |
@@ -37,7 +38,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Supplementary contract | قرارداد تکمیلی | Extra contract attached to a main contract (`parent_id` set). |
 | School service | خدمات مدرسه | Items/services sold to students (books, packages), requested via service requests. |
 | Leave | مرخصی | Staff leave request, approved through leave groups/operators. |
-| National code | کد ملی | 10-digit Iranian national ID with a check digit; a login identifier (`users.national_code`, unique). |
+| National code | کد ملی | 10-digit Iranian national ID with a check digit; a login identifier (`users.national_code`, unique; up to 12 characters so a foreign national's کد اتباع fits). |
 | Login identifier | شناسه‌ی ورود | Mobile, national code or email, typed in one field on `/login` (ADR 0004). |
 | OTP / login code | کد یکبارمصرف | 6-digit SMS code for logging in without a password. |
 | Staff / panel user | کارمند | A user holding the `panel_user` role in a tenant; only staff (and super admins) can enter the admin panel, and only for their tenants. |
@@ -68,9 +69,12 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Grace time | زمان ارفاق | Minutes after an attempt's deadline during which answers are still accepted (slow connections). After it the attempt closes with its saved answers. |
 | Negative marking | نمره‌ی منفی | Every N wrong choice answers cancel one right one (a wrong answer costs 1/N of its question's score). |
 
-## Hiring
+## Hiring and admission
 | Term | Persian | Meaning |
 |---|---|---|
 | Job application | درخواست همکاری / متقاضی همکاری | What someone sends through the public «همکاری با ما» form (`JobApplication`, [ADR 0014](decisions/0014-job-applications.md)). Open until it is rejected or the applicant is hired; one open application per national code. LMS called it «پیش ثبت نام کارمند» (employee preregister). |
 | Job position | موقعیت شغلی | A job offered in the «همکاری با ما» form (`JobPosition`). In LMS these were the school admin roles. |
 | Foreign national code | کد اتباع | 12-digit identifier of a foreign national, used instead of the کد ملی. |
+| Preregistration | پیش‌ثبت‌نام / متقاضی ثبت‌نام | What a family sends through the public «پیش‌ثبت‌نام» form (`Preregistration`, [ADR 0018](decisions/0018-student-preregistration.md)). Open until it is rejected or the student is admitted; one open preregistration per national code. |
+| Admission | پذیرش | The workflow a preregistration goes through; its last approval creates the user and the student row in the chosen tenant. |
+| Student | دانش‌آموز | A person studying in a tenant (`students`): grade, student code, status, dates; created by the last approval of an admission workflow. |

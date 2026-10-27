@@ -1,8 +1,9 @@
 <script setup>
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import CustomFieldInput from '@/Components/CustomFieldInput.vue';
 import JalaliDateInput from '@/Components/JalaliDateInput.vue';
+import VerifiedMobileInput from '@/Components/VerifiedMobileInput.vue';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 
 // The public «همکاری با ما» form (ADR 0014); props from Modules\Employee\Http\Controllers\CareersController.
@@ -79,63 +80,6 @@ function prepareForm() {
 
 prepareForm();
 watch(currentForm, prepareForm);
-
-// Mobile confirmation: send a code, type it back; the confirmed number is
-// kept in the session (verifiedMobile) and locked in the form.
-const verifiedMobile = ref(props.mobileVerification.verifiedMobile);
-const sendCodeForm = useForm({});
-const verifyForm = useForm({ code: '' });
-const codeSent = ref(false);
-const secondsLeft = ref(0);
-let timer = null;
-
-if (verifiedMobile.value) {
-    form.mobile = verifiedMobile.value;
-}
-
-watch(
-    () => props.mobileVerification.verifiedMobile,
-    (mobile) => {
-        verifiedMobile.value = mobile;
-        if (mobile) {
-            form.mobile = mobile;
-            form.clearErrors('mobile');
-        }
-        codeSent.value = false;
-        verifyForm.reset();
-    },
-);
-
-function sendCode() {
-    sendCodeForm
-        .transform(() => ({ mobile: form.mobile }))
-        .post(route('careers.mobile.code'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                codeSent.value = true;
-                clearInterval(timer);
-                secondsLeft.value = props.mobileVerification.resendAfterSeconds;
-                timer = setInterval(() => {
-                    secondsLeft.value -= 1;
-                    if (secondsLeft.value <= 0) clearInterval(timer);
-                }, 1000);
-            },
-        });
-}
-
-function verifyCode() {
-    verifyForm.transform((data) => ({ ...data, mobile: form.mobile })).post(route('careers.mobile.verify'), { preserveScroll: true });
-}
-
-function changeMobile() {
-    codeSent.value = false;
-    verifyForm.reset();
-    form.mobile = '';
-    // The server checks the submitted number against the confirmed one, so another number needs a new code.
-    verifiedMobile.value = null;
-}
-
-onBeforeUnmount(() => clearInterval(timer));
 
 function onResumePicked(event) {
     form.resume = event.target.files[0] ?? null;
@@ -281,68 +225,19 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                 <section :class="sectionClass">
                     <h2 class="font-bold text-gray-900">اطلاعات تماس</h2>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div class="sm:col-span-2">
-                            <label for="mobile" :class="labelClass">تلفن همراه</label>
-                            <div class="flex flex-wrap items-start gap-2">
-                                <input
-                                    id="mobile"
-                                    v-model="form.mobile"
-                                    type="tel"
-                                    dir="ltr"
-                                    placeholder="09121234567"
-                                    :disabled="!!verifiedMobile || codeSent"
-                                    :class="[inputClass, 'max-w-xs disabled:bg-gray-100']"
-                                />
-                                <template v-if="verifiedMobile">
-                                    <span class="mt-3 text-sm text-green-700">✓ تأیید شد</span>
-                                    <button type="button" :class="[linkButtonClass, 'mt-3']" @click="changeMobile">تغییر شماره</button>
-                                </template>
-                                <button
-                                    v-else-if="!codeSent"
-                                    type="button"
-                                    :disabled="sendCodeForm.processing || !form.mobile"
-                                    class="mt-1 rounded-lg border border-violet-600 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60"
-                                    @click="sendCode"
-                                >
-                                    ارسال کد تأیید
-                                </button>
-                            </div>
-                            <p v-if="!verifiedMobile && !codeSent" class="mt-1 text-xs text-gray-500">برای ثبت درخواست، شماره موبایل باید با کد پیامکی تأیید شود.</p>
-                            <p v-if="sendCodeForm.errors.mobile || verifyForm.errors.mobile || form.errors.mobile" :class="errorClass">
-                                {{ sendCodeForm.errors.mobile || verifyForm.errors.mobile || form.errors.mobile }}
-                            </p>
-
-                            <div v-if="codeSent && !verifiedMobile" class="mt-3 rounded-lg bg-violet-50 p-3">
-                                <label for="code" :class="labelClass">کد پیامک‌شده به {{ form.mobile }}</label>
-                                <div class="flex flex-wrap items-start gap-2">
-                                    <input
-                                        id="code"
-                                        v-model="verifyForm.code"
-                                        type="text"
-                                        inputmode="numeric"
-                                        dir="ltr"
-                                        autocomplete="one-time-code"
-                                        :maxlength="mobileVerification.codeLength"
-                                        :class="[inputClass, 'max-w-40']"
-                                        @keydown.enter.prevent="verifyCode"
-                                    />
-                                    <button
-                                        type="button"
-                                        :disabled="verifyForm.processing || !verifyForm.code"
-                                        class="mt-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60"
-                                        @click="verifyCode"
-                                    >
-                                        تأیید
-                                    </button>
-                                </div>
-                                <p v-if="verifyForm.errors.code" :class="errorClass">{{ verifyForm.errors.code }}</p>
-                                <div class="mt-2 flex gap-4 text-sm">
-                                    <span v-if="secondsLeft > 0" class="text-gray-500">ارسال دوباره تا {{ secondsLeft }} ثانیه‌ی دیگر</span>
-                                    <button v-else type="button" :class="linkButtonClass" :disabled="sendCodeForm.processing" @click="sendCode">ارسال دوباره‌ی کد</button>
-                                    <button type="button" :class="linkButtonClass" @click="changeMobile">تغییر شماره</button>
-                                </div>
-                            </div>
-                        </div>
+                        <VerifiedMobileInput
+                            v-model="form.mobile"
+                            class="sm:col-span-2"
+                            :verification="mobileVerification"
+                            :send-url="route('careers.mobile.code')"
+                            :verify-url="route('careers.mobile.verify')"
+                            hint="برای ثبت درخواست، شماره موبایل باید با کد پیامکی تأیید شود."
+                            :error="form.errors.mobile"
+                            :input-class="inputClass"
+                            :label-class="labelClass"
+                            :error-class="errorClass"
+                            @verified="form.clearErrors('mobile')"
+                        />
                         <div v-if="asks('phone')">
                             <label for="phone" :class="labelClass">تلفن ثابت{{ optional('phone') }}</label>
                             <input id="phone" v-model="form.phone" type="tel" dir="ltr" placeholder="02112345678" maxlength="11" :class="inputClass" />

@@ -2,12 +2,12 @@
 
 namespace Modules\Employee\Filament\Resources\JobPositions;
 
+use App\Filament\Concerns\OnlyInPrimaryTenant;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Modules\Employee\Filament\Concerns\OnlyInPrimaryTenant;
 use Modules\Employee\Filament\Resources\JobPositions\Pages\ListJobPositions;
 use Modules\Employee\Filament\Resources\JobPositions\Schemas\JobPositionForm;
 use Modules\Employee\Filament\Resources\JobPositions\Tables\JobPositionsTable;

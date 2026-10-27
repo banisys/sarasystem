@@ -1,13 +1,14 @@
 <?php
 
-namespace Modules\Employee\Filament\Concerns;
+namespace App\Filament\Concerns;
 
 use App\Models\Tenant;
 use Filament\Facades\Filament;
 
 /**
- * The «همکاری با ما» form is the primary tenant's only (ADR 0014), so its
- * positions and applications are managed in that tenant's panel only.
+ * For resources of a public form that lives on the primary tenant's site
+ * only, e.g. «همکاری با ما» (ADR 0014) or student preregistration
+ * (ADR 0018): their records are managed in that tenant's panel only.
  */
 trait OnlyInPrimaryTenant
 {

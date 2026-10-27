@@ -2,12 +2,12 @@
 
 namespace Modules\Employee\Filament\Resources\JobApplications;
 
+use App\Filament\Concerns\OnlyInPrimaryTenant;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Modules\Employee\Filament\Concerns\OnlyInPrimaryTenant;
 use Modules\Employee\Filament\Resources\JobApplications\Pages\ListJobApplications;
 use Modules\Employee\Filament\Resources\JobApplications\Pages\ViewJobApplication;
 use Modules\Employee\Filament\Resources\JobApplications\Schemas\JobApplicationInfolist;
