@@ -39,6 +39,6 @@ SaraSystem is a redesign of `../LMS` (Laravel 13 + Filament 5 + Blade themes + M
   - `instance_configs` → spatie settings
   - Blade themes/blocks → Inertia pages + Vue components
 - **Tenancy design is required before modelling data:** what a tenant is (organization vs school/branch), single DB vs DB-per-tenant, and how spatie-multitenancy works together with Filament's own panel tenancy and with spatie-permission "teams".
-- **Front end needs Jalali support too.** `filament-jalali` covers only the admin, so the Vue side needs its own Jalali date library/picker.
+- **Front end needs Jalali support too.** `filament-jalali` covers only the admin, so the Vue side needs its own Jalali date library/picker (chosen in [ADR 0015](0015-jalali-date-input.md): own component, no library).
 - Check that every plugin has a release compatible with the Filament major we use before installing. (Done on 2026-10-23: all compatible with Laravel 13 / Filament 5.10; exact versions in `composer.lock`.)
 - Added on 2026-10-23 at the user's request: `tightenco/ziggy` (Laravel route names in Vue via `route()`).

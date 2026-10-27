@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import JalaliDateInput from '@/Components/JalaliDateInput.vue';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 
 // The public «همکاری با ما» form (ADR 0014); props from Modules\Employee\Http\Controllers\CareersController.
@@ -205,7 +206,13 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                         </div>
                         <div>
                             <label for="birth_date" :class="labelClass">تاریخ تولد</label>
-                            <input id="birth_date" v-model="form.birth_date" type="text" dir="ltr" placeholder="1370/01/05" :class="inputClass" />
+                            <JalaliDateInput
+                                id="birth_date"
+                                v-model="form.birth_date"
+                                :min-year="limits.birthYears[0]"
+                                :max-year="limits.birthYears[1]"
+                                :input-class="inputClass"
+                            />
                             <p v-if="form.errors.birth_date" :class="errorClass">{{ form.errors.birth_date }}</p>
                         </div>
                         <div>
@@ -351,7 +358,7 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                                 </div>
                                 <div>
                                     <label :for="`education-${index}-graduation_date`" :class="labelClass">تاریخ اخذ مدرک</label>
-                                    <input :id="`education-${index}-graduation_date`" v-model="row.graduation_date" type="text" dir="ltr" placeholder="1395/04/31" :class="inputClass" />
+                                    <JalaliDateInput :id="`education-${index}-graduation_date`" v-model="row.graduation_date" placeholder="1395/04/31" :input-class="inputClass" />
                                     <p v-if="form.errors[`education.${index}.graduation_date`]" :class="errorClass">{{ form.errors[`education.${index}.graduation_date`] }}</p>
                                 </div>
                                 <template v-if="universityLevels.includes(row.level)">
@@ -404,12 +411,12 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                                 </div>
                                 <div>
                                     <label :for="`work-${index}-start_date`" :class="labelClass">تاریخ شروع همکاری</label>
-                                    <input :id="`work-${index}-start_date`" v-model="row.start_date" type="text" dir="ltr" placeholder="1398/07/01" :class="inputClass" />
+                                    <JalaliDateInput :id="`work-${index}-start_date`" v-model="row.start_date" placeholder="1398/07/01" :input-class="inputClass" />
                                     <p v-if="form.errors[`work_history.${index}.start_date`]" :class="errorClass">{{ form.errors[`work_history.${index}.start_date`] }}</p>
                                 </div>
                                 <div>
                                     <label :for="`work-${index}-end_date`" :class="labelClass">تاریخ پایان همکاری (اگر هنوز آنجا کار می‌کنید خالی بگذارید)</label>
-                                    <input :id="`work-${index}-end_date`" v-model="row.end_date" type="text" dir="ltr" placeholder="1402/06/31" :class="inputClass" />
+                                    <JalaliDateInput :id="`work-${index}-end_date`" v-model="row.end_date" placeholder="1402/06/31" :input-class="inputClass" />
                                     <p v-if="form.errors[`work_history.${index}.end_date`]" :class="errorClass">{{ form.errors[`work_history.${index}.end_date`] }}</p>
                                 </div>
                                 <div>

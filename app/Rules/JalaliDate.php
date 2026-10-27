@@ -10,8 +10,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
  * A typed Jalali date such as 1370/01/05 (Persian digits and "-" too),
- * optionally within a range of Jalali years. Until a Vue date picker is
- * chosen, public forms take dates as text.
+ * optionally within a range of Jalali years: the value of the Vue
+ * JalaliDateInput (ADR 0015), which can also be typed.
  */
 class JalaliDate implements ValidationRule
 {
