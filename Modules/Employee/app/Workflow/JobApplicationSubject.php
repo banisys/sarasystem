@@ -73,6 +73,11 @@ class JobApplicationSubject extends WorkflowSubject
         return "درخواست همکاری {$subject->fullName()} ({$subject->job_title})";
     }
 
+    public function completionSummary(): string
+    {
+        return 'متقاضی استخدام می‌شود: حساب کاربری (یا حساب موجود با همان کد ملی)، نقش‌ها در '.config('sarasystem.tenant_label').' محل خدمت و ردیف «کارمندان».';
+    }
+
     /**
      * Applications belong to the primary tenant (ADR 0014), so their
      * workflows are designed there.

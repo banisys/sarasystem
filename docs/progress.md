@@ -15,6 +15,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-27 — Workflows:
+  - «نمایش فرایند» page per workflow (`workflows/{id}`), a flowchart of the steps with assignees, allowed actions, reject exits and open cases per step.
+  - Sample hiring workflow for local use (`php artisan module:seed Employee`, `HiringDemoSeeder`), on «معلم ریاضی», «معلم زبان انگلیسی» and «پشتیبان آموزشی». Its steps: document check by «کارمند ستاد» in the head office → interview by «مدیر شعبه» in شعبه شمال → بابک افشار → final approval by the super admin.
+  - 249 tests pass.
 - 2026-10-27 — Admin panel: no delete button on edit pages any more (users, roles, workflows, site pages, exams, questions, exam attempts); deleting is a row action in each list (ADR 0006). Users got «حذف حساب» in their list (not for yourself). 247 tests pass.
 - 2026-10-26 — Approval workflows and the cartable (ADR 0016), with hiring as the first workflow:
   - **Engine (core):** `WorkflowEngine` checks the assignee and the step they saw, writes the history and sends bell notifications (`notifications` table, `->databaseNotifications()`). Running cases keep a copy of their steps. Modules plug in with `WorkflowSubject`.
@@ -71,7 +75,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - No conditions, parallel approvals or deadlines.
   - A case that moved on while someone had it open gives "not found" on their next click.
   - Not checked in a browser yet (covered by Livewire tests).
-  - Demo data has no workflow and no `*:Workflow` / `*:Employee` permissions on demo roles. To try it, log in as the super admin, make a workflow in «کارتابل → فرایندها» and choose it on a job position.
+  - Demo roles have no `*:Workflow` / `*:Employee` / `*:JobApplication` permissions; the sample workflow comes from `php artisan module:seed Employee` (module seeders don't run with `db:seed`).
+  - The «نمایش فرایند» page is covered by a test but not checked in a browser yet.
 - Hiring: education and work history can't be edited in a workflow (personal and contact fields only). A head-office approver hiring into a branch where they hold no roles can only give permission-less roles there (ADR 0003).
 - Job applications: demo roles have no `*:JobApplication` / `*:JobPosition` permissions and there are no demo job positions, so `/careers` shows «موقعیت شغلی خالی نداریم» until positions are added. Not checked in a browser beyond the page loading.
 - `JalaliDateInput` is not checked in a browser yet (conversions tested in Node over 1921–2080); date only, no time or range picker.

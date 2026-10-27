@@ -53,6 +53,15 @@ abstract class WorkflowSubject
     }
 
     /**
+     * What happens when the last step is approved, in one sentence; shown
+     * at the end of the workflow diagram.
+     */
+    public function completionSummary(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Whether workflows for these records can be designed in the tenant.
      */
     public function availableIn(Tenant $tenant): bool

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Workflows;
 use App\Filament\Resources\Workflows\Pages\CreateWorkflow;
 use App\Filament\Resources\Workflows\Pages\EditWorkflow;
 use App\Filament\Resources\Workflows\Pages\ListWorkflows;
+use App\Filament\Resources\Workflows\Pages\ViewWorkflow;
 use App\Filament\Resources\Workflows\Schemas\WorkflowForm;
 use App\Filament\Resources\Workflows\Tables\WorkflowsTable;
 use App\Models\Workflow;
@@ -56,6 +57,7 @@ class WorkflowResource extends Resource
         return [
             'index' => ListWorkflows::route('/'),
             'create' => CreateWorkflow::route('/create'),
+            'view' => ViewWorkflow::route('/{record}'),
             'edit' => EditWorkflow::route('/{record}/edit'),
         ];
     }

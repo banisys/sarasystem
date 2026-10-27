@@ -4,6 +4,10 @@ namespace Modules\Employee\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 
+/**
+ * Run with `php artisan module:seed Employee` (module seeders are not part
+ * of `db:seed`).
+ */
 class EmployeeDatabaseSeeder extends Seeder
 {
     /**
@@ -11,6 +15,8 @@ class EmployeeDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([]);
+        if (app()->isLocal()) {
+            $this->call(HiringDemoSeeder::class);
+        }
     }
 }

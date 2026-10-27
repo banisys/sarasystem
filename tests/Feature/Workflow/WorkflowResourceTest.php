@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Workflow\AssigneeType;
+use App\Workflow\StepAction;
 use App\Workflow\WorkflowSubjects;
 use Filament\Forms\Components\Repeater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -112,6 +113,22 @@ class WorkflowResourceTest extends TestCase
 
         Livewire::test(ListWorkflows::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$foreign]);
         $this->get(WorkflowResource::getUrl('edit', ['record' => $foreign], tenant: $this->head))->assertNotFound();
+    }
+
+    public function test_the_workflow_page_draws_its_steps(): void
+    {
+        $person = User::factory()->create(['name' => 'رضا مدیری']);
+        $this->grantRole($person, $this->head, 'teacher');
+        $workflow = $this->makeWorkflow($this->head, $this->subject->type(), [
+            $this->roleStep('بررسی شعبه', $this->west, 'reviewer', [StepAction::Reject]),
+            $this->userStep('تأیید ستاد', $this->head, $person, [StepAction::Return]),
+        ]);
+        $this->globalRole('reviewer')->fill(['label' => 'بازبین'])->save();
+
+        $this->actingAs($this->designer)
+            ->get(WorkflowResource::getUrl('view', ['record' => $workflow], tenant: $this->head))
+            ->assertOk()
+            ->assertSeeInOrder(['شروع', 'بررسی شعبه', 'بازبین در '.$this->west->name, 'رد ← پایان', 'تأیید ستاد', 'رضا مدیری در '.$this->head->name, 'می‌تواند به مرحله‌ی قبل برگرداند', 'پایان: تأیید نهایی']);
     }
 
     public function test_staff_without_permission_cannot_design_workflows(): void

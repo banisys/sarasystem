@@ -8,6 +8,7 @@ use App\Workflow\CaseStatus;
 use App\Workflow\WorkflowSubjects;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -52,6 +53,7 @@ class WorkflowsTable
                 TernaryFilter::make('is_active')->label('فعال'),
             ])
             ->recordActions([
+                ViewAction::make()->label('نمایش فرایند'),
                 EditAction::make(),
                 DeleteAction::make()->modalDescription(self::DELETE_DESCRIPTION),
             ]);
