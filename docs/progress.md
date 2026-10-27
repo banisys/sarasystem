@@ -15,6 +15,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-27 — `brianium/paratest` (dev): the whole suite runs with `php artisan test --parallel` in about 5 s (was about 20 s), 249 tests pass.
 - 2026-10-27 — Workflows:
   - «نمایش فرایند» page per workflow (`workflows/{id}`), a flowchart of the steps with assignees, allowed actions, reject exits and open cases per step.
   - Sample hiring workflow for local use (`php artisan module:seed Employee`, `HiringDemoSeeder`), on «معلم ریاضی», «معلم زبان انگلیسی» and «پشتیبان آموزشی». Its steps: document check by «کارمند ستاد» in the head office → interview by «مدیر شعبه» in شعبه شمال → بابک افشار → final approval by the super admin.

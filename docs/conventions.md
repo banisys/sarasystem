@@ -48,6 +48,7 @@ Business features never go in `app/`; the core in `app/` is only for platform co
 
 ## Testing
 - PHPUnit; tests live in `tests/Feature` and `tests/Unit`. Run them with `docker compose exec -u sail laravel.test php artisan test`.
+- The whole suite runs in parallel with `php artisan test --parallel` (`brianium/paratest`, one process per CPU; about 5 s instead of 20 s on the dev machine). Each process gets its own database (`testing_1`, `testing_2`, …, created and migrated automatically). Single files or `--filter` runs stay sequential.
 - Tests run on PostgreSQL, in the `testing` database of the `pgsql` container (`phpunit.xml`), with `RefreshDatabase`. The database is created by `docker/pgsql/create-testing-database.sql` when the volume is first initialised; on an existing volume, create it with `CREATE DATABASE testing`.
 - Tenancy helpers: `Tests\Concerns\InteractsWithTenants` (`grantRole()`, `makeStaff()`). `Tests\Fixtures\TenantNote` is a minimal tenant-owned model.
 - Every tenant-owned feature gets a test that another tenant's rows are invisible.

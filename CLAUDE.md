@@ -21,12 +21,12 @@ This file is loaded into every agent session. Keep it short; details live in `do
 ```bash
 docker compose up -d                                   # app → http://localhost:8000, Vite 5174, PostgreSQL 5432
 docker compose exec -u sail laravel.test php artisan …  # artisan (always as user sail, not root)
-docker compose exec -u sail laravel.test php artisan test
+docker compose exec -u sail laravel.test php artisan test --parallel   # whole suite; single files/--filter without --parallel
 docker compose exec -u sail laravel.test vendor/bin/pint  # code style
 docker compose exec -u sail laravel.test npm run build    # or `npm run dev` for Vite HMR on :5174
 ```
 The host has no PHP/Composer/Node; everything runs in the container.
-Containers have no internet: when a package must be installed, give the user the command to run.
+Containers reach the internet only through the host VPN ([docker/vpn-proxy](docker/vpn-proxy/install.sh)). Install or change packages only when the user asks.
 
 ## Rules for agents
 
