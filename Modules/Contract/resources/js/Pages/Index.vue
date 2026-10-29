@@ -36,6 +36,7 @@ const statusClass = {
                 </div>
                 <div class="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
                     <span v-if="contract.number">شماره: {{ contract.number }}</span>
+                    <span v-if="contract.kind_line" class="text-violet-700">{{ contract.kind_line }}</span>
                     <span v-if="contract.starts_on">از {{ contract.starts_on }}</span>
                     <span v-if="contract.ends_on">تا {{ contract.ends_on }}</span>
                 </div>

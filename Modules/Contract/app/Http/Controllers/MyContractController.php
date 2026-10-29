@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Contract\Enums\ContractKind;
 use Modules\Contract\Enums\ContractStatus;
 use Modules\Contract\Models\Contract;
 use Modules\Contract\Services\ContractException;
@@ -27,13 +28,14 @@ class MyContractController extends Controller
     public function index(Request $request): Response
     {
         $contracts = Contract::query()->visibleToPerson($request->user())
-            ->with('contractType')
+            ->with(['contractType', 'parent'])
             ->latest('issued_at')
             ->get()
             ->map(fn (Contract $contract): array => [
                 'id' => $contract->id,
                 'title' => $contract->contractType->title,
                 'number' => $contract->number,
+                'kind_line' => self::kindLine($contract),
                 'status' => $contract->status->value,
                 'status_label' => $contract->status->getLabel(),
                 'starts_on' => ContractRenderer::date($contract->starts_on),
@@ -133,6 +135,18 @@ class MyContractController extends Controller
     private function ensureOwn(Request $request, Contract $contract): void
     {
         abort_unless(Contract::query()->visibleToPerson($request->user())->whereKey($contract->getKey())->exists(), 404);
+    }
+
+    /**
+     * e.g. «الحاقیه‌ی قرارداد ک-12» (ADR 0021); null for a contract of its own.
+     */
+    private static function kindLine(Contract $contract): ?string
+    {
+        return match ($contract->kind) {
+            ContractKind::Amendment => 'الحاقیه‌ی قرارداد '.$contract->parent?->number,
+            ContractKind::Renewal => 'تمدید قرارداد '.$contract->parent?->number,
+            default => null,
+        };
     }
 
     private static function purpose(Contract $contract): string

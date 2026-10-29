@@ -15,8 +15,9 @@ use RuntimeException;
 /**
  * Sample contract types for local development (ADR 0020), on top of the
  * core DemoSeeder and the Employee / Student demo workflows: an employment
- * contract with a monthly wage and working hours, signed either way, and a
- * tuition contract signed electronically. The step before the last of each
+ * contract with a monthly wage and working hours, signed either way, a
+ * raise amendment of it (ADR 0021), and a tuition contract signed
+ * electronically. The step before the last of each
  * demo workflow prepares the contract. Safe to run again.
  */
 class ContractDemoSeeder extends Seeder
@@ -32,6 +33,11 @@ class ContractDemoSeeder extends Seeder
                 ['key' => 'fdemohours1', 'label' => 'ساعات کار در هفته', 'type' => 'number', 'required' => true, 'section' => 'terms'],
             ]);
 
+            $raise = $this->type('الحاقیه افزایش حقوق', ['employee'], SignatureMethod::Either, null, self::RAISE_TEXT, amendment: true);
+            $this->fields($headOffice, $raise, [
+                ['key' => 'fdemoraise1', 'label' => 'حقوق ماهانه‌ی جدید (ریال)', 'type' => 'number', 'required' => true, 'section' => 'terms'],
+            ], ['ends_on' => 'hidden', 'amount' => 'hidden']);
+
             $tuition = $this->type('قرارداد شهریه', ['learner'], SignatureMethod::Electronic, 'ش-', self::TUITION_TEXT);
 
             $this->prepareBeforeLastStep('استخدام کادر آموزشی (نمونه)', $employment);
@@ -42,10 +48,11 @@ class ContractDemoSeeder extends Seeder
     /**
      * @param  list<string>  $parties
      */
-    private function type(string $title, array $parties, SignatureMethod $method, string $prefix, string $body): ContractType
+    private function type(string $title, array $parties, SignatureMethod $method, ?string $prefix, string $body, bool $amendment = false): ContractType
     {
         return ContractType::query()->updateOrCreate(['title' => $title], [
             'parties' => $parties,
+            'is_amendment' => $amendment,
             'signature_method' => $method,
             'number_prefix' => $prefix,
             'body' => $body,
@@ -55,12 +62,13 @@ class ContractDemoSeeder extends Seeder
 
     /**
      * @param  list<array<string, mixed>>  $fields
+     * @param  array<string, string>  $modes
      */
-    private function fields(Tenant $tenant, ContractType $type, array $fields): void
+    private function fields(Tenant $tenant, ContractType $type, array $fields, array $modes = ['ends_on' => 'required', 'amount' => 'hidden']): void
     {
         FormCustomization::query()->updateOrCreate(
             ['tenant_id' => $tenant->id, 'form' => ContractForm::KEY, 'owner_type' => $type->getMorphClass(), 'owner_id' => $type->id],
-            ['field_modes' => ['ends_on' => 'required', 'amount' => 'hidden'], 'fields' => $fields],
+            ['field_modes' => $modes, 'fields' => $fields],
         );
     }
 
@@ -86,6 +94,10 @@ class ContractDemoSeeder extends Seeder
         <p>حقوق ماهانه‌ی کارمند <span data-type="mergeTag" data-id="fdemowage01"></span> ریال است که تا پنجم هر ماه پرداخت می‌شود.</p>
         <h2>ماده ۴ - تعهدات</h2>
         <p>کارمند متعهد است آیین‌نامه‌های داخلی را رعایت کند و اطلاعات فراگیران را محرمانه نگه دارد.</p>
+        HTML;
+
+    private const RAISE_TEXT = <<<'HTML'
+        <p>به استناد قرارداد شماره‌ی <span data-type="mergeTag" data-id="parent_number"></span> میان <span data-type="mergeTag" data-id="tenant_name"></span> و <span data-type="mergeTag" data-id="person_name"></span>، از <span data-type="mergeTag" data-id="starts_on"></span> حقوق ماهانه‌ی کارمند به <span data-type="mergeTag" data-id="fdemoraise1"></span> ریال تغییر می‌کند. سایر مواد قرارداد بدون تغییر است.</p>
         HTML;
 
     private const TUITION_TEXT = <<<'HTML'

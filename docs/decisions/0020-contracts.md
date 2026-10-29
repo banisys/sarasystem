@@ -1,7 +1,7 @@
 # 0020 — Contracts
 
 - **Date:** 2026-10-29
-- **Status:** accepted
+- **Status:** accepted; amendments, renewals and reminders added by [ADR 0021](0021-contract-amendments-renewals-reminders.md)
 
 ## Context
 Employees and learners sign contracts: an employment contract when someone is hired, a tuition or training contract when a learner is admitted, and new ones each period. LMS has a `Contract` module ([legacy-lms.md](../legacy-lms.md)). Reviewed on 2026-10-29, it:
@@ -81,5 +81,5 @@ The user chose:
 - Employee and Student don't depend on the module; without it, steps' contract settings take no effect.
 - Issued texts are fixed: a wrong issued contract is cancelled and a new one issued.
 - No money yet: the amount is a value for the text. Installments, discounts and payments wait for a finance module, which can attach to contracts.
-- Not built yet: amendments (الحاقیه), renewals, contract approval workflows, end-of-contract reminders, Word import of templates (LMS has a converter), the organization's own signature. Contracts are not shown on the employee / learner pages.
+- Not built yet: contract approval workflows, Word import of templates (LMS has a converter), the organization's own signature. Contracts are not shown on the employee / learner pages.
 - An electronic signature here is an SMS-confirmed acceptance with an audit trail, not a certificate-based digital signature.

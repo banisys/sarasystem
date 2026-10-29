@@ -9,7 +9,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
-- Contracts phase 2: amendments / renewals, end-of-contract reminders, a finance module for installments and payments that attaches to contracts.
+- Contracts: approval workflow before issuing, the organization's signature, contracts tab on employee / learner pages; later a finance module for installments and payments that attaches to contracts.
 - Use customizable forms (ADR 0017) in the next forms (e.g. enrollment contracts). Possible additions: file fields, conditional fields.
 - Workflows: cancel / reassign a running case (super admin or workflow owner), per-step deadlines and reminders, attachments on notes, a monitor of all running cases.
 - Use workflows for the next approval flows (leave, contracts).
@@ -17,6 +17,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Contracts phase 2 ([ADR 0021](decisions/0021-contract-amendments-renewals-reminders.md)):
+  - **Amendments** («الحاقیه»): contract types can be marked «الحاقیه است»; row action «الحاقیه» on a signed contract; numbered after the main contract (`K-12/1`); the texts can use the main / previous contract's merge tags.
+  - **Renewals** («تمدید»): row action on a signed contract, a new draft that starts the day after it ends, lasts as long and keeps the amount and answers; one renewal per contract unless cancelled.
+  - **Reminders:** `contracts:send-reminders`, daily at 08:00. It sends a bell notification to the tenant's `Update:Contract` holders and the issuer when a signed contract ends within 30 days without a renewal (once), and an SMS to the person every 3 days, at most 3 times, while an issued contract waits for their electronic signature. The first scheduled task of our own; the scheduler must run (`schedule:work` locally).
+  - List: «نوع» column and filter, «پایان» filter (ending soon / ended), end date coloured when ending without renewal; the user panel shows «الحاقیه‌ی / تمدید قرارداد …».
+  - Demo: «الحاقیه افزایش حقوق». Fixed in docs: the app timezone is Asia/Tehran, not UTC. 365 tests pass.
 - 2026-10-29 — Module `Contract` ([ADR 0020](decisions/0020-contracts.md)), after a review of the LMS Contract module: contracts of employees and learners.
   - **Contract types** («قراردادها → انواع قرارداد», head office only): for employees and/or learners, the text in a rich editor with merge tags (person, contract, party values and the type's own fields), signature method (electronic / paper / either), number prefix. «فیلدهای قرارداد» sets the terms form per type: start / end date and amount required / optional / not asked, plus added fields (wage, hours, …).
   - **Contracts** («قراردادها → قراردادها», per tenant): draft for a member («قرارداد جدید»), edit, preview, PDF, **issue** (text fixed with SHA-256, number, SMS to the person when they may sign electronically), record a paper signature with a scan, cancel with a reason.
@@ -108,7 +114,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Contracts (ADR 0020):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the type editor with merge tags, the contracts screens, the cartable actions and `/contracts`. The PDF was checked by eye.
   - Shabnam has no «—» / «–»; the PDF prints them as «-» (mPDF can't take them from another font while shaping Persian).
-  - No amendments, renewals, contract approval workflows, end-of-contract reminders, Word import of templates, or the organization's own signature; no contracts tab on the employee / learner pages.
+  - No contract approval workflows, Word import of templates, or the organization's own signature; no contracts tab on the employee / learner pages.
+  - Reminders need the scheduler, which no container runs yet (`schedule:work` by hand locally; cron in production). Paper-only contracts waiting for a signature are not reminded about. Amendments, renewals and reminders are not checked in a browser yet (covered by tests).
   - Demo roles have no `*:Contract` / `*:ContractType` permissions; only super admins see the «قراردادها» screens until roles get them.
   - Documents still move with `ApplicantDocuments::accepted()`; they could listen to `ApplicantAccepted` like contracts.
   - `composer audit` reports an advisory in `symfony/mime` (CVE-2026-45070, from before this change); update it with `composer update symfony/mime` once approved.

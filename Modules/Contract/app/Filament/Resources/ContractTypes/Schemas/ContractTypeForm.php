@@ -47,9 +47,14 @@ class ContractTypeForm
                             ->helperText('الکترونیکی: شخص در پنل خودش متن را می‌خواند و با کد پیامکی امضا می‌کند. کاغذی: نسخه‌ی چاپی امضا و تصویرش بارگذاری می‌شود.')
                             ->inline()
                             ->required(),
+                        Toggle::make('is_amendment')
+                            ->label('الحاقیه است')
+                            ->helperText('برای افزودن به قرارداد امضاشده (مثلاً افزایش حقوق)؛ شماره‌اش از شماره‌ی قرارداد اصلی می‌آید و برای قرارداد جدید یا تمدید پیشنهاد نمی‌شود.')
+                            ->live(),
                         TextInput::make('number_prefix')
                             ->label('پیشوند شماره')
                             ->helperText('مثلاً «ک-۱۴۰۵-»؛ شماره‌ها به ترتیب بعد از آن می‌آیند.')
+                            ->visible(fn (Get $get): bool => ! $get('is_amendment'))
                             ->maxLength(20),
                         Textarea::make('description')
                             ->label('توضیحات')

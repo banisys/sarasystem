@@ -20,11 +20,12 @@ use Modules\Contract\Forms\ContractForm;
  * A kind of contract, e.g. «قرارداد کارمند تمام‌وقت» (ADR 0020). Defined
  * once, in the primary tenant, for one or more parties (employees,
  * learners): its text with merge tags, how it is signed, and its fields
- * (a customizable form per type, ADR 0017).
+ * (a customizable form per type, ADR 0017). An amendment type is used
+ * for amendments of signed contracts only (ADR 0021).
  *
  * @property list<string> $parties
  */
-#[Fillable(['tenant_id', 'title', 'description', 'parties', 'body', 'signature_method', 'number_prefix', 'is_active', 'sort'])]
+#[Fillable(['tenant_id', 'title', 'description', 'parties', 'is_amendment', 'body', 'signature_method', 'number_prefix', 'is_active', 'sort'])]
 class ContractType extends Model
 {
     /** @use HasFactory<ContractTypeFactory> */
@@ -63,6 +64,16 @@ class ContractType extends Model
     }
 
     /**
+     * Types for contracts of their own and renewals (true: amendment types).
+     *
+     * @param  Builder<ContractType>  $query
+     */
+    public function scopeAmendments(Builder $query, bool $amendments = true): void
+    {
+        $query->where('is_amendment', $amendments);
+    }
+
+    /**
      * @param  Builder<ContractType>  $query
      */
     public function scopeForParty(Builder $query, string $party): void
@@ -82,7 +93,7 @@ class ContractType extends Model
 
     /**
      * Merge tags of a text for these parties: the contract's own values,
-     * the person tags, every party's tags, then the added fields of the
+     * the contract it amends or renews (ADR 0021), the person tags, every party's tags, then the added fields of the
      * type's form (once the type exists).
      *
      * @param  list<string>  $parties
@@ -99,6 +110,10 @@ class ContractType extends Model
             'ends_on' => 'تاریخ پایان',
             'amount' => 'مبلغ (ریال)',
             'amount_words' => 'مبلغ به حروف',
+            'parent_number' => 'شماره‌ی قرارداد اصلی / قبلی',
+            'parent_title' => 'عنوان قرارداد اصلی / قبلی',
+            'parent_starts_on' => 'تاریخ شروع قرارداد اصلی / قبلی',
+            'parent_ends_on' => 'تاریخ پایان قرارداد اصلی / قبلی',
             ...ContractParty::personTags(),
         ];
 
@@ -127,6 +142,7 @@ class ContractType extends Model
     {
         return [
             'parties' => 'array',
+            'is_amendment' => 'boolean',
             'signature_method' => SignatureMethod::class,
             'is_active' => 'boolean',
         ];

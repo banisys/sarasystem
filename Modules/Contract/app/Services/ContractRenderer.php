@@ -7,6 +7,7 @@ use App\Support\PersianNumberWords;
 use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonInterface;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
+use Modules\Contract\Enums\ContractKind;
 use Modules\Contract\Enums\SignedVia;
 use Modules\Contract\Models\Contract;
 use Mpdf\Mpdf;
@@ -61,9 +62,14 @@ class ContractRenderer
     {
         $title = e($contract->contractType->title);
         $number = $contract->number === null ? '' : '<p class="contract-number">شماره: '.e($contract->number).'</p>';
+        $parent = match (true) {
+            $contract->parent === null => '',
+            $contract->kind === ContractKind::Amendment => '<p class="contract-number">الحاقیه‌ی قرارداد '.e((string) $contract->parent->number).'</p>',
+            default => '<p class="contract-number">در ادامه‌ی قرارداد '.e((string) $contract->parent->number).'</p>',
+        };
         $draft = $contract->isDraft() ? '<p class="contract-draft">پیش‌نویس</p>' : '';
 
-        return "{$draft}<h1 class=\"contract-title\">{$title}</h1>{$number}<div class=\"contract-body\">{$this->body($contract)}</div>{$this->signatureBlock($contract)}";
+        return "{$draft}<h1 class=\"contract-title\">{$title}</h1>{$number}{$parent}<div class=\"contract-body\">{$this->body($contract)}</div>{$this->signatureBlock($contract)}";
     }
 
     /**
@@ -110,6 +116,10 @@ class ContractRenderer
             'ends_on' => self::date($contract->ends_on),
             'amount' => $contract->amount === null ? null : number_format($contract->amount),
             'amount_words' => $contract->amount === null ? null : PersianNumberWords::convert($contract->amount).' ریال',
+            'parent_number' => $contract->parent?->number,
+            'parent_title' => $contract->parent?->contractType->title,
+            'parent_starts_on' => self::date($contract->parent?->starts_on),
+            'parent_ends_on' => self::date($contract->parent?->ends_on),
             ...($record !== null && $party !== null ? $party->values($record) : []),
         ];
 

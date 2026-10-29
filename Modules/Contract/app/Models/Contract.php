@@ -12,8 +12,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Modules\Contract\Database\Factories\ContractFactory;
+use Modules\Contract\Enums\ContractKind;
 use Modules\Contract\Enums\ContractStatus;
 use Modules\Contract\Enums\SignedVia;
 use Spatie\MediaLibrary\HasMedia;
@@ -24,15 +26,16 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * (job application, preregistration) or a member record (employee,
  * learner), issued with its text fixed, then signed by the person in
  * their panel or on paper. An applicant's contracts move to the member
- * record, its tenant and user when the applicant is accepted.
+ * record, its tenant and user when the applicant is accepted. A signed
+ * contract can get amendments and a renewal (ADR 0021).
  *
  * @property list<array<string, mixed>>|null $answers
  */
 #[Fillable([
-    'tenant_id', 'contract_type_id', 'party', 'contractable_type', 'contractable_id', 'user_id', 'number', 'status',
+    'tenant_id', 'contract_type_id', 'parent_id', 'kind', 'party', 'contractable_type', 'contractable_id', 'user_id', 'number', 'status',
     'starts_on', 'ends_on', 'amount', 'answers', 'body', 'body_hash', 'created_by_id', 'issued_at', 'issued_by_id',
     'signed_at', 'signed_via', 'signed_mobile', 'signed_ip', 'signature_recorded_by_id',
-    'cancelled_at', 'cancelled_by_id', 'cancellation_reason',
+    'cancelled_at', 'cancelled_by_id', 'cancellation_reason', 'expiry_reminded_at', 'signature_reminded_at', 'signature_reminder_count',
 ])]
 class Contract extends Model implements HasMedia
 {
@@ -95,6 +98,26 @@ class Contract extends Model implements HasMedia
         return $this->status === ContractStatus::Issued && $this->contractType->signature_method->allowsPaper();
     }
 
+    /**
+     * A signed contract of its own (not an amendment) can be amended.
+     */
+    public function canBeAmended(): bool
+    {
+        return $this->status === ContractStatus::Signed && $this->kind !== ContractKind::Amendment;
+    }
+
+    /**
+     * A signed contract (not an amendment) can be renewed once; a
+     * cancelled renewal can be made again.
+     */
+    public function canBeRenewed(): bool
+    {
+        return $this->status === ContractStatus::Signed
+            && $this->kind !== ContractKind::Amendment
+            && ($this->relationLoaded('renewals') ? $this->renewals : $this->renewals()->get())
+                ->every(fn (Contract $renewal): bool => $renewal->status === ContractStatus::Cancelled);
+    }
+
     public function partyDescriptor(): ?ContractParty
     {
         return ContractParties::find($this->party);
@@ -126,6 +149,33 @@ class Contract extends Model implements HasMedia
     public function contractable(): MorphTo
     {
         return $this->morphTo()->withoutGlobalScope(TenantScope::class);
+    }
+
+    /**
+     * An amendment's main contract, or the contract a renewal follows.
+     * Unscoped: both are the same person's, in their tenant.
+     *
+     * @return BelongsTo<Contract, $this>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id')->withoutGlobalScope(TenantScope::class);
+    }
+
+    /**
+     * @return HasMany<Contract, $this>
+     */
+    public function amendments(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id')->withoutGlobalScope(TenantScope::class)->where('kind', ContractKind::Amendment);
+    }
+
+    /**
+     * @return HasMany<Contract, $this>
+     */
+    public function renewals(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id')->withoutGlobalScope(TenantScope::class)->where('kind', ContractKind::Renewal);
     }
 
     /**
@@ -166,6 +216,7 @@ class Contract extends Model implements HasMedia
     {
         return [
             'status' => ContractStatus::class,
+            'kind' => ContractKind::class,
             'signed_via' => SignedVia::class,
             'starts_on' => 'date',
             'ends_on' => 'date',
@@ -174,6 +225,8 @@ class Contract extends Model implements HasMedia
             'issued_at' => 'datetime',
             'signed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'expiry_reminded_at' => 'datetime',
+            'signature_reminded_at' => 'datetime',
         ];
     }
 }

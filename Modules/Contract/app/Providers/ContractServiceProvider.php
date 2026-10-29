@@ -7,6 +7,8 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\UserPanel\UserPanel;
 use App\Workflow\WorkflowStepExtensions;
+use Illuminate\Console\Scheduling\Schedule;
+use Modules\Contract\Console\SendContractReminders;
 use Modules\Contract\Forms\ContractForm;
 use Modules\Contract\Models\Contract;
 use Modules\Contract\Workflow\ContractStepExtension;
@@ -25,6 +27,15 @@ class ContractServiceProvider extends ModuleServiceProvider
     protected string $nameLower = 'contract';
 
     /**
+     * Command classes to register.
+     *
+     * @var string[]
+     */
+    protected array $commands = [
+        SendContractReminders::class,
+    ];
+
+    /**
      * Provider classes to register.
      *
      * @var string[]
@@ -33,6 +44,15 @@ class ContractServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    /**
+     * Reminders of contracts about to end or waiting for a signature
+     * (ADR 0021).
+     */
+    protected function configureSchedules(Schedule $schedule): void
+    {
+        $schedule->command(SendContractReminders::class)->dailyAt('08:00')->withoutOverlapping();
+    }
 
     public function boot(): void
     {

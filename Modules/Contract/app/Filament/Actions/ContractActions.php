@@ -8,9 +8,12 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\HtmlString;
 use Modules\Contract\Enums\ContractStatus;
@@ -23,8 +26,8 @@ use Modules\Contract\Services\Contracts;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * What can be done to one contract in the contracts list (ADR 0020), and
- * the terms fields shared with the cartable.
+ * What can be done to one contract in the contracts list (ADR 0020,
+ * ADR 0021), and the terms fields shared with the cartable.
  */
 class ContractActions
 {
@@ -107,6 +110,70 @@ class ContractActions
             });
     }
 
+    /**
+     * An amendment (الحاقیه) of a signed contract, with an amendment type of
+     * the person's party (ADR 0021).
+     */
+    public static function amend(): Action
+    {
+        return Action::make('amend')
+            ->label('الحاقیه')
+            ->icon(Heroicon::OutlinedDocumentPlus)
+            ->authorize('create')
+            ->visible(fn (Contract $record): bool => $record->canBeAmended() && self::typeOptions($record, amendments: true) !== [])
+            ->modalHeading(fn (Contract $record): string => "الحاقیه‌ی قرارداد {$record->number}")
+            ->modalWidth('3xl')
+            ->schema(fn (Contract $record): array => [
+                Select::make('contract_type_id')
+                    ->label('نوع الحاقیه')
+                    ->options(self::typeOptions($record, amendments: true))
+                    ->required()
+                    ->live(),
+                Group::make(fn (Get $get): array => self::termsFields(ContractType::definedTypes()->find($get('contract_type_id'))))
+                    ->columns(2)
+                    ->visible(fn (Get $get): bool => filled($get('contract_type_id'))),
+            ])
+            ->action(function (Contract $record, array $data, Contracts $contracts): void {
+                $type = ContractType::definedTypes()->active()->findOrFail($data['contract_type_id']);
+
+                self::attempt(fn () => $contracts->draftAmendment($record, $type, $data, self::user()), 'پیش‌نویس الحاقیه ساخته شد؛ برای صدور از ردیف آن «صدور» را بزنید.');
+            });
+    }
+
+    /**
+     * A renewal of a signed contract for the next period: the same type by
+     * default, terms from the previous contract (ADR 0021).
+     */
+    public static function renew(): Action
+    {
+        return Action::make('renew')
+            ->label('تمدید')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->authorize('create')
+            ->visible(fn (Contract $record): bool => $record->canBeRenewed())
+            ->modalHeading(fn (Contract $record): string => "تمدید قرارداد {$record->number}")
+            ->modalWidth('3xl')
+            ->fillForm(fn (Contract $record): array => [
+                'contract_type_id' => $record->contractType->is_active ? $record->contract_type_id : null,
+                ...Contracts::renewalState($record),
+            ])
+            ->schema(fn (Contract $record): array => [
+                Select::make('contract_type_id')
+                    ->label('نوع قرارداد')
+                    ->options(self::typeOptions($record, amendments: false))
+                    ->required()
+                    ->live(),
+                Group::make(fn (Get $get): array => self::termsFields(ContractType::definedTypes()->find($get('contract_type_id'))))
+                    ->columns(2)
+                    ->visible(fn (Get $get): bool => filled($get('contract_type_id'))),
+            ])
+            ->action(function (Contract $record, array $data, Contracts $contracts): void {
+                $type = ContractType::definedTypes()->active()->findOrFail($data['contract_type_id']);
+
+                self::attempt(fn () => $contracts->draftRenewal($record, $type, $data, self::user()), 'پیش‌نویس تمدید ساخته شد؛ برای صدور از ردیف آن «صدور» را بزنید.');
+            });
+    }
+
     public static function recordPaperSignature(): Action
     {
         return Action::make('paperSignature')
@@ -162,6 +229,17 @@ class ContractActions
     public static function html(Contract $contract): HtmlString
     {
         return new HtmlString('<div class="fi-prose" dir="rtl">'.app(ContractRenderer::class)->document($contract).'</div>');
+    }
+
+    /**
+     * Active types of the contract's party: amendment types, or types for
+     * contracts of their own.
+     *
+     * @return array<int, string>
+     */
+    private static function typeOptions(Contract $contract, bool $amendments): array
+    {
+        return ContractType::definedTypes()->active()->amendments($amendments)->forParty($contract->party)->ordered()->pluck('title', 'id')->all();
     }
 
     /**

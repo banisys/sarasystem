@@ -56,7 +56,7 @@ class ListContracts extends ListRecords
                     ->required(),
                 Select::make('contract_type_id')
                     ->label('نوع قرارداد')
-                    ->options(fn (Get $get): array => filled($get('party')) ? ContractType::definedTypes()->active()->forParty($get('party'))->ordered()->pluck('title', 'id')->all() : [])
+                    ->options(fn (Get $get): array => filled($get('party')) ? ContractType::definedTypes()->active()->amendments(false)->forParty($get('party'))->ordered()->pluck('title', 'id')->all() : [])
                     ->visible(fn (Get $get): bool => filled($get('party')))
                     ->required()
                     ->live(),
@@ -66,7 +66,7 @@ class ListContracts extends ListRecords
             ])
             ->action(function (array $data, Contracts $contracts): void {
                 $member = $this->member($data['party'], $data['member']) ?? throw ValidationException::withMessages(['mountedActions.0.data.member' => 'این شخص پیدا نشد.']);
-                $type = ContractType::definedTypes()->active()->forParty($data['party'])->findOrFail($data['contract_type_id']);
+                $type = ContractType::definedTypes()->active()->amendments(false)->forParty($data['party'])->findOrFail($data['contract_type_id']);
 
                 /** @var User $user */
                 $user = auth()->user();

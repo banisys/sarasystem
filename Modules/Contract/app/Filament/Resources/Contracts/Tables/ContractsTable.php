@@ -5,10 +5,13 @@ namespace Modules\Contract\Filament\Resources\Contracts\Tables;
 use App\Contract\ContractParties;
 use App\Filament\Support\TextFilter;
 use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Contract\Enums\ContractKind;
 use Modules\Contract\Enums\ContractStatus;
 use Modules\Contract\Filament\Actions\ContractActions;
 use Modules\Contract\Models\Contract;
@@ -19,13 +22,17 @@ class ContractsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['contractType', 'contractable', 'media']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['contractType', 'contractable', 'media', 'parent', 'renewals']))
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('number')
                     ->label('شماره')
                     ->placeholder('—')
                     ->sortable(),
+                TextColumn::make('kind')
+                    ->label('نوع')
+                    ->badge()
+                    ->description(fn (Contract $record): ?string => $record->parent?->number === null ? null : "از {$record->parent->number}"),
                 TextColumn::make('person')
                     ->label('شخص')
                     ->state(fn (Contract $record): string => $record->personName()),
@@ -44,7 +51,12 @@ class ContractsTable
                     ->label('پایان')
                     ->jalaliDate()
                     ->placeholder('—')
-                    ->color(fn (Contract $record): ?string => $record->ends_on?->isPast() ? 'gray' : null)
+                    ->color(fn (Contract $record): ?string => match (true) {
+                        $record->ends_on === null => null,
+                        $record->ends_on->isPast() && ! $record->ends_on->isToday() => 'gray',
+                        $record->canBeRenewed() && $record->ends_on->lessThanOrEqualTo(today()->addDays(self::expiringWithinDays())) => 'warning',
+                        default => null,
+                    })
                     ->sortable(),
                 TextColumn::make('amount')
                     ->label('مبلغ (ریال)')
@@ -68,6 +80,21 @@ class ContractsTable
                 SelectFilter::make('status')
                     ->label('وضعیت')
                     ->options(ContractStatus::class),
+                SelectFilter::make('kind')
+                    ->label('نوع')
+                    ->options(ContractKind::class),
+                Filter::make('ending')
+                    ->schema([
+                        Select::make('value')->label('پایان')->options([
+                            'ending' => 'تا '.self::expiringWithinDays().' روز دیگر تمام می‌شود',
+                            'ended' => 'تمام شده',
+                        ]),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'ending' => $query->whereDate('ends_on', '>=', today())->whereDate('ends_on', '<=', today()->addDays(self::expiringWithinDays())),
+                        'ended' => $query->whereDate('ends_on', '<', today()),
+                        default => $query,
+                    }),
             ])
             ->recordActions([
                 ContractActions::preview(),
@@ -75,10 +102,17 @@ class ContractsTable
                 ContractActions::edit(),
                 ContractActions::issue(),
                 ContractActions::recordPaperSignature(),
+                ContractActions::amend(),
+                ContractActions::renew(),
                 ContractActions::scan(),
                 ContractActions::cancel(),
                 DeleteAction::make()
                     ->visible(fn (Contract $record): bool => $record->isDraft()),
             ]);
+    }
+
+    private static function expiringWithinDays(): int
+    {
+        return (int) config('contract.reminders.expiring_within_days');
     }
 }

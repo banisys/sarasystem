@@ -30,6 +30,9 @@ class ContractTypesTable
                     ->label('برای')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => ContractParties::find($state)?->label() ?? $state),
+                IconColumn::make('is_amendment')
+                    ->label('الحاقیه')
+                    ->boolean(),
                 TextColumn::make('signature_method')
                     ->label('روش امضا'),
                 TextColumn::make('number_prefix')
@@ -45,6 +48,7 @@ class ContractTypesTable
             ->filters([
                 TextFilter::make('title')->label('عنوان'),
                 TernaryFilter::make('is_active')->label('فعال'),
+                TernaryFilter::make('is_amendment')->label('الحاقیه'),
             ])
             ->recordActions([
                 EditAction::make()->modalWidth('5xl'),
