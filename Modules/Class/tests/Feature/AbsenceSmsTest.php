@@ -10,13 +10,17 @@ use App\Sms\SmsSender;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
+use Modules\Class\Jobs\SendAbsenceNotice;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Subject;
+use Modules\Class\Services\AbsenceNotices;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassMembers;
+use RuntimeException;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\Fakes\FakeSmsSender;
 use Tests\TestCase;
@@ -85,6 +89,46 @@ class AbsenceSmsTest extends TestCase
         $this->record(['present', 'present']);
         $this->record(['absent', 'present']);
         $this->assertCount(1, $this->sms->sent);
+    }
+
+    public function test_the_notice_goes_on_the_queue_and_a_correction_meanwhile_sends_nothing(): void
+    {
+        Queue::fake();
+
+        $this->record(['absent', 'present']);
+
+        $this->assertSame([], $this->sms->sent);
+        Queue::assertPushed(SendAbsenceNotice::class, 1);
+        $job = Queue::pushedJobs()[SendAbsenceNotice::class][0]['job'];
+        $this->assertSame(Attendance::query()->where('user_id', $this->amir->id)->sole()->id, $job->attendanceId);
+
+        // Marked present before the queue ran the job.
+        $this->record(['present', 'present']);
+        $job->handle(app(AbsenceNotices::class));
+        $this->assertSame([], $this->sms->sent);
+    }
+
+    public function test_a_failed_send_throws_so_the_job_is_tried_again(): void
+    {
+        $this->app->instance(SmsSender::class, new class implements SmsSender
+        {
+            public function send(string $mobile, string $message): void
+            {
+                throw new RuntimeException('provider down');
+            }
+        });
+        Queue::fake();
+        $this->record(['absent', 'present']);
+        $job = Queue::pushedJobs()[SendAbsenceNotice::class][0]['job'];
+
+        try {
+            $job->handle(app(AbsenceNotices::class));
+            $this->fail('The job should fail.');
+        } catch (RuntimeException) {
+            $this->assertNull(Attendance::query()->where('user_id', $this->amir->id)->sole()->absence_notified_at);
+        }
+
+        $this->assertSame(3, $job->tries);
     }
 
     public function test_no_sms_for_other_statuses_or_when_turned_off(): void

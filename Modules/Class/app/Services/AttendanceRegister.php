@@ -105,8 +105,8 @@ class AttendanceRegister
             return $saved;
         });
 
-        // Once saved: guardians hear about new absences (ADR 0029).
-        $this->notices->send($session, $saved);
+        // Once saved: guardians hear about new absences, on the queue (ADR 0029).
+        $this->notices->queue($saved);
     }
 
     /**

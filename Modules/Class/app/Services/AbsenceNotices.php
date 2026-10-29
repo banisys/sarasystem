@@ -7,57 +7,72 @@ use App\Models\Tenant;
 use App\Sms\SmsSender;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\AttendanceStatus;
+use Modules\Class\Jobs\SendAbsenceNotice;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassSession;
-use Throwable;
 
 /**
  * Tells guardians about an absence by SMS (ADR 0029): for each attendee
  * newly marked absent, every guardian with «پیامک» on and a mobile gets one
  * message, once per absence. Attendees without such a guardian get none.
- * A failed SMS is reported, not thrown: attendance is already saved.
+ * Sending runs on the queue (SendAbsenceNotice), after the attendance is
+ * saved.
  */
 class AbsenceNotices
 {
     public function __construct(private SmsSender $sms) {}
 
     /**
+     * Queues a notice for each attendee newly marked absent.
+     *
      * @param  iterable<Attendance>  $attendances
      */
-    public function send(ClassSession $session, iterable $attendances): void
+    public function queue(iterable $attendances): void
     {
         if (! config('class.attendance.absence_sms')) {
             return;
         }
 
         foreach ($attendances as $attendance) {
-            if ($attendance->status !== AttendanceStatus::Absent || $attendance->absence_notified_at !== null) {
-                continue;
+            if ($this->isDue($attendance)) {
+                SendAbsenceNotice::dispatch($attendance->getKey());
             }
+        }
+    }
 
-            $guardianships = Guardianship::query()
-                ->where('ward_id', $attendance->user_id)
-                ->where('receives_sms', true)
-                ->whereHas('guardian', fn (Builder $guardian) => $guardian->whereNotNull('mobile'))
-                ->with(['guardian', 'ward'])
-                ->get();
+    /**
+     * Sends one absence to the guardians and marks it told. Run by the
+     * queued job: the attendance is read again, so a correction made
+     * meanwhile sends nothing. A failing send throws, and the job tries
+     * again.
+     */
+    public function send(Attendance $attendance): void
+    {
+        if (! config('class.attendance.absence_sms') || ! $this->isDue($attendance)) {
+            return;
+        }
 
-            if ($guardianships->isEmpty()) {
-                continue;
-            }
+        $guardianships = Guardianship::query()
+            ->where('ward_id', $attendance->user_id)
+            ->where('receives_sms', true)
+            ->whereHas('guardian', fn (Builder $guardian) => $guardian->whereNotNull('mobile'))
+            ->with(['guardian', 'ward'])
+            ->get();
 
-            $message = $this->message($session, $guardianships->first()->ward->name);
+        if ($guardianships->isNotEmpty()) {
+            $message = $this->message($attendance->session, $guardianships->first()->ward->name);
 
             foreach ($guardianships->pluck('guardian.mobile')->unique() as $mobile) {
-                try {
-                    $this->sms->send($mobile, $message);
-                } catch (Throwable $exception) {
-                    report($exception);
-                }
+                $this->sms->send($mobile, $message);
             }
-
-            $attendance->update(['absence_notified_at' => now()]);
         }
+
+        $attendance->update(['absence_notified_at' => now()]);
+    }
+
+    private function isDue(Attendance $attendance): bool
+    {
+        return $attendance->status === AttendanceStatus::Absent && $attendance->absence_notified_at === null;
     }
 
     /**

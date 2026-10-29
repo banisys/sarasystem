@@ -42,6 +42,23 @@ services:
             pgsql:
                 condition: service_healthy
 
+    # Runs queued jobs (absence SMS, …; docs/decisions/0029-absence-sms.md).
+    # Same image and code as laravel.test; restart it after changing job code.
+    queue:
+        image: 'sail-8.5/app'
+        command: ['php', '/var/www/html/artisan', 'queue:work', '--tries=3', '--sleep=3']
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        restart: unless-stopped
+        depends_on:
+            pgsql:
+                condition: service_healthy
+
     pgsql:
         image: 'postgres:18-alpine'
         ports:

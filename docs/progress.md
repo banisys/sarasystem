@@ -18,6 +18,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Absence SMS on the queue (ADR 0029 updated): one queued job per absence (`SendAbsenceNotice`, after commit, 3 tries); an absence corrected before the job runs sends nothing. New `queue` service in `docker-compose.yml` (`queue:work`), started and checked end to end on the local DB (the SMS landed in `storage/logs/sms.log`). 435 tests pass.
 - 2026-10-29 — Absence SMS ([ADR 0029](decisions/0029-absence-sms.md)): when an attendee is marked «غایب» (admin panel or «کلاس‌های من»), each guardian with «پیامک» on gets one SMS, once per absence (`absence_notified_at`); `CLASS_ABSENCE_SMS` turns it off. The `log` SMS driver now writes to `storage/logs/sms.log` (channel `sms`). 433 tests pass.
 - 2026-10-29 — Parents in preregistration and the learner's login mobile ([ADR 0028](decisions/0028-guardian-details-and-login-mobile.md)):
   - New built-in fields of the «پیش‌ثبت‌نام» form, not asked by default (a school turns them on in «تنظیم فرم پیش‌ثبت‌نام»; the local demo does): father, mother (name, national code, mobile; each required / optional / not asked, at least one when both optional), the learner's own mobile, and «موبایل ورود» (own / father / mother).
@@ -159,24 +160,23 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
-- `php artisan test --parallel` (16 processes on this machine) now often fails with PostgreSQL «out of shared memory»: the processes together hold more table locks than the default `max_locks_per_transaction = 64` allows (it was on the edge; the Class tables pushed it over). `--processes=8` passes. Fix: add `command: ['postgres', '-c', 'max_locks_per_transaction=256']` to the `pgsql` service and recreate it (after the network fix below).
+- `php artisan test --parallel` (16 processes on this machine) now often fails with PostgreSQL «out of shared memory»: the processes together hold more table locks than the default `max_locks_per_transaction = 64` allows (it was on the edge; the Class tables pushed it over). `--processes=8` passes. Fix: add `command: ['postgres', '-c', 'max_locks_per_transaction=256']` to the `pgsql` service and recreate it (`docker compose up -d pgsql`; the Docker network has its pinned subnet now).
 - Classes (ADR 0022):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens, the «اعضا»، «برنامه» and «جلسه‌ها» tabs and the sessions list.
   - «کلاس‌های من» (`/my-classes`) and the guardians' view are covered by HTTP tests but not checked in a browser yet; the build passes.
   - No homework submissions or scores; no attendance report across classes or terms.
-  - Absence SMS: no correction SMS when «غایب» is changed later; sent during the request (move to a queue with a slow real provider).
+  - Absence SMS: no correction SMS when «غایب» is changed after the job ran; a retry after a partial failure may send a guardian the same message twice; needs a queue worker (the `queue` service locally).
   - The demo `teacher` / `supervisor` / `supporter` roles still see all classes in the admin panel (read only); they could drop those permissions now that the user panel covers their work.
   - Places are free text: a clash is only found when two classes write the place the same way.
   - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).
   - A learner removed from the tenant stays a class member until a leave date is set.
 - Guardians (ADR 0027, ADR 0028): the «اولیا» tab and the parents section of `/preregister` are not checked in a browser yet; parents' details can't be edited in the admission workflow's «ویرایش اطلاعات».
-- Local Docker network: the running `sarasystem_sail` network still has the old subnet `172.22.0.0/16` (from before `SAIL_SUBNET` was pinned), so `docker compose up -d` wants to recreate it and the new `scheduler` service can't start. Fix once with `docker compose down && docker compose up -d` (volumes are kept). An attempt to start only the scheduler stopped `pgsql`; it was put back on the network by hand on 2026-10-29.
 - Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.
 - Contracts (ADR 0020):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the type editor with merge tags, the contracts screens, the cartable actions and `/contracts`. The PDF was checked by eye.
   - Shabnam has no «—» / «–»; the PDF prints them as «-» (mPDF can't take them from another font while shaping Persian).
   - No contract approval workflows, Word import of templates, or the organization's own signature.
-  - Reminders need the scheduler: the `scheduler` service locally (after the network fix below), cron in production. Paper-only contracts waiting for a signature are not reminded about. Amendments, renewals and reminders are not checked in a browser yet (covered by tests).
+  - Reminders need the scheduler: the `scheduler` service locally, cron in production. Paper-only contracts waiting for a signature are not reminded about. Amendments, renewals and reminders are not checked in a browser yet (covered by tests).
   - Documents still move with `ApplicantDocuments::accepted()`; they could listen to `ApplicantAccepted` like contracts.
   - `composer audit` reports an advisory in `symfony/mime` (CVE-2026-45070, from before this change); update it with `composer update symfony/mime` once approved.
 - Documents (ADR 0019):
