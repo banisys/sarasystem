@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Providers;
 
+use Modules\Class\Services\PlanForecast;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class ClassServiceProvider extends ModuleServiceProvider
@@ -25,4 +26,12 @@ class ClassServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    public function register(): void
+    {
+        parent::register();
+
+        // Remembers the forecasts it worked out during a request (ADR 0025).
+        $this->app->scoped(PlanForecast::class);
+    }
 }

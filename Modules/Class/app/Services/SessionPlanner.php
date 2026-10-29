@@ -20,6 +20,7 @@ use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
+use Modules\Class\Models\TeachingPlan;
 
 /**
  * Schedules and their sessions (ADR 0023). Saving a schedule checks it,
@@ -47,6 +48,7 @@ class SessionPlanner
         $schedule->fill([
             'subject_id' => $data['subject_id'] ?? null,
             'teacher_id' => $data['teacher_id'] ?? null,
+            'teaching_plan_id' => $data['teaching_plan_id'] ?? null,
             'frequency' => $data['frequency'],
             'interval' => (int) ($data['interval'] ?? 1),
             'weekdays' => array_values(array_map(fn (mixed $day): int => $day instanceof Weekday ? $day->value : (int) $day, $data['weekdays'] ?? [])),
@@ -356,6 +358,10 @@ class SessionPlanner
         }
 
         $this->checkTeacher($classroom, $schedule->teacher_id);
+
+        if ($schedule->teaching_plan_id !== null && ! TeachingPlan::definedPlans()->whereKey($schedule->teaching_plan_id)->exists()) {
+            throw new ClassException('طرح درس پیدا نشد.');
+        }
     }
 
     /**

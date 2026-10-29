@@ -14,6 +14,7 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\Holiday;
 use Modules\Class\Models\Subject;
+use Modules\Class\Models\TeachingPlan;
 use Modules\Class\Models\Term;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\ClassMembers;
@@ -23,7 +24,8 @@ use RuntimeException;
 /**
  * Sample classes for local development (ADR 0022, ADR 0023), on top of the
  * core DemoSeeder: the school year 1405-1406 with the Nowruz holidays, four
- * class roles tied to the demo roles, four subjects, and in each branch two
+ * class roles tied to the demo roles, four subjects, teaching plans for
+ * math and English, and in each branch two
  * classes with the branch's teachers, supporter, supervisor and students
  * (one class also has a sub-class), each with a weekly schedule and its
  * sessions. The demo roles get the classes permissions. Safe to run again.
@@ -38,6 +40,7 @@ class ClassDemoSeeder extends Seeder
 
         $this->grantDemoPermissions([
             'hq_member' => ['ViewAny:Classroom', 'View:Classroom', 'ViewAny:ClassSession',
+                'ViewAny:TeachingPlan', 'View:TeachingPlan', 'Create:TeachingPlan', 'Update:TeachingPlan', 'Delete:TeachingPlan',
                 'ViewAny:Subject', 'View:Subject', 'Create:Subject', 'Update:Subject', 'Delete:Subject', 'Reorder:Subject',
                 'ViewAny:Term', 'View:Term', 'Create:Term', 'Update:Term', 'Delete:Term',
                 'ViewAny:ClassRole', 'View:ClassRole', 'Create:ClassRole', 'Update:ClassRole', 'Delete:ClassRole', 'Reorder:ClassRole',
@@ -65,6 +68,14 @@ class ClassDemoSeeder extends Seeder
             $subjects = collect(['math' => 'ریاضی', 'science' => 'علوم تجربی', 'persian' => 'ادبیات فارسی', 'english' => 'زبان انگلیسی'])
                 ->map(fn (string $title, string $key): Subject => Subject::query()->firstOrCreate(['title' => $title], ['sort' => array_search($key, ['math', 'science', 'persian', 'english'], true)]))
                 ->all();
+
+            $this->plan('ریاضی هفتم', $subjects['math'], [
+                ['فصل ۱: راهبردهای حل مسئله', 3], ['فصل ۲: عددهای صحیح', 4], ['فصل ۳: جبر و معادله', 4], ['فصل ۴: هندسه و استدلال', 3],
+                ['فصل ۵: شمارنده‌ها و اعداد اول', 3], ['فصل ۶: سطح و حجم', 3], ['فصل ۷: توان و جذر', 3], ['فصل ۸: بردار و مختصات', 3], ['فصل ۹: آمار و احتمال', 3],
+            ]);
+            $this->plan('English Elementary - Book 1', $subjects['english'], [
+                ['Unit 1: Hello!', 2], ['Unit 2: My family', 2], ['Unit 3: Daily routines', 2], ['Unit 4: Food', 2], ['Unit 5: Places', 2], ['Review & test', 1],
+            ]);
 
             return [$term, $roles, $subjects];
         });
@@ -115,7 +126,13 @@ class ClassDemoSeeder extends Seeder
      */
     private function schedule(Classroom $classroom, Subject $subject, int $teacherId, array $days, string $from, string $to, int $everyWeeks = 1): void
     {
-        if ($classroom->schedules()->where('subject_id', $subject->getKey())->exists()) {
+        $plan = TeachingPlan::definedPlans()->where('subject_id', $subject->getKey())->first();
+        $existing = $classroom->schedules()->where('subject_id', $subject->getKey())->first();
+
+        if ($existing !== null) {
+            $existing->teaching_plan_id ??= $plan?->getKey();
+            $existing->save();
+
             return;
         }
 
@@ -135,6 +152,22 @@ class ClassDemoSeeder extends Seeder
             // E.g. a demo teacher who also teaches in another branch at that time.
             $this->command?->warn("«{$classroom->title}»: {$exception->getMessage()}");
         }
+    }
+
+    /**
+     * @param  list<array{string, int}>  $topics  title, sessions
+     */
+    private function plan(string $title, Subject $subject, array $topics): TeachingPlan
+    {
+        $plan = TeachingPlan::query()->firstOrCreate(['title' => $title], ['subject_id' => $subject->getKey()]);
+
+        if (! $plan->topics()->exists()) {
+            foreach ($topics as $index => [$topic, $sessions]) {
+                $plan->topics()->create(['sort' => $index + 1, 'title' => $topic, 'sessions' => $sessions]);
+            }
+        }
+
+        return $plan;
     }
 
     /**

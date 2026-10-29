@@ -11,25 +11,43 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\URL;
 use Modules\Class\Database\Factories\ClassSessionFactory;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * One meeting of a class (ADR 0023): built from a schedule, or added by
- * hand as a make-up or extra session. Taking its attendance marks it held
- * (ADR 0024). A session changed by hand (moved,
+ * hand as a make-up or extra session. Taking its attendance or recording
+ * what it covered (topics, summary, homework, materials) marks it held
+ * (ADR 0024, ADR 0025). A session changed by hand (moved,
  * cancelled, a substitute teacher, a note) is no longer rebuilt by its
  * schedule; past sessions never are.
  */
 #[Fillable([
     'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'teacher_id', 'substitute_teacher_id', 'starts_at', 'ends_at', 'location',
     'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note',
+    'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'content_recorded_by_id', 'content_recorded_at',
 ])]
-class ClassSession extends Model
+class ClassSession extends Model implements HasMedia
 {
     /** @use HasFactory<ClassSessionFactory> */
-    use BelongsToTenant, HasFactory;
+    use BelongsToTenant, HasFactory, InteractsWithMedia;
+
+    /** Files handed out in the session or with its homework (ADR 0025). */
+    public const MATERIALS_COLLECTION = 'materials';
+
+    /**
+     * Only the private disk, downloaded through signed links
+     * (SessionMaterialController).
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(self::MATERIALS_COLLECTION)->useDisk('local');
+    }
 
     protected static function newFactory(): ClassSessionFactory
     {
@@ -60,7 +78,29 @@ class ClassSession extends Model
     public function isUntouched(): bool
     {
         return $this->kind === SessionKind::Regular && ! $this->is_modified && $this->status === SessionStatus::Scheduled
-            && $this->substitute_teacher_id === null && blank($this->note);
+            && $this->substitute_teacher_id === null && blank($this->note) && $this->content_recorded_at === null;
+    }
+
+    public function hasContent(): bool
+    {
+        return $this->content_recorded_at !== null;
+    }
+
+    /**
+     * Signed download links of the materials, valid for a while.
+     *
+     * @return list<array{id: int, name: string, url: string}>
+     */
+    public function materialLinks(): array
+    {
+        return $this->getMedia(self::MATERIALS_COLLECTION)
+            ->map(fn (Media $media): array => [
+                'id' => $media->getKey(),
+                'name' => $media->file_name,
+                'url' => URL::temporarySignedRoute('class.materials', now()->addMinutes(30), ['media' => $media->getKey()]),
+            ])
+            ->values()
+            ->all();
     }
 
     public function hasStarted(): bool
@@ -131,9 +171,20 @@ class ClassSession extends Model
         return $this->hasMany(Attendance::class, 'session_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function contentRecordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'content_recorded_by_id');
+    }
+
     protected function casts(): array
     {
         return [
+            'covered_topic_ids' => 'array',
+            'homework_due_on' => 'date',
+            'content_recorded_at' => 'datetime',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'original_starts_at' => 'datetime',

@@ -43,32 +43,14 @@ class AttendanceRegister
         return User::query()->whereKey($memberIds->merge($recordedIds)->unique())->orderBy('name')->get();
     }
 
+    public function __construct(private SessionAccess $access) {}
+
     /**
      * Why the user can't take the session's attendance now, or null.
      */
     public function refusal(User $user, ClassSession $session): ?string
     {
-        if ($session->status === SessionStatus::Cancelled) {
-            return 'جلسه لغو شده است.';
-        }
-
-        if (now()->lessThan($session->starts_at->copy()->subMinutes((int) config('class.attendance.opens_minutes_before')))) {
-            return 'حضور و غیاب از کمی پیش از شروع جلسه باز می‌شود.';
-        }
-
-        if ($session->classroom !== null && $user->can('update', $session->classroom)) {
-            return null;
-        }
-
-        if (! $this->takesAttendance($user, $session)) {
-            return 'شما حضور و غیاب این کلاس را نمی‌گیرید.';
-        }
-
-        if (now()->greaterThan($session->starts_at->copy()->addDays((int) config('class.attendance.locks_after_days'))->endOfDay())) {
-            return 'مهلت ثبت حضور و غیاب این جلسه گذشته است؛ مدیر کلاس می‌تواند آن را تغییر دهد.';
-        }
-
-        return null;
+        return $this->access->refusal($user, $session, 'takes_attendance', (int) config('class.attendance.locks_after_days'), 'شما حضور و غیاب این کلاس را نمی‌گیرید.');
     }
 
     public function canTake(User $user, ClassSession $session): bool
@@ -116,24 +98,6 @@ class AttendanceRegister
 
             $session->update(['status' => SessionStatus::Held]);
         });
-    }
-
-    /**
-     * The session's teacher or substitute, or a current member of its
-     * class whose role takes attendance.
-     */
-    private function takesAttendance(User $user, ClassSession $session): bool
-    {
-        if (in_array($user->getKey(), [$session->teacher_id, $session->substitute_teacher_id], true)) {
-            return true;
-        }
-
-        return ClassMember::withoutTenantScope()
-            ->where('classroom_id', $session->classroom_id)
-            ->where('user_id', $user->getKey())
-            ->current()
-            ->whereHas('classRole', fn (Builder $role) => $role->where('takes_attendance', true))
-            ->exists();
     }
 
     /**

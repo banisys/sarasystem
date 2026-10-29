@@ -107,3 +107,6 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Substitute teacher | مدرس جایگزین | Who teaches one session instead of its teacher. |
 | Clash | تداخل | Two sessions at overlapping times with the same teacher (in any tenant), the same class or the same place (in the tenant); refused. |
 | Attendance | حضور و غیاب | Whether each attendee was at a session: present (حاضر), late (تأخیر, with minutes), absent (غایب) or excused (غیبت موجه) ([ADR 0024](decisions/0024-class-attendance.md)). Taken by the session's teacher or substitute and members whose class role takes attendance; taking it marks the session held (برگزارشده). |
+| Teaching plan | طرح درس | A course outline: topics in order, each taking some sessions (`TeachingPlan`), defined in the head office; a schedule follows one ([ADR 0025](decisions/0025-teaching-plans-and-session-content.md)). |
+| Topic | سرفصل | One item of a teaching plan (`PlanTopic`); finished when a session records it. Unfinished topics are forecast over the coming sessions. |
+| Session content | مطالب جلسه | What a session covered: topics finished, a summary, homework (تکلیف) with a due date, and materials (files). |

@@ -23,6 +23,8 @@ use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\Subject;
+use Modules\Class\Models\TeachingPlan;
+use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionPlanner;
 
 /**
@@ -53,7 +55,7 @@ class SchedulesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['subject', 'teacher'])->withCount(['sessions' => fn (Builder $sessions) => $sessions->upcoming()->takingPlace()]))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['subject', 'teacher', 'teachingPlan'])->withCount(['sessions' => fn (Builder $sessions) => $sessions->upcoming()->takingPlace()]))
             ->defaultSort('starts_on')
             ->columns([
                 TextColumn::make('frequency')
@@ -64,6 +66,18 @@ class SchedulesRelationManager extends RelationManager
                     ->placeholder('—'),
                 TextColumn::make('teacher.name')
                     ->label('مدرس')
+                    ->placeholder('—'),
+                TextColumn::make('teachingPlan.title')
+                    ->label('طرح درس')
+                    ->description(function (ClassSchedule $record): ?string {
+                        if ($record->teaching_plan_id === null) {
+                            return null;
+                        }
+
+                        ['covered' => $covered, 'total' => $total] = app(PlanForecast::class)->progress($record);
+
+                        return "پیشرفت: {$covered} از {$total} سرفصل";
+                    })
                     ->placeholder('—'),
                 TextColumn::make('starts_on')
                     ->label('از')
@@ -106,7 +120,7 @@ class SchedulesRelationManager extends RelationManager
                     ->modalWidth('3xl')
                     ->modalDescription('جلسه‌های گذشته و جلسه‌هایی که دستی تغییر کرده‌اند عوض نمی‌شوند.')
                     ->fillForm(fn (ClassSchedule $record): array => [
-                        ...$record->only(['subject_id', 'teacher_id', 'interval', 'month_day', 'month_week', 'location']),
+                        ...$record->only(['subject_id', 'teacher_id', 'teaching_plan_id', 'interval', 'month_day', 'month_week', 'location']),
                         'frequency' => $record->frequency->value,
                         'weekdays' => $record->weekdays,
                         'month_weekday' => $record->weekdays[0] ?? null,
@@ -209,6 +223,12 @@ class SchedulesRelationManager extends RelationManager
             Select::make('subject_id')
                 ->label('درس')
                 ->options(fn (?ClassSchedule $record): array => Subject::options($record?->subject_id))
+                ->searchable()
+                ->live(),
+            Select::make('teaching_plan_id')
+                ->label('طرح درس')
+                ->helperText('سرفصل‌های آن به ترتیب به جلسه‌ها داده می‌شود.')
+                ->options(fn (Get $get, ?ClassSchedule $record): array => TeachingPlan::options(filled($get('subject_id')) ? (int) $get('subject_id') : null, $record?->teaching_plan_id))
                 ->searchable(),
             Select::make('teacher_id')
                 ->label('مدرس')

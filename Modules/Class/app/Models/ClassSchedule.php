@@ -17,13 +17,14 @@ use Modules\Class\Enums\Weekday;
 /**
  * When a class meets (ADR 0023): a rule that repeats once, daily, weekly or
  * monthly (Jalali months) between two dates, at a time, optionally for a
- * subject with a teacher and in another place than the class's. Its
- * sessions are built when it is saved (SessionPlanner).
+ * subject with a teacher and in another place than the class's, following
+ * a teaching plan (ADR 0025). Its sessions are built when it is saved
+ * (SessionPlanner).
  *
  * @property list<int> $weekdays
  */
 #[Fillable([
-    'tenant_id', 'classroom_id', 'subject_id', 'teacher_id', 'frequency', 'interval', 'weekdays', 'month_day', 'month_week',
+    'tenant_id', 'classroom_id', 'subject_id', 'teacher_id', 'teaching_plan_id', 'frequency', 'interval', 'weekdays', 'month_day', 'month_week',
     'starts_on', 'ends_on', 'start_time', 'end_time', 'location',
 ])]
 class ClassSchedule extends Model
@@ -96,6 +97,16 @@ class ClassSchedule extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    /**
+     * Plans are the primary tenant's.
+     *
+     * @return BelongsTo<TeachingPlan, $this>
+     */
+    public function teachingPlan(): BelongsTo
+    {
+        return $this->belongsTo(TeachingPlan::class)->withoutGlobalScope(TenantScope::class);
     }
 
     /**

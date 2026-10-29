@@ -8,7 +8,9 @@ use App\Support\Identifiers;
 use Ariaieboy\Jalali\CalendarUtils;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -24,17 +26,23 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Models\PlanTopic;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
+use Modules\Class\Services\PlanForecast;
+use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionPlanner;
 
 /**
  * Columns and row actions of session lists: a class's «جلسه‌ها» tab and
  * «کلاس‌ها → جلسه‌ها» (ADR 0023). Changing a session needs the right to
- * edit its class; attendance follows AttendanceRegister (ADR 0024).
+ * edit its class; attendance follows AttendanceRegister (ADR 0024) and
+ * content SessionContentBook (ADR 0025).
  */
 class SessionActions
 {
+    public const MATERIALS_UPLOAD_DIRECTORY = 'class-materials';
+
     /**
      * @return list<TextColumn>
      */
@@ -69,6 +77,12 @@ class SessionActions
                 ->label('وضعیت')
                 ->badge()
                 ->description(fn (ClassSession $record): ?string => $record->cancel_reason),
+            TextColumn::make('content')
+                ->label('مطالب')
+                ->state(fn (ClassSession $record): ?string => self::contentLine($record))
+                ->color(fn (ClassSession $record): ?string => $record->hasContent() ? null : 'gray')
+                ->wrap()
+                ->limit(80),
             TextColumn::make('attendance')
                 ->label('حضور و غیاب')
                 ->state(fn (ClassSession $record): ?string => ($record->attendances_count ?? 0) === 0 ? null
@@ -96,6 +110,7 @@ class SessionActions
     {
         return ActionGroup::make([
             self::attendance(),
+            self::content(),
             self::move(),
             self::substitute(),
             self::cancel(),
@@ -185,6 +200,87 @@ class SessionActions
                 $rows = collect($data['rows'] ?? [])->keyBy(fn (array $row): int => (int) $row['user_id'])->all();
 
                 self::attempt(fn () => $register->record($record, $rows, $user), 'حضور و غیاب ثبت شد.');
+            });
+    }
+
+    /**
+     * What the session covered, or what it is expected to (in grey).
+     */
+    private static function contentLine(ClassSession $session): ?string
+    {
+        if ($session->hasContent()) {
+            $topics = PlanTopic::query()->whereKey($session->covered_topic_ids ?? [])->orderBy('sort')->pluck('title')->all();
+
+            return implode('، ', array_filter([...$topics, $session->summary])).($session->homework !== null ? ' · تکلیف دارد' : '');
+        }
+
+        $planned = app(PlanForecast::class)->topicsFor($session);
+
+        return $planned === [] ? null : 'برنامه: '.implode('، ', array_unique(array_map(fn (PlanTopic $topic): string => $topic->title, $planned)));
+    }
+
+    /**
+     * Topics finished, summary, homework and materials; filled with what
+     * was recorded, or with the topics the plan expects.
+     */
+    private static function content(): Action
+    {
+        return Action::make('content')
+            ->label('مطالب جلسه')
+            ->icon(Heroicon::OutlinedBookOpen)
+            ->color('info')
+            ->visible(fn (ClassSession $record): bool => ($user = auth()->user()) instanceof User && app(SessionContentBook::class)->canRecord($user, $record))
+            ->modalHeading(fn (ClassSession $record): string => 'مطالب جلسه · '.self::when($record))
+            ->modalWidth('3xl')
+            ->fillForm(fn (ClassSession $record, PlanForecast $forecast): array => [
+                'covered_topic_ids' => $record->hasContent()
+                    ? ($record->covered_topic_ids ?? [])
+                    : array_values(array_unique(array_map(fn (PlanTopic $topic): int => $topic->getKey(), $forecast->topicsFor($record)))),
+                'summary' => $record->summary,
+                'homework' => $record->homework,
+                'homework_due_on' => $record->homework_due_on?->toDateString(),
+            ])
+            ->schema(fn (ClassSession $record, PlanForecast $forecast): array => [
+                CheckboxList::make('covered_topic_ids')
+                    ->label('سرفصل‌هایی که تمام شد')
+                    ->helperText('سرفصل تمام‌نشده را علامت نزنید تا به جلسه‌ی بعد برود.')
+                    ->options($forecast->topicChoices($record)->mapWithKeys(fn (PlanTopic $topic): array => [
+                        $topic->getKey() => ($record->schedule_id === null ? $topic->teachingPlan->title.': ' : '').$topic->title,
+                    ])->all())
+                    ->disableOptionWhen(fn (string $value): bool => in_array((int) $value, $forecast->coveredTopicIds($record->classroom_id), true)
+                        && ! in_array((int) $value, $record->covered_topic_ids ?? [], true))
+                    ->columns(2)
+                    ->visible($forecast->topicChoices($record)->isNotEmpty()),
+                Textarea::make('summary')
+                    ->label('شرح مطالب')
+                    ->rows(3),
+                Textarea::make('homework')
+                    ->label('تکلیف')
+                    ->rows(2)
+                    ->live(onBlur: true),
+                DatePicker::make('homework_due_on')
+                    ->label('مهلت تکلیف')
+                    ->jalali()
+                    ->visible(fn (Get $get): bool => filled($get('homework'))),
+                CheckboxList::make('remove_media_ids')
+                    ->label('حذف فایل‌ها')
+                    ->options(collect($record->materialLinks())->pluck('name', 'id')->all())
+                    ->visible($record->hasMedia(ClassSession::MATERIALS_COLLECTION)),
+                FileUpload::make('files')
+                    ->label('فایل‌های جلسه')
+                    ->helperText('جزوه، تمرین یا فایل تکلیف؛ هر فایل تا ۲۰ مگابایت.')
+                    ->disk('local')
+                    ->directory(self::MATERIALS_UPLOAD_DIRECTORY)
+                    ->visibility('private')
+                    ->multiple()
+                    ->maxFiles(10)
+                    ->maxSize(20480),
+            ])
+            ->action(function (array $data, ClassSession $record, SessionContentBook $book): void {
+                /** @var User $user */
+                $user = auth()->user();
+
+                self::attempt(fn () => $book->record($record, $data, $user), 'مطالب جلسه ثبت شد.');
             });
     }
 

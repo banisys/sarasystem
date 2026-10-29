@@ -6,8 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–3 done (terms, holidays, class roles, classes, members; schedules and sessions, ADR 0023; attendance, ADR 0024). Next steps in order:
-  - teaching plans and what each session covered (+ homework)
+- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–4 done (terms, holidays, class roles, classes, members; schedules and sessions, ADR 0023; attendance, ADR 0024; teaching plans and session content, ADR 0025). Next steps in order:
   - user panel calendar (day / week / month)
   - then a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards)
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
@@ -21,6 +20,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Classes step 4 ([ADR 0025](decisions/0025-teaching-plans-and-session-content.md)): teaching plans and session content.
+  - «کلاس‌ها → طرح‌های درس» (head office only): plans with topics in order, each taking N sessions, optionally tied to a subject. A schedule follows a plan.
+  - The plan's unfinished topics are forecast over the coming sessions (shown in grey as «برنامه: …»); an unfinished topic moves to the next session by itself. The «برنامه» tab shows each plan's progress.
+  - Row action «مطالب جلسه»: topics finished (filled with the forecast), summary, homework with a due date, files (private, signed links). Who and until when: like attendance, with the «مطالب جلسه را ثبت می‌کند» flag; teachers until 7 days after (config). It marks the session held.
+  - Demo: plans «ریاضی هفتم» and «English Elementary - Book 1» on the demo schedules. 408 tests pass.
 - 2026-10-29 — Classes step 3 ([ADR 0024](decisions/0024-class-attendance.md)): attendance.
   - Row action «حضور و غیاب» on sessions (class tab «جلسه‌ها» and «کلاس‌ها → جلسه‌ها»): present / late (minutes) / absent / excused with a note, for the members whose class role is an attendee role and who were in the class on that day. It marks the session held.
   - Who: the session's teacher or substitute, members whose class role «حضور و غیاب می‌گیرد», and whoever may edit the class.
@@ -146,7 +150,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - `php artisan test --parallel` (16 processes on this machine) now often fails with PostgreSQL «out of shared memory»: the processes together hold more table locks than the default `max_locks_per_transaction = 64` allows (it was on the edge; the Class tables pushed it over). `--processes=8` passes. Fix: add `command: ['postgres', '-c', 'max_locks_per_transaction=256']` to the `pgsql` service and recreate it (after the network fix below).
 - Classes (ADR 0022):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens, the «اعضا»، «برنامه» and «جلسه‌ها» tabs and the sessions list.
-  - No session content yet (next step).
+  - Learners / parents can't see session content, homework or materials yet (user panel step); no homework submissions or scores.
   - Attendance: teachers take it in the admin panel for now, where they also see the other classes (read only) until the user panel step; no SMS to learners / parents about absences; no attendance report across classes or terms.
   - Places are free text: a clash is only found when two classes write the place the same way.
   - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).
