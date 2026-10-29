@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Models;
 
+use App\Guardians\GuardianRelationship;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Modules\Student\Database\Factories\PreregistrationFactory;
 use Modules\Student\Enums\Gender;
+use Modules\Student\Enums\LoginMobileSource;
 use Modules\Student\Enums\Nationality;
 use Modules\Student\Enums\PreregistrationStatus;
 
@@ -25,11 +27,14 @@ use Modules\Student\Enums\PreregistrationStatus;
  * installation.
  *
  * @property list<array{key: string, label: string, type: string, section: string|null, value: mixed}>|null $custom_fields answers to the fields the organization added (ADR 0017)
+ * @property array{name: string, national_code: string, mobile: string}|null $father
+ * @property array{name: string, national_code: string, mobile: string}|null $mother
  */
 #[Fillable([
     'tenant_id', 'program_id', 'program_title', 'preferred_tenant_id', 'status',
     'first_name', 'last_name', 'father_name', 'nationality', 'national_code', 'birth_date', 'gender',
     'mobile', 'phone', 'email', 'postal_code', 'city', 'address', 'custom_fields',
+    'father', 'mother', 'learner_mobile', 'login_mobile_from',
 ])]
 class Preregistration extends Model
 {
@@ -122,9 +127,52 @@ class Preregistration extends Model
         return "{$this->first_name} {$this->last_name}";
     }
 
+    /**
+     * The mobile the learner will sign in with (ADR 0028): their own or a
+     * parent's, as chosen in the form; the confirmed applicant's mobile
+     * when the form doesn't ask.
+     */
+    public function loginMobile(): string
+    {
+        return match ($this->login_mobile_from) {
+            LoginMobileSource::Learner => $this->learner_mobile ?? $this->mobile,
+            LoginMobileSource::Father => $this->father['mobile'] ?? $this->mobile,
+            LoginMobileSource::Mother => $this->mother['mobile'] ?? $this->mobile,
+            null => $this->mobile,
+        };
+    }
+
+    /**
+     * The parents given in the form, each with its relationship and whether
+     * the learner signs in with their mobile.
+     *
+     * @return list<array{relationship: GuardianRelationship, name: string, national_code: string, mobile: string, provides_login_mobile: bool}>
+     */
+    public function parents(): array
+    {
+        $parents = [];
+
+        foreach ([[LoginMobileSource::Father, $this->father], [LoginMobileSource::Mother, $this->mother]] as [$source, $details]) {
+            if (filled($details['national_code'] ?? null)) {
+                $parents[] = [
+                    'relationship' => $source->relationship(),
+                    'name' => $details['name'],
+                    'national_code' => $details['national_code'],
+                    'mobile' => $details['mobile'],
+                    'provides_login_mobile' => $this->login_mobile_from === $source,
+                ];
+            }
+        }
+
+        return $parents;
+    }
+
     protected function casts(): array
     {
         return [
+            'father' => 'array',
+            'mother' => 'array',
+            'login_mobile_from' => LoginMobileSource::class,
             'status' => PreregistrationStatus::class,
             'closed_at' => 'datetime',
             'nationality' => Nationality::class,

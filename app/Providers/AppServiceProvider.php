@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Documents\ApplicantDocuments;
 use App\Documents\NoApplicantDocuments;
+use App\Guardians\Guardians;
 use App\Models\User;
 use App\Sms\LogSmsSender;
 use App\Sms\SmsSender;
@@ -44,6 +45,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->afterResolving('inertia.view-finder', function (FileViewFinder $finder): void {
             foreach (Module::allEnabled() as $module) {
                 $finder->addNamespace($module->getStudlyName(), $module->getExtraPath('resources/js/Pages'));
+            }
+        });
+
+        // Wards who sign in with a guardian's mobile follow it (ADR 0028).
+        User::updated(function (User $user): void {
+            if ($user->wasChanged('mobile')) {
+                app(Guardians::class)->mobileChanged($user);
             }
         });
 

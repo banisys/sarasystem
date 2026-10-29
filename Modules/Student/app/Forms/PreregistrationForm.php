@@ -17,7 +17,8 @@ use Modules\Student\Models\Program;
  * rank, a company's department) is added by the organization. The
  * program, name, nationality, national code, gender and mobile are always
  * asked: the one-open-preregistration rule, the SMS check and admission
- * depend on them.
+ * depend on them. A school also asks the parents and whose mobile the
+ * child signs in with (ADR 0028); they are not asked by default.
  */
 class PreregistrationForm extends CustomizableForm
 {
@@ -38,6 +39,7 @@ class PreregistrationForm extends CustomizableForm
         return [
             'program' => 'برنامه‌ی آموزشی',
             'personal' => 'اطلاعات فردی',
+            'parents' => 'والدین',
             'contact' => 'اطلاعات تماس',
             'other' => 'سایر اطلاعات',
         ];
@@ -49,6 +51,11 @@ class PreregistrationForm extends CustomizableForm
             new BuiltInField('preferred_tenant', config('sarasystem.tenant_label').' مورد نظر', FieldMode::Optional),
             new BuiltInField('father_name', 'نام پدر', FieldMode::Optional),
             new BuiltInField('birth_date', 'تاریخ تولد'),
+            // A school's: the parents and whose mobile the child signs in with (ADR 0028).
+            new BuiltInField('father', 'مشخصات پدر (نام، کد ملی، موبایل)', FieldMode::Hidden),
+            new BuiltInField('mother', 'مشخصات مادر (نام، کد ملی، موبایل)', FieldMode::Hidden),
+            new BuiltInField('learner_mobile', 'موبایل خود '.config('sarasystem.learner_label'), FieldMode::Hidden),
+            new BuiltInField('login_mobile', 'موبایل ورود '.config('sarasystem.learner_label').' (خودش، پدر یا مادر)', FieldMode::Hidden, [FieldMode::Required, FieldMode::Hidden]),
             new BuiltInField('phone', 'تلفن ثابت', FieldMode::Optional),
             new BuiltInField('email', 'ایمیل', FieldMode::Optional),
             new BuiltInField('postal_code', 'کد پستی', FieldMode::Optional),

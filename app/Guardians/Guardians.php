@@ -16,14 +16,16 @@ use Illuminate\Support\Str;
  * A guardian gets the guardian role (`sarasystem.guardian_role`) in the
  * ward's tenant, so they can sign in there; it goes again when they have no
  * ward left in that tenant. Giving it follows the role assignment rules
- * (ADR 0003); linking itself doesn't change the guardian's account.
+ * (ADR 0003); linking itself doesn't change the guardian's account. A
+ * ward without a mobile signs in with one guardian's, kept in step with
+ * it (ADR 0028).
  */
 class Guardians
 {
     /**
      * @throws GuardianException
      */
-    public function link(User $ward, User $guardian, GuardianRelationship $relationship, bool $receivesSms, Tenant $tenant, User $actor): Guardianship
+    public function link(User $ward, User $guardian, GuardianRelationship $relationship, bool $receivesSms, Tenant $tenant, User $actor, bool $providesLoginMobile = false): Guardianship
     {
         if ($ward->is($guardian)) {
             throw new GuardianException('هیچ‌کس ولیِ خودش نیست.');
@@ -39,11 +41,15 @@ class Guardians
             throw new GuardianException("شما اجازه‌ی دادن نقش «{$role->display_name}» را در {$tenant->name} ندارید.");
         }
 
-        return DB::transaction(function () use ($ward, $guardian, $relationship, $receivesSms, $tenant, $actor, $role, $holdsRole): Guardianship {
+        return DB::transaction(function () use ($ward, $guardian, $relationship, $receivesSms, $tenant, $actor, $role, $holdsRole, $providesLoginMobile): Guardianship {
             $guardianship = Guardianship::query()->updateOrCreate(
                 ['guardian_id' => $guardian->getKey(), 'ward_id' => $ward->getKey()],
                 ['relationship' => $relationship, 'receives_sms' => $receivesSms, 'created_by_id' => $actor->getKey()],
             );
+
+            if ($providesLoginMobile) {
+                $this->useLoginMobileOf($ward, $guardianship);
+            }
 
             if (! $holdsRole) {
                 $tenant->execute(fn () => $guardian->unsetRelation('roles')->assignRole($role));
@@ -52,6 +58,50 @@ class Guardians
 
             return $guardianship;
         });
+    }
+
+    /**
+     * Whose mobile the ward signs in with: a guardian's (kept in step with
+     * it), or — with null — the ward's own, set to the given mobile.
+     *
+     * @throws GuardianException
+     */
+    public function useLoginMobileOf(User $ward, ?Guardianship $guardianship, ?string $ownMobile = null): void
+    {
+        if ($guardianship !== null && $guardianship->ward_id !== $ward->getKey()) {
+            throw new GuardianException('این ولی، ولیِ این '.config('sarasystem.learner_label').' نیست.');
+        }
+
+        if ($guardianship !== null && blank($guardianship->guardian->mobile)) {
+            throw new GuardianException("«{$guardianship->guardian->name}» موبایل ندارد.");
+        }
+
+        DB::transaction(function () use ($ward, $guardianship, $ownMobile): void {
+            Guardianship::query()->where('ward_id', $ward->getKey())
+                ->when($guardianship, fn ($query) => $query->whereKeyNot($guardianship->getKey()))
+                ->update(['provides_login_mobile' => false]);
+
+            if ($guardianship !== null) {
+                $guardianship->update(['provides_login_mobile' => true]);
+                $ward->forceFill(['mobile' => $guardianship->guardian->mobile])->saveQuietly();
+            } elseif ($ownMobile !== null) {
+                $ward->forceFill(['mobile' => $ownMobile])->saveQuietly();
+            }
+        });
+    }
+
+    /**
+     * After a user's mobile changed: their wards who sign in with it follow;
+     * a ward who changed their own mobile no longer uses a guardian's.
+     */
+    public function mobileChanged(User $user): void
+    {
+        Guardianship::query()->where('guardian_id', $user->getKey())->where('provides_login_mobile', true)->with('ward')->get()
+            ->each(fn (Guardianship $guardianship) => $guardianship->ward->forceFill(['mobile' => $user->mobile])->saveQuietly());
+
+        Guardianship::query()->where('ward_id', $user->getKey())->where('provides_login_mobile', true)->with('guardian')->get()
+            ->filter(fn (Guardianship $guardianship): bool => $guardianship->guardian->mobile !== $user->mobile)
+            ->each(fn (Guardianship $guardianship) => $guardianship->update(['provides_login_mobile' => false]));
     }
 
     /**

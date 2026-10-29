@@ -34,5 +34,5 @@ The legacy LMS has a `parent` role and parents' data in the User module; this is
 ## Consequences
 - Any module can now ask «who are this user's guardians?» (e.g. absence SMS through `SmsSender` to links with `receives_sms`, or a parent signing a minor's contract).
 - A guardian linked in one branch sees the ward only in tenants where both hold roles. A ward in two branches needs the guardian role in both, which linking from each branch's learner page gives.
-- The applicant's mobile in preregistration is still the child's; preregistration doesn't create guardians yet.
+- The applicant's mobile in preregistration is still the child's; preregistration doesn't create guardians yet. (Changed by [ADR 0028](0028-guardian-details-and-login-mobile.md): a school's form asks the parents, and admission links them.)
 - Removing a guardian's role by hand (users screen) leaves the link; they just can't sign in to that tenant.

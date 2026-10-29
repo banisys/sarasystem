@@ -6,8 +6,8 @@ use App\Guardians\GuardianRelationship;
 use App\Models\Guardianship;
 use App\Models\Tenant;
 use App\Models\User;
-use Filament\Actions\Testing\TestAction;
 use Database\Seeders\DemoSeeder;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Student\Database\Seeders\GuardianDemoSeeder;
@@ -68,6 +68,26 @@ class GuardiansTabTest extends TestCase
         $this->assertSame(GuardianRelationship::Mother, $links[1]->relationship);
         $this->assertFalse($links[1]->receives_sms);
         $this->assertNotSame([], $existing->roleIdsIn($this->west));
+    }
+
+    public function test_the_learner_signs_in_with_a_guardians_mobile_or_their_own(): void
+    {
+        $mother = User::factory()->create(['mobile' => '09127778899']);
+        $link = Guardianship::query()->create(['guardian_id' => $mother->id, 'ward_id' => $this->learner->user_id, 'relationship' => 'mother']);
+
+        $this->actingInPanel($this->clerk, $this->west);
+        $tab = Livewire::test(GuardiansRelationManager::class, ['ownerRecord' => $this->learner, 'pageClass' => ViewStudent::class])
+            ->callAction(TestAction::make('loginMobile')->table(), data: ['source' => (string) $link->id])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame('09127778899', $this->learner->user->fresh()->mobile);
+        $this->assertTrue($link->fresh()->provides_login_mobile);
+
+        $tab->callAction(TestAction::make('loginMobile')->table(), data: ['source' => 'own', 'mobile' => '۰۹۳۵۱۱۱۲۲۳۳'])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame('09351112233', $this->learner->user->fresh()->mobile);
+        $this->assertFalse($link->fresh()->provides_login_mobile);
     }
 
     public function test_the_demo_seeder_links_the_demo_parents_to_their_children(): void

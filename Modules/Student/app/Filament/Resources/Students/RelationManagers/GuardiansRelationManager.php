@@ -13,11 +13,13 @@ use App\Rules\NationalCode;
 use App\Support\Identifiers;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -30,7 +32,8 @@ use Modules\Student\Models\Student;
  * The «اولیا» tab of a learner (ADR 0027): their parents and guardians.
  * A guardian is found by national code or made from the form, gets the
  * guardian role here, and then sees the learner's classes in the user
- * panel. Whoever may edit the learner manages them.
+ * panel. The learner may sign in with one guardian's mobile (ADR 0028).
+ * Whoever may edit the learner manages them.
  */
 class GuardiansRelationManager extends RelationManager
 {
@@ -72,8 +75,13 @@ class GuardiansRelationManager extends RelationManager
                 IconColumn::make('receives_sms')
                     ->label('پیامک')
                     ->boolean(),
+                IconColumn::make('provides_login_mobile')
+                    ->label('موبایل ورود فرزند')
+                    ->boolean()
+                    ->falseIcon(null),
             ])
             ->headerActions([
+                $this->loginMobileAction(),
                 Action::make('addGuardian')
                     ->label('افزودن ولی')
                     ->icon(Heroicon::OutlinedUserPlus)
@@ -100,6 +108,9 @@ class GuardiansRelationManager extends RelationManager
                         Toggle::make('receives_sms')
                             ->label('پیامک‌های مربوط به '.config('sarasystem.learner_label').' را بگیرد')
                             ->default(true),
+                        Toggle::make('provides_login_mobile')
+                            ->label(config('sarasystem.learner_label').' با موبایل این ولی وارد شود')
+                            ->helperText('موبایل حساب '.config('sarasystem.learner_label').' همان موبایل ولی می‌شود و با تغییر آن عوض می‌شود.'),
                     ])
                     ->action(function (array $data, Guardians $guardians): void {
                         $existing = User::query()->where('national_code', $data['national_code'])->exists();
@@ -117,6 +128,7 @@ class GuardiansRelationManager extends RelationManager
                             (bool) ($data['receives_sms'] ?? true),
                             $this->tenant(),
                             $this->actor(),
+                            (bool) ($data['provides_login_mobile'] ?? false),
                         ), 'ولی اضافه شد.');
                     }),
             ])
@@ -143,6 +155,44 @@ class GuardiansRelationManager extends RelationManager
                     ->visible(fn (): bool => $this->canManage())
                     ->action(fn (Guardianship $record, Guardians $guardians) => $guardians->unlink($record, $this->tenant())),
             ]);
+    }
+
+    /**
+     * Whose mobile the learner signs in with (ADR 0028): their own, or one
+     * guardian's, which the learner's account then follows.
+     */
+    private function loginMobileAction(): Action
+    {
+        return Action::make('loginMobile')
+            ->label('موبایل ورود '.config('sarasystem.learner_label'))
+            ->icon(Heroicon::OutlinedDevicePhoneMobile)
+            ->visible(fn (): bool => $this->canManage() && $this->learner()->guardianships()->exists())
+            ->fillForm(fn (): array => [
+                'source' => (string) ($this->learner()->guardianships()->where('provides_login_mobile', true)->value('id') ?? 'own'),
+                'mobile' => $this->learner()->guardianships()->where('provides_login_mobile', true)->exists() ? null : $this->learner()->user->mobile,
+            ])
+            ->schema([
+                Radio::make('source')
+                    ->label('با موبایلِ')
+                    // `+`, not `...`: spreading renumbers the guardianship ids.
+                    ->options(fn (): array => ['own' => 'خود '.config('sarasystem.learner_label')]
+                        + $this->learner()->guardianships()->with('guardian')->get()->mapWithKeys(fn (Guardianship $guardianship): array => [
+                            $guardianship->getKey() => $guardianship->relationship->getLabel().': '.$guardianship->guardian->name.' ('.($guardianship->guardian->mobile ?? 'بدون موبایل').')',
+                        ])->all())
+                    ->required()
+                    ->live(),
+                TextInput::make('mobile')
+                    ->label('موبایل '.config('sarasystem.learner_label'))
+                    ->rule(new IranianMobile)
+                    ->required(fn (Get $get): bool => $get('source') === 'own')
+                    ->visible(fn (Get $get): bool => $get('source') === 'own')
+                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? (Identifiers::normalizeMobile(Identifiers::toLatinDigits($state)) ?? $state) : null),
+            ])
+            ->action(function (array $data, Guardians $guardians): void {
+                $guardianship = $data['source'] === 'own' ? null : $this->learner()->guardianships()->findOrFail($data['source']);
+
+                $this->attempt(fn () => $guardians->useLoginMobileOf($this->learner()->user, $guardianship, $data['mobile'] ?? null), 'موبایل ورود ذخیره شد.');
+            });
     }
 
     private function attempt(callable $operation, string $success): void

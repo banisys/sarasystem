@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Http\Requests;
 
+use App\CustomFields\FieldMode;
 use App\CustomFields\ResolvedForm;
 use App\Documents\ApplicantDocuments;
 use App\Models\Tenant;
@@ -16,6 +17,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Student\Documents\LearnerDocumentHolder;
 use Modules\Student\Enums\Gender;
+use Modules\Student\Enums\LoginMobileSource;
 use Modules\Student\Enums\Nationality;
 use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Models\Preregistration;
@@ -81,6 +83,9 @@ class StorePreregistrationRequest extends FormRequest
             'phone' => $latin($this->input('phone')),
             'postal_code' => $latin($this->input('postal_code')),
             'birth_date' => $latin($this->input('birth_date')),
+            'father' => $this->parentInput('father'),
+            'mother' => $this->parentInput('mother'),
+            'learner_mobile' => Identifiers::normalizeMobile($latin($this->input('learner_mobile'))) ?? $this->input('learner_mobile'),
             ResolvedForm::INPUT => $this->preregistrationForm()->prepareCustomInput((array) $this->input(ResolvedForm::INPUT, [])),
         ]);
     }
@@ -131,10 +136,83 @@ class StorePreregistrationRequest extends FormRequest
             'postal_code' => $form->rulesFor('postal_code', ['digits:10']),
             'city' => $form->rulesFor('city', ['string', 'max:100']),
             'address' => $form->rulesFor('address', ['string', 'min:10', 'max:300']),
+            // A school's parents and the child's login mobile (ADR 0028).
+            ...$this->parentRules('father'),
+            ...$this->parentRules('mother'),
+            'learner_mobile' => $form->rulesFor('learner_mobile', ['string', new IranianMobile]),
+            'login_mobile_from' => $form->asks('login_mobile')
+                ? ['required', Rule::in(array_map(fn (LoginMobileSource $source): string => $source->value, $this->loginMobileChoices()))]
+                : ['exclude'],
             ...$form->customRules(),
             // Documents the applicant uploads for the chosen program (ADR 0019).
             ...app(ApplicantDocuments::class)->rules(LearnerDocumentHolder::KEY, $this->programId(), $this->openPreregistration()),
         ];
+    }
+
+    /**
+     * A parent's details when the form asks them: all three, required when
+     * the form requires the parent or anything of them was typed.
+     *
+     * @return array<string, list<mixed>>
+     */
+    private function parentRules(string $parent): array
+    {
+        $form = $this->preregistrationForm();
+
+        if (! $form->asks($parent)) {
+            return [$parent => ['exclude'], "{$parent}.*" => ['exclude']];
+        }
+
+        $presence = $form->requires($parent) || $this->hasParent($parent) ? 'required' : 'nullable';
+
+        return [
+            $parent => ['nullable', 'array'],
+            "{$parent}.name" => [$presence, 'string', 'max:100'],
+            "{$parent}.national_code" => [$presence, 'string', new NationalCode, 'different:national_code', ...($parent === 'mother' ? ['different:father.national_code'] : [])],
+            "{$parent}.mobile" => [$presence, 'string', new IranianMobile],
+        ];
+    }
+
+    private function hasParent(string $parent): bool
+    {
+        return collect((array) $this->input($parent, []))->only(['name', 'national_code', 'mobile'])->filter(fn (mixed $value): bool => filled($value))->isNotEmpty();
+    }
+
+    /**
+     * @return array{name: mixed, national_code: mixed, mobile: mixed}|null
+     */
+    private function parentInput(string $parent): ?array
+    {
+        $input = $this->input($parent);
+
+        if (! is_array($input)) {
+            return null;
+        }
+
+        $latin = fn (mixed $value): mixed => is_string($value) ? Identifiers::toLatinDigits(trim($value)) : $value;
+
+        return [
+            'name' => is_string($input['name'] ?? null) ? trim($input['name']) : null,
+            'national_code' => $latin($input['national_code'] ?? null),
+            'mobile' => Identifiers::normalizeMobile($latin($input['mobile'] ?? null)) ?? ($input['mobile'] ?? null),
+        ];
+    }
+
+    /**
+     * Whose mobile the learner may sign in with: their own or a parent's,
+     * among those typed in the form.
+     *
+     * @return list<LoginMobileSource>
+     */
+    public function loginMobileChoices(): array
+    {
+        $form = $this->preregistrationForm();
+
+        return array_values(array_filter([
+            $form->asks('learner_mobile') && filled($this->input('learner_mobile')) ? LoginMobileSource::Learner : null,
+            $form->asks('father') && filled($this->input('father.mobile')) ? LoginMobileSource::Father : null,
+            $form->asks('mother') && filled($this->input('mother.mobile')) ? LoginMobileSource::Mother : null,
+        ]));
     }
 
     public function programId(): ?int
@@ -161,6 +239,13 @@ class StorePreregistrationRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
+            // Both parents optional: at least one of them (ADR 0028).
+            $form = $this->preregistrationForm();
+            if ($form->mode('father') === FieldMode::Optional && $form->mode('mother') === FieldMode::Optional
+                && ! $this->hasParent('father') && ! $this->hasParent('mother')) {
+                $validator->errors()->add('father', 'مشخصات دست‌کم یکی از والدین را وارد کنید.');
+            }
+
             if ($validator->errors()->hasAny(['mobile', 'national_code'])) {
                 return;
             }
@@ -203,8 +288,10 @@ class StorePreregistrationRequest extends FormRequest
         $data = $this->safe()->except([ResolvedForm::INPUT, ApplicantDocuments::INPUT, ApplicantDocuments::EXPIRY_INPUT]);
 
         return [
-            ...array_fill_keys(['preferred_tenant_id', 'father_name', 'phone', 'email', 'postal_code', 'city', 'address'], null),
+            ...array_fill_keys(['preferred_tenant_id', 'father_name', 'phone', 'email', 'postal_code', 'city', 'address', 'father', 'mother', 'learner_mobile', 'login_mobile_from'], null),
             ...$data,
+            'father' => $this->hasParent('father') && isset($data['father']) ? $data['father'] : null,
+            'mother' => $this->hasParent('mother') && isset($data['mother']) ? $data['mother'] : null,
             'program_title' => $this->program()->title,
             'birth_date' => JalaliDate::toDate($data['birth_date'] ?? null),
             'custom_fields' => $this->preregistrationForm()->answers((array) $this->validated(ResolvedForm::INPUT, [])),
@@ -250,6 +337,7 @@ class StorePreregistrationRequest extends FormRequest
             'required_with' => ':attribute را وارد کنید.',
             'file' => ':attribute باید فایل باشد.',
             'mimes' => 'نوع فایل «:attribute» مجاز نیست (:values).',
+            'different' => ':attribute نباید با «:other» یکی باشد.',
         ];
     }
 
@@ -274,6 +362,14 @@ class StorePreregistrationRequest extends FormRequest
             'postal_code' => 'کد پستی',
             'city' => 'شهر',
             'address' => 'نشانی',
+            'father.name' => 'نام و نام خانوادگی پدر',
+            'father.national_code' => 'کد ملی پدر',
+            'father.mobile' => 'موبایل پدر',
+            'mother.name' => 'نام و نام خانوادگی مادر',
+            'mother.national_code' => 'کد ملی مادر',
+            'mother.mobile' => 'موبایل مادر',
+            'learner_mobile' => 'موبایل '.config('sarasystem.learner_label'),
+            'login_mobile_from' => 'موبایل ورود '.config('sarasystem.learner_label'),
             ...$this->preregistrationForm()->customAttributes(),
             ...app(ApplicantDocuments::class)->attributes(LearnerDocumentHolder::KEY, $this->programId()),
         ];

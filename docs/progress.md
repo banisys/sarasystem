@@ -18,6 +18,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Parents in preregistration and the learner's login mobile ([ADR 0028](decisions/0028-guardian-details-and-login-mobile.md)):
+  - New built-in fields of the «پیش‌ثبت‌نام» form, not asked by default (a school turns them on in «تنظیم فرم پیش‌ثبت‌نام»; the local demo does): father, mother (name, national code, mobile; each required / optional / not asked, at least one when both optional), the learner's own mobile, and «موبایل ورود» (own / father / mother).
+  - Admission makes the parents guardians (found by national code or made) and gives the learner's account the chosen login mobile.
+  - A learner who signs in with a parent's mobile follows it when it changes; «اولیا» tab: «موبایل ورود فرزند» column and action. 430 tests pass.
 - 2026-10-29 — Parents and guardians ([ADR 0027](decisions/0027-guardians.md)):
   - Core `guardianships` between users (پدر / مادر / سرپرست قانونی / سایر, «پیامک» flag), `Guardians` service; linking gives the guardian the `parent` role (`GUARDIAN_ROLE`) in the ward's tenant, unlinking the last ward there takes it.
   - Learner page tab «اولیا»: add a guardian by national code (an existing user is used as is, otherwise one is made from name and mobile), edit, remove.
@@ -164,7 +168,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - Places are free text: a clash is only found when two classes write the place the same way.
   - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).
   - A learner removed from the tenant stays a class member until a leave date is set.
-- Guardians (ADR 0027): the «اولیا» tab is not checked in a browser yet; preregistration doesn't create guardians (its mobile is still the child's).
+- Guardians (ADR 0027, ADR 0028): the «اولیا» tab and the parents section of `/preregister` are not checked in a browser yet; parents' details can't be edited in the admission workflow's «ویرایش اطلاعات».
 - Local Docker network: the running `sarasystem_sail` network still has the old subnet `172.22.0.0/16` (from before `SAIL_SUBNET` was pinned), so `docker compose up -d` wants to recreate it and the new `scheduler` service can't start. Fix once with `docker compose down && docker compose up -d` (volumes are kept). An attempt to start only the scheduler stopped `pgsql`; it was put back on the network by hand on 2026-10-29.
 - Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.
 - Contracts (ADR 0020):

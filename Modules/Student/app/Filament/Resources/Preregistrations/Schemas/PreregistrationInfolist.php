@@ -77,6 +77,20 @@ class PreregistrationInfolist
                     TextEntry::make('city')->label('شهر')->placeholder('—'),
                     TextEntry::make('address')->label('نشانی')->placeholder('—')->columnSpan(3),
                 ]),
+            // A school's parents and the child's login mobile (ADR 0028).
+            Section::make('والدین')
+                ->columns(3)
+                ->schema([
+                    TextEntry::make('father.name')->label('پدر')->placeholder('—'),
+                    TextEntry::make('father.national_code')->label('کد ملی پدر')->copyable()->placeholder('—'),
+                    TextEntry::make('father.mobile')->label('موبایل پدر')->copyable()->placeholder('—'),
+                    TextEntry::make('mother.name')->label('مادر')->placeholder('—'),
+                    TextEntry::make('mother.national_code')->label('کد ملی مادر')->copyable()->placeholder('—'),
+                    TextEntry::make('mother.mobile')->label('موبایل مادر')->copyable()->placeholder('—'),
+                    TextEntry::make('learner_mobile')->label('موبایل '.config('sarasystem.learner_label'))->copyable()->placeholder('—'),
+                    TextEntry::make('login_mobile_from')->label('موبایل ورود')->placeholder('—'),
+                ])
+                ->visible(fn (Preregistration $record): bool => $record->father !== null || $record->mother !== null || $record->learner_mobile !== null),
             // Fields the organization added to the form (ADR 0017).
             CustomFieldAnswers::section('custom_fields'),
         ];

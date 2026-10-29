@@ -74,7 +74,9 @@ class AdmissionDemoSeeder extends Seeder
             FormCustomization::query()->updateOrCreate(
                 ['tenant_id' => $headOffice->getKey(), 'form' => PreregistrationForm::KEY, 'owner_type' => null, 'owner_id' => null],
                 [
-                    'field_modes' => ['father_name' => 'required', 'phone' => 'required', 'city' => 'required', 'address' => 'required'],
+                    'field_modes' => ['father_name' => 'required', 'phone' => 'required', 'city' => 'required', 'address' => 'required',
+                        // A school asks the parents and whose mobile the child signs in with (ADR 0028).
+                        'father' => 'required', 'mother' => 'optional', 'learner_mobile' => 'optional', 'login_mobile' => 'required'],
                     'fields' => [
                         ['key' => 'birth_certificate', 'label' => 'شماره شناسنامه', 'type' => 'text', 'required' => true, 'section' => 'personal'],
                         ['key' => 'birth_place', 'label' => 'محل تولد', 'type' => 'text', 'section' => 'personal'],

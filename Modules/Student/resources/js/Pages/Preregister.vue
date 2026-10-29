@@ -44,6 +44,11 @@ const form = useForm({
     postal_code: '',
     city: '',
     address: '',
+    // A school's parents and the child's login mobile (ADR 0028).
+    father: { name: '', national_code: '', mobile: '' },
+    mother: { name: '', national_code: '', mobile: '' },
+    learner_mobile: '',
+    login_mobile_from: '',
     custom: {},
     documents: {},
     document_expiry: {},
@@ -64,6 +69,24 @@ const optional = (key) => (requires(key) ? '' : ' (اختیاری)');
 const lastSection = Object.keys(props.sections).at(-1);
 const fieldsIn = (section) =>
     currentForm.value.fields.filter((field) => field.section === section || (section === lastSection && !props.sections[field.section]));
+const parents = [
+    { key: 'father', label: 'پدر' },
+    { key: 'mother', label: 'مادر' },
+];
+const asksParents = computed(() => ['father', 'mother', 'learner_mobile', 'login_mobile'].some(asks) || fieldsIn('parents').length > 0);
+// Whose mobile the learner may sign in with, among those typed.
+const loginChoices = computed(() =>
+    [
+        asks('learner_mobile') && form.learner_mobile ? { value: 'learner', label: `موبایل خود ${props.labels.learner}` } : null,
+        asks('father') && form.father.mobile ? { value: 'father', label: 'موبایل پدر' } : null,
+        asks('mother') && form.mother.mobile ? { value: 'mother', label: 'موبایل مادر' } : null,
+    ].filter(Boolean),
+);
+watch(loginChoices, (choices) => {
+    if (!choices.some((choice) => choice.value === form.login_mobile_from)) {
+        form.login_mobile_from = choices.length === 1 ? choices[0].value : '';
+    }
+});
 const customError = (field) => form.errors[`custom.${field.key}`] ?? form.errors[`custom.${field.key}.0`];
 
 function prepareForm() {
@@ -223,13 +246,75 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                     </div>
                 </section>
 
+                <section v-if="asksParents" :class="sectionClass">
+                    <h2 class="font-bold text-gray-900">والدین</h2>
+                    <p v-if="form.errors.father" :class="errorClass">{{ form.errors.father }}</p>
+                    <template v-for="parent in parents" :key="parent.key">
+                        <fieldset v-if="asks(parent.key)" class="mt-4 grid gap-4 sm:grid-cols-3">
+                            <legend class="mb-1 text-sm font-semibold text-gray-800">{{ parent.label }}{{ optional(parent.key) }}</legend>
+                            <div>
+                                <label :for="`${parent.key}_name`" :class="labelClass">نام و نام خانوادگی</label>
+                                <input :id="`${parent.key}_name`" v-model="form[parent.key].name" type="text" maxlength="100" :class="inputClass" />
+                                <p v-if="form.errors[`${parent.key}.name`]" :class="errorClass">{{ form.errors[`${parent.key}.name`] }}</p>
+                            </div>
+                            <div>
+                                <label :for="`${parent.key}_national_code`" :class="labelClass">کد ملی</label>
+                                <input
+                                    :id="`${parent.key}_national_code`"
+                                    v-model="form[parent.key].national_code"
+                                    type="text"
+                                    inputmode="numeric"
+                                    dir="ltr"
+                                    maxlength="10"
+                                    :class="inputClass"
+                                />
+                                <p v-if="form.errors[`${parent.key}.national_code`]" :class="errorClass">{{ form.errors[`${parent.key}.national_code`] }}</p>
+                            </div>
+                            <div>
+                                <label :for="`${parent.key}_mobile`" :class="labelClass">موبایل</label>
+                                <input :id="`${parent.key}_mobile`" v-model="form[parent.key].mobile" type="tel" dir="ltr" placeholder="09121234567" maxlength="11" :class="inputClass" />
+                                <p v-if="form.errors[`${parent.key}.mobile`]" :class="errorClass">{{ form.errors[`${parent.key}.mobile`] }}</p>
+                            </div>
+                        </fieldset>
+                    </template>
+
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div v-if="asks('learner_mobile')">
+                            <label for="learner_mobile" :class="labelClass">موبایل خود {{ labels.learner }}{{ optional('learner_mobile') }}</label>
+                            <input id="learner_mobile" v-model="form.learner_mobile" type="tel" dir="ltr" placeholder="09121234567" maxlength="11" :class="inputClass" />
+                            <p v-if="form.errors.learner_mobile" :class="errorClass">{{ form.errors.learner_mobile }}</p>
+                        </div>
+                        <div v-if="asks('login_mobile')" class="sm:col-span-2">
+                            <span :class="labelClass">{{ labels.learner }} با کدام موبایل وارد سامانه شود؟</span>
+                            <p v-if="!loginChoices.length" class="mt-1 text-sm text-gray-500">ابتدا موبایل {{ labels.learner }} یا یکی از والدین را وارد کنید.</p>
+                            <div class="mt-2 flex flex-wrap gap-4">
+                                <label v-for="choice in loginChoices" :key="choice.value" class="flex items-center gap-2 text-sm text-gray-800">
+                                    <input v-model="form.login_mobile_from" type="radio" :value="choice.value" class="text-violet-600" />
+                                    {{ choice.label }}
+                                </label>
+                            </div>
+                            <p v-if="form.errors.login_mobile_from" :class="errorClass">{{ form.errors.login_mobile_from }}</p>
+                        </div>
+                        <CustomFieldInput
+                            v-for="field in fieldsIn('parents')"
+                            :key="field.key"
+                            v-model="form.custom[field.key]"
+                            :field="field"
+                            :error="customError(field)"
+                            :input-class="inputClass"
+                            :label-class="labelClass"
+                            :error-class="errorClass"
+                        />
+                    </div>
+                </section>
+
                 <section :class="sectionClass">
                     <h2 class="font-bold text-gray-900">اطلاعات تماس</h2>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         <VerifiedMobileInput
                             v-model="form.mobile"
                             class="sm:col-span-2"
-                            label="تلفن همراه"
+                            :label="asks('father') || asks('mother') ? 'تلفن همراه برای پیگیری پیش‌ثبت‌نام' : 'تلفن همراه'"
                             :verification="mobileVerification"
                             :send-url="route('preregister.mobile.code')"
                             :verify-url="route('preregister.mobile.verify')"
