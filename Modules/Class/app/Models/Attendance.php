@@ -13,9 +13,10 @@ use Modules\Class\Enums\AttendanceStatus;
 
 /**
  * Whether one attendee was at one session (ADR 0024): present, late (by
- * some minutes), absent or excused, with who recorded it and when.
+ * some minutes), absent or excused, with who recorded it and when, and
+ * when the guardians were told about an absence (ADR 0029).
  */
-#[Fillable(['tenant_id', 'classroom_id', 'session_id', 'user_id', 'status', 'late_minutes', 'note', 'recorded_by_id', 'recorded_at'])]
+#[Fillable(['tenant_id', 'classroom_id', 'session_id', 'user_id', 'status', 'late_minutes', 'note', 'recorded_by_id', 'recorded_at', 'absence_notified_at'])]
 class Attendance extends Model
 {
     /** @use HasFactory<AttendanceFactory> */
@@ -58,6 +59,7 @@ class Attendance extends Model
             'status' => AttendanceStatus::class,
             'late_minutes' => 'integer',
             'recorded_at' => 'datetime',
+            'absence_notified_at' => 'datetime',
         ];
     }
 }

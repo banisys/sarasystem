@@ -18,7 +18,8 @@ use Modules\Class\Models\ClassSession;
  * session's day. It opens a little before the session starts. Its teacher
  * (or substitute) and the class's members whose role takes attendance may
  * take it until a few days after; whoever may edit the class, at any time.
- * Taking it marks the session held.
+ * Taking it marks the session held, and guardians are told about new
+ * absences by SMS (ADR 0029).
  */
 class AttendanceRegister
 {
@@ -43,7 +44,7 @@ class AttendanceRegister
         return User::query()->whereKey($memberIds->merge($recordedIds)->unique())->orderBy('name')->get();
     }
 
-    public function __construct(private SessionAccess $access) {}
+    public function __construct(private SessionAccess $access, private AbsenceNotices $notices) {}
 
     /**
      * Why the user can't take the session's attendance now, or null.
@@ -74,7 +75,9 @@ class AttendanceRegister
             throw new ClassException('فقط حضور و غیاب شرکت‌کنندگان این جلسه ثبت می‌شود.');
         }
 
-        DB::transaction(function () use ($session, $rows, $by): void {
+        $saved = DB::transaction(function () use ($session, $rows, $by): array {
+            $saved = [];
+
             foreach ($rows as $userId => $row) {
                 $status = $row['status'] instanceof AttendanceStatus ? $row['status'] : AttendanceStatus::from($row['status']);
                 $record = Attendance::withoutTenantScope()->firstOrNew(['session_id' => $session->getKey(), 'user_id' => $userId]);
@@ -94,10 +97,16 @@ class AttendanceRegister
                     'recorded_by_id' => $by->getKey(),
                     'recorded_at' => now(),
                 ])->save();
+                $saved[] = $record;
             }
 
             $session->update(['status' => SessionStatus::Held]);
+
+            return $saved;
         });
+
+        // Once saved: guardians hear about new absences (ADR 0029).
+        $this->notices->send($session, $saved);
     }
 
     /**

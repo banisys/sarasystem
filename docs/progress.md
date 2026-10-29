@@ -6,7 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026). Next: a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards); later homework submissions, absence SMS to guardians (links with «پیامک» on, ADR 0027).
+- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026). Next: a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards); later homework submissions.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
@@ -18,6 +18,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Absence SMS ([ADR 0029](decisions/0029-absence-sms.md)): when an attendee is marked «غایب» (admin panel or «کلاس‌های من»), each guardian with «پیامک» on gets one SMS, once per absence (`absence_notified_at`); `CLASS_ABSENCE_SMS` turns it off. The `log` SMS driver now writes to `storage/logs/sms.log` (channel `sms`). 433 tests pass.
 - 2026-10-29 — Parents in preregistration and the learner's login mobile ([ADR 0028](decisions/0028-guardian-details-and-login-mobile.md)):
   - New built-in fields of the «پیش‌ثبت‌نام» form, not asked by default (a school turns them on in «تنظیم فرم پیش‌ثبت‌نام»; the local demo does): father, mother (name, national code, mobile; each required / optional / not asked, at least one when both optional), the learner's own mobile, and «موبایل ورود» (own / father / mother).
   - Admission makes the parents guardians (found by national code or made) and gives the learner's account the chosen login mobile.
@@ -163,7 +164,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens, the «اعضا»، «برنامه» and «جلسه‌ها» tabs and the sessions list.
   - «کلاس‌های من» (`/my-classes`) and the guardians' view are covered by HTTP tests but not checked in a browser yet; the build passes.
   - No homework submissions or scores; no attendance report across classes or terms.
-  - No absence SMS yet (guardian links have the «پیامک» flag for it, ADR 0027).
+  - Absence SMS: no correction SMS when «غایب» is changed later; sent during the request (move to a queue with a slow real provider).
   - The demo `teacher` / `supervisor` / `supporter` roles still see all classes in the admin panel (read only); they could drop those permissions now that the user panel covers their work.
   - Places are free text: a clash is only found when two classes write the place the same way.
   - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).

@@ -10,6 +10,9 @@ return [
         // ... and closes for teachers this many days after (at the end of
         // that day); whoever may edit the class can still change it.
         'locks_after_days' => (int) env('CLASS_ATTENDANCE_LOCKS_AFTER_DAYS', 3),
+        // An SMS to the guardians (with «پیامک» on) of an attendee marked
+        // absent, once per absence (ADR 0029).
+        'absence_sms' => (bool) env('CLASS_ABSENCE_SMS', true),
     ],
 
     // Recording what a session covered (ADR 0025): opens like attendance and

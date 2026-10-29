@@ -65,6 +65,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Text messages of the "log" SMS driver (config/sms.php).
+        'sms' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/sms.log'),
+            'level' => 'info',
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

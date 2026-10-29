@@ -14,4 +14,16 @@ return [
 
     'driver' => env('SMS_DRIVER', 'log'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Log channel
+    |--------------------------------------------------------------------------
+    |
+    | Where the "log" driver writes: the "sms" channel is storage/logs/sms.log,
+    | so login codes and notices are easy to find while developing.
+    |
+    */
+
+    'log_channel' => env('SMS_LOG_CHANNEL', 'sms'),
+
 ];
