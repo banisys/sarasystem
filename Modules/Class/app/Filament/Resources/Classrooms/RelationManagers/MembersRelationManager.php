@@ -54,7 +54,7 @@ class MembersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['user', 'classRole']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['user', 'classRole'])->withAttendanceCounts())
             ->defaultSort('id')
             ->columns([
                 TextColumn::make('user.name')
@@ -70,6 +70,12 @@ class MembersRelationManager extends RelationManager
                     ->label('نقش در کلاس')
                     ->badge()
                     ->color(fn (ClassMember $record): string => $record->classRole->is_attendee ? 'gray' : 'info'),
+                TextColumn::make('attendance')
+                    ->label('غیبت / تأخیر')
+                    ->state(fn (ClassMember $record): ?string => ! $record->classRole->is_attendee ? null
+                        : "غیبت {$record->absences_count}".($record->excused_count > 0 ? " (+{$record->excused_count} موجه)" : '')." · تأخیر {$record->lates_count}")
+                    ->color(fn (ClassMember $record): ?string => ($record->absences_count ?? 0) > 0 ? 'danger' : null)
+                    ->placeholder('—'),
                 TextColumn::make('joined_on')
                     ->label('ورود')
                     ->jalaliDate()

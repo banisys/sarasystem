@@ -10,13 +10,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Class\Database\Factories\ClassSessionFactory;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 
 /**
  * One meeting of a class (ADR 0023): built from a schedule, or added by
- * hand as a make-up or extra session. A session changed by hand (moved,
+ * hand as a make-up or extra session. Taking its attendance marks it held
+ * (ADR 0024). A session changed by hand (moved,
  * cancelled, a substitute teacher, a note) is no longer rebuilt by its
  * schedule; past sessions never are.
  */
@@ -119,6 +121,14 @@ class ClassSession extends Model
     public function substituteTeacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'substitute_teacher_id');
+    }
+
+    /**
+     * @return HasMany<Attendance, $this>
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'session_id');
     }
 
     protected function casts(): array

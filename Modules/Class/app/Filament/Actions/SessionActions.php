@@ -9,23 +9,29 @@ use Ariaieboy\Jalali\CalendarUtils;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\SessionPlanner;
 
 /**
  * Columns and row actions of session lists: a class's «جلسه‌ها» tab and
  * «کلاس‌ها → جلسه‌ها» (ADR 0023). Changing a session needs the right to
- * edit its class.
+ * edit its class; attendance follows AttendanceRegister (ADR 0024).
  */
 class SessionActions
 {
@@ -63,12 +69,33 @@ class SessionActions
                 ->label('وضعیت')
                 ->badge()
                 ->description(fn (ClassSession $record): ?string => $record->cancel_reason),
+            TextColumn::make('attendance')
+                ->label('حضور و غیاب')
+                ->state(fn (ClassSession $record): ?string => ($record->attendances_count ?? 0) === 0 ? null
+                    : "حاضر {$record->present_count} · غایب {$record->absent_count}")
+                ->placeholder('—'),
         ]));
+    }
+
+    /**
+     * Adds the counts the «حضور و غیاب» column shows.
+     *
+     * @param  Builder<ClassSession>  $query
+     * @return Builder<ClassSession>
+     */
+    public static function withAttendanceCounts(Builder $query): Builder
+    {
+        return $query->withCount([
+            'attendances',
+            'attendances as present_count' => fn (Builder $attendances) => $attendances->whereIn('status', [AttendanceStatus::Present, AttendanceStatus::Late]),
+            'attendances as absent_count' => fn (Builder $attendances) => $attendances->whereIn('status', [AttendanceStatus::Absent, AttendanceStatus::Excused]),
+        ]);
     }
 
     public static function recordActions(): ActionGroup
     {
         return ActionGroup::make([
+            self::attendance(),
             self::move(),
             self::substitute(),
             self::cancel(),
@@ -109,6 +136,56 @@ class SessionActions
         $date = CalendarUtils::strftime('l Y/m/d', $start->toMutable());
 
         return $original ? $date.' '.$start->format('H:i') : $date.' · '.$start->format('H:i').'–'.$session->ends_at->format('H:i');
+    }
+
+    /**
+     * The attendees with a status each, filled with what was recorded
+     * (or «حاضر»).
+     */
+    private static function attendance(): Action
+    {
+        return Action::make('attendance')
+            ->label('حضور و غیاب')
+            ->icon(Heroicon::OutlinedClipboardDocumentCheck)
+            ->color('success')
+            ->visible(fn (ClassSession $record): bool => ($user = auth()->user()) instanceof User && app(AttendanceRegister::class)->canTake($user, $record))
+            ->modalHeading(fn (ClassSession $record): string => 'حضور و غیاب · '.self::when($record))
+            ->modalWidth('4xl')
+            ->fillForm(function (ClassSession $record, AttendanceRegister $register): array {
+                $recorded = $record->attendances()->get()->keyBy('user_id');
+
+                return ['rows' => $register->attendees($record)->map(fn (User $user): array => [
+                    'user_id' => $user->getKey(),
+                    'name' => $user->name,
+                    'status' => ($recorded[$user->getKey()]->status ?? AttendanceStatus::Present)->value,
+                    'late_minutes' => $recorded[$user->getKey()]->late_minutes ?? null,
+                    'note' => $recorded[$user->getKey()]->note ?? null,
+                ])->values()->all()];
+            })
+            ->schema([
+                Repeater::make('rows')
+                    ->hiddenLabel()
+                    ->addable(false)
+                    ->deletable(false)
+                    ->reorderable(false)
+                    ->columns(12)
+                    ->schema([
+                        Hidden::make('user_id'),
+                        TextInput::make('name')->hiddenLabel()->disabled()->dehydrated(false)->columnSpan(3),
+                        ToggleButtons::make('status')->hiddenLabel()->options(AttendanceStatus::class)->inline()->required()->live()->columnSpan(5),
+                        TextInput::make('late_minutes')->hiddenLabel()->placeholder('دقیقه')->numeric()->minValue(1)->maxValue(600)
+                            ->visible(fn (Get $get): bool => $get('status') === AttendanceStatus::Late->value || $get('status') === AttendanceStatus::Late)
+                            ->columnSpan(1),
+                        TextInput::make('note')->hiddenLabel()->placeholder('توضیح')->maxLength(255)->columnSpan(3),
+                    ]),
+            ])
+            ->action(function (array $data, ClassSession $record, AttendanceRegister $register): void {
+                /** @var User $user */
+                $user = auth()->user();
+                $rows = collect($data['rows'] ?? [])->keyBy(fn (array $row): int => (int) $row['user_id'])->all();
+
+                self::attempt(fn () => $register->record($record, $rows, $user), 'حضور و غیاب ثبت شد.');
+            });
     }
 
     private static function move(): Action

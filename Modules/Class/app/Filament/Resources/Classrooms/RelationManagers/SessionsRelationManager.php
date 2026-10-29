@@ -48,7 +48,7 @@ class SessionsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['classroom', 'subject', 'teacher', 'substituteTeacher']))
+            ->modifyQueryUsing(fn (Builder $query) => SessionActions::withAttendanceCounts($query->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])))
             ->defaultSort('starts_at')
             ->columns(SessionActions::columns(withClass: false))
             ->filters(ClassSessionsTable::filters(withClass: false))

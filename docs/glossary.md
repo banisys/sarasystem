@@ -106,3 +106,4 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Make-up / extra session | جلسه‌ی جبرانی / فوق‌العاده | A session added by hand: to make up a cancelled one, or in addition to the schedule. |
 | Substitute teacher | مدرس جایگزین | Who teaches one session instead of its teacher. |
 | Clash | تداخل | Two sessions at overlapping times with the same teacher (in any tenant), the same class or the same place (in the tenant); refused. |
+| Attendance | حضور و غیاب | Whether each attendee was at a session: present (حاضر), late (تأخیر, with minutes), absent (غایب) or excused (غیبت موجه) ([ADR 0024](decisions/0024-class-attendance.md)). Taken by the session's teacher or substitute and members whose class role takes attendance; taking it marks the session held (برگزارشده). |

@@ -42,6 +42,10 @@ class ClassDemoSeeder extends Seeder
                 'ViewAny:Term', 'View:Term', 'Create:Term', 'Update:Term', 'Delete:Term',
                 'ViewAny:ClassRole', 'View:ClassRole', 'Create:ClassRole', 'Update:ClassRole', 'Delete:ClassRole', 'Reorder:ClassRole',
                 'ViewAny:Holiday', 'View:Holiday', 'Create:Holiday', 'Update:Holiday', 'Delete:Holiday'],
+            // Teachers, supervisors and supporters take attendance from the sessions lists (ADR 0024).
+            'teacher' => ['ViewAny:Classroom', 'View:Classroom', 'ViewAny:ClassSession'],
+            'supervisor' => ['ViewAny:Classroom', 'View:Classroom', 'ViewAny:ClassSession'],
+            'supporter' => ['ViewAny:Classroom', 'View:Classroom', 'ViewAny:ClassSession'],
             'principal' => ['ViewAny:Classroom', 'View:Classroom', 'Create:Classroom', 'Update:Classroom', 'Delete:Classroom', 'ViewAny:ClassSession',
                 'ViewAny:Holiday', 'View:Holiday', 'Create:Holiday', 'Update:Holiday', 'Delete:Holiday'],
         ]);
