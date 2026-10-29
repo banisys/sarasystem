@@ -6,9 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–4 done (terms, holidays, class roles, classes, members; schedules and sessions, ADR 0023; attendance, ADR 0024; teaching plans and session content, ADR 0025). Next steps in order:
-  - user panel calendar (day / week / month)
-  - then a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards)
+- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026). Next: a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards); later homework submissions, absence SMS to learners / parents (needs a parent–learner link).
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
@@ -20,6 +18,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Classes step 5 ([ADR 0026](decisions/0026-my-classes.md)): «کلاس‌های من» in the user panel (`/my-classes`, header link for class members and teachers).
+  - Calendar of the person's sessions: day, week (Saturday to Friday) or Jalali month, with holidays, online links, status, own attendance and «تکلیف دارد»; the person's classes and roles.
+  - Session page: details, what it covered (or the plan's forecast), homework and due date, materials; own attendance. Teachers (and roles that take attendance / record content) take attendance and record content there, with the same rules as the admin panel, so they no longer need admin access.
+  - Uploaded files keep their names (admin panel too). 415 tests pass.
 - 2026-10-29 — Classes step 4 ([ADR 0025](decisions/0025-teaching-plans-and-session-content.md)): teaching plans and session content.
   - «کلاس‌ها → طرح‌های درس» (head office only): plans with topics in order, each taking N sessions, optionally tied to a subject. A schedule follows a plan.
   - The plan's unfinished topics are forecast over the coming sessions (shown in grey as «برنامه: …»); an unfinished topic moves to the next session by itself. The «برنامه» tab shows each plan's progress.

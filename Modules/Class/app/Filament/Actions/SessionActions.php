@@ -271,6 +271,7 @@ class SessionActions
                     ->helperText('جزوه، تمرین یا فایل تکلیف؛ هر فایل تا ۲۰ مگابایت.')
                     ->disk('local')
                     ->directory(self::MATERIALS_UPLOAD_DIRECTORY)
+                    ->storeFileNamesIn('file_names')
                     ->visibility('private')
                     ->multiple()
                     ->maxFiles(10)

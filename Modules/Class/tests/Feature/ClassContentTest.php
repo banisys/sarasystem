@@ -166,6 +166,20 @@ class ClassContentTest extends TestCase
         $this->get(route('class.materials', ['media' => $links[0]['id']]))->assertForbidden();
     }
 
+    public function test_files_uploaded_in_the_panel_keep_the_uploaders_name(): void
+    {
+        Storage::fake('local');
+        $this->travelTo(CarbonImmutable::parse('2026-10-31 09:00'));
+        Storage::disk('local')->put('class-materials/abc123.pdf', '%PDF-1.4');
+
+        app(SessionContentBook::class)->record($this->sessionOn('2026-10-31'), [
+            'summary' => 'مقدمه', 'files' => ['class-materials/abc123.pdf'], 'file_names' => ['class-materials/abc123.pdf' => 'جزوه فصل ۱.pdf'],
+        ], $this->teacher);
+
+        // Medialibrary turns spaces into dashes.
+        $this->assertSame(['جزوه-فصل-۱.pdf'], array_column($this->sessionOn('2026-10-31')->materialLinks(), 'name'));
+    }
+
     public function test_plans_are_made_in_the_primary_tenant_with_their_topics(): void
     {
         $admin = User::factory()->create();

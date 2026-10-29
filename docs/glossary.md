@@ -110,3 +110,4 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Teaching plan | طرح درس | A course outline: topics in order, each taking some sessions (`TeachingPlan`), defined in the head office; a schedule follows one ([ADR 0025](decisions/0025-teaching-plans-and-session-content.md)). |
 | Topic | سرفصل | One item of a teaching plan (`PlanTopic`); finished when a session records it. Unfinished topics are forecast over the coming sessions. |
 | Session content | مطالب جلسه | What a session covered: topics finished, a summary, homework (تکلیف) with a due date, and materials (files). |
+| My classes | کلاس‌های من | The user-panel page of a person's sessions (day / week / Jalali month) in the classes they are in or teach; teachers take attendance and record content there ([ADR 0026](decisions/0026-my-classes.md)). |

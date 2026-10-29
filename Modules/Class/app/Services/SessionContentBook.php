@@ -4,6 +4,7 @@ namespace Modules\Class\Services;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassSession;
@@ -30,7 +31,7 @@ class SessionContentBook
     }
 
     /**
-     * @param  array{covered_topic_ids?: list<int|string>|null, summary?: string|null, homework?: string|null, homework_due_on?: string|null, files?: list<string>|null, remove_media_ids?: list<int|string>|null}  $data  files: paths on the local disk
+     * @param  array{covered_topic_ids?: list<int|string>|null, summary?: string|null, homework?: string|null, homework_due_on?: string|null, files?: list<UploadedFile|string>|null, file_names?: array<string, string>|null, remove_media_ids?: list<int|string>|null}  $data  files: uploads, or paths on the local disk named in file_names
      *
      * @throws ClassException
      */
@@ -71,8 +72,20 @@ class SessionContentBook
                 ->whereIn('id', array_map('intval', $data['remove_media_ids'] ?? []))
                 ->each->delete();
 
-            foreach ($data['files'] ?? [] as $path) {
-                $session->addMediaFromDisk($path, 'local')->toMediaCollection(ClassSession::MATERIALS_COLLECTION);
+            foreach ($data['files'] ?? [] as $file) {
+                if ($file instanceof UploadedFile) {
+                    $session->addMedia($file)->toMediaCollection(ClassSession::MATERIALS_COLLECTION);
+
+                    continue;
+                }
+
+                $adder = $session->addMediaFromDisk($file, 'local');
+                // The name the uploader gave the file, if it is a usable one.
+                $name = $data['file_names'][$file] ?? null;
+                if (is_string($name) && $name !== '' && mb_check_encoding($name, 'UTF-8')) {
+                    $adder->usingFileName($name)->usingName(pathinfo($name, PATHINFO_FILENAME));
+                }
+                $adder->toMediaCollection(ClassSession::MATERIALS_COLLECTION);
             }
         });
 
