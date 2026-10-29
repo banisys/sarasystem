@@ -4,6 +4,7 @@ namespace Modules\Student\Services;
 
 use App\Authorization\RoleAssignment;
 use App\Documents\ApplicantDocuments;
+use App\Events\ApplicantAccepted;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -45,7 +46,7 @@ class AdmitStudent
             throw new WorkflowActionDenied('این کد '.config('sarasystem.learner_label').' قبلاً به شخص دیگری داده شده است.');
         }
 
-        return $tenant->execute(function () use ($tenant, $user, $roles, $preregistration, $data): Student {
+        return $tenant->execute(function () use ($tenant, $user, $roles, $preregistration, $data, $actor): Student {
             if ($roles !== []) {
                 $user->unsetRelation('roles')->assignRole($roles);
                 $user->unsetRelation('roles');
@@ -64,6 +65,8 @@ class AdmitStudent
 
             // The applicant's documents stay with the learner (ADR 0019).
             app(ApplicantDocuments::class)->accepted($preregistration, $student);
+
+            ApplicantAccepted::dispatch($preregistration, $student, $actor);
 
             return $student;
         });

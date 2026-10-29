@@ -81,4 +81,9 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Document type | نوع مدرک | A kind of document people have (کارت ملی، شناسنامه، مدرک تحصیلی…), defined once in the head office with who it is for, who uploads and who checks it, and for whom it is required ([ADR 0019](decisions/0019-documents.md)). |
 | Document | مدرک | One person's files of one document type, pending / approved / rejected, maybe with an expiry date. Attached to the applicant record, then to the employee / learner. |
 | Document holder | دارنده‌ی مدرک | A kind of person who has documents (employee, learner), described by its module to the core (`DocumentHolder`). |
-| Step extension | تنظیمات اضافه‌ی مرحله | Work a module adds to workflow steps, e.g. documents to upload or check before the step can be approved (`StepExtension`, ADR 0019). |
+| Contract type | نوع قرارداد | A kind of contract (قرارداد کارمند تمام‌وقت، قرارداد شهریه…), defined once in the head office: for whom, its text with merge tags, its fields and how it is signed ([ADR 0020](decisions/0020-contracts.md)). |
+| Contract | قرارداد | One person's contract of a type: a draft (پیش‌نویس) while being prepared, issued (صادر شده / در انتظار امضا) once its text is fixed and numbered, then signed (امضا شده) or cancelled (لغو شده). In LMS a student's main contract was the tuition contract. |
+| Contract party | طرف قرارداد | A kind of person who signs contracts (employee, learner), described by its module to the core (`ContractParty`). |
+| Merge tag | برچسب | A placeholder in a contract text, e.g. «نام و نام خانوادگی», replaced by the contract's value when it is issued; blank values print as dots to fill in by hand. |
+| Electronic signature | امضای الکترونیکی | Accepting an issued contract in the user panel with an SMS code sent to one's own mobile; time, mobile and IP are kept. Not a certificate-based digital signature. |
+| Step extension | تنظیمات اضافه‌ی مرحله | Work a module adds to workflow steps, e.g. documents to upload or check, or contracts to prepare, before the step can be approved (`StepExtension`, ADR 0019, ADR 0020). |

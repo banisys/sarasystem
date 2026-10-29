@@ -2,12 +2,14 @@
 
 namespace Modules\Student\Providers;
 
+use App\Contract\ContractParties;
 use App\CustomFields\CustomForms;
 use App\Documents\DocumentHolders;
 use App\Workflow\WorkflowSubjects;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Student\ContractParties\LearnerContractParty;
 use Modules\Student\Documents\LearnerDocumentHolder;
 use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Workflow\PreregistrationSubject;
@@ -52,5 +54,8 @@ class StudentServiceProvider extends ModuleServiceProvider
 
         // Learners and applicants have documents (ADR 0019).
         DocumentHolders::register(new LearnerDocumentHolder);
+
+        // Learners sign contracts, prepared while they apply (ADR 0020).
+        ContractParties::register(new LearnerContractParty);
     }
 }

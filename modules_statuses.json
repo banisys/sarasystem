@@ -3,5 +3,6 @@
     "Exam": true,
     "Employee": true,
     "Student": true,
-    "Document": true
+    "Document": true,
+    "Contract": true
 }

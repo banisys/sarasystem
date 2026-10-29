@@ -30,6 +30,12 @@ class OneTimePassword
 
     public const PURPOSE_CONFIRM_MOBILE = 'confirm-mobile';
 
+    /**
+     * Signing something, e.g. a contract (ADR 0020); followed by `:` and
+     * what is signed, so a code signs that one thing only.
+     */
+    public const PURPOSE_SIGN = 'sign';
+
     public function __construct(private Cache $cache, private SmsSender $sms) {}
 
     /**
@@ -55,9 +61,11 @@ class OneTimePassword
             'attempts' => 0,
         ], self::TTL_SECONDS);
 
-        $message = $purpose === self::PURPOSE_LOGIN
-            ? 'کد ورود شما به '.config('app.name').": {$code}"
-            : 'کد تأیید شماره موبایل در '.config('app.name').": {$code}";
+        $message = match (true) {
+            $purpose === self::PURPOSE_LOGIN => 'کد ورود شما به '.config('app.name').": {$code}",
+            str_starts_with($purpose, self::PURPOSE_SIGN.':') => 'کد امضای شما در '.config('app.name').": {$code}",
+            default => 'کد تأیید شماره موبایل در '.config('app.name').": {$code}",
+        };
 
         $this->sms->send($this->mobileOf($user, $mobile), $message);
     }

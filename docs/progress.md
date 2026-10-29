@@ -9,6 +9,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
+- Contracts phase 2: amendments / renewals, end-of-contract reminders, a finance module for installments and payments that attaches to contracts.
 - Use customizable forms (ADR 0017) in the next forms (e.g. enrollment contracts). Possible additions: file fields, conditional fields.
 - Workflows: cancel / reassign a running case (super admin or workflow owner), per-step deadlines and reminders, attachments on notes, a monitor of all running cases.
 - Use workflows for the next approval flows (leave, contracts).
@@ -16,6 +17,14 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Module `Contract` ([ADR 0020](decisions/0020-contracts.md)), after a review of the LMS Contract module: contracts of employees and learners.
+  - **Contract types** («قراردادها → انواع قرارداد», head office only): for employees and/or learners, the text in a rich editor with merge tags (person, contract, party values and the type's own fields), signature method (electronic / paper / either), number prefix. «فیلدهای قرارداد» sets the terms form per type: start / end date and amount required / optional / not asked, plus added fields (wage, hours, …).
+  - **Contracts** («قراردادها → قراردادها», per tenant): draft for a member («قرارداد جدید»), edit, preview, PDF, **issue** (text fixed with SHA-256, number, SMS to the person when they may sign electronically), record a paper signature with a scan, cancel with a reason.
+  - **User panel** `/contracts` («قراردادها» in the header once there is one): read, download the PDF and sign with an SMS code sent to one's own mobile (a code signs one contract only).
+  - **Workflows:** a step can name contract types to prepare; the assignee fills them in the cartable («تنظیم قرارداد», «متن قرارداد», «قراردادها» section) and can't approve before. On hiring / admission the drafts move to the employee / learner and are issued.
+  - **Core:** `app/Contract` (`ContractParty`), `App\Events\ApplicantAccepted` (dispatched by `HireApplicant` and `AdmitStudent`), `OneTimePassword::PURPOSE_SIGN`, `App\Support\PersianNumberWords`. New package `mpdf/mpdf`; Shabnam TTF in `resources/fonts`.
+  - Not taken from LMS: installments, discounts, payments, debt follow-ups (wait for a finance module); LMS contract data is not migrated.
+  - Sample data: `php artisan module:seed Contract` (2 types; the step before the last of the demo hiring and admission workflows prepares them). 355 tests pass.
 - 2026-10-27 — Admin panel: modals (actions, confirmations, slide-overs) close only with the × button in their header, not by clicking outside or pressing Escape (`ModalComponent` defaults in `AdminPanelProvider`). 320 tests pass.
 - 2026-10-28 — Module `Document` ([ADR 0019](decisions/0019-documents.md)): documents of employees and learners.
   - **Document types** («مدارک → انواع مدرک», head office only): for employees and/or learners, file kind and limits, expiry date, applicant upload, **roles that upload** and **roles that check**, required for nobody / everyone / chosen job positions or programs.
@@ -96,6 +105,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Contracts (ADR 0020):
+  - Not checked in a browser yet (covered by Livewire and HTTP tests): the type editor with merge tags, the contracts screens, the cartable actions and `/contracts`. The PDF was checked by eye.
+  - Shabnam has no «—» / «–»; the PDF prints them as «-» (mPDF can't take them from another font while shaping Persian).
+  - No amendments, renewals, contract approval workflows, end-of-contract reminders, Word import of templates, or the organization's own signature; no contracts tab on the employee / learner pages.
+  - Demo roles have no `*:Contract` / `*:ContractType` permissions; only super admins see the «قراردادها» screens until roles get them.
+  - Documents still move with `ApplicantDocuments::accepted()`; they could listen to `ApplicantAccepted` like contracts.
+  - `composer audit` reports an advisory in `symfony/mime` (CVE-2026-45070, from before this change); update it with `composer update symfony/mime` once approved.
 - Documents (ADR 0019):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the screens, the cartable actions, the step designer fields and the upload sections of `/careers` and `/preregister`.
   - No documents tab on the employee / learner pages; no reminders before expiry; re-uploads don't keep old versions.

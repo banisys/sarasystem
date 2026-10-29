@@ -2,12 +2,14 @@
 
 namespace Modules\Employee\Providers;
 
+use App\Contract\ContractParties;
 use App\CustomFields\CustomForms;
 use App\Documents\DocumentHolders;
 use App\Workflow\WorkflowSubjects;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Employee\ContractParties\EmployeeContractParty;
 use Modules\Employee\Documents\EmployeeDocumentHolder;
 use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Workflow\JobApplicationSubject;
@@ -52,5 +54,8 @@ class EmployeeServiceProvider extends ModuleServiceProvider
 
         // Employees and applicants have documents (ADR 0019).
         DocumentHolders::register(new EmployeeDocumentHolder);
+
+        // Employees sign contracts, prepared while they apply (ADR 0020).
+        ContractParties::register(new EmployeeContractParty);
     }
 }

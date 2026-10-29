@@ -4,6 +4,7 @@ namespace Modules\Employee\Services;
 
 use App\Authorization\RoleAssignment;
 use App\Documents\ApplicantDocuments;
+use App\Events\ApplicantAccepted;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -43,7 +44,7 @@ class HireApplicant
             throw new WorkflowActionDenied('این کد پرسنلی قبلاً به کارمند دیگری داده شده است.');
         }
 
-        return $tenant->execute(function () use ($tenant, $user, $roles, $application, $data): Employee {
+        return $tenant->execute(function () use ($tenant, $user, $roles, $application, $data, $actor): Employee {
             if ($roles !== []) {
                 $user->unsetRelation('roles')->assignRole($roles);
                 $user->unsetRelation('roles');
@@ -64,6 +65,8 @@ class HireApplicant
 
             // The applicant's documents stay with the employee (ADR 0019).
             app(ApplicantDocuments::class)->accepted($application, $employee);
+
+            ApplicantAccepted::dispatch($application, $employee, $actor);
 
             return $employee;
         });
