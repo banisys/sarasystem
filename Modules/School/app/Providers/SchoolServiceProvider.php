@@ -3,6 +3,10 @@
 namespace Modules\School\Providers;
 
 use App\Filament\Support\ModelRelationManagers;
+use App\Guardians\Guardians;
+use App\Models\Tenant;
+use App\Models\User;
+use App\UserPanel\UserPanel;
 use Filament\Forms\Components\Select;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -16,13 +20,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Support\ClassroomExtensions;
+use Modules\School\Filament\Actions\ScoreBookAction;
 use Modules\School\Filament\RelationManagers\EnrollmentsRelationManager;
 use Modules\School\Models\ClassroomGrade;
 use Modules\School\Models\Enrollment;
 use Modules\School\Models\Grade;
 use Modules\School\Models\Major;
 use Modules\School\Services\Enrollments;
+use Modules\School\Services\ReportCards;
 use Modules\School\Services\SchoolException;
+use Modules\School\Services\ScoreBook;
 use Modules\Student\Models\Student;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -56,6 +63,21 @@ class SchoolServiceProvider extends ModuleServiceProvider
 
         // A learner joining a class with a grade gets it for the year (ADR 0031).
         ClassMember::created(fn (ClassMember $member) => app(Enrollments::class)->memberJoined($member));
+
+        // «دفتر نمره» for teachers of classes with a grade, «کارنامه» for
+        // learners with a published report card and their guardians (ADR 0032).
+        UserPanel::navigationUsing('school', function (User $user, Tenant $tenant): array {
+            $cards = app(ReportCards::class);
+
+            return [
+                ...(app(ScoreBook::class)->assignmentsOf($user)->isNotEmpty() ? [['title' => 'دفتر نمره', 'url' => route('school.scores.index')]] : []),
+                ...($cards->publishedFor($user->getKey(), $tenant->getKey())->isNotEmpty() ? [['title' => 'کارنامه', 'url' => route('school.report-cards.index')]] : []),
+                ...app(Guardians::class)->wardsIn($user, $tenant)
+                    ->filter(fn (User $ward): bool => $cards->publishedFor($ward->getKey(), $tenant->getKey())->isNotEmpty())
+                    ->map(fn (User $ward): array => ['title' => 'کارنامه‌ی '.$ward->name, 'url' => route('school.report-cards.index', ['for' => $ward->getKey()])])
+                    ->values()->all(),
+            ];
+        });
 
         // A «پرونده‌ی تحصیلی» tab on each learner's page.
         Student::resolveRelationUsing(EnrollmentsRelationManager::RELATIONSHIP, fn (Student $student): HasMany => $student->hasMany(Enrollment::class, 'user_id', 'user_id'));
@@ -111,6 +133,7 @@ class SchoolServiceProvider extends ModuleServiceProvider
                     ->placeholder('—')
                     ->toggleable(),
             ],
+            'actions' => fn (): array => [ScoreBookAction::make()],
             'filters' => fn (): array => [
                 SelectFilter::make('school_grade')
                     ->label('پایه')

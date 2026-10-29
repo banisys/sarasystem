@@ -3,6 +3,7 @@
 namespace Modules\School\Filament\Resources\Enrollments\Tables;
 
 use App\Support\Identifiers;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -22,7 +23,10 @@ use Modules\School\Filament\Resources\Enrollments\Schemas\EnrollmentForm;
 use Modules\School\Models\Enrollment;
 use Modules\School\Models\Grade;
 use Modules\School\Models\Major;
+use Modules\School\Models\ScorePeriod;
 use Modules\School\Services\Enrollments;
+use Modules\School\Services\ReportCards;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EnrollmentsTable
 {
@@ -55,6 +59,23 @@ class EnrollmentsTable
                 SelectFilter::make('classroom_id')->label('کلاس')->options(fn (): array => Classroom::query()->topLevel()->orderBy('title')->pluck('title', 'id')->all())->searchable(),
             ])
             ->recordActions([
+                Action::make('reportCard')
+                    ->label('کارنامه (PDF)')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->authorize('view')
+                    ->modalDescription('کارنامه از نمره‌های همین حالا ساخته می‌شود، چه منتشر شده باشد چه نه.')
+                    ->schema([
+                        Select::make('period_id')
+                            ->label('دوره‌ی نمره‌دهی')
+                            ->options(fn (Enrollment $record): array => ScorePeriod::definedPeriods()->where('term_id', $record->term_id)->pluck('title', 'id')->all())
+                            ->required(),
+                    ])
+                    ->action(function (array $data, Enrollment $record, ReportCards $cards): StreamedResponse {
+                        $card = $cards->build($record, ScorePeriod::definedPeriods()->findOrFail($data['period_id']));
+                        $pdf = $cards->pdf($card);
+
+                        return response()->streamDownload(fn () => print ($pdf), $cards->fileName($card), ['Content-Type' => 'application/pdf']);
+                    }),
                 EditAction::make()
                     ->using(fn (Model $record, array $data): Enrollment => EnrollmentForm::save($record, $data)),
                 DeleteAction::make(),

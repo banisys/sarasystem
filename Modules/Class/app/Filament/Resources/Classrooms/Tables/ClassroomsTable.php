@@ -73,6 +73,7 @@ class ClassroomsTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                ...ClassroomExtensions::components('actions'),
                 EditAction::make()
                     ->modalWidth('3xl'),
                 DeleteAction::make()

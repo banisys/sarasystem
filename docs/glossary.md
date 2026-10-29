@@ -123,3 +123,6 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Major | رشته | ریاضی و فیزیک، علوم تجربی، ادبیات و علوم انسانی (`Major`), for grades that have majors. |
 | Curriculum | برنامه‌ی درسی | A grade's subjects (for every major or one), each with a coefficient (ضریب) and weekly hours (`Curriculum`). |
 | Academic record | پرونده‌ی تحصیلی | A pupil's grade, major and main class in an academic year (a term) of a tenant (`Enrollment`); filled in when they join a class with a grade, made for next year by promotion (ارتقا). |
+| Score period | دوره‌ی نمره‌دهی | A part of an academic year that gets scores and a report card, e.g. مهر، نوبت اول (`ScorePeriod`), defined in the head office: covered days, until when teachers enter scores, published or not ([ADR 0032](decisions/0032-scores-and-report-cards.md)). |
+| Score book | دفتر نمره | Where a subject's teacher in a class enters each learner's score for a period: a number out of 20, or a descriptive level (خیلی خوب، خوب، قابل قبول، نیاز به تلاش بیشتر) in primary school. |
+| Report card | کارنامه | (SaraSystem) A learner's subjects and scores for a period with the weighted average (by coefficient), absences, lateness and homework average, worked out when shown; learners and guardians see it once the period is published, with a PDF. |

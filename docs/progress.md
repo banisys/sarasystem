@@ -7,7 +7,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
 - Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026), plus guardians, absence SMS and homework (ADR 0027–0030).
-- School (`School` module, [ADR 0031](decisions/0031-school-structure.md)): part A done (stages, grades, majors, curricula, classes' grades, academic records, promotion). Next, part B: score periods per academic year (set by the head office), the teacher's score book in «کلاس‌های من» (numeric out of 20 or descriptive, by stage), report cards per period with weighted averages (coefficients), absences and homework average, published to learners and guardians with a PDF. The year's final scores and resits come later.
+- School (`School` module, [ADR 0031](decisions/0031-school-structure.md), [ADR 0032](decisions/0032-scores-and-report-cards.md)): parts A and B done. Possible next steps: year-final scores («نوبت» formulas, resits), rankings, activity notebook; admission setting a grade.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
@@ -19,6 +19,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — School part B ([ADR 0032](decisions/0032-scores-and-report-cards.md)): scores and report cards.
+  - «مدرسه → دوره‌های نمره‌دهی» (head office): periods per academic year with covered days, teachers' closing date and «انتشار کارنامه».
+  - Score book: the subject's teacher (schedule teacher) in «دفتر نمره» of the user panel, or anyone who may edit the class with «دفتر نمره» on the class in the admin panel; a number out of 20 or a descriptive level by the stage, with a note.
+  - Report cards worked out when shown: subjects, coefficients, weighted average, absences, lateness, homework average; learners and guardians see published ones in «کارنامه» with a PDF; staff get any period's PDF from «پرونده‌های تحصیلی».
+  - Core `App\Support\PersianPdf` (mPDF setup, now also used by contracts). Demo: the first score periods of the demo year. 451 tests pass.
 - 2026-10-29 — Module `School`, part A ([ADR 0031](decisions/0031-school-structure.md)), after a review of the LMS School module:
   - «مدرسه → دوره‌های تحصیلی / پایه‌ها و برنامه‌ی درسی / رشته‌ها» (head office only): stages with a score scale, grades (some with majors), majors; each grade's curriculum (subject, major or all, coefficient, weekly hours).
   - Classes get «پایه / رشته» (form, page, list column and filter) through a new Class hook, `ClassroomExtensions`.
@@ -180,7 +185,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - Places are free text: a clash is only found when two classes write the place the same way.
   - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).
   - A learner removed from the tenant stays a class member until a leave date is set.
-- School (ADR 0031): not checked in a browser yet (covered by Livewire and HTTP tests); admission doesn't set a grade (records start from classes or by hand); demo roles other than `hq_member` / `principal` have no school permissions.
+- School (ADR 0031, ADR 0032): not checked in a browser yet (covered by Livewire and HTTP tests; the report card PDF was checked by eye); no year-final scores, resits or rankings; admission doesn't set a grade (records start from classes or by hand); demo roles other than `hq_member` / `principal` have no school permissions.
 - Guardians (ADR 0027, ADR 0028): the «اولیا» tab and the parents section of `/preregister` are not checked in a browser yet; parents' details can't be edited in the admission workflow's «ویرایش اطلاعات».
 - Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.
 - Contracts (ADR 0020):

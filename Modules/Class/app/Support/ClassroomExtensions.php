@@ -9,20 +9,22 @@ use Closure;
  * (ADR 0031), e.g. the School module's «پایه / رشته»: fields of the class
  * form (they load and save themselves with
  * loadStateFromRelationshipsUsing() / saveRelationshipsUsing()), entries of
- * the class page, and columns and filters of the classes list. Each is a
- * closure returning components, so they are built when the screen is.
+ * the class page, columns and filters of the classes list, and actions on a
+ * class (its page header and its row in the list), e.g. the School
+ * module's score book (ADR 0032). Each is a closure returning components,
+ * so they are built when the screen is.
  */
 class ClassroomExtensions
 {
     /**
-     * @var array<string, array{form?: Closure(): list<mixed>, infolist?: Closure(): list<mixed>, columns?: Closure(): list<mixed>, filters?: Closure(): list<mixed>}>
+     * @var array<string, array{form?: Closure(): list<mixed>, infolist?: Closure(): list<mixed>, columns?: Closure(): list<mixed>, filters?: Closure(): list<mixed>, actions?: Closure(): list<mixed>}>
      */
     protected static array $extensions = [];
 
     /**
      * Registering a name again replaces it (the app boots once per test).
      *
-     * @param  array{form?: Closure(): list<mixed>, infolist?: Closure(): list<mixed>, columns?: Closure(): list<mixed>, filters?: Closure(): list<mixed>}  $parts
+     * @param  array{form?: Closure(): list<mixed>, infolist?: Closure(): list<mixed>, columns?: Closure(): list<mixed>, filters?: Closure(): list<mixed>, actions?: Closure(): list<mixed>}  $parts
      */
     public static function register(string $name, array $parts): void
     {
@@ -30,7 +32,7 @@ class ClassroomExtensions
     }
 
     /**
-     * @param  'form'|'infolist'|'columns'|'filters'  $part
+     * @param  'form'|'infolist'|'columns'|'filters'|'actions'  $part
      * @return list<mixed>
      */
     public static function components(string $part): array

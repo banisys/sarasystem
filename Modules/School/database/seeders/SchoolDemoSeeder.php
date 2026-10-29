@@ -7,10 +7,12 @@ use Database\Seeders\Concerns\GrantsDemoPermissions;
 use Illuminate\Database\Seeder;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\Subject;
+use Modules\Class\Models\Term;
 use Modules\School\Enums\ScoreScale;
 use Modules\School\Models\Curriculum;
 use Modules\School\Models\Grade;
 use Modules\School\Models\Major;
+use Modules\School\Models\ScorePeriod;
 use Modules\School\Models\Stage;
 use Modules\School\Services\Enrollments;
 use RuntimeException;
@@ -19,7 +21,8 @@ use RuntimeException;
  * An Iranian school's structure for local development (ADR 0031), on top
  * of the Class demo data: the three stages with their grades, the upper
  * secondary majors, grade 7's curriculum (the demo subjects), and each
- * branch's «هفتم الف» set to grade 7, which fills in its learners' records.
+ * branch's «هفتم الف» set to grade 7, which fills in its learners' records,
+ * and the first score periods of the demo year (ADR 0032).
  * The demo roles get the school permissions. Safe to run again.
  */
 class SchoolDemoSeeder extends Seeder
@@ -44,7 +47,8 @@ class SchoolDemoSeeder extends Seeder
             'hq_member' => ['ViewAny:Stage', 'View:Stage', 'Create:Stage', 'Update:Stage', 'Delete:Stage', 'Reorder:Stage',
                 'ViewAny:Grade', 'View:Grade', 'Create:Grade', 'Update:Grade', 'Delete:Grade', 'Reorder:Grade',
                 'ViewAny:Major', 'View:Major', 'Create:Major', 'Update:Major', 'Delete:Major', 'Reorder:Major',
-                'ViewAny:Enrollment', 'View:Enrollment'],
+                'ViewAny:Enrollment', 'View:Enrollment',
+                'ViewAny:ScorePeriod', 'View:ScorePeriod', 'Create:ScorePeriod', 'Update:ScorePeriod', 'Delete:ScorePeriod', 'Reorder:ScorePeriod'],
             'principal' => ['ViewAny:Enrollment', 'View:Enrollment', 'Create:Enrollment', 'Update:Enrollment', 'Delete:Enrollment'],
         ]);
 
@@ -69,6 +73,20 @@ class SchoolDemoSeeder extends Seeder
                     Curriculum::query()->updateOrCreate(
                         ['grade_id' => $seventh->getKey(), 'major_id' => null, 'subject_id' => $subjectId],
                         ['coefficient' => 1, 'weekly_hours' => $hours, 'sort' => ++$sort],
+                    );
+                }
+            }
+
+            // The demo year's first score periods (ADR 0032): the months of the first half and «نوبت اول».
+            $term = Term::query()->where('title', 'سال تحصیلی ۱۴۰۵-۱۴۰۶')->first();
+            if ($term !== null) {
+                foreach ([
+                    ['مهر', '2026-09-23', '2026-10-22', '2026-10-29'], ['آبان', '2026-10-23', '2026-11-21', '2026-11-28'],
+                    ['آذر', '2026-11-22', '2026-12-21', '2026-12-28'], ['نوبت اول', '2026-09-23', '2027-01-20', '2027-01-27'],
+                ] as $sort => [$title, $from, $to, $closes]) {
+                    ScorePeriod::query()->updateOrCreate(
+                        ['term_id' => $term->getKey(), 'title' => $title],
+                        ['starts_on' => $from, 'ends_on' => $to, 'entry_closes_on' => $closes, 'sort' => $sort + 1],
                     );
                 }
             }

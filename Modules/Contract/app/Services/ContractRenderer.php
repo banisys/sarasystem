@@ -4,13 +4,13 @@ namespace Modules\Contract\Services;
 
 use App\CustomFields\CustomField;
 use App\Support\PersianNumberWords;
+use App\Support\PersianPdf;
 use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonInterface;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Modules\Contract\Enums\ContractKind;
 use Modules\Contract\Enums\SignedVia;
 use Modules\Contract\Models\Contract;
-use Mpdf\Mpdf;
 
 /**
  * A contract's text (ADR 0020): the type's text with its merge tags filled
@@ -137,29 +137,7 @@ class ContractRenderer
      */
     public function pdf(Contract $contract): string
     {
-        $directory = storage_path('app/mpdf');
-        if (! is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'tempDir' => $directory,
-            'fontDir' => [resource_path('fonts')],
-            'fontdata' => [
-                'shabnam' => ['R' => 'Shabnam.ttf', 'B' => 'Shabnam-Bold.ttf', 'useOTL' => 0xFF, 'useKashida' => 75],
-            ],
-            'default_font' => 'shabnam',
-            'directionality' => 'rtl',
-            'margin_top' => 15,
-            'margin_bottom' => 15,
-        ]);
-        $mpdf->SetTitle($contract->contractType->title);
-        $mpdf->SetDirectionality('rtl');
-        $mpdf->WriteHTML(self::STYLES.'<div dir="rtl">'.strtr($this->document($contract), self::PDF_REPLACEMENTS).'</div>');
-
-        return $mpdf->Output('', 'S');
+        return PersianPdf::render($contract->contractType->title, self::STYLES.strtr($this->document($contract), self::PDF_REPLACEMENTS));
     }
 
     public function fileName(Contract $contract): string
