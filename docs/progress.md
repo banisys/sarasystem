@@ -6,6 +6,12 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
+- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): step 1 done (terms, holidays, class roles, classes, members). Next steps in order:
+  - schedules (single / daily / weekly / monthly rules, optional subject and teacher per rule, clash checks) and the sessions built from them (daily command; only untouched future sessions rebuilt; cancel / move / make-up sessions, substitute teacher)
+  - attendance (present / absent / late / excused, by the roles that take it)
+  - teaching plans and what each session covered (+ homework)
+  - user panel calendar (day / week / month)
+  - then a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards)
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
@@ -17,6 +23,15 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Module `Class`, step 1 ([ADR 0022](decisions/0022-classes.md)), after a review of the LMS School module (used as inspiration only; LMS data not migrated):
+  - «کلاس‌ها → دوره‌های آموزشی» and «نقش‌های کلاس» (head office only):
+    - Terms are generic: a school year, an institute term, a training round.
+    - Class roles (فراگیر، مدرس، ناظر، پشتیبان، …) are separate from the system roles. Their flags: attendee (attendance + capacity), takes attendance, records content. They can be limited to holders of some system roles.
+  - «تعطیلات» per tenant; the head office's apply to every tenant.
+  - «کلاس‌ها» per tenant:
+    - The class details: term, one-level sub-class, code, mode (in person / online / blended), place or meeting link, capacity, dates.
+    - The class page has the tab «اعضا»: add people by class role, edit, set a leave date. The rules (eligible role in the tenant, capacity, sub-class attendees from the parent class) are in `ClassMembers`.
+  - Sample data: `php artisan module:seed Class` (the school year 1405-1406, Nowruz, 4 class roles, 3 classes per branch; `hq_member` / `principal` get the permissions). 383 tests pass.
 - 2026-10-29 — Contracts and documents on people's pages:
   - Employees («کارکنان → کارمندان») and learners have a view page (row action «مشاهده»). Its tabs: «اطلاعات», «قراردادها» (the person's contracts with all contract actions and «قرارداد جدید») and «مدارک» (documents with their actions and «بارگذاری مدرک»).
   - The tabs come from the Contract and Document modules through a new core hook, [ModelRelationManagers](../app/Filament/Support/ModelRelationManagers.php), plus dynamic relationships, so Employee and Student still don't depend on them.
@@ -116,6 +131,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- `php artisan test --parallel` (16 processes on this machine) now often fails with PostgreSQL «out of shared memory»: the processes together hold more table locks than the default `max_locks_per_transaction = 64` allows (it was on the edge; the Class tables pushed it over). `--processes=8` passes. Fix: add `command: ['postgres', '-c', 'max_locks_per_transaction=256']` to the `pgsql` service and recreate it (after the network fix below).
+- Classes (ADR 0022):
+  - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens and the «اعضا» tab.
+  - No schedules, sessions or attendance yet (next steps).
+  - A learner removed from the tenant stays a class member until a leave date is set.
 - Local Docker network: the running `sarasystem_sail` network still has the old subnet `172.22.0.0/16` (from before `SAIL_SUBNET` was pinned), so `docker compose up -d` wants to recreate it and the new `scheduler` service can't start. Fix once with `docker compose down && docker compose up -d` (volumes are kept). An attempt to start only the scheduler stopped `pgsql`; it was put back on the network by hand on 2026-10-29.
 - Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.
 - Contracts (ADR 0020):

@@ -4,5 +4,6 @@
     "Employee": true,
     "Student": true,
     "Document": true,
-    "Contract": true
+    "Contract": true,
+    "Class": true
 }

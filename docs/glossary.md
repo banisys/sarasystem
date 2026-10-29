@@ -20,7 +20,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Academic year | سال تحصیلی | `schl_years`, from about 1 Shahrivar to 31 Mordad. Most operational data is year-scoped. |
 | Grade | پایه | Node in the grade tree: stage (دبستان، متوسطه اول، متوسطه دوم) → grade (هفتم…), with a major for upper secondary (تجربی، ریاضی، انسانی). (legacy LMS; school-only, so not built into SaraSystem's learners: a school offers grades as programs, ADR 0018.) |
 | Shared / optional | مشترک | Grades or classes shared across grades/majors; a student can have optional classes besides the main class. |
-| Classroom | کلاس | A class of students in a school/grade/year (`schl_classrooms`). |
+| Classroom | کلاس | (legacy LMS) A class of students in a school/grade/year (`schl_classrooms`). In SaraSystem a class is generic; see Classes below. |
 | Classroom plan | برنامه کلاس | A course (subject) taught in a classroom by a teacher (+ supporter), possibly shared with other classrooms. |
 | Weekly schedule | برنامه هفتگی | Recurring time slots of classroom plans. |
 | Activity / activity session | فعالیت / جلسه | Teaching activity and its individual sessions (often online classes via Adobe Connect), with attendance and homework. |
@@ -89,3 +89,14 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Merge tag | برچسب | A placeholder in a contract text, e.g. «نام و نام خانوادگی», replaced by the contract's value when it is issued; blank values print as dots to fill in by hand. |
 | Electronic signature | امضای الکترونیکی | Accepting an issued contract in the user panel with an SMS code sent to one's own mobile; time, mobile and IP are kept. Not a certificate-based digital signature. |
 | Step extension | تنظیمات اضافه‌ی مرحله | Work a module adds to workflow steps, e.g. documents to upload or check, or contracts to prepare, before the step can be approved (`StepExtension`, ADR 0019, ADR 0020). |
+
+## Classes (`Class` module, [ADR 0022](decisions/0022-classes.md))
+| Term | Persian | Meaning |
+|---|---|---|
+| Class | کلاس | A group of people of one tenant who meet on a schedule: «هفتم الف», «زبان انگلیسی - مقدماتی ۲», «دوره‌ی ایمنی کارگاه» (`Classroom`). It is in person, online (a meeting link) or blended, and may have a capacity. |
+| Sub-class | زیرکلاس | A class under another class (one level), e.g. a lab group; its attendees come from the parent class. |
+| Term | دوره‌ی آموزشی | A teaching period of the organization (سال تحصیلی، ترم، دوره), defined in the head office; classes run in one. A school's academic year is a term. |
+| Class role | نقش کلاس | What a person is in a class (فراگیر، مدرس، ناظر، پشتیبان…), separate from system roles; its flags say whether its members are attendees, take attendance or record session content. |
+| Attendee | شرکت‌کننده | A class member whose class role is marked «شرکت‌کننده است»: attendance is taken for them and they fill the capacity. |
+| Class member | عضو کلاس | A user in a class with a class role, from a join date to a leave date (`ClassMember`). |
+| Holiday | تعطیلی | Days without classes; the head office's are the whole organization's, a tenant's are its own. |

@@ -1,0 +1,30 @@
+{
+    "name": "sarasystem/class",
+    "description": "",
+    "authors": [
+        {
+            "name": "SaraSystem",
+            "email": "dev@sarasystem.test"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Class\\": "app/",
+            "Modules\\Class\\Database\\Factories\\": "database/factories/",
+            "Modules\\Class\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Class\\Tests\\": "tests/"
+        }
+    }
+}
