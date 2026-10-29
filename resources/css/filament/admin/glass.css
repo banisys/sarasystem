@@ -180,3 +180,10 @@ html.dark .fi-section-header-heading,
 html.dark .fi-ta-header-heading {
     font-weight: 300;
 }
+
+/* Centered modals sit below the top bar, so their header and close button
+   are never hidden under it. Slide-overs keep their full height. */
+.fi-modal:not(.fi-modal-slide-over) > .fi-modal-window-ctn {
+    padding-top: 5rem;
+    padding-bottom: 1.5rem;
+}
