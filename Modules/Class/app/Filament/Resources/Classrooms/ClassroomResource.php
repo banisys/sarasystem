@@ -11,6 +11,8 @@ use Filament\Tables\Table;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ListClassrooms;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\MembersRelationManager;
+use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
+use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\Schemas\ClassroomForm;
 use Modules\Class\Filament\Resources\Classrooms\Schemas\ClassroomInfolist;
 use Modules\Class\Filament\Resources\Classrooms\Tables\ClassroomsTable;
@@ -19,8 +21,8 @@ use UnitEnum;
 
 /**
  * Classes of the current tenant (ADR 0022); created and edited in a modal.
- * A class's page has its members and the tabs other modules add
- * (ModelRelationManagers).
+ * A class's page has its members, schedules and sessions, and the tabs
+ * other modules add (ModelRelationManagers).
  */
 class ClassroomResource extends Resource
 {
@@ -62,6 +64,8 @@ class ClassroomResource extends Resource
     {
         return [
             MembersRelationManager::class,
+            SchedulesRelationManager::class,
+            SessionsRelationManager::class,
             ...ModelRelationManagers::for(Classroom::class),
         ];
     }

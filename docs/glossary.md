@@ -100,3 +100,9 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Attendee | شرکت‌کننده | A class member whose class role is marked «شرکت‌کننده است»: attendance is taken for them and they fill the capacity. |
 | Class member | عضو کلاس | A user in a class with a class role, from a join date to a leave date (`ClassMember`). |
 | Holiday | تعطیلی | Days without classes; the head office's are the whole organization's, a tenant's are its own. |
+| Subject | درس | What a schedule teaches (ریاضی، Speaking، ایمنی کار), defined in the head office; optional ([ADR 0023](decisions/0023-class-schedules-and-sessions.md)). |
+| Schedule | برنامه‌ی کلاس | When a class meets: once, daily, weekly or monthly (Jalali months), every N, between two dates, at a time, optionally with a subject, a teacher and a place (`ClassSchedule`). Replaces LMS's classroom plan + weekly schedule. |
+| Session | جلسه | One meeting of a class (`ClassSession`), built from a schedule or added by hand; scheduled, held or cancelled. Replaces LMS's activity session. |
+| Make-up / extra session | جلسه‌ی جبرانی / فوق‌العاده | A session added by hand: to make up a cancelled one, or in addition to the schedule. |
+| Substitute teacher | مدرس جایگزین | Who teaches one session instead of its teacher. |
+| Clash | تداخل | Two sessions at overlapping times with the same teacher (in any tenant), the same class or the same place (in the tenant); refused. |

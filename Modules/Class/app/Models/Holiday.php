@@ -10,11 +10,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Class\Database\Factories\HolidayFactory;
+use Modules\Class\Services\SessionPlanner;
 
 /**
  * Days without classes, one day or a range (ADR 0022). The primary
  * tenant's holidays are the whole organization's; another tenant's are its
- * own only.
+ * own only. Schedules skip them when building sessions (ADR 0023).
  */
 #[Fillable(['tenant_id', 'title', 'starts_on', 'ends_on'])]
 class Holiday extends Model
@@ -23,6 +24,15 @@ class Holiday extends Model
     use BelongsToTenant, HasFactory;
 
     protected $table = 'class_holidays';
+
+    /**
+     * Sessions on a new holiday go, and come back when it goes (ADR 0023).
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn (Holiday $holiday) => app(SessionPlanner::class)->holidayChanged($holiday));
+        static::deleted(fn (Holiday $holiday) => app(SessionPlanner::class)->holidayChanged($holiday));
+    }
 
     protected static function newFactory(): HolidayFactory
     {

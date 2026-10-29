@@ -92,6 +92,22 @@ class Classroom extends Model
         return $this->hasMany(ClassMember::class);
     }
 
+    /**
+     * @return HasMany<ClassSchedule, $this>
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(ClassSchedule::class);
+    }
+
+    /**
+     * @return HasMany<ClassSession, $this>
+     */
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class);
+    }
+
     protected function casts(): array
     {
         return [

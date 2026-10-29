@@ -6,8 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): step 1 done (terms, holidays, class roles, classes, members). Next steps in order:
-  - schedules (single / daily / weekly / monthly rules, optional subject and teacher per rule, clash checks) and the sessions built from them (daily command; only untouched future sessions rebuilt; cancel / move / make-up sessions, substitute teacher)
+- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–2 done (terms, holidays, class roles, classes, members; schedules and sessions, ADR 0023). Next steps in order:
   - attendance (present / absent / late / excused, by the roles that take it)
   - teaching plans and what each session covered (+ homework)
   - user panel calendar (day / week / month)
@@ -23,6 +22,14 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Classes step 2 ([ADR 0023](decisions/0023-class-schedules-and-sessions.md)): schedules and sessions.
+  - «کلاس‌ها → درس‌ها» (head office only), optional per schedule.
+  - Tab «برنامه» on a class:
+    - Repeat once, daily, weekly or monthly (Jalali months; a day of the month or the nth / last weekday), every N, between two dates, at a time, with an optional subject, teacher (a non-attendee class member) and place.
+    - Saving builds the sessions up to the end without holidays. Editing keeps past sessions and those changed by hand; adding or removing a holiday rebuilds the schedules it touches.
+    - Clashes (the teacher in any tenant, the class, the place in the tenant) are refused.
+  - Tab «جلسه‌ها» on a class and «کلاس‌ها → جلسه‌ها» (all sessions of the tenant, from today): move, substitute teacher, cancel with a reason, restore, make-up / extra sessions.
+  - Sample data: 4 subjects and weekly schedules for the demo classes. 397 tests pass.
 - 2026-10-29 — Module `Class`, step 1 ([ADR 0022](decisions/0022-classes.md)), after a review of the LMS School module (used as inspiration only; LMS data not migrated):
   - «کلاس‌ها → دوره‌های آموزشی» and «نقش‌های کلاس» (head office only):
     - Terms are generic: a school year, an institute term, a training round.
@@ -133,8 +140,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 ## Known issues / tech debt
 - `php artisan test --parallel` (16 processes on this machine) now often fails with PostgreSQL «out of shared memory»: the processes together hold more table locks than the default `max_locks_per_transaction = 64` allows (it was on the edge; the Class tables pushed it over). `--processes=8` passes. Fix: add `command: ['postgres', '-c', 'max_locks_per_transaction=256']` to the `pgsql` service and recreate it (after the network fix below).
 - Classes (ADR 0022):
-  - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens and the «اعضا» tab.
-  - No schedules, sessions or attendance yet (next steps).
+  - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens, the «اعضا»، «برنامه» and «جلسه‌ها» tabs and the sessions list.
+  - No attendance or session content yet (next steps); session status «برگزارشده» is not set by anything yet.
+  - Places are free text: a clash is only found when two classes write the place the same way.
+  - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).
   - A learner removed from the tenant stays a class member until a leave date is set.
 - Local Docker network: the running `sarasystem_sail` network still has the old subnet `172.22.0.0/16` (from before `SAIL_SUBNET` was pinned), so `docker compose up -d` wants to recreate it and the new `scheduler` service can't start. Fix once with `docker compose down && docker compose up -d` (volumes are kept). An attempt to start only the scheduler stopped `pgsql`; it was put back on the network by hand on 2026-10-29.
 - Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.

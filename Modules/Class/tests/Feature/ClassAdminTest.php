@@ -12,8 +12,10 @@ use Modules\Class\Enums\ClassMode;
 use Modules\Class\Filament\Resources\ClassRoles\ClassRoleResource;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ListClassrooms;
+use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Filament\Resources\Holidays\HolidayResource;
 use Modules\Class\Filament\Resources\Holidays\Pages\ListHolidays;
+use Modules\Class\Filament\Resources\Subjects\SubjectResource;
 use Modules\Class\Filament\Resources\Terms\TermResource;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -142,11 +144,14 @@ class ClassAdminTest extends TestCase
         $north->makeCurrent();
         $this->assertSame(3, $main->attendeeCount());
         $this->assertSame(2, $main->children()->sole()->attendeeCount());
+        $this->assertSame(2, $main->schedules()->count());
+        $this->assertTrue($main->sessions()->exists());
 
         $admin = User::factory()->create();
         $admin->makeSuperAdmin($headOffice);
         $this->actingAs($admin);
         foreach ([TermResource::getUrl('index', tenant: $headOffice), ClassRoleResource::getUrl('index', tenant: $headOffice),
+            SubjectResource::getUrl('index', tenant: $headOffice), ClassSessionResource::getUrl('index', tenant: $north),
             HolidayResource::getUrl('index', tenant: $north), ClassroomResource::getUrl('index', tenant: $north),
             ClassroomResource::getUrl('view', ['record' => $main], tenant: $north)] as $url) {
             $this->get($url)->assertOk();

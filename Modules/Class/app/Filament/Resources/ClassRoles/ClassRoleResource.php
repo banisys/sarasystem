@@ -32,7 +32,7 @@ class ClassRoleResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'کلاس‌ها';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $slug = 'class-roles';
 
