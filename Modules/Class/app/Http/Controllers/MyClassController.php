@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Http\Controllers;
 
+use App\Guardians\Guardians;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Rules\JalaliDate;
@@ -28,6 +29,7 @@ use Modules\Class\Services\SessionContentBook;
  * «کلاس‌های من» in the user panel (ADR 0026): the person's calendar of
  * sessions, a session's details, content, homework and materials, their own
  * attendance, and — for who may — taking attendance and recording content.
+ * A parent or guardian sees a ward's the same way, read only (ADR 0027).
  */
 class MyClassController extends Controller
 {
@@ -36,8 +38,7 @@ class MyClassController extends Controller
         $view = in_array($request->query('view'), MyClasses::VIEWS, true) ? $request->query('view') : 'week';
         $date = rescue(fn () => CarbonImmutable::parse((string) $request->query('date', today()->toDateString()))->startOfDay(), today()->toImmutable(), report: false);
 
-        /** @var User $user */
-        $user = $request->user();
+        $user = $this->person($request);
         $classes = ClassMember::query()->where('user_id', $user->getKey())->current()
             ->with(['classroom', 'classRole'])
             ->get()
@@ -54,18 +55,20 @@ class MyClassController extends Controller
         return Inertia::render('Class::Index', [
             'calendar' => $myClasses->calendar($user, Tenant::current(), $view, $date),
             'classes' => $classes,
+            'ward' => $user->is($request->user()) ? null : ['id' => $user->getKey(), 'name' => $user->name],
         ]);
     }
 
     public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast): Response
     {
-        /** @var User $user */
-        $user = $request->user();
+        $user = $this->person($request);
         abort_unless($myClasses->canSee($user, $session), 404);
 
+        // A guardian only looks.
+        $isOwn = $user->is($request->user());
         $role = $myClasses->roleIn($user, $session);
-        $canTakeAttendance = $register->canTake($user, $session);
-        $canRecordContent = $book->canRecord($user, $session);
+        $canTakeAttendance = $isOwn && $register->canTake($user, $session);
+        $canRecordContent = $isOwn && $book->canRecord($user, $session);
         $recorded = $session->attendances()->get()->keyBy('user_id');
         $mine = $recorded->get($user->getKey());
 
@@ -85,6 +88,7 @@ class MyClassController extends Controller
                 'planned_topics' => array_values(array_unique(array_map(fn (PlanTopic $topic): string => $topic->title, $forecast->topicsFor($session)))),
             ],
             'role' => $role,
+            'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
             'myAttendance' => $role['is_attendee'] && $mine ? [
                 'status' => $mine->status->getLabel(),
                 'late_minutes' => $mine->late_minutes,
@@ -160,6 +164,26 @@ class MyClassController extends Controller
         ], $user));
 
         return back()->with('status', 'مطالب جلسه ثبت شد.');
+    }
+
+    /**
+     * Whose classes are shown: the user's, or (`?for=`) a ward's whom the
+     * user is a parent or guardian of (ADR 0027) and who is a member of the
+     * current tenant.
+     */
+    private function person(Request $request): User
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $request->filled('for')) {
+            return $user;
+        }
+
+        $ward = app(Guardians::class)->wardsIn($user, Tenant::current())->firstWhere('id', (int) $request->query('for'));
+        abort_if($ward === null, 404);
+
+        return $ward;
     }
 
     /**

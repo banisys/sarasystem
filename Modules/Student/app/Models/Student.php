@@ -3,12 +3,14 @@
 namespace Modules\Student\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Guardianship;
 use App\Models\Scopes\TenantScope;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Student\Database\Factories\StudentFactory;
 use Modules\Student\Enums\StudentStatus;
 
@@ -45,6 +47,16 @@ class Student extends Model
     public function preregistration(): BelongsTo
     {
         return $this->belongsTo(Preregistration::class)->withoutGlobalScope(TenantScope::class);
+    }
+
+    /**
+     * The learner's parents and guardians (ADR 0027), whatever the tenant.
+     *
+     * @return HasMany<Guardianship, $this>
+     */
+    public function guardianships(): HasMany
+    {
+        return $this->hasMany(Guardianship::class, 'ward_id', 'user_id');
     }
 
     protected function casts(): array

@@ -16,7 +16,7 @@ class StudentDatabaseSeeder extends Seeder
     public function run(): void
     {
         if (app()->isLocal()) {
-            $this->call(AdmissionDemoSeeder::class);
+            $this->call([AdmissionDemoSeeder::class, GuardianDemoSeeder::class]);
         }
     }
 }

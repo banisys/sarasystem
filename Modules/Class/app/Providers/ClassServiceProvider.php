@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Providers;
 
+use App\Guardians\Guardians;
 use App\Models\Tenant;
 use App\Models\User;
 use App\UserPanel\UserPanel;
@@ -43,9 +44,16 @@ class ClassServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        // «کلاس‌های من» for members and teachers of classes (ADR 0026).
-        UserPanel::navigationUsing('classes', fn (User $user, Tenant $tenant): array => app(MyClasses::class)->hasAny($user)
-            ? [['title' => 'کلاس‌های من', 'url' => route('my-classes.index')]]
-            : []);
+        // «کلاس‌های من» for members and teachers of classes (ADR 0026), and
+        // «کلاس‌های …» of each ward in classes for their guardians (ADR 0027).
+        UserPanel::navigationUsing('classes', function (User $user, Tenant $tenant): array {
+            $myClasses = app(MyClasses::class);
+            $wards = app(Guardians::class)->wardsIn($user, $tenant)->filter(fn (User $ward): bool => $myClasses->hasAny($ward));
+
+            return [
+                ...($myClasses->hasAny($user) ? [['title' => 'کلاس‌های من', 'url' => route('my-classes.index')]] : []),
+                ...$wards->map(fn (User $ward): array => ['title' => 'کلاس‌های '.$ward->name, 'url' => route('my-classes.index', ['for' => $ward->getKey()])])->values()->all(),
+            ];
+        });
     }
 }

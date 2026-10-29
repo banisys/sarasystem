@@ -4,11 +4,16 @@ import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 // «کلاس‌های من» (ADR 0026): the person's sessions as a day, a week
-// (Saturday to Friday) or a Jalali month, and their classes.
+// (Saturday to Friday) or a Jalali month, and their classes. A guardian
+// sees a ward's the same way (`ward`, ADR 0027).
 const props = defineProps({
     calendar: { type: Object, required: true },
     classes: { type: Array, required: true },
+    ward: { type: Object, default: null },
 });
+
+const title = computed(() => (props.ward ? `کلاس‌های ${props.ward.name}` : 'کلاس‌های من'));
+const forWard = computed(() => (props.ward ? { for: props.ward.id } : {}));
 
 const views = [
     { value: 'day', label: 'روز' },
@@ -26,17 +31,17 @@ const statusClass = {
 const visibleDays = computed(() => (props.calendar.view === 'week' ? props.calendar.days : props.calendar.days.filter((day) => day.sessions.length || day.holiday || day.is_today)));
 
 function at(date, view = props.calendar.view) {
-    return route('my-classes.index', { view, date });
+    return route('my-classes.index', { view, date, ...forWard.value });
 }
 </script>
 
 <template>
-    <Head title="کلاس‌های من" />
+    <Head :title="title" />
 
     <AppLayout>
         <div class="space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <h1 class="text-xl font-bold text-gray-900">کلاس‌های من</h1>
+                <h1 class="text-xl font-bold text-gray-900">{{ title }}</h1>
 
                 <div class="flex flex-wrap items-center gap-2 text-sm">
                     <div class="flex overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -104,7 +109,7 @@ function at(date, view = props.calendar.view) {
                         <Link
                             v-for="session in day.sessions"
                             :key="session.id"
-                            :href="route('my-classes.session', session.id)"
+                            :href="route('my-classes.session', { session: session.id, ...forWard })"
                             class="block rounded-xl border p-3 text-sm transition hover:shadow-sm"
                             :class="statusClass[session.status]"
                         >
@@ -118,7 +123,7 @@ function at(date, view = props.calendar.view) {
                                 <span v-if="session.location">{{ session.location }}</span>
                                 <span v-if="session.status !== 'scheduled'">{{ session.status_label }}</span>
                                 <span v-if="session.kind_label !== 'عادی'">{{ session.kind_label }}</span>
-                                <span v-if="session.my_attendance" class="text-violet-700">حضور شما: {{ session.my_attendance }}</span>
+                                <span v-if="session.my_attendance" class="text-violet-700">حضور{{ ward ? '' : ' شما' }}: {{ session.my_attendance }}</span>
                                 <span v-if="session.has_homework" class="text-amber-700">تکلیف دارد</span>
                             </div>
                         </Link>

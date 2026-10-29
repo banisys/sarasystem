@@ -10,6 +10,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 const props = defineProps({
     session: { type: Object, required: true },
     role: { type: Object, required: true },
+    // A guardian looking at a ward's session (ADR 0027).
+    ward: { type: Object, default: null },
     myAttendance: { type: Object, default: null },
     statuses: { type: Array, required: true },
     attendance: { type: Array, default: null },
@@ -53,7 +55,9 @@ function saveContent() {
 
     <AppLayout>
         <div class="space-y-4">
-            <Link :href="route('my-classes.index')" class="text-sm text-violet-700 hover:underline">‹ کلاس‌های من</Link>
+            <Link :href="route('my-classes.index', ward ? { for: ward.id } : {})" class="text-sm text-violet-700 hover:underline">
+                ‹ {{ ward ? `کلاس‌های ${ward.name}` : 'کلاس‌های من' }}
+            </Link>
 
             <p v-if="flash" class="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{{ flash }}</p>
 
@@ -68,7 +72,7 @@ function saveContent() {
                     <span v-if="session.teacher">مدرس: {{ session.teacher }}</span>
                     <span v-if="session.location">مکان: {{ session.location }}</span>
                     <span v-if="session.kind_label !== 'عادی'">{{ session.kind_label }}</span>
-                    <span>نقش شما: {{ role.label }}</span>
+                    <span>{{ ward ? `نقش ${ward.name}` : 'نقش شما' }}: {{ role.label }}</span>
                 </div>
                 <p v-if="session.cancel_reason" class="mt-2 text-sm text-red-700">دلیل لغو: {{ session.cancel_reason }}</p>
                 <a
@@ -81,7 +85,7 @@ function saveContent() {
                     ورود به کلاس آنلاین
                 </a>
                 <p v-if="myAttendance" class="mt-3 text-sm text-gray-800">
-                    حضور شما: <strong>{{ myAttendance.status }}</strong>
+                    {{ ward ? `حضور ${ward.name}` : 'حضور شما' }}: <strong>{{ myAttendance.status }}</strong>
                     <span v-if="myAttendance.late_minutes"> ({{ myAttendance.late_minutes }} دقیقه)</span>
                     <span v-if="myAttendance.note"> · {{ myAttendance.note }}</span>
                 </p>

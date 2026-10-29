@@ -37,6 +37,26 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     use HasFactory, HasRoles, Notifiable;
 
     /**
+     * The users this user is a parent or guardian of (ADR 0027).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function wards(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'guardianships', 'guardian_id', 'ward_id')->withPivot(['relationship', 'receives_sms'])->withTimestamps();
+    }
+
+    /**
+     * This user's parents or guardians (ADR 0027).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function guardians(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'guardianships', 'ward_id', 'guardian_id')->withPivot(['relationship', 'receives_sms'])->withTimestamps();
+    }
+
+    /**
      * Tenants in which the user holds any role (staff, student, parent, ...).
      *
      * @return BelongsToMany<Tenant, $this>

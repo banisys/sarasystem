@@ -32,4 +32,17 @@ return [
 
     'learner_plural_label' => env('LEARNER_PLURAL_LABEL', 'فراگیران'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Guardian role
+    |--------------------------------------------------------------------------
+    |
+    | The role a parent or guardian gets in their ward's tenant when they are
+    | linked to the ward, so they can sign in there and see the ward's
+    | classes. See docs/decisions/0027-guardians.md.
+    |
+    */
+    'guardian_role' => env('GUARDIAN_ROLE', 'parent'),
+
+    'guardian_role_label' => env('GUARDIAN_ROLE_LABEL', 'والد'),
 ];

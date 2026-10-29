@@ -6,7 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026). Next: a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards); later homework submissions, absence SMS to learners / parents (needs a parent–learner link).
+- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026). Next: a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards); later homework submissions, absence SMS to guardians (links with «پیامک» on, ADR 0027).
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
@@ -18,6 +18,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Parents and guardians ([ADR 0027](decisions/0027-guardians.md)):
+  - Core `guardianships` between users (پدر / مادر / سرپرست قانونی / سایر, «پیامک» flag), `Guardians` service; linking gives the guardian the `parent` role (`GUARDIAN_ROLE`) in the ward's tenant, unlinking the last ward there takes it.
+  - Learner page tab «اولیا»: add a guardian by national code (an existing user is used as is, otherwise one is made from name and mobile), edit, remove.
+  - «کلاس‌های {نام فرزند}» in the user panel: the child's calendar, sessions, content, homework, materials and attendance, read only.
+  - Demo: `module:seed Student` gives the demo students learner rows and links the demo parents (same last name). 424 tests pass.
 - 2026-10-29 — Classes step 5 ([ADR 0026](decisions/0026-my-classes.md)): «کلاس‌های من» in the user panel (`/my-classes`, header link for class members and teachers).
   - Calendar of the person's sessions: day, week (Saturday to Friday) or Jalali month, with holidays, online links, status, own attendance and «تکلیف دارد»; the person's classes and roles.
   - Session page: details, what it covered (or the plan's forecast), homework and due date, materials; own attendance. Teachers (and roles that take attendance / record content) take attendance and record content there, with the same rules as the admin panel, so they no longer need admin access.
@@ -152,11 +157,14 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - `php artisan test --parallel` (16 processes on this machine) now often fails with PostgreSQL «out of shared memory»: the processes together hold more table locks than the default `max_locks_per_transaction = 64` allows (it was on the edge; the Class tables pushed it over). `--processes=8` passes. Fix: add `command: ['postgres', '-c', 'max_locks_per_transaction=256']` to the `pgsql` service and recreate it (after the network fix below).
 - Classes (ADR 0022):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens, the «اعضا»، «برنامه» and «جلسه‌ها» tabs and the sessions list.
-  - Learners / parents can't see session content, homework or materials yet (user panel step); no homework submissions or scores.
-  - Attendance: teachers take it in the admin panel for now, where they also see the other classes (read only) until the user panel step; no SMS to learners / parents about absences; no attendance report across classes or terms.
+  - «کلاس‌های من» (`/my-classes`) and the guardians' view are covered by HTTP tests but not checked in a browser yet; the build passes.
+  - No homework submissions or scores; no attendance report across classes or terms.
+  - No absence SMS yet (guardian links have the «پیامک» flag for it, ADR 0027).
+  - The demo `teacher` / `supervisor` / `supporter` roles still see all classes in the admin panel (read only); they could drop those permissions now that the user panel covers their work.
   - Places are free text: a clash is only found when two classes write the place the same way.
   - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).
   - A learner removed from the tenant stays a class member until a leave date is set.
+- Guardians (ADR 0027): the «اولیا» tab is not checked in a browser yet; preregistration doesn't create guardians (its mobile is still the child's).
 - Local Docker network: the running `sarasystem_sail` network still has the old subnet `172.22.0.0/16` (from before `SAIL_SUBNET` was pinned), so `docker compose up -d` wants to recreate it and the new `scheduler` service can't start. Fix once with `docker compose down && docker compose up -d` (volumes are kept). An attempt to start only the scheduler stopped `pgsql`; it was put back on the network by hand on 2026-10-29.
 - Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.
 - Contracts (ADR 0020):

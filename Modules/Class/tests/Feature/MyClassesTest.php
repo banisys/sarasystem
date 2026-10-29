@@ -3,6 +3,7 @@
 namespace Modules\Class\Tests\Feature;
 
 use App\Http\Middleware\ResolveCurrentTenant;
+use App\Models\Guardianship;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -165,6 +166,38 @@ class MyClassesTest extends TestCase
 
         $this->assertTrue($hasLink($this->student));
         $this->assertFalse($hasLink($this->person()));
+    }
+
+    public function test_a_guardian_sees_the_wards_classes_read_only(): void
+    {
+        $father = $this->person();
+        $student = $this->student;
+        Guardianship::query()->create(['guardian_id' => $father->id, 'ward_id' => $student->id, 'relationship' => 'father']);
+        $session = $this->sessionOn('2026-10-31');
+        Attendance::factory()->create(['session_id' => $session->id, 'user_id' => $student->id, 'status' => AttendanceStatus::Absent]);
+
+        $nav = collect($this->as($father, route('dashboard'))->viewData('page')['props']['navigation']);
+        $this->assertFalse($nav->contains('title', 'کلاس‌های من'));
+        $this->assertTrue($nav->contains('url', route('my-classes.index', ['for' => $student->id])));
+
+        $this->as($father, route('my-classes.index', ['for' => $student->id, 'date' => '2026-10-31']))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('ward.id', $student->id)
+            ->where('calendar.days.0.sessions.0.my_attendance', 'غایب'));
+
+        // Even while the session is open, a guardian gets no forms.
+        $this->travelTo(CarbonImmutable::parse('2026-10-31 08:05'));
+        $this->teacher->wards()->attach($student->id, ['relationship' => 'other']);
+        $this->as($this->teacher, route('my-classes.session', ['session' => $session, 'for' => $student->id]))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('ward.name', $student->name)
+            ->where('myAttendance.status', 'غایب')
+            ->where('attendance', null)
+            ->where('contentForm', null));
+    }
+
+    public function test_only_a_guardian_of_the_ward_may_look(): void
+    {
+        $this->as($this->person(), route('my-classes.index', ['for' => $this->student->id]))->assertNotFound();
+        $this->as($this->person(), route('my-classes.session', ['session' => $this->sessionOn('2026-10-31'), 'for' => $this->student->id]))->assertNotFound();
     }
 
     private function sessionOn(string $day): ClassSession
