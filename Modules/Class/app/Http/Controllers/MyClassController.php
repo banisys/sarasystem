@@ -18,9 +18,11 @@ use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\PlanTopic;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
+use Modules\Class\Services\HomeworkBook;
 use Modules\Class\Services\MyClasses;
 use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionContentBook;
@@ -29,7 +31,8 @@ use Modules\Class\Services\SessionContentBook;
  * «کلاس‌های من» in the user panel (ADR 0026): the person's calendar of
  * sessions, a session's details, content, homework and materials, their own
  * attendance, and — for who may — taking attendance and recording content.
- * A parent or guardian sees a ward's the same way, read only (ADR 0027).
+ * Learners hand in homework, and teachers grade it (ADR 0030). A parent or
+ * guardian sees a ward's the same way, read only (ADR 0027).
  */
 class MyClassController extends Controller
 {
@@ -59,7 +62,7 @@ class MyClassController extends Controller
         ]);
     }
 
-    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast): Response
+    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework): Response
     {
         $user = $this->person($request);
         abort_unless($myClasses->canSee($user, $session), 404);
@@ -115,9 +118,78 @@ class MyClassController extends Controller
                 'summary' => $session->summary ?? '',
                 'homework' => $session->homework ?? '',
                 'homework_due_on' => $session->homework_due_on ? MyClasses::jalali($session->homework_due_on->toImmutable(), 'Y/m/d') : '',
+                'homework_max_score' => $session->homework_max_score ?? config('class.homework.default_max_score'),
                 'materials' => array_map(fn (array $link): array => ['id' => $link['id'], 'name' => $link['name']], $session->materialLinks()),
             ] : null,
+            // Homework (ADR 0030): the person's own hand-in, the form while they
+            // may change it, and the hand-ins to grade for who may.
+            'homeworkMaxScore' => $homework->maxScore($session),
+            'mySubmission' => $role['is_attendee'] && ($submission = $homework->submissionOf($user, $session)) ? $this->submission($submission) : null,
+            'canSubmit' => $isOwn && $homework->canSubmit($user, $session),
+            'submissions' => $isOwn && $homework->canGrade($user, $session)
+                ? $register->attendees($session)->map(function (User $attendee) use ($session): array {
+                    $submission = $session->homeworkSubmissions()->with(['session', 'media'])->where('user_id', $attendee->getKey())->first();
+
+                    return ['name' => $attendee->name, 'submission' => $submission ? $this->submission($submission) : null];
+                })->values()
+                : null,
         ]);
+    }
+
+    public function submitHomework(Request $request, ClassSession $session, MyClasses $myClasses, HomeworkBook $homework): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($myClasses->canSee($user, $session), 404);
+
+        $data = $request->validate([
+            'answer' => ['nullable', 'string', 'max:10000'],
+            'files' => ['nullable', 'array', 'max:'.HomeworkBook::MAX_FILES],
+            'files.*' => ['file', 'max:20480'],
+            'remove_media_ids' => ['nullable', 'array'],
+            'remove_media_ids.*' => ['integer'],
+        ]);
+
+        $this->attempt(fn () => $homework->submit($session, $user, $data['answer'] ?? null, $request->file('files', []), $data['remove_media_ids'] ?? []));
+
+        return back()->with('status', 'تکلیف تحویل شد.');
+    }
+
+    public function grade(Request $request, ClassSession $session, MyClasses $myClasses, HomeworkBook $homework): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($myClasses->canSee($user, $session), 404);
+
+        $data = $request->validate([
+            'grades' => ['required', 'array'],
+            'grades.*.id' => ['required', 'integer'],
+            'grades.*.score' => ['nullable', 'numeric', 'min:0'],
+            'grades.*.feedback' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $this->attempt(fn () => $homework->grade($session, collect($data['grades'])->keyBy(fn (array $row): int => (int) $row['id'])->all(), $user));
+
+        return back()->with('status', 'نمره‌ها ذخیره شد.');
+    }
+
+    /**
+     * A hand-in as the session page shows it.
+     *
+     * @return array<string, mixed>
+     */
+    private function submission(HomeworkSubmission $submission): array
+    {
+        return [
+            'id' => $submission->getKey(),
+            'answer' => $submission->answer,
+            'submitted_at' => MyClasses::jalali($submission->submitted_at->toImmutable(), 'Y/m/d H:i'),
+            'is_late' => $submission->isLate(),
+            'files' => $submission->fileLinks(),
+            'score' => $submission->score !== null ? MyClasses::score($submission->score) : null,
+            'feedback' => $submission->feedback,
+            'is_graded' => $submission->isGraded(),
+        ];
     }
 
     public function attendance(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register): RedirectResponse
@@ -151,6 +223,7 @@ class MyClassController extends Controller
             'summary' => ['nullable', 'string', 'max:5000'],
             'homework' => ['nullable', 'string', 'max:5000'],
             'homework_due_on' => ['nullable', new JalaliDate],
+            'homework_max_score' => ['nullable', 'integer', 'min:1', 'max:100'],
             'remove_media_ids' => ['nullable', 'array'],
             'remove_media_ids.*' => ['integer'],
             'files' => ['nullable', 'array', 'max:10'],

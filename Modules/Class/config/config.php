@@ -20,4 +20,12 @@ return [
     'content' => [
         'locks_after_days' => (int) env('CLASS_CONTENT_LOCKS_AFTER_DAYS', 7),
     ],
+
+    // Handing in homework (ADR 0030).
+    'homework' => [
+        // What a homework is scored out of unless the teacher says otherwise.
+        'default_max_score' => (int) env('CLASS_HOMEWORK_MAX_SCORE', 20),
+        // After the due day, homework is still taken (marked late) ...
+        'accepts_late' => (bool) env('CLASS_HOMEWORK_ACCEPTS_LATE', true),
+    ],
 ];

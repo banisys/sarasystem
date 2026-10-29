@@ -6,7 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026). Next: a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards); later homework submissions.
+- Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026). Next: a `School` module (academic year on terms, grades, subjects with coefficients, scores, report cards).
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 
 ## Next
@@ -18,6 +18,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Homework hand-in and grading ([ADR 0030](decisions/0030-homework-submissions.md)):
+  - Learners hand in an answer and/or up to 5 files from the session page in «کلاس‌های من», and change it until graded; after the due day it is marked «با تأخیر» (or refused with `CLASS_HOMEWORK_ACCEPTS_LATE=false`).
+  - Teachers (and roles that record content, class editors) grade with a score out of the homework's «نمره‌ی تکلیف از» (default 20) and feedback, in the user panel or with «تکالیف دریافتی» in the admin panel; the sessions lists show «تحویل X · نمره Y».
+  - Learners and guardians see the score and feedback; the calendar shows «تکلیف تحویل شد» / «نمره‌ی تکلیف». 439 tests pass.
 - 2026-10-29 — Absence SMS on the queue (ADR 0029 updated): one queued job per absence (`SendAbsenceNotice`, after commit, 3 tries); an absence corrected before the job runs sends nothing. New `queue` service in `docker-compose.yml` (`queue:work`), started and checked end to end on the local DB (the SMS landed in `storage/logs/sms.log`). 435 tests pass.
 - 2026-10-29 — Absence SMS ([ADR 0029](decisions/0029-absence-sms.md)): when an attendee is marked «غایب» (admin panel or «کلاس‌های من»), each guardian with «پیامک» on gets one SMS, once per absence (`absence_notified_at`); `CLASS_ABSENCE_SMS` turns it off. The `log` SMS driver now writes to `storage/logs/sms.log` (channel `sms`). 433 tests pass.
 - 2026-10-29 — Parents in preregistration and the learner's login mobile ([ADR 0028](decisions/0028-guardian-details-and-login-mobile.md)):
@@ -164,7 +168,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Classes (ADR 0022):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the class screens, the «اعضا»، «برنامه» and «جلسه‌ها» tabs and the sessions list.
   - «کلاس‌های من» (`/my-classes`) and the guardians' view are covered by HTTP tests but not checked in a browser yet; the build passes.
-  - No homework submissions or scores; no attendance report across classes or terms.
+  - Homework: no notifications of new hand-ins or grades; no averages per learner or class; no attendance report across classes or terms.
   - Absence SMS: no correction SMS when «غایب» is changed after the job ran; a retry after a partial failure may send a guardian the same message twice; needs a queue worker (the `queue` service locally).
   - The demo `teacher` / `supervisor` / `supporter` roles still see all classes in the admin panel (read only); they could drop those permissions now that the user panel covers their work.
   - Places are free text: a clash is only found when two classes write the place the same way.

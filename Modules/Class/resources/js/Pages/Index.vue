@@ -124,7 +124,8 @@ function at(date, view = props.calendar.view) {
                                 <span v-if="session.status !== 'scheduled'">{{ session.status_label }}</span>
                                 <span v-if="session.kind_label !== 'عادی'">{{ session.kind_label }}</span>
                                 <span v-if="session.my_attendance" class="text-violet-700">حضور{{ ward ? '' : ' شما' }}: {{ session.my_attendance }}</span>
-                                <span v-if="session.has_homework" class="text-amber-700">تکلیف دارد</span>
+                                <span v-if="session.my_homework" class="text-emerald-700">{{ session.my_homework }}</span>
+                                <span v-else-if="session.has_homework" class="text-amber-700">تکلیف دارد</span>
                             </div>
                         </Link>
                     </div>

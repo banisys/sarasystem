@@ -19,16 +19,20 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\PlanTopic;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
+use Modules\Class\Services\HomeworkBook;
 use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionPlanner;
@@ -83,6 +87,12 @@ class SessionActions
                 ->color(fn (ClassSession $record): ?string => $record->hasContent() ? null : 'gray')
                 ->wrap()
                 ->limit(80),
+            TextColumn::make('homework_submissions_count')
+                ->label('تکلیف')
+                ->state(fn (ClassSession $record): ?string => $record->homework === null ? null
+                    : 'تحویل '.($record->homework_submissions_count ?? 0).($record->graded_count ? " · نمره {$record->graded_count}" : ''))
+                ->placeholder('—')
+                ->toggleable(),
             TextColumn::make('attendance')
                 ->label('حضور و غیاب')
                 ->state(fn (ClassSession $record): ?string => ($record->attendances_count ?? 0) === 0 ? null
@@ -92,7 +102,7 @@ class SessionActions
     }
 
     /**
-     * Adds the counts the «حضور و غیاب» column shows.
+     * Adds the counts the «تکلیف» and «حضور و غیاب» columns show.
      *
      * @param  Builder<ClassSession>  $query
      * @return Builder<ClassSession>
@@ -100,6 +110,8 @@ class SessionActions
     public static function withAttendanceCounts(Builder $query): Builder
     {
         return $query->withCount([
+            'homeworkSubmissions',
+            'homeworkSubmissions as graded_count' => fn (Builder $submissions) => $submissions->whereNotNull('graded_at'),
             'attendances',
             'attendances as present_count' => fn (Builder $attendances) => $attendances->whereIn('status', [AttendanceStatus::Present, AttendanceStatus::Late]),
             'attendances as absent_count' => fn (Builder $attendances) => $attendances->whereIn('status', [AttendanceStatus::Absent, AttendanceStatus::Excused]),
@@ -111,6 +123,7 @@ class SessionActions
         return ActionGroup::make([
             self::attendance(),
             self::content(),
+            self::grading(),
             self::move(),
             self::substitute(),
             self::cancel(),
@@ -239,6 +252,7 @@ class SessionActions
                 'summary' => $record->summary,
                 'homework' => $record->homework,
                 'homework_due_on' => $record->homework_due_on?->toDateString(),
+                'homework_max_score' => $record->homework_max_score ?? config('class.homework.default_max_score'),
             ])
             ->schema(fn (ClassSession $record, PlanForecast $forecast): array => [
                 CheckboxList::make('covered_topic_ids')
@@ -262,6 +276,12 @@ class SessionActions
                     ->label('مهلت تکلیف')
                     ->jalali()
                     ->visible(fn (Get $get): bool => filled($get('homework'))),
+                TextInput::make('homework_max_score')
+                    ->label('نمره‌ی تکلیف از')
+                    ->numeric()
+                    ->minValue(1)
+                    ->maxValue(100)
+                    ->visible(fn (Get $get): bool => filled($get('homework'))),
                 CheckboxList::make('remove_media_ids')
                     ->label('حذف فایل‌ها')
                     ->options(collect($record->materialLinks())->pluck('name', 'id')->all())
@@ -283,6 +303,71 @@ class SessionActions
 
                 self::attempt(fn () => $book->record($record, $data, $user), 'مطالب جلسه ثبت شد.');
             });
+    }
+
+    /**
+     * The homework handed in, each with its answer and files, to score and
+     * comment on (ADR 0030).
+     */
+    private static function grading(): Action
+    {
+        return Action::make('grading')
+            ->label('تکالیف دریافتی')
+            ->icon(Heroicon::OutlinedInboxArrowDown)
+            ->visible(fn (ClassSession $record): bool => ($user = auth()->user()) instanceof User && app(HomeworkBook::class)->canGrade($user, $record))
+            ->modalHeading(fn (ClassSession $record): string => 'تکالیف · '.self::when($record))
+            ->modalDescription(fn (ClassSession $record): string => 'نمره از '.app(HomeworkBook::class)->maxScore($record).'. نمره و بازخورد خالی یعنی بدون نمره.')
+            ->modalWidth('4xl')
+            ->fillForm(fn (ClassSession $record): array => ['grades' => $record->homeworkSubmissions()->with(['user', 'session', 'media'])->get()
+                ->sortBy('user.name')
+                ->map(fn (HomeworkSubmission $submission): array => [
+                    'submission_id' => $submission->getKey(),
+                    'name' => $submission->user->name,
+                    'handed_in' => self::handedIn($submission),
+                    'score' => $submission->score,
+                    'feedback' => $submission->feedback,
+                ])->values()->all()])
+            ->schema([
+                Repeater::make('grades')
+                    ->hiddenLabel()
+                    ->addable(false)
+                    ->deletable(false)
+                    ->reorderable(false)
+                    ->columns(6)
+                    ->schema([
+                        Hidden::make('submission_id'),
+                        Hidden::make('handed_in'),
+                        TextInput::make('name')->hiddenLabel()->disabled()->dehydrated(false)->columnSpan(2),
+                        TextInput::make('score')->label('نمره')->numeric()->minValue(0)->columnSpan(1),
+                        TextInput::make('feedback')->label('بازخورد')->maxLength(1000)->columnSpan(3),
+                        Text::make(fn (Get $get): HtmlString => new HtmlString((string) $get('handed_in')))->columnSpanFull(),
+                    ]),
+            ])
+            ->action(function (array $data, ClassSession $record, HomeworkBook $book): void {
+                /** @var User $user */
+                $user = auth()->user();
+                $grades = collect($data['grades'] ?? [])->keyBy(fn (array $row): int => (int) $row['submission_id'])
+                    ->map(fn (array $row): array => ['score' => $row['score'] ?? null, 'feedback' => $row['feedback'] ?? null])
+                    ->all();
+
+                self::attempt(fn () => $book->grade($record, $grades, $user), 'نمره‌ها ذخیره شد.');
+            });
+    }
+
+    /**
+     * When and what a learner handed in, as HTML: time (late or not), the
+     * answer and links to the files.
+     */
+    private static function handedIn(HomeworkSubmission $submission): string
+    {
+        $when = e(CalendarUtils::strftime('Y/m/d H:i', $submission->submitted_at->toMutable())).($submission->isLate() ? ' <strong class="text-danger-600">(با تأخیر)</strong>' : '');
+        $files = collect($submission->fileLinks())
+            ->map(fn (array $file): string => '<a href="'.e($file['url']).'" target="_blank" rel="noopener" class="text-primary-600 underline">'.e($file['name']).'</a>')
+            ->join(' · ');
+
+        return '<div class="text-sm"><div class="text-gray-500">تحویل: '.$when.'</div>'
+            .($submission->answer !== null ? '<div class="mt-1 whitespace-pre-line">'.e($submission->answer).'</div>' : '')
+            .($files !== '' ? '<div class="mt-1">'.$files.'</div>' : '').'</div>';
     }
 
     private static function move(): Action

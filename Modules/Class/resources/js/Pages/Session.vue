@@ -16,6 +16,12 @@ const props = defineProps({
     statuses: { type: Array, required: true },
     attendance: { type: Array, default: null },
     contentForm: { type: Object, default: null },
+    // Homework (ADR 0030): the person's hand-in, whether they may (still)
+    // hand it in, and — for who grades — every attendee's.
+    homeworkMaxScore: { type: Number, default: 20 },
+    mySubmission: { type: Object, default: null },
+    canSubmit: { type: Boolean, default: false },
+    submissions: { type: Array, default: null },
 });
 
 const flash = computed(() => usePage().props.flash.status);
@@ -26,6 +32,7 @@ const content = useForm({
     summary: props.contentForm?.summary ?? '',
     homework: props.contentForm?.homework ?? '',
     homework_due_on: props.contentForm?.homework_due_on ?? '',
+    homework_max_score: props.contentForm?.homework_max_score ?? 20,
     remove_media_ids: [],
     files: [],
 });
@@ -39,6 +46,26 @@ const statusColor = {
 
 function saveAttendance() {
     attendanceForm.post(route('my-classes.attendance', props.session.id), { preserveScroll: true });
+}
+
+const handIn = useForm({ answer: props.mySubmission?.answer ?? '', files: [], remove_media_ids: [] });
+const grading = useForm({
+    grades: (props.submissions ?? [])
+        .filter((row) => row.submission)
+        .map((row) => ({ id: row.submission.id, score: row.submission.score ?? '', feedback: row.submission.feedback ?? '' })),
+});
+const gradeOf = (submission) => grading.grades.find((grade) => grade.id === submission.id);
+
+function submitHomework() {
+    handIn.post(route('my-classes.homework', props.session.id), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => handIn.reset('files', 'remove_media_ids'),
+    });
+}
+
+function saveGrades() {
+    grading.post(route('my-classes.grades', props.session.id), { preserveScroll: true });
 }
 
 function saveContent() {
@@ -113,6 +140,83 @@ function saveContent() {
                 </div>
             </section>
 
+            <!-- The person's own hand-in, or a ward's (read only). -->
+            <section v-if="session.homework && (mySubmission || canSubmit)" class="space-y-3 rounded-2xl bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-gray-900">{{ ward ? `تکلیف ${ward.name}` : 'تکلیف شما' }}</h2>
+                <div v-if="mySubmission" class="space-y-1 text-sm text-gray-700">
+                    <p>
+                        تحویل: {{ mySubmission.submitted_at }}
+                        <span v-if="mySubmission.is_late" class="text-red-600">(با تأخیر)</span>
+                    </p>
+                    <p v-if="mySubmission.is_graded" class="rounded-lg bg-emerald-50 p-2 text-emerald-900">
+                        <span v-if="mySubmission.score !== null">نمره: <strong>{{ mySubmission.score }}</strong> از {{ homeworkMaxScore }}</span>
+                        <span v-if="mySubmission.feedback" class="block whitespace-pre-line">بازخورد مدرس: {{ mySubmission.feedback }}</span>
+                    </p>
+                    <p v-if="!canSubmit && mySubmission.answer" class="whitespace-pre-line">{{ mySubmission.answer }}</p>
+                    <div v-if="!canSubmit && mySubmission.files.length">
+                        <a v-for="file in mySubmission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="me-4 text-violet-700 hover:underline">{{ file.name }}</a>
+                    </div>
+                </div>
+
+                <form v-if="canSubmit" class="space-y-3" @submit.prevent="submitHomework">
+                    <label class="block text-sm">
+                        <span class="text-gray-700">پاسخ</span>
+                        <textarea v-model="handIn.answer" rows="4" class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                        <p v-if="handIn.errors.answer" class="text-xs text-red-600">{{ handIn.errors.answer }}</p>
+                    </label>
+                    <fieldset v-if="mySubmission?.files.length" class="space-y-1 text-sm">
+                        <legend class="mb-1 text-gray-700">فایل‌های فرستاده‌شده (برای حذف علامت بزنید)</legend>
+                        <label v-for="file in mySubmission.files" :key="file.id" class="flex items-center gap-2 text-gray-800">
+                            <input v-model="handIn.remove_media_ids" type="checkbox" :value="file.id" class="rounded border-gray-300" />
+                            <a :href="file.url" target="_blank" rel="noopener" class="text-violet-700 hover:underline">{{ file.name }}</a>
+                        </label>
+                    </fieldset>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">فایل (تا ۵ فایل، هر کدام تا ۲۰ مگابایت)</span>
+                        <input type="file" multiple class="mt-1 block text-sm" @input="handIn.files = Array.from($event.target.files)" />
+                        <p v-if="handIn.errors.files" class="text-xs text-red-600">{{ handIn.errors.files }}</p>
+                    </label>
+                    <progress v-if="handIn.progress" :value="handIn.progress.percentage" max="100" class="w-full" />
+                    <p v-if="handIn.errors.form" class="text-sm text-red-600">{{ handIn.errors.form }}</p>
+                    <button type="submit" :disabled="handIn.processing" class="rounded-lg bg-violet-600 px-4 py-2 text-sm text-white hover:bg-violet-700 disabled:opacity-50">
+                        {{ mySubmission ? 'به‌روزرسانی تکلیف' : 'تحویل تکلیف' }}
+                    </button>
+                </form>
+            </section>
+
+            <!-- Grading: who may (HomeworkBook::canGrade), at any time. -->
+            <form v-if="submissions" class="space-y-3 rounded-2xl bg-white p-5 shadow-sm" @submit.prevent="saveGrades">
+                <h2 class="font-semibold text-gray-900">تکالیف دریافتی <span class="text-sm font-normal text-gray-500">(نمره از {{ homeworkMaxScore }})</span></h2>
+                <div v-for="row in submissions" :key="row.name" class="space-y-2 border-b border-gray-100 pb-3 text-sm">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-medium text-gray-900">{{ row.name }}</span>
+                        <span v-if="!row.submission" class="text-gray-500">تحویل نداده</span>
+                        <span v-else class="text-gray-500">
+                            تحویل: {{ row.submission.submitted_at }}<span v-if="row.submission.is_late" class="text-red-600"> (با تأخیر)</span>
+                        </span>
+                    </div>
+                    <template v-if="row.submission">
+                        <p v-if="row.submission.answer" class="whitespace-pre-line rounded-lg bg-gray-50 p-2 text-gray-800">{{ row.submission.answer }}</p>
+                        <div v-if="row.submission.files.length">
+                            <a v-for="file in row.submission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="me-4 text-violet-700 hover:underline">{{ file.name }}</a>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input v-model="gradeOf(row.submission).score" type="number" min="0" :max="homeworkMaxScore" step="0.25" placeholder="نمره" class="w-24 rounded-lg border-gray-300 text-sm" />
+                            <input v-model="gradeOf(row.submission).feedback" type="text" maxlength="1000" placeholder="بازخورد" class="min-w-0 flex-1 rounded-lg border-gray-300 text-sm" />
+                        </div>
+                    </template>
+                </div>
+                <p v-if="grading.errors.form" class="text-sm text-red-600">{{ grading.errors.form }}</p>
+                <button
+                    v-if="grading.grades.length"
+                    type="submit"
+                    :disabled="grading.processing"
+                    class="rounded-lg bg-violet-600 px-4 py-2 text-sm text-white hover:bg-violet-700 disabled:opacity-50"
+                >
+                    ذخیره‌ی نمره‌ها
+                </button>
+            </form>
+
             <!-- Taking attendance: who may, while it is open (AttendanceRegister). -->
             <form v-if="attendance" class="space-y-3 rounded-2xl bg-white p-5 shadow-sm" @submit.prevent="saveAttendance">
                 <h2 class="font-semibold text-gray-900">حضور و غیاب</h2>
@@ -181,6 +285,10 @@ function saveContent() {
                     <JalaliDateInput id="homework_due_on" v-model="content.homework_due_on" input-class="mt-1 w-48 rounded-lg border-gray-300 text-sm" />
                     <p v-if="content.errors.homework_due_on" class="text-xs text-red-600">{{ content.errors.homework_due_on }}</p>
                 </div>
+                <label v-if="content.homework" class="block text-sm">
+                    <span class="text-gray-700">نمره‌ی تکلیف از</span>
+                    <input v-model="content.homework_max_score" type="number" min="1" max="100" class="mt-1 block w-24 rounded-lg border-gray-300 text-sm" />
+                </label>
 
                 <fieldset v-if="contentForm.materials.length" class="space-y-1 text-sm">
                     <legend class="mb-1 text-gray-700">حذف فایل‌ها</legend>

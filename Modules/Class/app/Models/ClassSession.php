@@ -30,7 +30,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 #[Fillable([
     'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'teacher_id', 'substitute_teacher_id', 'starts_at', 'ends_at', 'location',
     'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note',
-    'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'content_recorded_by_id', 'content_recorded_at',
+    'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'homework_max_score', 'content_recorded_by_id', 'content_recorded_at',
 ])]
 class ClassSession extends Model implements HasMedia
 {
@@ -172,6 +172,16 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
+     * Learners' homework for this session (ADR 0030).
+     *
+     * @return HasMany<HomeworkSubmission, $this>
+     */
+    public function homeworkSubmissions(): HasMany
+    {
+        return $this->hasMany(HomeworkSubmission::class, 'session_id');
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function contentRecordedBy(): BelongsTo
@@ -184,6 +194,7 @@ class ClassSession extends Model implements HasMedia
         return [
             'covered_topic_ids' => 'array',
             'homework_due_on' => 'date',
+            'homework_max_score' => 'integer',
             'content_recorded_at' => 'datetime',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',

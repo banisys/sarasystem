@@ -50,7 +50,7 @@ class SessionAccess
      * The session's teacher or substitute, or a current member of its
      * class whose role has the flag.
      */
-    private function isStaffOf(User $user, ClassSession $session, string $roleFlag): bool
+    public function isStaffOf(User $user, ClassSession $session, string $roleFlag): bool
     {
         if (in_array($user->getKey(), [$session->teacher_id, $session->substitute_teacher_id], true)) {
             return true;

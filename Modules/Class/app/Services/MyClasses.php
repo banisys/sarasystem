@@ -12,6 +12,7 @@ use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
+use Modules\Class\Models\HomeworkSubmission;
 
 /**
  * A person's side of classes in the user panel (ADR 0026): the sessions of
@@ -82,6 +83,7 @@ class MyClasses
             ->orderBy('starts_at')
             ->get();
         $attendance = Attendance::query()->where('user_id', $user->getKey())->whereIn('session_id', $sessions->modelKeys())->get()->keyBy('session_id');
+        $submissions = HomeworkSubmission::query()->where('user_id', $user->getKey())->whereIn('session_id', $sessions->modelKeys())->get()->keyBy('session_id');
         $holidays = Holiday::applyingIn($tenant)->whereDate('starts_on', '<=', $last)->whereDate('ends_on', '>=', $first)->get();
 
         $days = [];
@@ -94,7 +96,7 @@ class MyClasses
                 'holiday' => $holidays->first(fn (Holiday $holiday): bool => $day->betweenIncluded($holiday->starts_on, $holiday->ends_on))?->title,
                 'sessions' => $sessions
                     ->filter(fn (ClassSession $session): bool => $session->starts_at->isSameDay($day))
-                    ->map(fn (ClassSession $session): array => $this->sessionCard($session, $attendance->get($session->getKey())))
+                    ->map(fn (ClassSession $session): array => $this->sessionCard($session, $attendance->get($session->getKey()), $submissions->get($session->getKey())))
                     ->values()
                     ->all(),
             ];
@@ -115,7 +117,7 @@ class MyClasses
     /**
      * @return array<string, mixed>
      */
-    public function sessionCard(ClassSession $session, ?Attendance $attendance = null): array
+    public function sessionCard(ClassSession $session, ?Attendance $attendance = null, ?HomeworkSubmission $submission = null): array
     {
         return [
             'id' => $session->getKey(),
@@ -130,7 +132,20 @@ class MyClasses
             'kind_label' => $session->kind->getLabel(),
             'has_homework' => $session->homework !== null,
             'my_attendance' => $attendance?->status->getLabel(),
+            'my_homework' => match (true) {
+                $session->homework === null || $submission === null => null,
+                $submission->isGraded() && $submission->score !== null => 'نمره‌ی تکلیف: '.self::score($submission->score).' از '.($session->homework_max_score ?? config('class.homework.default_max_score')),
+                default => 'تکلیف تحویل شد',
+            },
         ];
+    }
+
+    /**
+     * 18.50 → «18.5», 20.00 → «20».
+     */
+    public static function score(mixed $score): string
+    {
+        return rtrim(rtrim(number_format((float) $score, 2, '.', ''), '0'), '.');
     }
 
     /**

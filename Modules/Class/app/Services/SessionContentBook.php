@@ -31,7 +31,7 @@ class SessionContentBook
     }
 
     /**
-     * @param  array{covered_topic_ids?: list<int|string>|null, summary?: string|null, homework?: string|null, homework_due_on?: string|null, files?: list<UploadedFile|string>|null, file_names?: array<string, string>|null, remove_media_ids?: list<int|string>|null}  $data  files: uploads, or paths on the local disk named in file_names
+     * @param  array{covered_topic_ids?: list<int|string>|null, summary?: string|null, homework?: string|null, homework_due_on?: string|null, homework_max_score?: int|string|null, files?: list<UploadedFile|string>|null, file_names?: array<string, string>|null, remove_media_ids?: list<int|string>|null}  $data  files: uploads, or paths on the local disk named in file_names
      *
      * @throws ClassException
      */
@@ -52,17 +52,25 @@ class SessionContentBook
         }
 
         $homework = filled($data['homework'] ?? null) ? trim($data['homework']) : null;
+        $maxScore = $homework === null ? null : (int) ($data['homework_max_score'] ?? 0);
+        if ($maxScore !== null && $maxScore < 1) {
+            $maxScore = (int) config('class.homework.default_max_score');
+        }
+        if ($maxScore !== null && $maxScore > 100) {
+            throw new ClassException('نمره‌ی تکلیف حداکثر از ۱۰۰ است.');
+        }
         $dueOn = $homework !== null && filled($data['homework_due_on'] ?? null) ? CarbonImmutable::parse($data['homework_due_on']) : null;
         if ($dueOn !== null && $dueOn->lessThan($session->starts_at->copy()->startOfDay())) {
             throw new ClassException('مهلت تکلیف پیش از جلسه است.');
         }
 
-        DB::transaction(function () use ($session, $data, $by, $topicIds, $summary, $homework, $dueOn): void {
+        DB::transaction(function () use ($session, $data, $by, $topicIds, $summary, $homework, $dueOn, $maxScore): void {
             $session->update([
                 'covered_topic_ids' => $topicIds === [] ? null : $topicIds,
                 'summary' => $summary,
                 'homework' => $homework,
                 'homework_due_on' => $dueOn,
+                'homework_max_score' => $maxScore,
                 'content_recorded_by_id' => $by->getKey(),
                 'content_recorded_at' => now(),
                 'status' => $session->status === SessionStatus::Scheduled ? SessionStatus::Held : $session->status,

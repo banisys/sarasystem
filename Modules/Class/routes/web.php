@@ -15,4 +15,6 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('my-classes')->nam
     Route::get('/sessions/{session}', [MyClassController::class, 'show'])->name('session');
     Route::post('/sessions/{session}/attendance', [MyClassController::class, 'attendance'])->name('attendance');
     Route::post('/sessions/{session}/content', [MyClassController::class, 'content'])->name('content');
+    Route::post('/sessions/{session}/homework', [MyClassController::class, 'submitHomework'])->name('homework');
+    Route::post('/sessions/{session}/grades', [MyClassController::class, 'grade'])->name('grades');
 });
