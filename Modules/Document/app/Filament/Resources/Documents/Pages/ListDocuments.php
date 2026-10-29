@@ -41,7 +41,7 @@ class ListDocuments extends ListRecords
         return Action::make('upload')
             ->label('بارگذاری مدرک')
             ->icon(Heroicon::OutlinedArrowUpTray)
-            ->visible(fn (): bool => $this->uploadableTypes(null) !== [])
+            ->visible(fn (): bool => DocumentActions::uploadableTypes(null) !== [])
             ->schema([
                 Select::make('holder')
                     ->label('برای')
@@ -58,7 +58,7 @@ class ListDocuments extends ListRecords
                     ->required(),
                 Select::make('document_type_id')
                     ->label('نوع مدرک')
-                    ->options(fn (Get $get): array => $this->uploadableTypes($get('holder')))
+                    ->options(fn (Get $get): array => DocumentActions::uploadableTypes($get('holder')))
                     ->visible(fn (Get $get): bool => filled($get('holder')))
                     ->required()
                     ->live(),
@@ -77,23 +77,6 @@ class ListDocuments extends ListRecords
 
                 Notification::make()->title('مدرک بارگذاری شد')->success()->send();
             });
-    }
-
-    /**
-     * Active types of the holder (or of any holder) the user may upload here.
-     *
-     * @return array<int, string>
-     */
-    private function uploadableTypes(?string $holder): array
-    {
-        return DocumentType::definedTypes()
-            ->active()
-            ->when(filled($holder), fn ($query) => $query->forHolder($holder))
-            ->ordered()
-            ->get()
-            ->filter(fn (DocumentType $type): bool => DocumentActions::canUpload($type))
-            ->pluck('title', 'id')
-            ->all();
     }
 
     /**

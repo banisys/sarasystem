@@ -5,6 +5,7 @@ namespace Modules\Student\Filament\Resources\Students\Tables;
 use App\Filament\Support\TextFilter;
 use App\Support\Identifiers;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -64,6 +65,7 @@ class StudentsTable
                     ->options(StudentStatus::class),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ]);
     }

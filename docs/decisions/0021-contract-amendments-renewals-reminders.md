@@ -60,6 +60,6 @@ LMS had «قرارداد تکمیلی» (a supplementary contract with `parent_i
 ## Consequences
 - Amendments don't change their main contract's dates or amount. A longer period is a renewal.
 - Cancelling a contract doesn't cancel its amendments or renewal.
-- The scheduler must run: `php artisan schedule:work` locally, a cron entry for `schedule:run` in production. Without it, no reminders are sent.
+- The scheduler must run: the `scheduler` service of `docker-compose.yml` locally, a cron entry for `schedule:run` in production. Without it, no reminders are sent.
 - Super admins get expiry reminders only for contracts they issued; tenants whose roles have no `Update:Contract` get none.
 - Paper-only contracts waiting for a signature are not reminded about. Staff find them with the status filter.

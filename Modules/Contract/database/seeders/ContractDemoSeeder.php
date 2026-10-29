@@ -5,6 +5,7 @@ namespace Modules\Contract\Database\Seeders;
 use App\Models\FormCustomization;
 use App\Models\Tenant;
 use App\Models\Workflow;
+use Database\Seeders\Concerns\GrantsDemoPermissions;
 use Illuminate\Database\Seeder;
 use Modules\Contract\Enums\SignatureMethod;
 use Modules\Contract\Forms\ContractForm;
@@ -18,13 +19,24 @@ use RuntimeException;
  * contract with a monthly wage and working hours, signed either way, a
  * raise amendment of it (ADR 0021), and a tuition contract signed
  * electronically. The step before the last of each
- * demo workflow prepares the contract. Safe to run again.
+ * demo workflow prepares the contract. The demo roles get the contract
+ * permissions. Safe to run again.
  */
 class ContractDemoSeeder extends Seeder
 {
+    use GrantsDemoPermissions;
+
     public function run(): void
     {
         $headOffice = Tenant::primary() ?? throw new RuntimeException('No primary tenant: run the core seeder first.');
+
+        // Head office staff define types and handle contracts everywhere they
+        // work; branch managers prepare, issue and renew their branch's.
+        $this->grantDemoPermissions([
+            'hq_member' => ['ViewAny:Contract', 'View:Contract', 'Create:Contract', 'Update:Contract', 'Delete:Contract',
+                'ViewAny:ContractType', 'View:ContractType', 'Create:ContractType', 'Update:ContractType', 'Delete:ContractType', 'Reorder:ContractType'],
+            'principal' => ['ViewAny:Contract', 'View:Contract', 'Create:Contract', 'Update:Contract', 'Delete:Contract'],
+        ]);
 
         $headOffice->execute(function () use ($headOffice): void {
             $employment = $this->type('قرارداد کارمند تمام‌وقت', ['employee'], SignatureMethod::Either, 'ک-', self::EMPLOYMENT_TEXT);

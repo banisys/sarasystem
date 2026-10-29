@@ -17,6 +17,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-29 — Contracts and documents on people's pages:
+  - Employees («کارکنان → کارمندان») and learners have a view page (row action «مشاهده»). Its tabs: «اطلاعات», «قراردادها» (the person's contracts with all contract actions and «قرارداد جدید») and «مدارک» (documents with their actions and «بارگذاری مدرک»).
+  - The tabs come from the Contract and Document modules through a new core hook, [ModelRelationManagers](../app/Filament/Support/ModelRelationManagers.php), plus dynamic relationships, so Employee and Student still don't depend on them.
+  - `docker-compose.yml`: new `scheduler` service (`schedule:work`) for the contract reminders.
+  - Demo roles get permissions from the module demo seeders ([GrantsDemoPermissions](../database/seeders/Concerns/GrantsDemoPermissions.php)): `hq_member` and `principal` get Contract / Document (and `hq_member` the type screens), and view Employee / Student. 370 tests pass.
 - 2026-10-29 — Contracts phase 2 ([ADR 0021](decisions/0021-contract-amendments-renewals-reminders.md)):
   - **Amendments** («الحاقیه»): contract types can be marked «الحاقیه است»; row action «الحاقیه» on a signed contract; numbered after the main contract (`K-12/1`); the texts can use the main / previous contract's merge tags.
   - **Renewals** («تمدید»): row action on a signed contract, a new draft that starts the day after it ends, lasts as long and keeps the amount and answers; one renewal per contract unless cancelled.
@@ -111,24 +116,24 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Local Docker network: the running `sarasystem_sail` network still has the old subnet `172.22.0.0/16` (from before `SAIL_SUBNET` was pinned), so `docker compose up -d` wants to recreate it and the new `scheduler` service can't start. Fix once with `docker compose down && docker compose up -d` (volumes are kept). An attempt to start only the scheduler stopped `pgsql`; it was put back on the network by hand on 2026-10-29.
+- Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.
 - Contracts (ADR 0020):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the type editor with merge tags, the contracts screens, the cartable actions and `/contracts`. The PDF was checked by eye.
   - Shabnam has no «—» / «–»; the PDF prints them as «-» (mPDF can't take them from another font while shaping Persian).
-  - No contract approval workflows, Word import of templates, or the organization's own signature; no contracts tab on the employee / learner pages.
-  - Reminders need the scheduler, which no container runs yet (`schedule:work` by hand locally; cron in production). Paper-only contracts waiting for a signature are not reminded about. Amendments, renewals and reminders are not checked in a browser yet (covered by tests).
-  - Demo roles have no `*:Contract` / `*:ContractType` permissions; only super admins see the «قراردادها» screens until roles get them.
+  - No contract approval workflows, Word import of templates, or the organization's own signature.
+  - Reminders need the scheduler: the `scheduler` service locally (after the network fix below), cron in production. Paper-only contracts waiting for a signature are not reminded about. Amendments, renewals and reminders are not checked in a browser yet (covered by tests).
   - Documents still move with `ApplicantDocuments::accepted()`; they could listen to `ApplicantAccepted` like contracts.
   - `composer audit` reports an advisory in `symfony/mime` (CVE-2026-45070, from before this change); update it with `composer update symfony/mime` once approved.
 - Documents (ADR 0019):
   - Not checked in a browser yet (covered by Livewire and HTTP tests): the screens, the cartable actions, the step designer fields and the upload sections of `/careers` and `/preregister`.
-  - No documents tab on the employee / learner pages; no reminders before expiry; re-uploads don't keep old versions.
-  - Demo roles have no `*:Document` / `*:DocumentType` permissions; only super admins see the «مدارک» screens until roles get them (uploading/checking itself follows the type's roles).
+  - No reminders before expiry; re-uploads don't keep old versions.
 - Learner admission (ADR 0018):
   - Not checked in a browser yet: `/preregister`, the programs screens and the workflow (covered by tests). `/careers` now uses the shared `VerifiedMobileInput.vue`; also not re-checked in a browser.
   - No classes yet: admission creates a tenant-level learner row only; adding learners to classes comes with the class/education features.
   - School data (grade, average, …) are added fields: not filterable, not structured for a later School module.
   - Programs are the primary tenant's only.
-  - Demo roles have no `*:Preregistration` / `*:Program` / `*:Student` permissions; only super admins see these screens until roles get them.
+  - Demo roles have no `*:Preregistration` / `*:Program` permissions (they view `Student` since 2026-10-29); only super admins see these screens until roles get them.
   - Documents (birth certificate, photos) can't be uploaded (no file fields yet).
 - Customizable forms (ADR 0017):
   - No file fields and no conditional fields.
@@ -141,7 +146,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - No conditions, parallel approvals or deadlines.
   - A case that moved on while someone had it open gives "not found" on their next click.
   - Not checked in a browser yet (covered by Livewire tests).
-  - Demo roles have no `*:Workflow` / `*:Employee` / `*:JobApplication` permissions; the sample workflow comes from `php artisan module:seed Employee` (module seeders don't run with `db:seed`).
+  - Demo roles have no `*:Workflow` / `*:JobApplication` permissions (they view `Employee` since 2026-10-29); the sample workflow comes from `php artisan module:seed Employee` (module seeders don't run with `db:seed`).
   - The «نمایش فرایند» page is covered by a test but not checked in a browser yet.
 - Hiring: education and work history can't be edited in a workflow (personal and contact fields only). A head-office approver hiring into a branch where they hold no roles can only give permission-less roles there (ADR 0003).
 - Job applications: demo roles have no `*:JobApplication` / `*:JobPosition` permissions and there are no demo job positions, so `/careers` shows «موقعیت شغلی خالی نداریم» until positions are added. Not checked in a browser beyond the page loading.

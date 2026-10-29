@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Workflow\AssigneeType;
 use App\Workflow\StepAction;
+use Database\Seeders\Concerns\GrantsDemoPermissions;
 use Illuminate\Database\Seeder;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
@@ -21,6 +22,8 @@ use RuntimeException;
  */
 class HiringDemoSeeder extends Seeder
 {
+    use GrantsDemoPermissions;
+
     public const WORKFLOW_NAME = 'استخدام کادر آموزشی (نمونه)';
 
     /** @var list<string> */
@@ -30,6 +33,13 @@ class HiringDemoSeeder extends Seeder
     {
         $headOffice = Tenant::primary() ?? throw new RuntimeException('No primary tenant: run the core seeder first.');
         $north = Tenant::query()->where('slug', 'north')->first() ?? throw new RuntimeException('Demo tenants missing: run the core seeder (DemoSeeder) first.');
+
+        // Head office staff and branch managers see the employees' pages
+        // (with their contracts and documents tabs).
+        $this->grantDemoPermissions([
+            'hq_member' => ['ViewAny:Employee', 'View:Employee'],
+            'principal' => ['ViewAny:Employee', 'View:Employee', 'Update:Employee'],
+        ]);
 
         $steps = [
             $this->roleStep('بررسی اولیه‌ی مدارک', $headOffice, 'hq_member', [StepAction::Reject, StepAction::Edit]),

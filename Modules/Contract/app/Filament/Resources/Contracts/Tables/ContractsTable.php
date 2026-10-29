@@ -4,6 +4,7 @@ namespace Modules\Contract\Filament\Resources\Contracts\Tables;
 
 use App\Contract\ContractParties;
 use App\Filament\Support\TextFilter;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
@@ -24,51 +25,7 @@ class ContractsTable
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['contractType', 'contractable', 'media', 'parent', 'renewals']))
             ->defaultSort('id', 'desc')
-            ->columns([
-                TextColumn::make('number')
-                    ->label('شماره')
-                    ->placeholder('—')
-                    ->sortable(),
-                TextColumn::make('kind')
-                    ->label('نوع')
-                    ->badge()
-                    ->description(fn (Contract $record): ?string => $record->parent?->number === null ? null : "از {$record->parent->number}"),
-                TextColumn::make('person')
-                    ->label('شخص')
-                    ->state(fn (Contract $record): string => $record->personName()),
-                TextColumn::make('contractType.title')
-                    ->label('نوع قرارداد'),
-                TextColumn::make('status')
-                    ->label('وضعیت')
-                    ->badge()
-                    ->description(fn (Contract $record): ?string => $record->status === ContractStatus::Cancelled ? $record->cancellation_reason : $record->signed_via?->getLabel()),
-                TextColumn::make('starts_on')
-                    ->label('شروع')
-                    ->jalaliDate()
-                    ->placeholder('—')
-                    ->sortable(),
-                TextColumn::make('ends_on')
-                    ->label('پایان')
-                    ->jalaliDate()
-                    ->placeholder('—')
-                    ->color(fn (Contract $record): ?string => match (true) {
-                        $record->ends_on === null => null,
-                        $record->ends_on->isPast() && ! $record->ends_on->isToday() => 'gray',
-                        $record->canBeRenewed() && $record->ends_on->lessThanOrEqualTo(today()->addDays(self::expiringWithinDays())) => 'warning',
-                        default => null,
-                    })
-                    ->sortable(),
-                TextColumn::make('amount')
-                    ->label('مبلغ (ریال)')
-                    ->numeric()
-                    ->placeholder('—')
-                    ->toggleable(),
-                TextColumn::make('signed_at')
-                    ->label('تاریخ امضا')
-                    ->jalaliDateTime()
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ->columns(self::columns(withPerson: true))
             ->filters([
                 TextFilter::make('number')->label('شماره'),
                 SelectFilter::make('contract_type_id')
@@ -96,19 +53,82 @@ class ContractsTable
                         default => $query,
                     }),
             ])
-            ->recordActions([
-                ContractActions::preview(),
-                ContractActions::pdf(),
-                ContractActions::edit(),
-                ContractActions::issue(),
-                ContractActions::recordPaperSignature(),
-                ContractActions::amend(),
-                ContractActions::renew(),
-                ContractActions::scan(),
-                ContractActions::cancel(),
-                DeleteAction::make()
-                    ->visible(fn (Contract $record): bool => $record->isDraft()),
-            ]);
+            ->recordActions(self::recordActions());
+    }
+
+    /**
+     * The columns, also used in the «قراردادها» tab of a person's page
+     * (without the person).
+     *
+     * @return list<TextColumn>
+     */
+    public static function columns(bool $withPerson): array
+    {
+        return array_values(array_filter([
+            TextColumn::make('number')
+                ->label('شماره')
+                ->placeholder('—')
+                ->sortable(),
+            TextColumn::make('kind')
+                ->label('نوع')
+                ->badge()
+                ->description(fn (Contract $record): ?string => $record->parent?->number === null ? null : "از {$record->parent->number}"),
+            $withPerson ? TextColumn::make('person')
+                ->label('شخص')
+                ->state(fn (Contract $record): string => $record->personName()) : null,
+            TextColumn::make('contractType.title')
+                ->label('نوع قرارداد'),
+            TextColumn::make('status')
+                ->label('وضعیت')
+                ->badge()
+                ->description(fn (Contract $record): ?string => $record->status === ContractStatus::Cancelled ? $record->cancellation_reason : $record->signed_via?->getLabel()),
+            TextColumn::make('starts_on')
+                ->label('شروع')
+                ->jalaliDate()
+                ->placeholder('—')
+                ->sortable(),
+            TextColumn::make('ends_on')
+                ->label('پایان')
+                ->jalaliDate()
+                ->placeholder('—')
+                ->color(fn (Contract $record): ?string => match (true) {
+                    $record->ends_on === null => null,
+                    $record->ends_on->isPast() && ! $record->ends_on->isToday() => 'gray',
+                    $record->canBeRenewed() && $record->ends_on->lessThanOrEqualTo(today()->addDays(self::expiringWithinDays())) => 'warning',
+                    default => null,
+                })
+                ->sortable(),
+            TextColumn::make('amount')
+                ->label('مبلغ (ریال)')
+                ->numeric()
+                ->placeholder('—')
+                ->toggleable(),
+            TextColumn::make('signed_at')
+                ->label('تاریخ امضا')
+                ->jalaliDateTime()
+                ->placeholder('—')
+                ->toggleable(isToggledHiddenByDefault: true),
+        ]));
+    }
+
+    /**
+     * @return list<Action|DeleteAction>
+     */
+    public static function recordActions(): array
+    {
+        return [
+            ContractActions::preview(),
+            ContractActions::pdf(),
+            ContractActions::edit(),
+            ContractActions::issue(),
+            ContractActions::recordPaperSignature(),
+            ContractActions::amend(),
+            ContractActions::renew(),
+            ContractActions::scan(),
+            ContractActions::cancel(),
+            DeleteAction::make()
+                ->visible(fn (Contract $record): bool => $record->isDraft()),
+        ];
     }
 
     private static function expiringWithinDays(): int

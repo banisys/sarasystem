@@ -5,6 +5,7 @@ namespace Modules\Document\Database\Seeders;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\Workflow;
+use Database\Seeders\Concerns\GrantsDemoPermissions;
 use Illuminate\Database\Seeder;
 use Modules\Document\Enums\FileKind;
 use Modules\Document\Enums\RequiredFor;
@@ -19,15 +20,26 @@ use RuntimeException;
  * core DemoSeeder and the Employee / Student demo workflows: national card
  * and birth certificate for everyone, a degree for teachers, a health
  * certificate with an expiry date. The first step of each demo workflow
- * checks the applicant's documents. Safe to run again.
+ * checks the applicant's documents. The demo roles get the documents
+ * permissions. Safe to run again.
  */
 class DocumentDemoSeeder extends Seeder
 {
+    use GrantsDemoPermissions;
+
     public function run(): void
     {
         $headOffice = Tenant::primary() ?? throw new RuntimeException('No primary tenant: run the core seeder first.');
         $hq = $this->roleIds(['hq_member']);
         $checkers = $this->roleIds(['hq_member', 'principal']);
+
+        // The documents screens; uploading and checking also follow each
+        // type's roles (ADR 0019).
+        $this->grantDemoPermissions([
+            'hq_member' => ['ViewAny:Document', 'View:Document', 'Create:Document', 'Update:Document', 'Delete:Document',
+                'ViewAny:DocumentType', 'View:DocumentType', 'Create:DocumentType', 'Update:DocumentType', 'Delete:DocumentType', 'Reorder:DocumentType'],
+            'principal' => ['ViewAny:Document', 'View:Document', 'Create:Document', 'Update:Document'],
+        ]);
 
         $headOffice->execute(function () use ($hq, $checkers): void {
             $idCard = $this->type('کارت ملی', ['employee', 'learner'], RequiredFor::Everyone, applicant: true, uploaders: $hq, verifiers: $checkers, maxFiles: 2, description: 'تصویر پشت و روی کارت.');

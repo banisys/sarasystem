@@ -25,6 +25,23 @@ services:
             pgsql:
                 condition: service_healthy
 
+    # Runs the scheduled tasks (contract reminders, …; docs/decisions/0021-*.md).
+    # Same image and code as laravel.test; the entrypoint runs the command as user sail.
+    scheduler:
+        image: 'sail-8.5/app'
+        command: ['php', '/var/www/html/artisan', 'schedule:work']
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        restart: unless-stopped
+        depends_on:
+            pgsql:
+                condition: service_healthy
+
     pgsql:
         image: 'postgres:18-alpine'
         ports:

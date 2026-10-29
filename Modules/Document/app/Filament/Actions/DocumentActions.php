@@ -148,6 +148,23 @@ class DocumentActions
     }
 
     /**
+     * Active types of the holder (or of any holder) the user may upload here.
+     *
+     * @return array<int, string>
+     */
+    public static function uploadableTypes(?string $holder): array
+    {
+        return DocumentType::definedTypes()
+            ->active()
+            ->when(filled($holder), fn ($query) => $query->forHolder($holder))
+            ->ordered()
+            ->get()
+            ->filter(fn (DocumentType $type): bool => self::canUpload($type))
+            ->pluck('title', 'id')
+            ->all();
+    }
+
+    /**
      * The expiry date picked (Filament's Jalali picker keeps Gregorian `Y-m-d`).
      *
      * @param  array<string, mixed>  $data

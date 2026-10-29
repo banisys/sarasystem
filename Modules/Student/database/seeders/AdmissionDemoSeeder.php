@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Workflow\AssigneeType;
 use App\Workflow\StepAction;
+use Database\Seeders\Concerns\GrantsDemoPermissions;
 use Illuminate\Database\Seeder;
 use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Models\Preregistration;
@@ -25,6 +26,8 @@ use RuntimeException;
  */
 class AdmissionDemoSeeder extends Seeder
 {
+    use GrantsDemoPermissions;
+
     public const WORKFLOW_NAME = 'پذیرش دانش‌آموز (نمونه)';
 
     /** @var list<string> */
@@ -37,6 +40,13 @@ class AdmissionDemoSeeder extends Seeder
     {
         $headOffice = Tenant::primary() ?? throw new RuntimeException('No primary tenant: run the core seeder first.');
         $north = Tenant::query()->where('slug', 'north')->first() ?? throw new RuntimeException('Demo tenants missing: run the core seeder (DemoSeeder) first.');
+
+        // Head office staff and branch managers see the learners' pages
+        // (with their contracts and documents tabs).
+        $this->grantDemoPermissions([
+            'hq_member' => ['ViewAny:Student', 'View:Student'],
+            'principal' => ['ViewAny:Student', 'View:Student', 'Update:Student'],
+        ]);
 
         $steps = [
             $this->roleStep('بررسی مدارک', $headOffice, 'hq_member', [StepAction::Reject, StepAction::Edit]),
