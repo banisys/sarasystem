@@ -6,6 +6,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Support\ClassroomExtensions;
 
 class ClassroomInfolist
 {
@@ -30,6 +31,8 @@ class ClassroomInfolist
                         TextEntry::make('starts_on')->label('شروع')->jalaliDate()->placeholder('—'),
                         TextEntry::make('ends_on')->label('پایان')->jalaliDate()->placeholder('—'),
                         TextEntry::make('is_active')->label('وضعیت')->formatStateUsing(fn (bool $state): string => $state ? 'فعال' : 'غیرفعال')->badge()->color(fn (bool $state): string => $state ? 'success' : 'gray'),
+                        // Entries other modules add (ADR 0031).
+                        ...ClassroomExtensions::components('infolist'),
                         TextEntry::make('description')->label('توضیحات')->placeholder('—')->columnSpanFull(),
                     ]),
             ])

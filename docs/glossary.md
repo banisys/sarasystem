@@ -114,3 +114,12 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Session content | مطالب جلسه | What a session covered: topics finished, a summary, homework (تکلیف) with a due date, and materials (files). |
 | Homework hand-in | تحویل تکلیف | A learner's answer and/or files for a session's homework (`HomeworkSubmission`), changeable until graded, marked «با تأخیر» after the due day; the teacher gives a score (out of the homework's «نمره از») and feedback ([ADR 0030](decisions/0030-homework-submissions.md)). |
 | My classes | کلاس‌های من | The user-panel page of a person's sessions (day / week / Jalali month) in the classes they are in or teach; teachers take attendance and record content there ([ADR 0026](decisions/0026-my-classes.md)). |
+
+## School (`School` module, [ADR 0031](decisions/0031-school-structure.md))
+| Term | Persian | Meaning |
+|---|---|---|
+| Stage | دوره‌ی تحصیلی | A part of school with its grades and score scale: دبستان، متوسطه اول، متوسطه دوم (`Stage`), defined in the head office. |
+| Grade (SaraSystem) | پایه | A year of school in a stage, e.g. هفتم (`Grade`); grades of upper secondary have majors. The stages' order, then the grades', is the order pupils move up in. |
+| Major | رشته | ریاضی و فیزیک، علوم تجربی، ادبیات و علوم انسانی (`Major`), for grades that have majors. |
+| Curriculum | برنامه‌ی درسی | A grade's subjects (for every major or one), each with a coefficient (ضریب) and weekly hours (`Curriculum`). |
+| Academic record | پرونده‌ی تحصیلی | A pupil's grade, major and main class in an academic year (a term) of a tenant (`Enrollment`); filled in when they join a class with a grade, made for next year by promotion (ارتقا). |

@@ -16,6 +16,7 @@ use Modules\Class\Enums\ClassMode;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\Term;
+use Modules\Class\Support\ClassroomExtensions;
 
 class ClassroomsTable
 {
@@ -38,6 +39,8 @@ class ClassroomsTable
                 TextColumn::make('term.title')
                     ->label('دوره')
                     ->placeholder('—'),
+                // Columns other modules add, e.g. the grade (ADR 0031).
+                ...ClassroomExtensions::components('columns'),
                 TextColumn::make('mode')
                     ->label('برگزاری')
                     ->badge(),
@@ -66,6 +69,7 @@ class ClassroomsTable
                     ->label('برگزاری')
                     ->options(ClassMode::class),
                 TernaryFilter::make('is_active')->label('فعال'),
+                ...ClassroomExtensions::components('filters'),
             ])
             ->recordActions([
                 ViewAction::make(),

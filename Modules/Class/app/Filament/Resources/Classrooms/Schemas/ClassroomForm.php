@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\Term;
+use Modules\Class\Support\ClassroomExtensions;
 
 /**
  * A class's details (ADR 0022). Picking a term fills the dates; a
@@ -91,6 +92,8 @@ class ClassroomForm
                 Toggle::make('is_active')
                     ->label('فعال')
                     ->default(true),
+                // Fields other modules add, e.g. the School module's grade (ADR 0031).
+                ...ClassroomExtensions::components('form'),
             ])
             ->columns(2);
     }
