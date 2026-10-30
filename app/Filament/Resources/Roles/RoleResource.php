@@ -8,6 +8,7 @@ use App\Filament\Resources\Roles\Pages\CreateRole;
 use App\Filament\Resources\Roles\Pages\EditRole;
 use App\Filament\Resources\Roles\Pages\ListRoles;
 use App\Filament\Resources\Roles\Pages\ViewRole;
+use App\Filament\Support\IndependentOfTenant;
 use App\Filament\Support\TextFilter;
 use App\Models\Role;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -32,7 +33,7 @@ use Filament\Tables\Table;
 use Illuminate\Validation\Rules\Unique;
 use Override;
 
-class RoleResource extends Resource
+class RoleResource extends Resource implements IndependentOfTenant
 {
     use Essentials\BelongsToParent;
     use Essentials\BelongsToTenant;

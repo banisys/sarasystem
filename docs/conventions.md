@@ -34,7 +34,7 @@ _(TODO: things that look tempting but we decided against — link ADR if any.)_
 1. `docker compose exec -u sail laravel.test php artisan module:make {Name} --inertia`, then `… composer dump-autoload`.
 2. Delete the generated example controller/pages/routes you don't need; keep page names as `{Name}::Page`.
 3. Models whose rows belong to a tenant: `use BelongsToTenant` and give the table a `tenant_id` FK (see Tenancy rules).
-4. Admin screens go in `app/Filament/Resources` of the module. Then `php artisan shield:generate --all --panel=admin --ignore-existing-policies`.
+4. Admin screens go in `app/Filament/Resources` of the module. Determine whether their data depends on the current tenant and apply the tenant-independent page rule below where appropriate. Then `php artisan shield:generate --all --panel=admin --ignore-existing-policies`.
 5. Tests go in `Modules/{Name}/tests` (extend `Tests\TestCase`, use `Tests\Concerns\InteractsWithTenants`) and must include a cross-tenant isolation test.
 6. Document the module in `docs/architecture.md` (module list) and, if it was ported, in `docs/legacy-lms.md` → Porting status.
 
@@ -45,6 +45,7 @@ Business features never go in `app/`; the core in `app/` is only for platform co
 - Never bypass the scope silently. `withoutTenantScope()` is only for code that has checked the user may see every tenant.
 - Background work for one tenant runs inside `$tenant->execute(fn () => …)`.
 - Never hard-code school-only concepts. Make them optional or configurable.
+- **Tenant-independent admin pages ([ADR 0033](decisions/0033-tenant-independent-panel-pages.md)):** whenever adding or changing an admin resource or standalone page, determine whether its data depends on the current tenant. If it is installation-wide, it **must** implement [IndependentOfTenant](../app/Filament/Support/IndependentOfTenant.php). Mark the resource once to cover its list, create, edit and view pages; mark a standalone page directly. This makes the tenant selector show «مستقل از شعبه» automatically while retaining tenant switching. Verify the label on the affected pages, including navigation back to a tenant-dependent page. Do not infer independence from `isScopedToTenant = false`: tenant-owned resources using our own scopes and primary-tenant-only resources still depend on the tenant and must keep its name.
 
 ## Testing
 - PHPUnit; tests live in `tests/Feature` and `tests/Unit`. Run them with `docker compose exec -u sail laravel.test php artisan test`.

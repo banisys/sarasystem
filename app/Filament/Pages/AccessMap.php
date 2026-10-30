@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Users\UserResource;
+use App\Filament\Support\IndependentOfTenant;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -19,7 +20,7 @@ use Livewire\Attributes\Url;
  * tenants: by tenant (cards), as a user × tenant matrix, and by role.
  * panel_user is shown as a "staff" mark next to the user, not as a role group.
  */
-class AccessMap extends Page
+class AccessMap extends Page implements IndependentOfTenant
 {
     /**
      * Role colors (Tailwind classes, light and dark), picked by role order.

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Tenants;
 
 use App\Filament\Resources\Tenants\Pages\ManageTenants;
+use App\Filament\Support\IndependentOfTenant;
 use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
 use BackedEnum;
@@ -24,7 +25,7 @@ use Filament\Tables\Table;
  * Installation-level list of tenants; super admin only (TenantPolicy).
  * Not scoped to the panel's current tenant.
  */
-class TenantResource extends Resource
+class TenantResource extends Resource implements IndependentOfTenant
 {
     protected static ?string $model = Tenant::class;
 
