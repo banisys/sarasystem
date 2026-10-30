@@ -320,12 +320,12 @@ class HiringWorkflowTest extends TestCase
             ->assertSee('بررسی اولیه');
     }
 
-    public function test_hiring_workflows_are_designed_in_the_primary_tenant_only(): void
+    public function test_hiring_workflow_definitions_are_available_in_every_tenant(): void
     {
         $subject = new JobApplicationSubject;
 
         $this->assertTrue($subject->availableIn($this->primary->refresh()));
-        $this->assertFalse($subject->availableIn($this->west->refresh()));
+        $this->assertTrue($subject->availableIn($this->west->refresh()));
     }
 
     public function test_the_employees_list_shows_only_the_current_tenants_employees(): void

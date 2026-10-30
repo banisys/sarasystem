@@ -146,7 +146,7 @@ class StudentAdminTest extends TestCase
         $this->seed(AdmissionDemoSeeder::class);
         $this->seed(AdmissionDemoSeeder::class);
 
-        $workflow = Workflow::withoutTenantScope()->sole();
+        $workflow = Workflow::query()->sole();
         $this->assertSame(AdmissionDemoSeeder::WORKFLOW_NAME, $workflow->name);
         $this->assertCount(3, $workflow->stepList());
 

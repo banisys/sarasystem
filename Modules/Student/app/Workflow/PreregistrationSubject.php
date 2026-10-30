@@ -80,15 +80,6 @@ class PreregistrationSubject extends WorkflowSubject
         return 'متقاضی پذیرفته می‌شود: حساب کاربری (یا حساب موجود با همان کد ملی)، نقش‌ها در '.config('sarasystem.tenant_label').' انتخاب‌شده و ردیف «'.config('sarasystem.learner_plural_label').'».';
     }
 
-    /**
-     * Preregistrations belong to the primary tenant (ADR 0018), so their
-     * workflows are designed there.
-     */
-    public function availableIn(Tenant $tenant): bool
-    {
-        return (bool) $tenant->is_primary;
-    }
-
     public function details(): array
     {
         return PreregistrationInfolist::components();

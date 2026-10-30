@@ -3,6 +3,8 @@
 - **Date:** 2026-10-26
 - **Status:** accepted
 
+Definition ownership was superseded by [ADR 0036](0036-tenant-independent-workflow-definitions.md): workflow definitions are shared across the installation; running cases remain tenant-owned.
+
 ## Context
 After someone sends the «همکاری با ما» form (ADR 0014), the application has to be reviewed in several steps until an employee is created. The user wants to design these steps in the admin panel. Each step sends the application to someone's cartable, and that person can approve, edit, reject or send it back.
 
@@ -36,7 +38,7 @@ The user decided:
 ## Decision
 **Engine in the core** (`app/Workflow`, models `Workflow`, `WorkflowCase`, `WorkflowCaseAction`):
 - **Workflow («فرایند»):**
-  - Belongs to a tenant and is designed in «کارتابل → فرایندها».
+  - Shared across the installation and designed in «کارتابل → فرایندها» from any tenant (ADR 0036).
   - Fields: name, `subject_type` (the kind of record), active flag, and an ordered list of steps (jsonb).
   - A step has a name, a tenant, an assignee and the extra actions allowed in it.
     - The assignee is a role (anyone holding it in that tenant) or a person (a member of that tenant).
@@ -74,7 +76,7 @@ The user decided:
 
 **Hiring** (`Modules/Employee`, `JobApplicationSubject`):
 - **Which workflow:** each job position may name a workflow. A new application starts it at once; a position without one only files the application. «شروع فرایند استخدام» on the applicant's page starts one by hand (for example for older applications).
-- **Who designs it:** hiring workflows can be designed only in the primary tenant, which owns the applications. Their steps may go to any tenant.
+- **Who designs it:** users with workflow permissions may design shared hiring workflows from any tenant. Applications still belong to the primary tenant; steps may go to any tenant.
 - **Application status:**
   - `submitted` while at the first step
   - `in_review` after it

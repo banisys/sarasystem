@@ -83,15 +83,6 @@ class JobApplicationSubject extends WorkflowSubject
         return 'متقاضی استخدام می‌شود: حساب کاربری (یا حساب موجود با همان کد ملی)، نقش‌ها در '.config('sarasystem.tenant_label').' محل خدمت و ردیف «کارمندان».';
     }
 
-    /**
-     * Applications belong to the primary tenant (ADR 0014), so their
-     * workflows are designed there.
-     */
-    public function availableIn(Tenant $tenant): bool
-    {
-        return (bool) $tenant->is_primary;
-    }
-
     public function details(): array
     {
         return JobApplicationInfolist::components();

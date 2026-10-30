@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Tenant;
 use App\Models\Workflow;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,7 +18,6 @@ class WorkflowFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'subject_type' => 'test',
             'name' => fake()->words(2, true),
             'is_active' => true,

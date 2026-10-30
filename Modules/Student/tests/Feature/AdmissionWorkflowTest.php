@@ -273,12 +273,12 @@ class AdmissionWorkflowTest extends TestCase
             ->assertSee('بررسی مدارک');
     }
 
-    public function test_admission_workflows_are_designed_in_the_primary_tenant_only(): void
+    public function test_admission_workflow_definitions_are_available_in_every_tenant(): void
     {
         $subject = new PreregistrationSubject;
 
         $this->assertTrue($subject->availableIn($this->primary->refresh()));
-        $this->assertFalse($subject->availableIn($this->west->refresh()));
+        $this->assertTrue($subject->availableIn($this->west->refresh()));
     }
 
     private function startCase(Preregistration $preregistration): WorkflowCase

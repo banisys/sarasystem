@@ -167,7 +167,7 @@ class DocumentAdminTest extends TestCase
         $this->seed(DocumentDemoSeeder::class);
 
         $this->assertSame(5, DocumentType::withoutTenantScope()->where('tenant_id', $headOffice->id)->count());
-        $hiring = Workflow::withoutTenantScope()->where('name', HiringDemoSeeder::WORKFLOW_NAME)->sole();
+        $hiring = Workflow::query()->where('name', HiringDemoSeeder::WORKFLOW_NAME)->sole();
         $this->assertCount(3, WorkflowStep::fromArray($hiring->steps[0])->extension(DocumentStepExtension::KEY)['verify']);
         $degree = DocumentType::withoutTenantScope()->where('title', 'آخرین مدرک تحصیلی')->sole();
         foreach (JobPosition::withoutTenantScope()->where('tenant_id', $headOffice->id)->where('title', 'like', 'معلم%')->get() as $position) {

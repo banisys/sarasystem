@@ -8,6 +8,7 @@ use App\Filament\Resources\Workflows\Pages\ListWorkflows;
 use App\Filament\Resources\Workflows\Pages\ViewWorkflow;
 use App\Filament\Resources\Workflows\Schemas\WorkflowForm;
 use App\Filament\Resources\Workflows\Tables\WorkflowsTable;
+use App\Filament\Support\IndependentOfTenant;
 use App\Models\Workflow;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -17,15 +18,14 @@ use Filament\Tables\Table;
 use UnitEnum;
 
 /**
- * The workflow designer «فرایندها» (ADR 0016): workflows of the current
- * tenant, each an ordered list of steps.
+ * Installation-wide workflow definitions (ADR 0016); cases and step
+ * assignments still belong to their respective tenants.
  */
-class WorkflowResource extends Resource
+class WorkflowResource extends Resource implements IndependentOfTenant
 {
     protected static ?string $model = Workflow::class;
 
-    // BelongsToTenant's scope limits the list and new rows get the current
-    // tenant; Filament's tenant scoping would need a relationship on Tenant.
+    // Definitions are shared by every tenant in this installation.
     protected static bool $isScopedToTenant = false;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;

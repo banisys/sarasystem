@@ -8,12 +8,15 @@ use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Models\WorkflowCase;
 use App\Workflow\AssigneeType;
+use App\Workflow\CaseStatus;
 use App\Workflow\StepAction;
 use App\Workflow\WorkflowSubjects;
 use Filament\Forms\Components\Repeater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Modules\Employee\Models\JobApplication;
 use Tests\Concerns\BuildsWorkflows;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\Fixtures\TenantNoteSubject;
@@ -73,7 +76,7 @@ class WorkflowResourceTest extends TestCase
         $undoRepeaterFake();
 
         $workflow = Workflow::query()->sole();
-        $this->assertSame($this->head->id, $workflow->tenant_id);
+        $this->assertNull($workflow->tenant_id);
         [$first, $second] = $workflow->stepList();
         $this->assertSame($reviewer->id, $first->roleId);
         $this->assertSame($this->west->id, $first->tenantId);
@@ -104,15 +107,19 @@ class WorkflowResourceTest extends TestCase
         $this->assertSame(0, Workflow::query()->withoutGlobalScopes()->count());
     }
 
-    public function test_the_list_shows_only_the_current_tenants_workflows(): void
+    public function test_every_tenant_lists_and_opens_the_same_workflow_definitions(): void
     {
         $own = $this->makeWorkflow($this->head, $this->subject->type(), [$this->roleStep('بررسی', $this->head, 'reviewer')]);
         $foreign = $this->makeWorkflow($this->west, $this->subject->type(), [$this->roleStep('بررسی', $this->west, 'reviewer')]);
 
         $this->actingInPanel($this->designer, $this->head);
 
-        Livewire::test(ListWorkflows::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$foreign]);
-        $this->get(WorkflowResource::getUrl('edit', ['record' => $foreign], tenant: $this->head))->assertNotFound();
+        Livewire::test(ListWorkflows::class)->assertCanSeeTableRecords([$own, $foreign]);
+        $this->get(WorkflowResource::getUrl('edit', ['record' => $foreign], tenant: $this->head))->assertOk()->assertSee('مستقل از شعبه');
+
+        $this->actingInPanel($this->designer, $this->west);
+        Livewire::test(ListWorkflows::class)->assertCanSeeTableRecords([$own, $foreign]);
+        $this->get(WorkflowResource::getUrl('view', ['record' => $own], tenant: $this->west))->assertOk()->assertSee('مستقل از شعبه');
     }
 
     public function test_the_workflow_page_draws_its_steps(): void
@@ -137,5 +144,44 @@ class WorkflowResourceTest extends TestCase
         $this->makeStaff($clerk, $this->head);
 
         $this->actingAs($clerk)->get(WorkflowResource::getUrl('index', tenant: $this->head))->assertForbidden();
+    }
+
+    public function test_hiring_workflows_can_be_created_from_a_branch_without_an_owner_tenant(): void
+    {
+        $this->actingInPanel($this->designer, $this->west);
+        $reviewer = $this->globalRole('reviewer');
+        $undoRepeaterFake = Repeater::fake();
+
+        Livewire::test(CreateWorkflow::class)
+            ->fillForm([
+                'name' => 'فرایند استخدام مشترک',
+                'subject_type' => (new JobApplication)->getMorphClass(),
+                'steps' => [['name' => 'بررسی', 'tenant_id' => $this->head->id, 'assignee_type' => 'role', 'role_id' => $reviewer->id, 'actions' => []]],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $undoRepeaterFake();
+        $workflow = Workflow::query()->sole();
+        $this->assertNull($workflow->tenant_id);
+        $this->assertSame($this->head->id, $workflow->stepList()[0]->tenantId);
+    }
+
+    public function test_workflow_counts_include_cases_from_all_tenants_without_unscoping_case_queries(): void
+    {
+        $workflow = $this->makeWorkflow($this->head, $this->subject->type(), [$this->roleStep('بررسی', $this->west, 'reviewer')]);
+        foreach ([$this->head, $this->west] as $tenant) {
+            WorkflowCase::query()->create([
+                'tenant_id' => $tenant->id, 'workflow_id' => $workflow->id, 'workflow_name' => $workflow->name,
+                'subject_type' => $this->subject->type(), 'subject_id' => 1, 'steps' => $workflow->steps,
+                'status' => CaseStatus::InProgress, 'current_step' => 0,
+            ]);
+        }
+
+        $this->actingInPanel($this->designer, $this->head);
+
+        Livewire::test(ListWorkflows::class)->assertTableColumnStateSet('open_cases_count', 2, $workflow);
+        $this->assertSame(1, WorkflowCase::query()->count());
+        $this->assertSame(2, $workflow->cases()->count());
     }
 }

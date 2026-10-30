@@ -34,7 +34,7 @@ class ContractDemoSeederTest extends TestCase
         $this->assertSame(3, ContractType::withoutTenantScope()->where('tenant_id', $headOffice->id)->count());
         $this->assertSame(1, ContractType::withoutTenantScope()->where('is_amendment', true)->count());
 
-        $hiring = Workflow::withoutTenantScope()->where('name', HiringDemoSeeder::WORKFLOW_NAME)->sole();
+        $hiring = Workflow::query()->where('name', HiringDemoSeeder::WORKFLOW_NAME)->sole();
         $beforeLast = WorkflowStep::fromArray($hiring->steps[count($hiring->steps) - 2]);
         $this->assertCount(1, $beforeLast->extension(ContractStepExtension::KEY)['prepare']);
 

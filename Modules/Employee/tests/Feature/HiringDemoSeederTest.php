@@ -25,7 +25,7 @@ class HiringDemoSeederTest extends TestCase
         $this->seed(HiringDemoSeeder::class);
         $this->seed(HiringDemoSeeder::class);
 
-        $workflow = Workflow::withoutTenantScope()->sole();
+        $workflow = Workflow::query()->sole();
         $steps = $workflow->stepList();
         $this->assertCount(4, $steps);
         $this->assertSame(AssigneeType::Role, $steps[0]->assigneeType);

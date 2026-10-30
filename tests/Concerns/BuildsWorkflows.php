@@ -14,9 +14,9 @@ trait BuildsWorkflows
     /**
      * @param  list<array<string, mixed>>  $steps
      */
-    protected function makeWorkflow(Tenant $owner, string $subjectType, array $steps): Workflow
+    protected function makeWorkflow(Tenant $context, string $subjectType, array $steps): Workflow
     {
-        return Workflow::factory()->for($owner)->create(['subject_type' => $subjectType, 'steps' => $steps]);
+        return $context->execute(fn (): Workflow => Workflow::factory()->create(['subject_type' => $subjectType, 'steps' => $steps]));
     }
 
     /**
