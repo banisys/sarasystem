@@ -21,6 +21,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 | Public site | Visitors (school info, registration, blog) | Inertia + Vue | `/` |
 
 ### Admin panel (Filament)
+- **Validation language:** the application locale is Persian (`APP_LOCALE=fa`). [lang/fa/validation.php](../lang/fa/validation.php) translates every built-in Laravel validation message and common field names for Filament and Inertia forms. Filament uses each field's Persian label; explicit custom messages still take precedence. Keep the catalog in sync with the framework's validation rules when upgrading Laravel.
 - Provider: [app/Providers/Filament/AdminPanelProvider.php](../app/Providers/Filament/AdminPanelProvider.php). The panel id is `admin`, the path is `cpadmin`, the brand comes from `APP_NAME` and the primary color is Violet.
 - **Look and feel** (ported from LMS):
   - Font **Shabnam** (Light), self-hosted in `resources/fonts`, set with `->font('Shabnam', provider: LocalFontProvider::class)`.

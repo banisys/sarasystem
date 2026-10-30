@@ -19,6 +19,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-30 — Persian validation messages: added `lang/fa/validation.php` with all 137 installed Laravel rule messages, preserved replacement parameters and common Persian field names. With the existing `APP_LOCALE=fa`, admin and Inertia forms now use Persian default validation messages; custom messages remain in effect. Catalog completeness and placeholders checked; 22 user/tenant admin tests pass; Pint passes.
 - 2026-10-29 — School part B ([ADR 0032](decisions/0032-scores-and-report-cards.md)): scores and report cards.
   - «مدرسه → دوره‌های نمره‌دهی» (head office): periods per academic year with covered days, teachers' closing date and «انتشار کارنامه».
   - Score book: the subject's teacher (schedule teacher) in «دفتر نمره» of the user panel, or anyone who may edit the class with «دفتر نمره» on the class in the admin panel; a number out of 20 or a descriptive level by the stage, with a note.
@@ -221,7 +222,6 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Hiring: education and work history can't be edited in a workflow (personal and contact fields only). A head-office approver hiring into a branch where they hold no roles can only give permission-less roles there (ADR 0003).
 - Job applications: demo roles have no `*:JobApplication` / `*:JobPosition` permissions and there are no demo job positions, so `/careers` shows «موقعیت شغلی خالی نداریم» until positions are added. Not checked in a browser beyond the page loading.
 - `JalaliDateInput` is not checked in a browser yet (conversions tested in Node over 1921–2080); date only, no time or range picker.
-- No Persian validation translations (`lang/fa/validation.php` missing): Filament and Inertia forms show Laravel's English messages unless a request defines its own (as `StoreJobApplicationRequest` does). Publish/translate them or install `laravel-lang`.
 - `public/css`, `public/js`, `public/fonts` are owned by root on this machine, so `filament:upgrade` (run after `composer dump-autoload`) fails with a tempnam error. Fix with `sudo chown -R $USER: public`.
 - Exams: questions are plain text (no images/formulas); abandoned attempts are closed lazily (no scheduler yet); seeing an attempt's answers needs `Update:ExamAttempt`; demo roles have no `*:Exam`/`*:Question`/`*:QuestionBank`/`*:ExamAttempt` permissions and there is no demo exam; the participant pages are covered by tests but not checked in a browser yet. LMS `schl_exam_*` (activity scores, exam balances) waits for a School module.
 - Site pages: no preview of unpublished pages; Latin-only paths.
