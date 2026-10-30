@@ -25,7 +25,7 @@ Nothing is copied from `../LMS` as-is. Port only on the user's request, one name
 _(TODO: formatter/linter, naming rules, file naming.)_
 
 ## Patterns we use
-_(TODO: e.g. how errors are handled, how data fetching is done, where business logic lives.)_
+- Admin forms use server-side validation and Persian field labels/messages. Keep native browser validation disabled (`novalidate`) through the panel defaults; custom raw HTML input forms in the panel must set it too. Do not remove server validation or enable browser bubbles on new forms ([ADR 0037](decisions/0037-admin-server-side-validation.md)).
 
 ## Patterns we avoid
 _(TODO: things that look tempting but we decided against — link ADR if any.)_

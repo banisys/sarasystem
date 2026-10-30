@@ -19,6 +19,8 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Schemas\Components\Form;
+use Filament\Schemas\Components\Wizard\Step;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -87,6 +89,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_START, fn (): View => view('filament.admin.sidebar-nav-search'))
             // "Back to my account" bar while impersonating a user (ADR 0008).
             ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.impersonation-banner'))
+            ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.disable-native-validation'))
             // Collapsible table filters stay open across reloads when left open.
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.persist-filters-open'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.tenant-menu-same-page'))
@@ -132,6 +135,11 @@ class AdminPanelProvider extends PanelProvider
      */
     private function configureComponentDefaults(): void
     {
+        // Let server validation return the Persian errors instead of browser bubbles.
+        Form::configureUsing(fn (Form $form) => $form->extraAttributes(['novalidate' => true], merge: true));
+        Step::configureUsing(fn (Step $step) => $step->extraAttributes(['novalidate' => true], merge: true));
+        Action::configureUsing(fn (Action $action) => $action->extraModalWindowAttributes(['novalidate' => true], merge: true));
+
         // Row actions in a dropdown in the first column, no row click (PanelTable).
         $this->app->bind(Table::class, PanelTable::class);
 
