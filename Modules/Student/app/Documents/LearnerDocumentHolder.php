@@ -2,12 +2,14 @@
 
 namespace Modules\Student\Documents;
 
+use App\CustomFields\CustomizableForm;
 use App\Documents\DocumentHolder;
 use App\Documents\DocumentHolders;
 use App\Models\Tenant;
 use App\Support\Identifiers;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
@@ -38,6 +40,16 @@ class LearnerDocumentHolder extends DocumentHolder
     public function memberModel(): string
     {
         return Student::class;
+    }
+
+    public function form(): CustomizableForm
+    {
+        return new PreregistrationForm;
+    }
+
+    public function requirementOwnerModel(): string
+    {
+        return Program::class;
     }
 
     public function requirementOwnerLabel(): string

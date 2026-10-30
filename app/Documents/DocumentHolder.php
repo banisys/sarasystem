@@ -2,6 +2,7 @@
 
 namespace App\Documents;
 
+use App\CustomFields\CustomizableForm;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 abstract class DocumentHolder
 {
     /**
-     * Stored in `documents.holder` and `document_types.holders`, e.g. `employee`.
+     * Stored in `documents.holder`, e.g. `employee`.
      */
     abstract public function key(): string;
 
@@ -34,6 +35,11 @@ abstract class DocumentHolder
      * @return class-string<Model>
      */
     abstract public function memberModel(): string;
+
+    abstract public function form(): CustomizableForm;
+
+    /** @return class-string<Model> */
+    abstract public function requirementOwnerModel(): string;
 
     /**
      * What documents can be required for, e.g. «موقعیت شغلی».

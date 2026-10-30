@@ -69,7 +69,7 @@ class DocumentsRelationManager extends RelationManager
                     ->visible(fn (Get $get): bool => filled($get('document_type_id'))),
             ])
             ->action(function (array $data, Documents $documents): void {
-                $type = DocumentType::definedTypes()->active()->forHolder((string) $this->holderKey())->findOrFail($data['document_type_id']);
+                $type = DocumentType::definedTypes()->active()->findOrFail($data['document_type_id']);
 
                 abort_unless(DocumentActions::canUpload($type), 403);
 

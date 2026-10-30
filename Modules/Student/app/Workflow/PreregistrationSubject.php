@@ -228,8 +228,11 @@ class PreregistrationSubject extends WorkflowSubject
                 ->schema([
                     Select::make('tenant_id')
                         ->label($tenantLabel)
-                        ->options(fn (): array => Tenant::query()->active()->orderBy('name')->pluck('name', 'id')->all())
-                        ->default($subject->preferred_tenant_id)
+                        ->options(fn (): array => ($subject->program?->availableTenants() ?? Tenant::query()->active()->orderBy('name'))->pluck('name', 'id')->all())
+                        ->default(fn (): ?int => $subject->preferred_tenant_id !== null
+                            && ($subject->program?->availableTenants() ?? Tenant::query()->active())->whereKey($subject->preferred_tenant_id)->exists()
+                                ? $subject->preferred_tenant_id
+                                : null)
                         ->required()
                         ->live(),
                     DatePicker::make('enrolled_at')

@@ -2,6 +2,8 @@
 
 namespace Modules\Document\Tests\Feature;
 
+use App\Documents\ApplicantDocuments;
+use App\Filament\CustomFields\CustomizeFormAction;
 use App\Models\Tenant;
 use App\Sms\SmsSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -9,14 +11,15 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 use Modules\Document\Enums\DocumentStatus;
-use Modules\Document\Enums\RequiredFor;
 use Modules\Document\Models\Document;
 use Modules\Document\Models\DocumentType;
-use Modules\Document\Models\DocumentTypeRequirement;
+use Modules\Document\Services\DocumentFormFields;
 use Modules\Document\Tests\Concerns\MakesDocuments;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
 use Modules\Employee\Tests\Concerns\SubmitsJobApplications;
+use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Program;
 use Tests\Fakes\FakeSmsSender;
@@ -51,14 +54,18 @@ class ApplicantDocumentsTest extends TestCase
         $this->primary->makePrimary();
         $this->position = JobPosition::factory()->for($this->primary)->create(['title' => 'معلم ریاضی']);
 
-        $this->idCard = DocumentType::factory()->for($this->primary)->requiredForEveryone()->byApplicant()->create(['title' => 'کارت ملی', 'holders' => ['employee', 'learner']]);
+        $this->idCard = DocumentType::factory()->for($this->primary)->create(['title' => 'کارت ملی']);
         // Required for the math teacher only.
-        $this->degree = DocumentType::factory()->for($this->primary)->byApplicant()->create([
-            'title' => 'مدرک تحصیلی', 'holders' => ['employee'], 'required_for' => RequiredFor::Selected, 'file_kind' => 'pdf', 'max_files' => 1,
+        $this->degree = DocumentType::factory()->for($this->primary)->create([
+            'title' => 'مدرک تحصیلی', 'file_kind' => 'pdf', 'max_files' => 1,
         ]);
-        DocumentTypeRequirement::query()->create(['document_type_id' => $this->degree->id, 'holder' => 'employee', 'owner_id' => $this->position->id]);
+        $this->primary->execute(function (): void {
+            CustomizeFormAction::save(new JobApplicationForm, null, ['field_modes' => [DocumentFormFields::key($this->idCard->id) => 'required']]);
+            CustomizeFormAction::save(new JobApplicationForm, $this->position, ['field_modes' => [DocumentFormFields::key($this->degree->id) => 'required']]);
+            CustomizeFormAction::save(new PreregistrationForm, null, ['field_modes' => [DocumentFormFields::key($this->idCard->id) => 'required']]);
+        });
         // Staff upload it; not asked in the form.
-        DocumentType::factory()->for($this->primary)->requiredForEveryone()->create(['title' => 'گواهی عدم سوءپیشینه', 'holders' => ['employee']]);
+        DocumentType::factory()->for($this->primary)->create(['title' => 'گواهی عدم سوءپیشینه']);
     }
 
     public function test_the_form_asks_each_positions_documents(): void
@@ -109,6 +116,41 @@ class ApplicantDocumentsTest extends TestCase
         $this->post('/careers', $this->validData(['national_code' => '0013542419', 'first_name' => 'مریم']))->assertSessionHasNoErrors();
 
         $this->assertSame(2, Document::withoutTenantScope()->count());
+    }
+
+    public function test_new_types_are_not_asked_until_selected_and_foreign_types_cannot_be_uploaded(): void
+    {
+        $hidden = DocumentType::factory()->for($this->primary)->create();
+        $foreign = DocumentType::factory()->create();
+        $fields = app(ApplicantDocuments::class)->fields('employee', $this->position->id);
+        $this->assertNotContains($hidden->id, array_column($fields, 'id'));
+        $this->assertNotContains($foreign->id, array_column($fields, 'id'));
+
+        $this->verifyMobile();
+        $this->post('/careers', $this->validData(['documents' => [
+            $this->idCard->id => [self::image()],
+            $this->degree->id => [UploadedFile::fake()->create('degree.pdf', 100, 'application/pdf')],
+            $hidden->id => [self::image()],
+            $foreign->id => [self::image()],
+        ]]))->assertSessionHasErrors('documents');
+
+        $this->assertSame(0, Document::withoutTenantScope()->count());
+        $this->assertSame(0, JobApplication::withoutTenantScope()->count());
+    }
+
+    public function test_each_program_overrides_the_general_form_without_changing_other_forms(): void
+    {
+        $program = Program::factory()->for($this->primary)->create();
+        $other = Program::factory()->for($this->primary)->create();
+        $key = DocumentFormFields::key($this->idCard->id);
+        $this->primary->execute(fn () => CustomizeFormAction::save(new PreregistrationForm, $program, ['field_modes' => [$key => 'hidden', DocumentFormFields::key($this->degree->id) => 'optional']]));
+        $documents = app(ApplicantDocuments::class);
+
+        $this->assertSame([['id' => $this->degree->id, 'required' => false]], array_map(fn (array $field): array => ['id' => $field['id'], 'required' => $field['required']], $documents->fields('learner', $program->id)));
+        $this->assertSame([$this->idCard->id], array_column($documents->fields('learner', $other->id), 'id'));
+        $this->assertCount(2, $documents->fields('employee', $this->position->id));
+        $foreignProgram = Program::factory()->create();
+        $this->assertSame([], $documents->fields('learner', $foreignProgram->id));
     }
 
     public function test_preregistration_asks_the_learners_documents(): void

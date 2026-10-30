@@ -38,6 +38,8 @@ class StorePreregistrationRequest extends FormRequest
 
     private ?ResolvedForm $preregistrationForm = null;
 
+    private ?Program $selectedProgram = null;
+
     /**
      * Allowed Jalali birth years: 3 to 90 years old, for any kind of learner.
      *
@@ -57,9 +59,13 @@ class StorePreregistrationRequest extends FormRequest
      *
      * @return Collection<int, Tenant>
      */
-    public static function preferredTenants(): Collection
+    public static function preferredTenants(?Program $program = null): Collection
     {
-        $tenants = Tenant::query()->active()->orderBy('name')->get(['id', 'name', 'is_primary']);
+        $tenants = ($program?->availableTenants() ?? Tenant::query()->active()->orderBy('name'))->get(['id', 'name', 'is_primary']);
+
+        if ($program !== null && ! $program->all_tenants) {
+            return $tenants;
+        }
         $others = $tenants->reject(fn (Tenant $tenant): bool => (bool) $tenant->is_primary)->values();
 
         return $others->isNotEmpty() ? $others : $tenants;
@@ -98,14 +104,17 @@ class StorePreregistrationRequest extends FormRequest
     {
         if ($this->preregistrationForm === null) {
             $tenant = Tenant::primary() ?? abort(404);
-            $program = is_numeric($this->input('program_id'))
-                ? Program::withoutTenantScope()->where('tenant_id', $tenant->getKey())->active()->find($this->input('program_id'))
-                : null;
-
-            $this->preregistrationForm = PreregistrationForm::for($tenant, $program);
+            $this->preregistrationForm = PreregistrationForm::for($tenant, $this->selectedProgram());
         }
 
         return $this->preregistrationForm;
+    }
+
+    private function selectedProgram(): ?Program
+    {
+        return $this->selectedProgram ??= is_numeric($this->input('program_id'))
+            ? Program::withoutTenantScope()->where('tenant_id', Tenant::primary()?->getKey())->active()->find($this->input('program_id'))
+            : null;
     }
 
     /**
@@ -120,7 +129,7 @@ class StorePreregistrationRequest extends FormRequest
             'program_id' => ['required', Rule::exists('student_programs', 'id')
                 ->where('tenant_id', Tenant::primary()?->getKey())
                 ->where('is_active', true)],
-            'preferred_tenant_id' => $form->rulesFor('preferred_tenant', [Rule::in(self::preferredTenants()->modelKeys())]),
+            'preferred_tenant_id' => $form->rulesFor('preferred_tenant', [Rule::in(self::preferredTenants($this->selectedProgram())->modelKeys())]),
             'first_name' => ['required', 'string', 'max:50'],
             'last_name' => ['required', 'string', 'max:50'],
             'father_name' => $form->rulesFor('father_name', ['string', 'max:50']),

@@ -2,6 +2,7 @@
 
 namespace Modules\Document\Providers;
 
+use App\CustomFields\AdditionalBuiltInFields;
 use App\Documents\ApplicantDocuments;
 use App\Documents\DocumentHolders;
 use App\Filament\Support\ModelRelationManagers;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\Document\Filament\RelationManagers\DocumentsRelationManager;
 use Modules\Document\Models\Document;
+use Modules\Document\Services\DocumentFormFields;
 use Modules\Document\Services\PublicFormDocuments;
 use Modules\Document\Workflow\DocumentStepExtension;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -56,6 +58,7 @@ class DocumentServiceProvider extends ModuleServiceProvider
         // own modules.
         $this->app->booted(function (): void {
             foreach (DocumentHolders::all() as $holder) {
+                AdditionalBuiltInFields::register($holder->form()->key(), 'documents', DocumentFormFields::fields(...));
                 $holder->memberModel()::resolveRelationUsing(DocumentsRelationManager::RELATIONSHIP, fn (Model $member): MorphMany => $member->morphMany(Document::class, 'documentable'));
                 ModelRelationManagers::register($holder->memberModel(), DocumentsRelationManager::class);
             }

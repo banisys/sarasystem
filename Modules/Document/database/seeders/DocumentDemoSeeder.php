@@ -2,15 +2,17 @@
 
 namespace Modules\Document\Database\Seeders;
 
+use App\Documents\DocumentHolders;
+use App\Models\FormCustomization;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\Workflow;
 use Database\Seeders\Concerns\GrantsDemoPermissions;
 use Illuminate\Database\Seeder;
 use Modules\Document\Enums\FileKind;
-use Modules\Document\Enums\RequiredFor;
 use Modules\Document\Filament\Resources\DocumentTypes\Schemas\DocumentTypeForm;
 use Modules\Document\Models\DocumentType;
+use Modules\Document\Services\DocumentFormFields;
 use Modules\Document\Workflow\DocumentStepExtension;
 use Modules\Employee\Models\JobPosition;
 use RuntimeException;
@@ -42,11 +44,24 @@ class DocumentDemoSeeder extends Seeder
         ]);
 
         $headOffice->execute(function () use ($hq, $checkers): void {
-            $idCard = $this->type('کارت ملی', ['employee', 'learner'], RequiredFor::Everyone, applicant: true, uploaders: $hq, verifiers: $checkers, maxFiles: 2, description: 'تصویر پشت و روی کارت.');
-            $birthCertificate = $this->type('شناسنامه', ['employee', 'learner'], RequiredFor::Everyone, applicant: true, uploaders: $hq, verifiers: $checkers, maxFiles: 3, description: 'صفحه‌ی اول و صفحه‌ی توضیحات.');
-            $degree = $this->type('آخرین مدرک تحصیلی', ['employee'], RequiredFor::Selected, applicant: true, uploaders: $hq, verifiers: $checkers, kind: FileKind::ImageOrPdf, owners: ['employee' => JobPosition::query()->where('title', 'like', 'معلم%')->pluck('id')->all()]);
-            $this->type('گواهی سلامت', ['employee'], RequiredFor::Nobody, applicant: false, uploaders: $hq, verifiers: $checkers, expiry: true);
-            $this->type('عکس پرسنلی', ['employee', 'learner'], RequiredFor::Nobody, applicant: true, uploaders: $hq, verifiers: $checkers, kind: FileKind::Image);
+            $idCard = $this->type('کارت ملی', uploaders: $hq, verifiers: $checkers, maxFiles: 2, description: 'تصویر پشت و روی کارت.');
+            $birthCertificate = $this->type('شناسنامه', uploaders: $hq, verifiers: $checkers, maxFiles: 3, description: 'صفحه‌ی اول و صفحه‌ی توضیحات.');
+            $degree = $this->type('آخرین مدرک تحصیلی', uploaders: $hq, verifiers: $checkers, kind: FileKind::ImageOrPdf);
+            $this->type('گواهی سلامت', uploaders: $hq, verifiers: $checkers, expiry: true);
+            $photo = $this->type('عکس پرسنلی', uploaders: $hq, verifiers: $checkers, kind: FileKind::Image);
+
+            foreach (['employee', 'learner'] as $holder) {
+                $this->formModes($holder, null, [
+                    DocumentFormFields::key($idCard->id) => 'required',
+                    DocumentFormFields::key($birthCertificate->id) => 'required',
+                    DocumentFormFields::key($photo->id) => 'optional',
+                    DocumentFormFields::key($degree->id) => 'hidden',
+                ]);
+            }
+
+            foreach (JobPosition::query()->where('title', 'like', 'معلم%')->pluck('id') as $positionId) {
+                $this->formModes('employee', $positionId, [DocumentFormFields::key($degree->id) => 'required']);
+            }
 
             $this->checkInFirstStep('استخدام کادر آموزشی (نمونه)', [$idCard->id, $birthCertificate->id, $degree->id]);
             $this->checkInFirstStep('پذیرش دانش‌آموز (نمونه)', [$idCard->id, $birthCertificate->id]);
@@ -54,28 +69,36 @@ class DocumentDemoSeeder extends Seeder
     }
 
     /**
-     * @param  list<string>  $holders
      * @param  list<int>  $uploaders
      * @param  list<int>  $verifiers
-     * @param  array<string, list<int>>  $owners
      */
-    private function type(string $title, array $holders, RequiredFor $requiredFor, bool $applicant, array $uploaders, array $verifiers, int $maxFiles = 1, FileKind $kind = FileKind::ImageOrPdf, bool $expiry = false, ?string $description = null, array $owners = []): DocumentType
+    private function type(string $title, array $uploaders, array $verifiers, int $maxFiles = 1, FileKind $kind = FileKind::ImageOrPdf, bool $expiry = false, ?string $description = null): DocumentType
     {
-        return DocumentTypeForm::save(DocumentType::query()->with('requirements')->where('title', $title)->first(), [
+        return DocumentTypeForm::save(DocumentType::query()->where('title', $title)->first(), [
             'title' => $title,
             'description' => $description,
-            'holders' => $holders,
             'file_kind' => $kind,
             'max_files' => $maxFiles,
             'max_kilobytes' => 5120,
             'has_expiry' => $expiry,
-            'applicant_uploads' => $applicant,
             'upload_role_ids' => $uploaders,
             'verify_role_ids' => $verifiers,
-            'required_for' => $requiredFor,
             'is_active' => true,
-            DocumentTypeForm::OWNERS => $owners,
         ]);
+    }
+
+    /** @param array<string, string> $modes */
+    private function formModes(string $holderKey, ?int $ownerId, array $modes): void
+    {
+        $holder = DocumentHolders::find($holderKey);
+        $row = FormCustomization::query()->firstOrNew([
+            'form' => $holder->form()->key(),
+            'owner_type' => $ownerId === null ? null : (new ($holder->requirementOwnerModel()))->getMorphClass(),
+            'owner_id' => $ownerId,
+        ]);
+        $row->field_modes = [...($row->field_modes ?? []), ...$modes];
+        $row->fields ??= [];
+        $row->save();
     }
 
     /**

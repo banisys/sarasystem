@@ -3,6 +3,8 @@
 - **Date:** 2026-10-27
 - **Status:** accepted
 
+Extended by [ADR 0034](0034-document-requests-per-form.md): modules may register grouped built-in fields with `AdditionalBuiltInFields`; the Document module uses this for requested documents in hiring and preregistration form settings.
+
 ## Context
 SaraSystem is installed for different organizations: school chains, companies and language institutes (ADR 0002). Their forms differ. In the «همکاری با ما» form (ADR 0014):
 - each customer wants some fields of their own (e.g. Saraye Danesh's Kanoon questions, which ADR 0014 dropped because they were customer-specific);

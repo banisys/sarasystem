@@ -2,6 +2,7 @@
 
 namespace Modules\Document\Tests\Feature;
 
+use App\Filament\CustomFields\CustomizeFormAction;
 use App\Filament\Resources\WorkflowCases\Pages\ViewWorkflowCase;
 use App\Filament\Resources\WorkflowCases\WorkflowCaseResource;
 use App\Filament\Resources\Workflows\WorkflowResource;
@@ -19,8 +20,10 @@ use Livewire\Livewire;
 use Modules\Document\Enums\DocumentStatus;
 use Modules\Document\Models\Document;
 use Modules\Document\Models\DocumentType;
+use Modules\Document\Services\DocumentFormFields;
 use Modules\Document\Tests\Concerns\MakesDocuments;
 use Modules\Document\Workflow\DocumentStepExtension;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Models\Employee;
 use Modules\Employee\Models\JobApplication;
 use Tests\Concerns\BuildsWorkflows;
@@ -183,7 +186,11 @@ class DocumentWorkflowTest extends TestCase
 
     public function test_the_cartable_shows_the_documents_and_the_diagram_names_them(): void
     {
-        $this->idCard->update(['required_for' => 'everyone']);
+        $this->primary->execute(fn () => CustomizeFormAction::save(
+            new JobApplicationForm,
+            null,
+            ['field_modes' => [DocumentFormFields::key($this->idCard->id) => 'required']],
+        ));
         $case = $this->startCase();
 
         $this->actingAs($this->recruiter);

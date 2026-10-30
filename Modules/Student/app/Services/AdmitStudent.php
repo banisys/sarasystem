@@ -38,6 +38,10 @@ class AdmitStudent
         $tenant = Tenant::query()->active()->find($data['tenant_id'])
             ?? throw new WorkflowActionDenied(config('sarasystem.tenant_label').' انتخاب‌شده فعال نیست.');
 
+        if ($preregistration->program !== null && ! $preregistration->program->availableTenants()->whereKey($tenant->getKey())->exists()) {
+            throw new WorkflowActionDenied('این برنامه در '.config('sarasystem.tenant_label').' انتخاب‌شده ارائه نمی‌شود.');
+        }
+
         $roles = $this->roles($actor, $tenant, $data['role_ids'] ?? []);
         $user = $this->user($preregistration, $actor, $tenant);
 

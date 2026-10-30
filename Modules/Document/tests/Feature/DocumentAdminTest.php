@@ -2,6 +2,7 @@
 
 namespace Modules\Document\Tests\Feature;
 
+use App\Documents\ApplicantDocuments;
 use App\Documents\DocumentHolders;
 use App\Models\Tenant;
 use App\Models\User;
@@ -73,22 +74,20 @@ class DocumentAdminTest extends TestCase
         $this->get(DocumentTypeResource::getUrl('index', tenant: $this->west))->assertForbidden();
     }
 
-    public function test_a_type_is_created_with_the_positions_it_is_required_for(): void
+    public function test_a_type_is_created_independently_of_forms_and_holder_kinds(): void
     {
-        $teacher = JobPosition::factory()->for($this->primary)->create(['title' => 'معلم']);
-
         $this->actingInPanel($this->clerk, $this->primary);
+
         Livewire::test(ListDocumentTypes::class)
             ->callAction('create', data: [
-                'title' => 'مدرک تحصیلی', 'holders' => ['employee'], 'file_kind' => 'pdf', 'max_files' => 1, 'max_kilobytes' => 5120,
-                'required_for' => 'selected', 'requirement_owners' => ['employee' => [$teacher->id]], 'is_active' => true,
+                'title' => 'مدرک تحصیلی', 'file_kind' => 'pdf', 'max_files' => 1, 'max_kilobytes' => 5120, 'is_active' => true,
             ])
             ->assertHasNoActionErrors();
 
         $type = DocumentType::query()->where('title', 'مدرک تحصیلی')->sole();
-        $this->assertSame([['holder' => 'employee', 'owner_id' => $teacher->id]], $type->requirements->map->only(['holder', 'owner_id'])->all());
-        $this->assertTrue($type->isRequiredFor('employee', $teacher->id));
-        $this->assertFalse($type->isRequiredFor('employee', $teacher->id + 1));
+        $this->assertSame([], app(ApplicantDocuments::class)->fields('employee', null));
+        $this->assertSame([], app(ApplicantDocuments::class)->fields('learner', null));
+        $this->assertSame('pdf', $type->file_kind->value);
     }
 
     public function test_the_list_shows_only_the_current_tenants_documents(): void
@@ -171,6 +170,8 @@ class DocumentAdminTest extends TestCase
         $hiring = Workflow::withoutTenantScope()->where('name', HiringDemoSeeder::WORKFLOW_NAME)->sole();
         $this->assertCount(3, WorkflowStep::fromArray($hiring->steps[0])->extension(DocumentStepExtension::KEY)['verify']);
         $degree = DocumentType::withoutTenantScope()->where('title', 'آخرین مدرک تحصیلی')->sole();
-        $this->assertCount(2, $degree->requirements);
+        foreach (JobPosition::withoutTenantScope()->where('tenant_id', $headOffice->id)->where('title', 'like', 'معلم%')->get() as $position) {
+            $this->assertContains($degree->id, array_column(app(ApplicantDocuments::class)->fields('employee', $position->id), 'id'));
+        }
     }
 }

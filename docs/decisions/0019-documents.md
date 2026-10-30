@@ -3,6 +3,8 @@
 - **Date:** 2026-10-28
 - **Status:** accepted
 
+Type-level holder and public-form requirement settings were superseded by [ADR 0034](0034-document-requests-per-form.md). The catalog is now independent of forms; requested documents are configured with each form's other fields.
+
 ## Context
 Employees and learners have documents: a scan of the national card and the birth certificate, a degree, a personnel photo, a health certificate. Different roles take part:
 - certain roles upload them;
@@ -48,7 +50,7 @@ The user chose:
 **Module `Document`:**
 - **Document types** (`document_types`, «مدارک → انواع مدرک»):
   - Defined in the primary tenant's panel only.
-  - Each has: a title, the holders it is for, the file kind (image / PDF / both), how many files and how large, whether it has an expiry date, whether the applicant uploads it in the public form, the **roles that may upload** and the **roles that may check** it, and for whom it is **required** (nobody / everyone / chosen job positions or programs, in `document_type_requirements`).
+  - Each has a title, file kind (image / PDF / both), file count/size limits, optional expiry and the **roles that may upload** and **roles that may check** it. Holder and public-form requirements are configured per form instead ([ADR 0034](0034-document-requests-per-form.md)).
   - Types are deactivated, not deleted, once used.
 - **Documents** (`documents`):
   - At most one per record and type. Uploading again replaces the files and sets the status back to pending. Old versions are not kept.
@@ -64,7 +66,7 @@ The user chose:
   - «مدارکی که در این مرحله تأیید می‌شوند»: the step can't be approved until each is approved.
   - The assignee does this in the cartable («بارگذاری مدارک», «بررسی مدارک»), **whatever the type's roles**: the step assignment is the authorization, as for the rest of the cartable. Each upload / check is written to the case history as a note.
   - The cartable shows a «مدارک» section: the required documents with their status, then any others.
-- **Public forms:** «همکاری با ما» and «پیش‌ثبت‌نام» show the types marked «خود متقاضی بارگذاری کند» that concern the chosen position / program.
+- **Public forms:** «همکاری با ما» and «پیش‌ثبت‌نام» request the documents selected in their form settings (whole form and per position/program), with required / optional / not asked modes ([ADR 0034](0034-document-requests-per-form.md)).
   - Required ones must be sent, unless the open application already has them.
   - They are stored as pending documents with no uploader.
 
@@ -74,4 +76,4 @@ The user chose:
 - Checking a document in a workflow step bypasses the type's check roles. Whoever designs the workflow decides who checks.
 - No versioning: a re-upload deletes the old files.
 - No reminders before expiry yet: it is a list filter.
-- The member pages (employee, learner) don't have a documents tab yet; documents are found in «مدارک» by person.
+- Employee and learner pages also have a «مدارک» tab (added 2026-10-29); documents remain available in «مدارک» by person.

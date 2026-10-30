@@ -2,12 +2,14 @@
 
 namespace Modules\Employee\Documents;
 
+use App\CustomFields\CustomizableForm;
 use App\Documents\DocumentHolder;
 use App\Documents\DocumentHolders;
 use App\Models\Tenant;
 use App\Support\Identifiers;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Models\Employee;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
@@ -38,6 +40,16 @@ class EmployeeDocumentHolder extends DocumentHolder
     public function memberModel(): string
     {
         return Employee::class;
+    }
+
+    public function form(): CustomizableForm
+    {
+        return new JobApplicationForm;
+    }
+
+    public function requirementOwnerModel(): string
+    {
+        return JobPosition::class;
     }
 
     public function requirementOwnerLabel(): string

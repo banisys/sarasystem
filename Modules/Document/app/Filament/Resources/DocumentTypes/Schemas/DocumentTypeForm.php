@@ -2,34 +2,22 @@
 
 namespace Modules\Document\Filament\Resources\DocumentTypes\Schemas;
 
-use App\Documents\DocumentHolders;
 use App\Models\Role;
-use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\Support\Utils;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\DB;
 use Modules\Document\Enums\FileKind;
-use Modules\Document\Enums\RequiredFor;
 use Modules\Document\Models\DocumentType;
-use Modules\Document\Models\DocumentTypeRequirement;
 
 /**
- * A document type with who has it, who uploads and checks it, and for whom
- * it is required (ADR 0019). The requirement owners of each holder (e.g.
- * job positions) are kept in `document_type_requirements`.
+ * Reusable document metadata and staff permissions; form requests are configured separately.
  */
 class DocumentTypeForm
 {
-    public const OWNERS = 'requirement_owners';
-
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -42,12 +30,6 @@ class DocumentTypeForm
                             ->placeholder('مثلاً: کارت ملی، شناسنامه، آخرین مدرک تحصیلی، عکس پرسنلی')
                             ->required()
                             ->maxLength(255),
-                        CheckboxList::make('holders')
-                            ->label('برای')
-                            ->options(fn (): array => DocumentHolders::options())
-                            ->required()
-                            ->columns(2)
-                            ->live(),
                         Textarea::make('description')
                             ->label('توضیحات')
                             ->helperText('راهنمای بارگذاری؛ مثلاً «پشت و روی کارت».')
@@ -92,78 +74,20 @@ class DocumentTypeForm
                             ->label('نقش‌های مجاز به تأیید یا رد')
                             ->multiple()
                             ->options(fn (): array => self::roleOptions()),
-                        Toggle::make('applicant_uploads')
-                            ->label('خود متقاضی هم در فرم عمومی بارگذاری کند')
-                            ->helperText('در فرم «همکاری با ما» یا «پیش‌ثبت‌نام» پرسیده می‌شود؛ بعد از آن کارمند مسئول فقط بررسی می‌کند.')
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('لازم بودن')
-                    ->schema([
-                        ToggleButtons::make('required_for')
-                            ->hiddenLabel()
-                            ->options(RequiredFor::class)
-                            ->default(RequiredFor::Nobody->value)
-                            ->inline()
-                            ->required()
-                            ->live(),
-                        ...collect(DocumentHolders::all())->map(fn ($holder) => Select::make(self::OWNERS.'.'.$holder->key())
-                            ->label("{$holder->requirementOwnerLabel()} ({$holder->label()})")
-                            ->helperText("این مدرک برای این‌ها لازم است؛ برای بقیه‌ی {$holder->label()}‌ها اختیاری.")
-                            ->multiple()
-                            ->options(fn (): array => ($primary = Tenant::primary()) ? $holder->requirementOwnerOptions($primary) : [])
-                            ->visible(fn (Get $get): bool => self::requiredFor($get) === RequiredFor::Selected && in_array($holder->key(), (array) $get('holders'), true)))
-                            ->values()
-                            ->all(),
                     ]),
             ])
             ->columns(1);
     }
 
-    /**
-     * The form's state for a type.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    public static function fill(DocumentType $type, array $data): array
-    {
-        return [
-            ...$data,
-            self::OWNERS => $type->requirements->groupBy('holder')->map(fn ($rows) => $rows->pluck('owner_id')->all())->all(),
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
+    /** @param array<string, mixed> $data */
     public static function save(?DocumentType $type, array $data): DocumentType
     {
-        $owners = (array) ($data[self::OWNERS] ?? []);
-        unset($data[self::OWNERS]);
-
         $data['upload_role_ids'] = array_map('intval', (array) ($data['upload_role_ids'] ?? []));
         $data['verify_role_ids'] = array_map('intval', (array) ($data['verify_role_ids'] ?? []));
+        $type ??= new DocumentType;
+        $type->fill($data)->save();
 
-        return DB::transaction(function () use ($type, $data, $owners): DocumentType {
-            $type ??= new DocumentType;
-            $type->fill($data)->save();
-
-            $type->requirements()->delete();
-
-            if ($type->required_for === RequiredFor::Selected) {
-                foreach ($owners as $holder => $ids) {
-                    if (! in_array($holder, $type->holders, true)) {
-                        continue;
-                    }
-
-                    foreach (array_unique(array_map('intval', (array) $ids)) as $id) {
-                        DocumentTypeRequirement::query()->create(['document_type_id' => $type->getKey(), 'holder' => $holder, 'owner_id' => $id]);
-                    }
-                }
-            }
-
-            return $type;
-        });
+        return $type;
     }
 
     /**
@@ -180,12 +104,5 @@ class DocumentTypeForm
             ->get()
             ->mapWithKeys(fn (Role $role): array => [$role->getKey() => $role->display_name])
             ->all();
-    }
-
-    private static function requiredFor(Get $get): ?RequiredFor
-    {
-        $value = $get('required_for');
-
-        return $value instanceof RequiredFor ? $value : RequiredFor::tryFrom((string) $value);
     }
 }

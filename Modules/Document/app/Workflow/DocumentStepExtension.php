@@ -338,7 +338,7 @@ class DocumentStepExtension extends StepExtension
         $subjectType = data_get($livewire, 'data.subject_type');
         $holder = filled($subjectType) ? DocumentHolders::forType((string) $subjectType) : null;
 
-        return $holder === null ? [] : DocumentType::definedTypes()->active()->forHolder($holder->key())->ordered()->pluck('title', 'id')->all();
+        return $holder === null ? [] : DocumentType::definedTypes()->active()->ordered()->pluck('title', 'id')->all();
     }
 
     private static function canAct(WorkflowCase $case): bool

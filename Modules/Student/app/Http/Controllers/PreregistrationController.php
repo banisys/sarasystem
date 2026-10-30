@@ -41,13 +41,14 @@ class PreregistrationController extends Controller
     public function create(PreregistrationMobile $applicantMobile, ApplicantDocuments $documents): Response
     {
         $tenant = $this->primaryTenant();
-        $programs = $tenant->execute(fn () => Program::query()->active()->ordered()->get(['id', 'tenant_id', 'title', 'description']));
+        $programs = $tenant->execute(fn () => Program::query()->active()->with('availableInTenants')->ordered()->get(['id', 'tenant_id', 'title', 'description', 'all_tenants']));
 
         return Inertia::render('Student::Preregister', [
             ...PublicSite::layoutProps($tenant),
             // Each with the form as set up for it (ADR 0017).
             'programs' => $programs->map(fn (Program $program): array => [
                 ...$program->only(['id', 'title', 'description']),
+                'tenants' => StorePreregistrationRequest::preferredTenants($program)->map->only(['id', 'name'])->all(),
                 'form' => PreregistrationForm::for($tenant, $program)->toArray(),
                 // Documents the applicant uploads for it (ADR 0019).
                 'documents' => $documents->fields(LearnerDocumentHolder::KEY, $program->id),

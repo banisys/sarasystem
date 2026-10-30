@@ -57,6 +57,12 @@ const form = useForm({
 
 const isIranian = computed(() => form.nationality === 'iranian');
 const selectedProgram = computed(() => props.programs.find((program) => program.id === Number(form.program_id)));
+const availableTenants = computed(() => selectedProgram.value?.tenants ?? props.options.tenants);
+watch(availableTenants, (tenants) => {
+    if (!tenants.some((tenant) => tenant.id === Number(form.preferred_tenant_id))) {
+        form.preferred_tenant_id = '';
+    }
+});
 
 // Which built-in fields are asked, and the added fields, for the chosen program.
 const currentForm = computed(() => selectedProgram.value?.form ?? props.form);
@@ -155,11 +161,11 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                             <p v-if="selectedProgram?.description" class="mt-2 whitespace-pre-line text-sm text-gray-600">{{ selectedProgram.description }}</p>
                             <p v-if="form.errors.program_id" :class="errorClass">{{ form.errors.program_id }}</p>
                         </div>
-                        <div v-if="asks('preferred_tenant') && options.tenants.length">
+                        <div v-if="asks('preferred_tenant') && availableTenants.length">
                             <label for="preferred_tenant_id" :class="labelClass">{{ labels.tenant }} مورد نظر{{ optional('preferred_tenant') }}</label>
                             <select id="preferred_tenant_id" v-model="form.preferred_tenant_id" :class="inputClass">
                                 <option value="">{{ requires('preferred_tenant') ? 'انتخاب کنید' : 'فرقی نمی‌کند' }}</option>
-                                <option v-for="tenant in options.tenants" :key="tenant.id" :value="tenant.id">{{ tenant.name }}</option>
+                                <option v-for="tenant in availableTenants" :key="tenant.id" :value="tenant.id">{{ tenant.name }}</option>
                             </select>
                             <p v-if="form.errors.preferred_tenant_id" :class="errorClass">{{ form.errors.preferred_tenant_id }}</p>
                         </div>

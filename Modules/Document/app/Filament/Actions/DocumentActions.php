@@ -156,7 +156,6 @@ class DocumentActions
     {
         return DocumentType::definedTypes()
             ->active()
-            ->when(filled($holder), fn ($query) => $query->forHolder($holder))
             ->ordered()
             ->get()
             ->filter(fn (DocumentType $type): bool => self::canUpload($type))

@@ -2,6 +2,7 @@
 
 namespace Modules\Document\Services;
 
+use App\CustomFields\FieldMode;
 use App\Documents\DocumentHolders;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -104,7 +105,10 @@ class Documents
 
         $documents = $this->of($record);
 
-        return DocumentType::requiredFor($holder->key(), $holder->requirementOwnerId($record))
+        $modes = DocumentFormFields::modes($holder->key(), $holder->requirementOwnerId($record));
+        $requiredIds = array_keys(array_filter($modes, fn (FieldMode $mode): bool => $mode === FieldMode::Required));
+
+        return DocumentType::definedTypes()->active()->whereKey($requiredIds)
             ->ordered()
             ->get()
             ->map(fn (DocumentType $type): array => ['type' => $type, 'document' => $documents->get($type->getKey())]);

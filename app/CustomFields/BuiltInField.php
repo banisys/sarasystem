@@ -17,6 +17,8 @@ final readonly class BuiltInField
         public string $label,
         public FieldMode $default = FieldMode::Required,
         public array $modes = [FieldMode::Required, FieldMode::Optional, FieldMode::Hidden],
+        public ?string $group = null,
+        public ?string $groupDescription = null,
     ) {}
 
     public function allows(FieldMode $mode): bool

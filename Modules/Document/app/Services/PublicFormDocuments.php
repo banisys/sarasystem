@@ -2,7 +2,9 @@
 
 namespace Modules\Document\Services;
 
+use App\CustomFields\FieldMode;
 use App\Documents\ApplicantDocuments;
+use App\Documents\DocumentHolders;
 use App\Rules\JalaliDate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +21,9 @@ class PublicFormDocuments implements ApplicantDocuments
 
     public function fields(string $holder, ?int $requirementOwnerId): array
     {
-        return $this->types($holder, $requirementOwnerId)
+        $modes = DocumentFormFields::modes($holder, $requirementOwnerId);
+
+        return $this->types($modes)
             ->map(fn (DocumentType $type): array => [
                 'id' => $type->getKey(),
                 'title' => $type->title,
@@ -27,7 +31,7 @@ class PublicFormDocuments implements ApplicantDocuments
                 'accept' => $type->file_kind->accept(),
                 'maxFiles' => $type->max_files,
                 'maxKilobytes' => $type->max_kilobytes,
-                'required' => $type->isRequiredFor($holder, $requirementOwnerId),
+                'required' => $modes[$type->getKey()] === FieldMode::Required,
                 'hasExpiry' => $type->has_expiry,
             ])
             ->values()
@@ -37,11 +41,17 @@ class PublicFormDocuments implements ApplicantDocuments
     public function rules(string $holder, ?int $requirementOwnerId, ?Model $applicant = null): array
     {
         $existing = $applicant === null ? collect() : $this->documents->of($applicant);
-        $rules = [self::INPUT => ['nullable', 'array'], self::EXPIRY_INPUT => ['nullable', 'array']];
+        $modes = DocumentFormFields::modes($holder, $requirementOwnerId);
+        $types = $this->types($modes);
+        $ids = $types->modelKeys();
+        $rules = [
+            self::INPUT => $ids === [] ? ['nullable', 'array', 'max:0'] : ['nullable', 'array:'.implode(',', $ids)],
+            self::EXPIRY_INPUT => $ids === [] ? ['nullable', 'array', 'max:0'] : ['nullable', 'array:'.implode(',', $ids)],
+        ];
 
-        foreach ($this->types($holder, $requirementOwnerId) as $type) {
+        foreach ($types as $type) {
             $key = self::INPUT.'.'.$type->getKey();
-            $required = $type->isRequiredFor($holder, $requirementOwnerId) && ! ($existing->get($type->getKey())?->isUploaded() ?? false);
+            $required = $modes[$type->getKey()] === FieldMode::Required && ! ($existing->get($type->getKey())?->isUploaded() ?? false);
 
             $rules[$key] = [$required ? 'required' : 'nullable', 'array', 'max:'.$type->max_files];
             $rules[$key.'.*'] = $type->fileRules();
@@ -56,7 +66,7 @@ class PublicFormDocuments implements ApplicantDocuments
 
     public function attributes(string $holder, ?int $requirementOwnerId): array
     {
-        return $this->types($holder, $requirementOwnerId)
+        return $this->types(DocumentFormFields::modes($holder, $requirementOwnerId))
             ->flatMap(fn (DocumentType $type): array => [
                 self::INPUT.'.'.$type->getKey() => $type->title,
                 self::INPUT.'.'.$type->getKey().'.*' => $type->title,
@@ -67,7 +77,9 @@ class PublicFormDocuments implements ApplicantDocuments
 
     public function store(Model $applicant, array $files, array $expiry): void
     {
-        $types = DocumentType::definedTypes()->active()->where('applicant_uploads', true)->whereKey(array_keys($files))->get();
+        $holder = DocumentHolders::forRecord($applicant);
+        $types = $holder === null ? new Collection : $this->types(DocumentFormFields::modes($holder->key(), $holder->requirementOwnerId($applicant)))
+            ->whereIn('id', array_keys($files));
 
         foreach ($types as $type) {
             $uploads = array_values(array_filter((array) ($files[$type->getKey()] ?? [])));
@@ -89,18 +101,13 @@ class PublicFormDocuments implements ApplicantDocuments
     }
 
     /**
+     * @param  array<int, FieldMode>  $modes
      * @return Collection<int, DocumentType>
      */
-    private function types(string $holder, ?int $requirementOwnerId): Collection
+    private function types(array $modes): Collection
     {
-        return DocumentType::definedTypes()
-            ->active()
-            ->forHolder($holder)
-            ->where('applicant_uploads', true)
-            ->with('requirements')
-            ->ordered()
-            ->get()
-            ->filter(fn (DocumentType $type): bool => $type->concernsApplicant($holder, $requirementOwnerId))
-            ->values();
+        $ids = array_keys(array_filter($modes, fn (FieldMode $mode): bool => $mode !== FieldMode::Hidden));
+
+        return DocumentType::definedTypes()->active()->whereKey($ids)->ordered()->get();
     }
 }

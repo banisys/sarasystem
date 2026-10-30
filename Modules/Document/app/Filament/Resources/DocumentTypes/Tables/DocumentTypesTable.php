@@ -2,7 +2,6 @@
 
 namespace Modules\Document\Filament\Resources\DocumentTypes\Tables;
 
-use App\Documents\DocumentHolders;
 use App\Filament\Support\TextFilter;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -19,25 +18,16 @@ class DocumentTypesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('requirements')->withCount('documents'))
+            ->modifyQueryUsing(fn ($query) => $query->withCount('documents'))
             ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')
                     ->sortable(),
-                TextColumn::make('holders')
-                    ->label('برای')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => DocumentHolders::find($state)?->label() ?? $state),
-                TextColumn::make('required_for')
-                    ->label('لازم بودن'),
                 TextColumn::make('file_kind')
                     ->label('نوع فایل')
                     ->toggleable(),
-                IconColumn::make('applicant_uploads')
-                    ->label('بارگذاری متقاضی')
-                    ->boolean(),
                 IconColumn::make('has_expiry')
                     ->label('انقضا')
                     ->boolean(),
@@ -53,7 +43,6 @@ class DocumentTypesTable
             ])
             ->recordActions([
                 EditAction::make()
-                    ->mutateRecordDataUsing(fn (array $data, DocumentType $record): array => DocumentTypeForm::fill($record, $data))
                     ->using(fn (Model $record, array $data): DocumentType => DocumentTypeForm::save($record, $data)),
                 DeleteAction::make()
                     ->visible(fn (DocumentType $record): bool => $record->documents_count === 0)

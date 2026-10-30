@@ -17,13 +17,19 @@ class ProgramsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('workflow')->withCount('preregistrations'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['workflow', 'availableInTenants'])->withCount('preregistrations'))
             ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')
                     ->sortable(),
+                TextColumn::make('availability')
+                    ->label(fn (): string => config('sarasystem.tenant_plural_label').' ارائه‌دهنده')
+                    ->state(fn ($record): string => $record->all_tenants
+                        ? 'همهٔ '.config('sarasystem.tenant_plural_label')
+                        : $record->availableInTenants->pluck('name')->join('، '))
+                    ->wrap(),
                 IconColumn::make('is_active')
                     ->label('در فرم')
                     ->boolean(),

@@ -67,7 +67,7 @@ class ListDocuments extends ListRecords
             ])
             ->action(function (array $data, Documents $documents): void {
                 $record = $this->resolvePerson($data['holder'], $data['record']) ?? throw ValidationException::withMessages(['mountedActions.0.data.record' => 'این شخص پیدا نشد.']);
-                $type = DocumentType::definedTypes()->active()->forHolder($data['holder'])->findOrFail($data['document_type_id']);
+                $type = DocumentType::definedTypes()->active()->findOrFail($data['document_type_id']);
 
                 abort_unless(DocumentActions::canUpload($type), 403);
 

@@ -3,6 +3,8 @@
 - **Date:** 2026-10-27
 - **Status:** accepted (revised the same day: first written around a school's grades, see the end)
 
+Extended by [ADR 0035](0035-program-tenant-availability.md): programs remain centrally managed but can be offered in one, several or all active tenants; preferred-tenant choices and admission follow that availability.
+
 ## Context
 SaraSystem serves schools, universities, institutes and companies ([overview](../overview.md)). They all have **learners**: the people who are put into classes so that education can happen. A learner can be:
 - a pupil (دانش‌آموز);

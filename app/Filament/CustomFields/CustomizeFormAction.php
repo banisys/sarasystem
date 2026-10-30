@@ -44,7 +44,7 @@ class CustomizeFormAction
                 : "تنظیم فرم {$form->label()}")
             ->modalWidth('5xl')
             ->fillForm(fn (?Model $record): array => self::load($form, $perRecord ? $record : null))
-            ->schema(self::components($form, $perRecord))
+            ->schema(fn (): array => self::components($form, $perRecord))
             ->action(function (array $data, ?Model $record) use ($form, $perRecord): void {
                 self::save($form, $perRecord ? $record : null, $data);
 
@@ -60,18 +60,22 @@ class CustomizeFormAction
         $sections = $form->sections();
 
         return [
-            Section::make('فیلدهای ثابت')
-                ->description($perRecord
-                    ? 'خالی یعنی همان تنظیم کلی فرم.'
-                    : 'فیلدهایی که سامانه به آن‌ها نیاز دارد (مثل نام و کد ملی) همیشه پرسیده می‌شوند و این‌جا نیستند.')
-                ->columns(3)
-                ->visible($form->builtInFields() !== [])
-                ->schema(array_map(fn (BuiltInField $field): Select => Select::make("field_modes.{$field->key}")
-                    ->label($field->label)
-                    ->options(collect($field->modes)->mapWithKeys(fn (FieldMode $mode): array => [$mode->value => $mode->getLabel()])->all())
-                    ->placeholder($perRecord ? 'مثل تنظیم کلی فرم' : null)
-                    ->selectablePlaceholder($perRecord)
-                    ->required(! $perRecord), $form->builtInFields())),
+            ...collect($form->allBuiltInFields())
+                ->groupBy(fn (BuiltInField $field): string => $field->group ?? 'فیلدهای ثابت')
+                ->map(fn ($fields, string $group): Section => Section::make($group)
+                    ->description($perRecord
+                        ? 'خالی یعنی همان تنظیم کلی فرم.'
+                        : ($fields->first()->groupDescription
+                            ?? 'فیلدهایی که سامانه به آن‌ها نیاز دارد (مثل نام و کد ملی) همیشه پرسیده می‌شوند و این‌جا نیستند.'))
+                    ->columns(3)
+                    ->schema($fields->map(fn (BuiltInField $field): Select => Select::make("field_modes.{$field->key}")
+                        ->label($field->label)
+                        ->options(collect($field->modes)->mapWithKeys(fn (FieldMode $mode): array => [$mode->value => $mode->getLabel()])->all())
+                        ->placeholder($perRecord ? 'مثل تنظیم کلی فرم' : null)
+                        ->selectablePlaceholder($perRecord)
+                        ->required(! $perRecord))->all()))
+                ->values()
+                ->all(),
             Section::make($perRecord ? 'فیلدهای اضافه برای این مورد' : 'فیلدهای اضافه')
                 ->description($perRecord
                     ? 'بعد از فیلدهای اضافه‌ی کلی فرم، در بخشی که انتخاب می‌کنید نمایش داده می‌شوند.'
@@ -129,7 +133,7 @@ class CustomizeFormAction
         $row = self::row($form, $owner);
         $modes = [];
 
-        foreach ($form->builtInFields() as $field) {
+        foreach ($form->allBuiltInFields() as $field) {
             $modes[$field->key] = $row?->modeFor($field)?->value ?? ($owner === null ? $field->default->value : null);
         }
 
@@ -146,7 +150,7 @@ class CustomizeFormAction
     {
         $modes = [];
 
-        foreach ($form->builtInFields() as $field) {
+        foreach ($form->allBuiltInFields() as $field) {
             $mode = FieldMode::tryFrom((string) ($data['field_modes'][$field->key] ?? ''));
 
             if ($mode !== null && $field->allows($mode)) {

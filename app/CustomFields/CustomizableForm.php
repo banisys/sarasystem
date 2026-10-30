@@ -39,7 +39,16 @@ abstract class CustomizableForm
 
     public function builtInField(string $key): ?BuiltInField
     {
-        return collect($this->builtInFields())->firstWhere('key', $key);
+        return collect($this->builtInFields())->firstWhere('key', $key)
+            ?? collect(AdditionalBuiltInFields::for($this->key()))->firstWhere('key', $key);
+    }
+
+    /**
+     * @return list<BuiltInField>
+     */
+    public function allBuiltInFields(): array
+    {
+        return [...$this->builtInFields(), ...AdditionalBuiltInFields::for($this->key())];
     }
 
     /**
@@ -66,7 +75,7 @@ abstract class CustomizableForm
 
         $modes = [];
 
-        foreach ($this->builtInFields() as $field) {
+        foreach ($this->allBuiltInFields() as $field) {
             $modes[$field->key] = $own?->modeFor($field) ?? $general?->modeFor($field) ?? $field->default;
         }
 
