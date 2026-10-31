@@ -59,7 +59,7 @@ class PublicSite
         $firstSegment = Str::before(ltrim($path, '/'), '/');
 
         if ($firstSegment !== '') {
-            $tenant = Tenant::query()->active()->where('slug', $firstSegment)->first();
+            $tenant = app(HiddenRecords::class)->exclude(Tenant::query()->active()->where('slug', $firstSegment))->first();
 
             if ($tenant !== null) {
                 return [$tenant, '/'.trim(Str::after(ltrim($path, '/'), $firstSegment), '/')];
@@ -81,7 +81,7 @@ class PublicSite
         return ['site' => [
             'tenant' => ['name' => $tenant->name, 'url' => self::url($tenant)],
             'navigation' => collect(static::$navigationProviders)->flatMap(fn (Closure $callback): array => $callback($tenant))->values()->all(),
-            'otherTenants' => Tenant::query()->active()->whereKeyNot($tenant->getKey())->orderByDesc('is_primary')->orderBy('name')->get()
+            'otherTenants' => app(HiddenRecords::class)->exclude(Tenant::query()->active()->whereKeyNot($tenant->getKey()))->orderByDesc('is_primary')->orderBy('name')->get()
                 ->map(fn (Tenant $other): array => ['name' => $other->name, 'url' => self::url($other)])
                 ->all(),
         ]];

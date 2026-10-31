@@ -116,6 +116,14 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Homework hand-in | تحویل تکلیف | A learner's answer and/or files for a session's homework (`HomeworkSubmission`), changeable until graded, marked «با تأخیر» after the due day; the teacher gives a score (out of the homework's «نمره از») and feedback ([ADR 0030](decisions/0030-homework-submissions.md)). |
 | My classes | کلاس‌های من | The user-panel page of a person's sessions (day / week / Jalali month) in the classes they are in or teach; teachers take attendance and record content there ([ADR 0026](decisions/0026-my-classes.md)). |
 
+## Step-by-step tutorial (`Tutorial` module, [ADR 0040](decisions/0040-step-by-step-tutorial.md))
+| Term | Persian | Meaning |
+|---|---|---|
+| Scenario | سناریو | A tutorial for one kind of client (language institute, school, company): chapters of missions done in order. |
+| Mission | مأموریت / گام | One task of a scenario, with steps, who does it, a link, maybe an account to sign in with, and a check that ticks it. |
+| Tutorial run | | A person's way through a scenario: missions done and the rows made. One per person. |
+| Tutorial mode | حالت آموزش | While on (session), every row made belongs to the run; «شروع دوباره» deletes them. |
+
 ## School (`School` module, [ADR 0031](decisions/0031-school-structure.md))
 | Term | Persian | Meaning |
 |---|---|---|

@@ -6,5 +6,6 @@
     "Document": true,
     "Contract": true,
     "Class": true,
-    "School": true
+    "School": true,
+    "Tutorial": true
 }

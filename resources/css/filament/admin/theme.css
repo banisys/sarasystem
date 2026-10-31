@@ -6,6 +6,7 @@
 @source '../../../../resources/views/filament/**/*';
 @source '../../../../Modules/*/app/Filament/**/*';
 @source '../../../../Modules/*/resources/views/filament/**/*';
+@source '../../../../Modules/*/resources/views/livewire/**/*';
 
 /* Panel font (ported from LMS). Registered with ->font('Shabnam', provider:
    LocalFontProvider::class) in AdminPanelProvider, which sets Filament's

@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import TutorialBar from '@/Components/TutorialBar.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -18,6 +19,7 @@ function leaveImpersonation() {
 
 <template>
     <div class="min-h-screen bg-gray-50">
+        <TutorialBar />
         <div
             v-if="impersonator"
             class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-amber-500 px-4 py-2 text-sm text-white"

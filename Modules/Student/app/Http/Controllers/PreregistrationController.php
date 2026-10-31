@@ -6,6 +6,7 @@ use App\Auth\OneTimePassword;
 use App\Documents\ApplicantDocuments;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\PublicSite\HiddenRecords;
 use App\PublicSite\PublicSite;
 use App\Rules\IranianMobile;
 use App\Support\Identifiers;
@@ -41,7 +42,7 @@ class PreregistrationController extends Controller
     public function create(PreregistrationMobile $applicantMobile, ApplicantDocuments $documents): Response
     {
         $tenant = $this->primaryTenant();
-        $programs = $tenant->execute(fn () => Program::query()->active()->with('availableInTenants')->ordered()->get(['id', 'tenant_id', 'title', 'description', 'all_tenants']));
+        $programs = $tenant->execute(fn () => app(HiddenRecords::class)->exclude(Program::query()->active())->with('availableInTenants')->ordered()->get(['id', 'tenant_id', 'title', 'description', 'all_tenants']));
 
         return Inertia::render('Student::Preregister', [
             ...PublicSite::layoutProps($tenant),

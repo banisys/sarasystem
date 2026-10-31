@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import NavMenu from '@/Components/Public/NavMenu.vue';
+import TutorialBar from '@/Components/TutorialBar.vue';
 
 // The static header and footer of every public page (ADR 0010); the
 // `site` prop comes from App\PublicSite\PublicSite::layoutProps().
@@ -12,6 +13,7 @@ const user = computed(() => page.props.auth.user);
 
 <template>
     <div class="flex min-h-screen flex-col bg-gray-50">
+        <TutorialBar />
         <header class="border-b border-gray-200 bg-white">
             <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4">
                 <Link :href="site.tenant.url" class="text-lg font-bold text-gray-900">{{ site.tenant.name }}</Link>

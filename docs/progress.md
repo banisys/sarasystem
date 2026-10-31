@@ -6,6 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
+- Step-by-step tutorial (`Tutorial` module, ADR 0040): language-institute scenario done; school and company scenarios next.
 - Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026), plus guardians, absence SMS and homework (ADR 0027–0030).
 - School (`School` module, [ADR 0031](decisions/0031-school-structure.md), [ADR 0032](decisions/0032-scores-and-report-cards.md)): parts A and B done. Possible next steps: year-final scores («نوبت» formulas, resits), rankings, activity notebook; admission setting a grade.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
@@ -19,6 +20,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-31 — Step-by-step tutorial ([ADR 0040](decisions/0040-step-by-step-tutorial.md)), module `Tutorial`, on the live installation:
+  - «آموزش گام‌به‌گام» (super admin): choose a scenario, missions in order (each ticks by checking the rows made in the run), pause / resume, «شروع دوباره» deletes everything the run made (all or nothing).
+  - A bar on every admin, user-panel and public page in tutorial mode: the current mission, its steps, «برو به صفحه», «ورود با حساب …» (impersonates the account the mission needs) and «بازگشت به حساب خودم».
+  - First scenario «آموزشگاه زبان» (12 missions in 3 chapters): branch, instructor and registrar by quick entry, admission workflow and program, `/preregister`, admission in the registrar's cartable, term, class, members, a one-off session, attendance in «کلاس‌های من».
+  - Core hook `HiddenRecords`: the public site (footer tenants, `/{slug}`, `/preregister` programs and tenants) hides other people's tutorial rows.
+  - Migration applied locally. 11 new tests; 492 pass (`--parallel --processes=8`); Pint and Vite build (`--configLoader runner`) pass. Not checked in a browser.
 - 2026-10-31 — Default roles ([ADR 0039](decisions/0039-default-roles.md)) for any organization: `org_admin` «مدیر ستاد», `tenant_manager` «مدیر {tenant_label}», `education_officer`, `registrar`, `finance_officer`, `instructor` «مدرس», `learner` (`LEARNER_LABEL`), the guardian role and `staff` «کارمند».
   - Core `DefaultRoles`: modules grant their screens' permissions in their providers; officers' permissions also go to `tenant_manager`, and from there to `org_admin`. `instructor` / `learner` / guardian / `staff` have no admin permissions.
   - `php artisan roles:install-defaults` (run by `db:seed`) makes the missing roles and leaves changed ones alone; `--add-missing-permissions` adds missing default permissions. Default roles are system roles (not deletable, fixed key).
@@ -192,6 +199,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Step-by-step tutorial (ADR 0040): not walked through in a browser yet (covered by tests of each check, recording, reset, act-as and public hiding). Rows made by queue workers or query-builder inserts aren't recorded; edits to rows that existed before aren't undone; uploaded files stay on disk after a reset; admin lists show tutorial rows; the `/preregister` mission needs a working SMS for the code (the `log` driver writes it to `storage/logs/sms.log`). Only the language-institute scenario so far.
 - Quick employee entry / import (ADR 0038): not checked in a browser (covered by Livewire and importer tests, including a CSV upload); CSV only (no XLSX upload); no «پرونده ناقص» marker for employees entered with minimal data; the `queue` worker must be restarted after code changes for imports to use the new code.
 - `php artisan test --parallel` (16 processes on this machine) now often fails with PostgreSQL «out of shared memory»: the processes together hold more table locks than the default `max_locks_per_transaction = 64` allows (it was on the edge; the Class tables pushed it over). `--processes=8` passes. Fix: add `command: ['postgres', '-c', 'max_locks_per_transaction=256']` to the `pgsql` service and recreate it (`docker compose up -d pgsql`; the Docker network has its pinned subnet now).
 - Classes (ADR 0022):

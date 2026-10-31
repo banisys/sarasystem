@@ -7,6 +7,7 @@ use App\Documents\ApplicantDocuments;
 use App\Documents\NoApplicantDocuments;
 use App\Guardians\Guardians;
 use App\Models\User;
+use App\PublicSite\HiddenRecords;
 use App\Sms\LogSmsSender;
 use App\Sms\SmsSender;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
@@ -33,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Modules add their permissions to the default roles (ADR 0039).
         $this->app->singleton(DefaultRoles::class);
+
+        // Rows the public site leaves out, e.g. tutorial data (ADR 0040).
+        $this->app->singleton(HiddenRecords::class);
     }
 
     /**

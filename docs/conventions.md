@@ -27,6 +27,8 @@ _(TODO: formatter/linter, naming rules, file naming.)_
 ## Patterns we use
 - Admin forms use server-side validation and Persian field labels/messages. Keep native browser validation disabled (`novalidate`) through the panel defaults; custom raw HTML input forms in the panel must set it too. Do not remove server validation or enable browser bubbles on new forms ([ADR 0037](decisions/0037-admin-server-side-validation.md)).
 
+- Create rows with Eloquent (`create()`, `save()`), not query-builder `insert()`, in code a web request runs. The step-by-step tutorial records rows through model events and deletes them on «شروع دوباره» ([ADR 0040](decisions/0040-step-by-step-tutorial.md)). Public-site lists of tenants or other records a tutorial could make go through `HiddenRecords::exclude()`.
+
 ## Patterns we avoid
 _(TODO: things that look tempting but we decided against — link ADR if any.)_
 

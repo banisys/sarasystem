@@ -6,6 +6,7 @@ use App\CustomFields\FieldMode;
 use App\CustomFields\ResolvedForm;
 use App\Documents\ApplicantDocuments;
 use App\Models\Tenant;
+use App\PublicSite\HiddenRecords;
 use App\Rules\IranianMobile;
 use App\Rules\JalaliDate;
 use App\Rules\NationalCode;
@@ -61,7 +62,8 @@ class StorePreregistrationRequest extends FormRequest
      */
     public static function preferredTenants(?Program $program = null): Collection
     {
-        $tenants = ($program?->availableTenants() ?? Tenant::query()->active()->orderBy('name'))->get(['id', 'name', 'is_primary']);
+        // Without tenants made in someone else's tutorial (ADR 0040).
+        $tenants = app(HiddenRecords::class)->exclude($program?->availableTenants() ?? Tenant::query()->active()->orderBy('name'))->get(['id', 'name', 'is_primary']);
 
         if ($program !== null && ! $program->all_tenants) {
             return $tenants;
@@ -113,7 +115,7 @@ class StorePreregistrationRequest extends FormRequest
     private function selectedProgram(): ?Program
     {
         return $this->selectedProgram ??= is_numeric($this->input('program_id'))
-            ? Program::withoutTenantScope()->where('tenant_id', Tenant::primary()?->getKey())->active()->find($this->input('program_id'))
+            ? app(HiddenRecords::class)->exclude(Program::withoutTenantScope()->where('tenant_id', Tenant::primary()?->getKey())->active())->find($this->input('program_id'))
             : null;
     }
 
@@ -128,7 +130,8 @@ class StorePreregistrationRequest extends FormRequest
         return [
             'program_id' => ['required', Rule::exists('student_programs', 'id')
                 ->where('tenant_id', Tenant::primary()?->getKey())
-                ->where('is_active', true)],
+                ->where('is_active', true)
+                ->whereNotIn('id', app(HiddenRecords::class)->keysOf(Program::class))],
             'preferred_tenant_id' => $form->rulesFor('preferred_tenant', [Rule::in(self::preferredTenants($this->selectedProgram())->modelKeys())]),
             'first_name' => ['required', 'string', 'max:50'],
             'last_name' => ['required', 'string', 'max:50'],
