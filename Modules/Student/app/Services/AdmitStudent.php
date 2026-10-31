@@ -27,9 +27,6 @@ use Modules\Student\Models\Student;
  */
 class AdmitStudent
 {
-    /** The role offered by default, if it exists and the approver may give it. */
-    public const STUDENT_ROLE = 'student';
-
     /**
      * @param  array{tenant_id: int|string, role_ids?: list<int|string>, student_code?: string|null, enrolled_at: string}  $data
      */

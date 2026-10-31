@@ -2,6 +2,7 @@
 
 namespace Modules\Employee\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\Contract\ContractParties;
 use App\CustomFields\CustomForms;
 use App\Documents\DocumentHolders;
@@ -40,6 +41,13 @@ class EmployeeServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // The screens' permissions for the default roles (ADR 0039).
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::ORG_ADMIN => [...DefaultRoles::manage('JobPosition', reorder: true), ...DefaultRoles::manage('JobApplication')],
+            DefaultRoles::TENANT_MANAGER => DefaultRoles::manage('Employee'),
+            DefaultRoles::FINANCE_OFFICER => DefaultRoles::view('Employee'),
+        ]);
 
         // The public form has no captcha: a few submissions, and a few SMS
         // codes sent or checked, per hour per IP (ADR 0014).

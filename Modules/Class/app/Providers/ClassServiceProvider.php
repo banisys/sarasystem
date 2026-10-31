@@ -2,10 +2,12 @@
 
 namespace Modules\Class\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\Guardians\Guardians;
 use App\Models\Tenant;
 use App\Models\User;
 use App\UserPanel\UserPanel;
+use Modules\Class\Services\DefaultClassRoles;
 use Modules\Class\Services\MyClasses;
 use Modules\Class\Services\PlanForecast;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -43,6 +45,13 @@ class ClassServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // The screens' permissions for the default roles (ADR 0039).
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::ORG_ADMIN => [...DefaultRoles::manage('Term'), ...DefaultRoles::manage('ClassRole', reorder: true), ...DefaultRoles::manage('Subject', reorder: true), ...DefaultRoles::manage('TeachingPlan')],
+            DefaultRoles::EDUCATION_OFFICER => [...DefaultRoles::manage('Classroom'), ...DefaultRoles::manage('ClassSession'), ...DefaultRoles::manage('Holiday')],
+        ]);
+        app(DefaultRoles::class)->installing(fn () => app(DefaultClassRoles::class)->install());
 
         // «کلاس‌های من» for members and teachers of classes (ADR 0026), and
         // «کلاس‌های …» of each ward in classes for their guardians (ADR 0027).

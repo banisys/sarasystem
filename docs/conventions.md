@@ -34,7 +34,7 @@ _(TODO: things that look tempting but we decided against — link ADR if any.)_
 1. `docker compose exec -u sail laravel.test php artisan module:make {Name} --inertia`, then `… composer dump-autoload`.
 2. Delete the generated example controller/pages/routes you don't need; keep page names as `{Name}::Page`.
 3. Models whose rows belong to a tenant: `use BelongsToTenant` and give the table a `tenant_id` FK (see Tenancy rules).
-4. Admin screens go in `app/Filament/Resources` of the module. Determine whether their data depends on the current tenant and apply the tenant-independent page rule below where appropriate. Then `php artisan shield:generate --all --panel=admin --ignore-existing-policies`.
+4. Admin screens go in `app/Filament/Resources` of the module. Determine whether their data depends on the current tenant and apply the tenant-independent page rule below where appropriate. Then `php artisan shield:generate --all --panel=admin --ignore-existing-policies`, and give the default roles the new permissions with `app(DefaultRoles::class)->grant([...])` in the module's service provider ([ADR 0039](decisions/0039-default-roles.md)).
 5. Tests go in `Modules/{Name}/tests` (extend `Tests\TestCase`, use `Tests\Concerns\InteractsWithTenants`) and must include a cross-tenant isolation test.
 6. Document the module in `docs/architecture.md` (module list) and, if it was ported, in `docs/legacy-lms.md` → Porting status.
 

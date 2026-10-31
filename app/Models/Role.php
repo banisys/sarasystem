@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Authorization\DefaultRoles;
 use BezhanSalleh\FilamentShield\Support\Utils;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -23,8 +24,9 @@ class Role extends BaseRole
     public const string SUPER_ADMIN = 'super_admin';
 
     /**
-     * Roles the code relies on by name. They can't be deleted, and their
-     * name, guard and tenant can't change (also enforced by booted()).
+     * Roles the code relies on by name: super admin, panel_user and the
+     * default roles (ADR 0039). They can't be deleted, and their name, guard
+     * and tenant can't change (also enforced by booted()).
      */
     public function isSystemRole(): bool
     {
@@ -40,7 +42,7 @@ class Role extends BaseRole
 
     private static function isSystemRoleName(?string $name, mixed $tenantId): bool
     {
-        return $tenantId === null && in_array($name, [self::SUPER_ADMIN, Utils::getPanelUserRoleName()], true);
+        return $tenantId === null && (in_array($name, [self::SUPER_ADMIN, Utils::getPanelUserRoleName()], true) || app(DefaultRoles::class)->isDefaultRoleName($name));
     }
 
     /**

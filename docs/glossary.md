@@ -15,6 +15,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Saraye Danesh | سرای دانش | The school chain that uses the system; "sarayedanesh" is also the name of the original Laravel 6 system. |
 | Head office | ستاد | Central office over all schools (roles `main_office_*`). |
 | Tenant | مدرسه / شعبه / واحد | One organizational unit of the installation: a school, a branch or a department ([ADR 0002](decisions/0002-tenancy-model.md)). The UI label is configurable per installation. Head office is a tenant too. Replaces LMS's instance + school. |
+| Default role | نقش پیش‌فرض | One of the nine global roles every installation starts with, whatever the organization is (`org_admin`, `tenant_manager`, `education_officer`, `registrar`, `finance_officer`, `instructor`, `learner`, guardian, `staff`). Fixed key, changeable label and permissions; can't be deleted ([ADR 0039](decisions/0039-default-roles.md)). |
 | Instance | | (legacy LMS) A site in LMS's multi-site setup. Each school branch is one instance; most data has `instance_id`. Maps to Tenant. |
 | School | مدرسه | (legacy LMS) `schl_schools`, tied to an instance. In SaraSystem a school is simply a Tenant. |
 | Academic year | سال تحصیلی | `schl_years`, from about 1 Shahrivar to 31 Mordad. Most operational data is year-scoped. |

@@ -2,6 +2,7 @@
 
 namespace Modules\Site\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\Filament\Resources\Tenants\TenantResource;
 use App\Models\Tenant;
 use App\PublicSite\PublicSite;
@@ -51,6 +52,11 @@ class SiteServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // The screens' permissions for the default roles (ADR 0039).
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::TENANT_MANAGER => [...DefaultRoles::manage('Menu'), ...DefaultRoles::manage('Page')],
+        ]);
 
         // Every tenant has a home page in its page list (ADR 0010).
         Tenant::created(fn (Tenant $tenant) => Page::ensureHomeFor($tenant));

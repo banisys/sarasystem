@@ -2,6 +2,7 @@
 
 namespace Modules\Document\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\CustomFields\AdditionalBuiltInFields;
 use App\Documents\ApplicantDocuments;
 use App\Documents\DocumentHolders;
@@ -49,6 +50,12 @@ class DocumentServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // The screens' permissions for the default roles (ADR 0039).
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::ORG_ADMIN => DefaultRoles::manage('DocumentType', reorder: true),
+            DefaultRoles::REGISTRAR => DefaultRoles::manage('Document'),
+        ]);
 
         // Steps can ask for documents to be uploaded or checked (ADR 0019).
         WorkflowStepExtensions::register(new DocumentStepExtension);

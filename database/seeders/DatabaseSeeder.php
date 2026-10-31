@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Authorization\DefaultRoles;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -32,6 +33,9 @@ class DatabaseSeeder extends Seeder
         if (Tenant::primary() === null) {
             $headOffice->makePrimary();
         }
+
+        // Roles shared by schools, institutes and companies (ADR 0039).
+        app(DefaultRoles::class)->install();
 
         if (app()->isLocal()) {
             $superAdmin = User::firstOrCreate(

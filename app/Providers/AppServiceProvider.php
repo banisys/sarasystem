@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\Documents\ApplicantDocuments;
 use App\Documents\NoApplicantDocuments;
 use App\Guardians\Guardians;
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
 
         // The Document module binds its own (ADR 0019); bindIf, whichever registers first.
         $this->app->bindIf(ApplicantDocuments::class, NoApplicantDocuments::class);
+
+        // Modules add their permissions to the default roles (ADR 0039).
+        $this->app->singleton(DefaultRoles::class);
     }
 
     /**
@@ -47,6 +51,14 @@ class AppServiceProvider extends ServiceProvider
                 $finder->addNamespace($module->getStudlyName(), $module->getExtraPath('resources/js/Pages'));
             }
         });
+
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::ORG_ADMIN => DefaultRoles::manage('Workflow'),
+            DefaultRoles::TENANT_MANAGER => DefaultRoles::manage('User'),
+            DefaultRoles::EDUCATION_OFFICER => DefaultRoles::view('User'),
+            DefaultRoles::REGISTRAR => DefaultRoles::view('User'),
+            DefaultRoles::FINANCE_OFFICER => DefaultRoles::view('User'),
+        ]);
 
         // Wards who sign in with a guardian's mobile follow it (ADR 0028).
         User::updated(function (User $user): void {

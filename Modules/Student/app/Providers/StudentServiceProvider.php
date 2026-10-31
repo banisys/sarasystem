@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\Contract\ContractParties;
 use App\CustomFields\CustomForms;
 use App\Documents\DocumentHolders;
@@ -40,6 +41,14 @@ class StudentServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // The screens' permissions for the default roles (ADR 0039).
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::ORG_ADMIN => DefaultRoles::manage('Program'),
+            DefaultRoles::REGISTRAR => [...DefaultRoles::manage('Preregistration'), ...DefaultRoles::manage('Student')],
+            DefaultRoles::EDUCATION_OFFICER => DefaultRoles::view('Student'),
+            DefaultRoles::FINANCE_OFFICER => DefaultRoles::view('Student'),
+        ]);
 
         // The public form has no captcha: a few submissions, and a few SMS
         // codes sent or checked, per hour per IP (ADR 0018).

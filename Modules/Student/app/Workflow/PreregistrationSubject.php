@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Workflow;
 
+use App\Authorization\DefaultRoles;
 use App\Authorization\RoleAssignment;
 use App\CustomFields\Answers;
 use App\CustomFields\ResolvedForm;
@@ -240,7 +241,7 @@ class PreregistrationSubject extends WorkflowSubject
                         ->label("نقش‌ها در {$tenantLabel}")
                         ->helperText('فقط نقش‌هایی که خودتان اجازه‌ی دادنشان را دارید.')
                         ->options(fn (Get $get): array => self::roleOptions($get('tenant_id')))
-                        ->default(fn (): array => Role::query()->whereNull('tenant_id')->where('name', AdmitStudent::STUDENT_ROLE)->pluck('id')->all())
+                        ->default(fn (): array => Role::query()->whereNull('tenant_id')->where('name', DefaultRoles::LEARNER)->pluck('id')->all())
                         ->columns(3)
                         ->columnSpanFull(),
                     Text::make("چیزی را که با این تأیید ساخته می‌شود بعداً در «{$learnersLabel}» همان {$tenantLabel} می‌بینید. افزودن به کلاس‌ها جداست.")

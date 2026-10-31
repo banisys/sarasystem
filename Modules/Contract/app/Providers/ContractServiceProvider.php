@@ -2,6 +2,7 @@
 
 namespace Modules\Contract\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\Contract\ContractParties;
 use App\CustomFields\CustomForms;
 use App\Filament\Support\ModelRelationManagers;
@@ -62,6 +63,12 @@ class ContractServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // The screens' permissions for the default roles (ADR 0039).
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::ORG_ADMIN => DefaultRoles::manage('ContractType', reorder: true),
+            DefaultRoles::FINANCE_OFFICER => DefaultRoles::manage('Contract'),
+        ]);
 
         // Each contract type sets up its terms (ADR 0017, ADR 0020).
         CustomForms::register(new ContractForm);

@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Tests\Feature;
 
+use App\Authorization\DefaultRoles;
 use App\Filament\Resources\WorkflowCases\Pages\ViewWorkflowCase;
 use App\Filament\Resources\WorkflowCases\WorkflowCaseResource;
 use App\Models\Role;
@@ -137,7 +138,7 @@ class AdmissionWorkflowTest extends TestCase
             'national_code' => '0013542419', 'mobile' => '09121112233', 'program_id' => $this->program->id, 'preferred_tenant_id' => $this->west->id,
         ]);
         $case = $this->caseAtLastStep($preregistration);
-        $student = $this->globalRole('student');
+        $student = $this->globalRole(DefaultRoles::LEARNER);
 
         $this->actingInPanel($this->director, $this->primary);
         Livewire::test(ViewWorkflowCase::class, ['record' => $case->getRouteKey()])
@@ -150,7 +151,7 @@ class AdmissionWorkflowTest extends TestCase
         $user = User::query()->where('national_code', '0013542419')->sole();
         $this->assertSame('09121112233', $user->mobile);
         $this->assertNotNull($user->mobile_verified_at);
-        $this->assertSame(['student'], $this->roleNamesIn($user, $this->west));
+        $this->assertSame([DefaultRoles::LEARNER], $this->roleNamesIn($user, $this->west));
 
         $row = Student::withoutTenantScope()->sole();
         $this->assertSame($this->west->id, $row->tenant_id);

@@ -2,6 +2,7 @@
 
 namespace Modules\School\Providers;
 
+use App\Authorization\DefaultRoles;
 use App\Filament\Support\ModelRelationManagers;
 use App\Guardians\Guardians;
 use App\Models\Tenant;
@@ -58,6 +59,13 @@ class SchoolServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // The screens' permissions for the default roles (ADR 0039).
+        app(DefaultRoles::class)->grant([
+            DefaultRoles::ORG_ADMIN => [...DefaultRoles::manage('Stage', reorder: true), ...DefaultRoles::manage('Grade'), ...DefaultRoles::manage('Major', reorder: true), ...DefaultRoles::manage('ScorePeriod')],
+            DefaultRoles::EDUCATION_OFFICER => DefaultRoles::manage('Enrollment'),
+            DefaultRoles::REGISTRAR => DefaultRoles::view('Enrollment'),
+        ]);
 
         $this->extendClassrooms();
 
