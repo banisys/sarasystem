@@ -18,7 +18,8 @@ use UnitEnum;
 
 /**
  * Employees of the current tenant (ADR 0016). They are created by hiring
- * workflows; employment details are edited in a modal. Their page has tabs
+ * workflows, or quickly with «ثبت سریع کارمند» / «ورود از فایل» (ADR 0038)
+ * on the list; employment details are edited in a modal. Their page has tabs
  * other modules add, e.g. contracts and documents (ModelRelationManagers).
  */
 class EmployeeResource extends Resource
@@ -53,11 +54,6 @@ class EmployeeResource extends Resource
     public static function table(Table $table): Table
     {
         return EmployeesTable::configure($table);
-    }
-
-    public static function canCreate(): bool
-    {
-        return false;
     }
 
     public static function getRelations(): array

@@ -15,8 +15,8 @@ use Modules\Employee\Enums\EmploymentType;
 /**
  * A person employed in a tenant (ADR 0016). Identity (name, mobile,
  * national code) is the global user's; this row holds the employment in
- * one tenant. Created when a job application is approved at the last step
- * of its hiring workflow.
+ * one tenant. Created by RegisterEmployee: at the last step of a hiring
+ * workflow, or by quick entry and import (ADR 0038).
  */
 #[Fillable(['tenant_id', 'user_id', 'job_application_id', 'job_title', 'personnel_code', 'employment_type', 'status', 'hired_at', 'left_at'])]
 class Employee extends Model

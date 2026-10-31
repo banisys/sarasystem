@@ -2,17 +2,14 @@
 
 namespace Modules\Employee\Workflow;
 
-use App\Authorization\RoleAssignment;
 use App\CustomFields\Answers;
 use App\CustomFields\ResolvedForm;
 use App\Filament\CustomFields\CustomFieldInputs;
-use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkflowCase;
 use App\Rules\IranianMobile;
 use App\Workflow\WorkflowSubject;
-use BezhanSalleh\FilamentShield\Support\Utils;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
@@ -36,6 +33,7 @@ use Modules\Employee\Models\Employee;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
 use Modules\Employee\Services\HireApplicant;
+use Modules\Employee\Support\EmployeeRoles;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
@@ -270,9 +268,6 @@ class JobApplicationSubject extends WorkflowSubject
     }
 
     /**
-     * Roles the current user may give in the tenant, except the panel role
-     * (its own toggle).
-     *
      * @return array<int, string>
      */
     private static function roleOptions(mixed $tenantId): array
@@ -284,10 +279,7 @@ class JobApplicationSubject extends WorkflowSubject
             return [];
         }
 
-        return RoleAssignment::assignableRoles($user, $tenant)
-            ->reject(fn (Role $role): bool => $role->name === Utils::getPanelUserRoleName() || $role->name === Role::SUPER_ADMIN)
-            ->mapWithKeys(fn (Role $role): array => [$role->getKey() => $role->display_name])
-            ->all();
+        return EmployeeRoles::options($user, $tenant);
     }
 
     /**
