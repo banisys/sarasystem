@@ -4,19 +4,13 @@ namespace Modules\Class\Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
-use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Modules\Class\Database\Seeders\ClassDemoSeeder;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Filament\Resources\ClassRoles\ClassRoleResource;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ListClassrooms;
-use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
-use Modules\Class\Filament\Resources\Holidays\HolidayResource;
 use Modules\Class\Filament\Resources\Holidays\Pages\ListHolidays;
-use Modules\Class\Filament\Resources\Subjects\SubjectResource;
-use Modules\Class\Filament\Resources\TeachingPlans\TeachingPlanResource;
 use Modules\Class\Filament\Resources\Terms\TermResource;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -128,36 +122,6 @@ class ClassAdminTest extends TestCase
         $created = Holiday::withoutTenantScope()->where('title', 'جشن')->sole();
         $this->assertSame($this->west->id, $created->tenant_id);
         $this->assertSame('2026-12-01', $created->ends_on->toDateString());
-    }
-
-    public function test_the_demo_seeder_fills_the_branches_and_the_screens_open(): void
-    {
-        $this->seed(DemoSeeder::class);
-        $headOffice = Tenant::query()->where('slug', 'head-office')->sole();
-        $headOffice->makePrimary();
-        $north = Tenant::query()->where('slug', 'north')->sole();
-
-        $this->seed(ClassDemoSeeder::class);
-        $this->seed(ClassDemoSeeder::class);
-
-        $this->assertSame(4, ClassRole::withoutTenantScope()->count());
-        $main = Classroom::withoutTenantScope()->whereBelongsTo($north)->where('title', 'هفتم الف')->sole();
-        $north->makeCurrent();
-        $this->assertSame(3, $main->attendeeCount());
-        $this->assertSame(2, $main->children()->sole()->attendeeCount());
-        $this->assertSame(2, $main->schedules()->count());
-        $this->assertTrue($main->sessions()->exists());
-        $this->assertNotNull($main->schedules()->whereHas('subject', fn ($subject) => $subject->where('title', 'ریاضی'))->sole()->teaching_plan_id);
-
-        $admin = User::factory()->create();
-        $admin->makeSuperAdmin($headOffice);
-        $this->actingAs($admin);
-        foreach ([TermResource::getUrl('index', tenant: $headOffice), ClassRoleResource::getUrl('index', tenant: $headOffice),
-            SubjectResource::getUrl('index', tenant: $headOffice), TeachingPlanResource::getUrl('index', tenant: $headOffice), ClassSessionResource::getUrl('index', tenant: $north),
-            HolidayResource::getUrl('index', tenant: $north), ClassroomResource::getUrl('index', tenant: $north),
-            ClassroomResource::getUrl('view', ['record' => $main], tenant: $north)] as $url) {
-            $this->get($url)->assertOk();
-        }
     }
 
     public function test_a_class_with_members_is_not_deleted(): void

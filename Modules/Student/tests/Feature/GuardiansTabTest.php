@@ -6,11 +6,9 @@ use App\Guardians\GuardianRelationship;
 use App\Models\Guardianship;
 use App\Models\Tenant;
 use App\Models\User;
-use Database\Seeders\DemoSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Modules\Student\Database\Seeders\GuardianDemoSeeder;
 use Modules\Student\Filament\Resources\Students\Pages\ViewStudent;
 use Modules\Student\Filament\Resources\Students\RelationManagers\GuardiansRelationManager;
 use Modules\Student\Filament\Resources\Students\StudentResource;
@@ -88,19 +86,6 @@ class GuardiansTabTest extends TestCase
 
         $this->assertSame('09351112233', $this->learner->user->fresh()->mobile);
         $this->assertFalse($link->fresh()->provides_login_mobile);
-    }
-
-    public function test_the_demo_seeder_links_the_demo_parents_to_their_children(): void
-    {
-        $this->seed(DemoSeeder::class);
-        $this->seed(GuardianDemoSeeder::class);
-        $this->seed(GuardianDemoSeeder::class);
-
-        $this->assertSame(6, Guardianship::query()->count());
-        $amir = User::query()->where('email', 'student1.north@sarasystem.test')->sole();
-        $this->assertSame(['محمد محمدی'], $amir->guardians()->pluck('name')->all());
-        $north = Tenant::query()->where('slug', 'north')->sole();
-        $this->assertTrue(Student::withoutTenantScope()->whereBelongsTo($north)->where('user_id', $amir->id)->exists());
     }
 
     public function test_viewers_see_the_guardians_but_do_not_manage_them(): void

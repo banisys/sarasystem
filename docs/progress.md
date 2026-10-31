@@ -19,6 +19,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-10-31 — Removed all demo data and demo seeders. Deleted the core `DemoSeeder`, `GrantsDemoPermissions` and the module demo seeders (Hiring, Admission, Guardian, Class, School, Document, Contract) with their 8 tests; the module `*DatabaseSeeder`s are empty stubs now, and `db:seed` locally creates only the head office, the `super_admin` / `panel_user` roles and `admin@sarasystem.test`. Local DB: deleted the branches north / center / west, the 8 demo roles (`hq_member`, `principal`, `teacher`, `supporter`, `supervisor`, `parent`, `student`, `user`) with their permissions and assignments, 35 demo users, the 2 sample workflows, 3 job positions, 12 programs, 5 document types and 4 form setups. Kept: head office, super admin, «علی قاسم پور» (lost the demo `principal` role, kept `panel_user`), permissions. The guardian `parent` role is recreated when a guardian is first linked; admission no longer has a `student` role to preselect until one is made. 474 tests pass (`--parallel --processes=8`); Pint passes.
 - 2026-10-31 — Quick employee entry ([ADR 0038](decisions/0038-quick-employee-entry.md)) on «کارکنان → کارمندان», for the current tenant, without the hiring workflow:
   - «ثبت سریع کارمند»: national code, name, mobile, job title, roles (+ optional personnel code, employment type, start date, panel access). No password: the person signs in with an SMS code. An existing account with the national code is reused (name/mobile unchanged; only if the actor may manage it). «ثبت و بعدی» keeps job details and roles.
   - «ورود از فایل»: Filament CSV import (example file, column mapping, queued, failed rows downloadable with the reason). Persian digits, Jalali start dates, employment types by label; default roles from the modal or a row's own «نقش‌ها».
@@ -193,11 +194,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - «کلاس‌های من» (`/my-classes`) and the guardians' view are covered by HTTP tests but not checked in a browser yet; the build passes.
   - Homework: no notifications of new hand-ins or grades; no averages per learner or class; no attendance report across classes or terms.
   - Absence SMS: no correction SMS when «غایب» is changed after the job ran; a retry after a partial failure may send a guardian the same message twice; needs a queue worker (the `queue` service locally).
-  - The demo `teacher` / `supervisor` / `supporter` roles still see all classes in the admin panel (read only); they could drop those permissions now that the user panel covers their work.
   - Places are free text: a clash is only found when two classes write the place the same way.
-  - Local DB: «علی رضایی» is a teacher in two branches, so the demo seeder skips two clashing schedules with a warning (fine on a fresh DB).
   - A learner removed from the tenant stays a class member until a leave date is set.
-- School (ADR 0031, ADR 0032): not checked in a browser yet (covered by Livewire and HTTP tests; the report card PDF was checked by eye); no year-final scores, resits or rankings; admission doesn't set a grade (records start from classes or by hand); demo roles other than `hq_member` / `principal` have no school permissions.
+- School (ADR 0031, ADR 0032): not checked in a browser yet (covered by Livewire and HTTP tests; the report card PDF was checked by eye); no year-final scores, resits or rankings; admission doesn't set a grade (records start from classes or by hand).
 - Guardians (ADR 0027, ADR 0028): the «اولیا» tab and the parents section of `/preregister` are not checked in a browser yet; parents' details can't be edited in the admission workflow's «ویرایش اطلاعات».
 - Employee / learner pages and their tabs are covered by tests but not checked in a browser yet.
 - Contracts (ADR 0020):
@@ -215,7 +214,6 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - No classes yet: admission creates a tenant-level learner row only; adding learners to classes comes with the class/education features.
   - School data (grade, average, …) are added fields: not filterable, not structured for a later School module.
 - Programs are managed in the primary tenant only, with configurable offering tenants (ADR 0035); branches cannot manage the catalog themselves.
-  - Demo roles have no `*:Preregistration` / `*:Program` permissions (they view `Student` since 2026-10-29); only super admins see these screens until roles get them.
 - Customizable forms (ADR 0017):
   - No file fields and no conditional fields.
   - Answers to added fields can't be filtered in lists.
@@ -227,16 +225,14 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
   - No conditions, parallel approvals or deadlines.
   - A case that moved on while someone had it open gives "not found" on their next click.
   - Not checked in a browser yet (covered by Livewire tests).
-  - Demo roles have no `*:Workflow` / `*:JobApplication` permissions (they view `Employee` since 2026-10-29); the sample workflow comes from `php artisan module:seed Employee` (module seeders don't run with `db:seed`).
   - The «نمایش فرایند» page is covered by a test but not checked in a browser yet.
 - Hiring: education and work history can't be edited in a workflow (personal and contact fields only). A head-office approver hiring into a branch where they hold no roles can only give permission-less roles there (ADR 0003).
-- Job applications: demo roles have no `*:JobApplication` / `*:JobPosition` permissions and there are no demo job positions, so `/careers` shows «موقعیت شغلی خالی نداریم» until positions are added. Not checked in a browser beyond the page loading.
+- Job applications: `/careers` shows «موقعیت شغلی خالی نداریم» until positions are added. Not checked in a browser beyond the page loading.
 - `JalaliDateInput` is not checked in a browser yet (conversions tested in Node over 1921–2080); date only, no time or range picker.
 - `public/css`, `public/js`, `public/fonts` are owned by root on this machine, so `filament:upgrade` (run after `composer dump-autoload`) fails with a tempnam error. Fix with `sudo chown -R $USER: public`.
-- Exams: questions are plain text (no images/formulas); abandoned attempts are closed lazily (no scheduler yet); seeing an attempt's answers needs `Update:ExamAttempt`; demo roles have no `*:Exam`/`*:Question`/`*:QuestionBank`/`*:ExamAttempt` permissions and there is no demo exam; the participant pages are covered by tests but not checked in a browser yet. LMS `schl_exam_*` (activity scores, exam balances) waits for a School module.
+- Exams: questions are plain text (no images/formulas); abandoned attempts are closed lazily (no scheduler yet); seeing an attempt's answers needs `Update:ExamAttempt`; the participant pages are covered by tests but not checked in a browser yet. LMS `schl_exam_*` (activity scores, exam balances) waits for a School module.
 - Site pages: no preview of unpublished pages; Latin-only paths.
-- Site menus: one menu per tenant, header only (no footer menu); drag-and-drop in the item tree is covered by tests of `moveItem()` but not checked in a browser yet. Demo roles have no `*:Menu` permissions.
-- Demo roles have no `*:Page` permissions yet; only super admins see «صفحه‌ها» until roles are given them (Shield role editor).
+- Site menus: one menu per tenant, header only (no footer menu); drag-and-drop in the item tree is covered by tests of `moveItem()` but not checked in a browser yet.
 - `stechstudio/filament-impersonate` is installed but unused (our own impersonation, ADR 0008); remove it with `composer remove stechstudio/filament-impersonate` once approved.
 - Adding a top-level route (e.g. `/news`) hides an existing tenant whose slug is the same; `Tenant::reservedSlugs()` only blocks new slugs.
 - Impersonation has no per-action audit trail; actions are recorded as the impersonated user (only start/end are logged).

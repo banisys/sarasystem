@@ -4,12 +4,9 @@ namespace Modules\Student\Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Workflow;
-use Database\Seeders\DemoSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Modules\Student\Database\Seeders\AdmissionDemoSeeder;
 use Modules\Student\Enums\StudentStatus;
 use Modules\Student\Filament\Resources\Preregistrations\Pages\ListPreregistrations;
 use Modules\Student\Filament\Resources\Preregistrations\PreregistrationResource;
@@ -17,7 +14,6 @@ use Modules\Student\Filament\Resources\Programs\Pages\ListPrograms;
 use Modules\Student\Filament\Resources\Programs\ProgramResource;
 use Modules\Student\Filament\Resources\Students\Pages\ListStudents;
 use Modules\Student\Filament\Resources\Students\StudentResource;
-use Modules\Student\Forms\PreregistrationForm;
 use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
@@ -134,29 +130,5 @@ class StudentAdminTest extends TestCase
         $this->makeStaff($clerk, $this->primary);
 
         $this->actingAs($clerk)->get(PreregistrationResource::getUrl('index', tenant: $this->primary))->assertForbidden();
-    }
-
-    public function test_the_demo_seeder_sets_up_a_schools_preregistration_and_can_run_again(): void
-    {
-        $this->seed(DemoSeeder::class);
-        $headOffice = Tenant::query()->where('slug', 'head-office')->sole();
-        $headOffice->makePrimary();
-        User::factory()->create(['email' => 'admin@sarasystem.test']);
-
-        $this->seed(AdmissionDemoSeeder::class);
-        $this->seed(AdmissionDemoSeeder::class);
-
-        $workflow = Workflow::query()->sole();
-        $this->assertSame(AdmissionDemoSeeder::WORKFLOW_NAME, $workflow->name);
-        $this->assertCount(3, $workflow->stepList());
-
-        $programs = Program::withoutTenantScope()->get();
-        $this->assertCount(12, $programs);
-        $this->assertTrue($programs->every(fn (Program $program): bool => $program->workflow_id === $workflow->id));
-
-        // The school-only questions are the organization's added fields.
-        $form = PreregistrationForm::for($headOffice->refresh());
-        $this->assertSame(['birth_certificate', 'birth_place', 'previous_school', 'last_average'], array_map(fn ($field) => $field->key, $form->fields));
-        $this->assertTrue($form->requires('father_name'));
     }
 }

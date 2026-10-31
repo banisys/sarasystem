@@ -6,14 +6,10 @@ use App\Documents\ApplicantDocuments;
 use App\Documents\DocumentHolders;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Workflow;
-use App\Workflow\WorkflowStep;
-use Database\Seeders\DemoSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
-use Modules\Document\Database\Seeders\DocumentDemoSeeder;
 use Modules\Document\Enums\DocumentStatus;
 use Modules\Document\Filament\Resources\Documents\DocumentResource;
 use Modules\Document\Filament\Resources\Documents\Pages\ListDocuments;
@@ -22,11 +18,7 @@ use Modules\Document\Filament\Resources\DocumentTypes\Pages\ListDocumentTypes;
 use Modules\Document\Models\Document;
 use Modules\Document\Models\DocumentType;
 use Modules\Document\Tests\Concerns\MakesDocuments;
-use Modules\Document\Workflow\DocumentStepExtension;
-use Modules\Employee\Database\Seeders\HiringDemoSeeder;
 use Modules\Employee\Models\Employee;
-use Modules\Employee\Models\JobPosition;
-use Modules\Student\Database\Seeders\AdmissionDemoSeeder;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -153,25 +145,5 @@ class DocumentAdminTest extends TestCase
         $this->makeStaff($other, $this->west);
 
         $this->actingAs($other)->get(DocumentResource::getUrl('index', tenant: $this->west))->assertForbidden();
-    }
-
-    public function test_the_demo_seeder_adds_types_and_checks_them_in_the_demo_workflows(): void
-    {
-        $this->seed(DemoSeeder::class);
-        $headOffice = Tenant::query()->where('slug', 'head-office')->sole();
-        $headOffice->makePrimary();
-        User::factory()->create(['email' => 'admin@sarasystem.test']);
-        $this->seed([HiringDemoSeeder::class, AdmissionDemoSeeder::class]);
-
-        $this->seed(DocumentDemoSeeder::class);
-        $this->seed(DocumentDemoSeeder::class);
-
-        $this->assertSame(5, DocumentType::withoutTenantScope()->where('tenant_id', $headOffice->id)->count());
-        $hiring = Workflow::query()->where('name', HiringDemoSeeder::WORKFLOW_NAME)->sole();
-        $this->assertCount(3, WorkflowStep::fromArray($hiring->steps[0])->extension(DocumentStepExtension::KEY)['verify']);
-        $degree = DocumentType::withoutTenantScope()->where('title', 'آخرین مدرک تحصیلی')->sole();
-        foreach (JobPosition::withoutTenantScope()->where('tenant_id', $headOffice->id)->where('title', 'like', 'معلم%')->get() as $position) {
-            $this->assertContains($degree->id, array_column(app(ApplicantDocuments::class)->fields('employee', $position->id), 'id'));
-        }
     }
 }

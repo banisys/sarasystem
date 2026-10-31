@@ -4,11 +4,9 @@ namespace Modules\School\Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
-use Database\Seeders\DemoSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Modules\Class\Database\Seeders\ClassDemoSeeder;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ListClassrooms;
@@ -17,7 +15,6 @@ use Modules\Class\Models\Classroom;
 use Modules\Class\Models\Subject;
 use Modules\Class\Models\Term;
 use Modules\Class\Services\ClassMembers;
-use Modules\School\Database\Seeders\SchoolDemoSeeder;
 use Modules\School\Enums\ScoreScale;
 use Modules\School\Filament\Resources\Enrollments\EnrollmentResource;
 use Modules\School\Filament\Resources\Enrollments\Pages\ListEnrollments;
@@ -201,18 +198,6 @@ class SchoolStructureTest extends TestCase
 
         $this->get(EnrollmentResource::getUrl('index', tenant: $this->west))->assertOk();
         $this->get(StudentResource::getUrl('view', ['record' => $student], tenant: $this->west))->assertOk()->assertSee('پرونده‌ی تحصیلی');
-    }
-
-    public function test_the_demo_seeder_sets_up_an_iranian_school(): void
-    {
-        $this->seed(DemoSeeder::class);
-        Tenant::query()->where('slug', 'head-office')->sole()->makePrimary();
-        $this->seed([ClassDemoSeeder::class, SchoolDemoSeeder::class, SchoolDemoSeeder::class]);
-
-        $north = Tenant::query()->where('slug', 'north')->sole();
-        $seventh = Grade::definedGrades()->where('school_grades.title', 'هفتم')->sole();
-        $this->assertSame(4, $seventh->curricula()->count());
-        $this->assertSame(3, Enrollment::withoutTenantScope()->whereBelongsTo($north)->where('grade_id', $seventh->id)->count());
     }
 
     private function learner(): User

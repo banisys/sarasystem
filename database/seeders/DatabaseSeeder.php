@@ -40,8 +40,6 @@ class DatabaseSeeder extends Seeder
             );
 
             $headOffice->execute(fn () => $superAdmin->assignRole([Role::SUPER_ADMIN, $panelUserRole]));
-
-            $this->call(DemoSeeder::class);
         }
     }
 }
