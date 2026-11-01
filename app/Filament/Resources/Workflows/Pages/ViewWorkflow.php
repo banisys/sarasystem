@@ -3,14 +3,8 @@
 namespace App\Filament\Resources\Workflows\Pages;
 
 use App\Filament\Resources\Workflows\WorkflowResource;
+use App\Filament\Workflow\WorkflowFlowchart;
 use App\Models\Workflow;
-use App\Workflow\AssigneeType;
-use App\Workflow\CaseStatus;
-use App\Workflow\StepAction;
-use App\Workflow\StepExtension;
-use App\Workflow\WorkflowStep;
-use App\Workflow\WorkflowStepExtensions;
-use App\Workflow\WorkflowSubjects;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
@@ -37,53 +31,11 @@ class ViewWorkflow extends ViewRecord
     }
 
     /**
-     * @return list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, notes: list<string>, openCases: int}>
+     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array<string, mixed>>, completed: bool}
      */
-    public function steps(): array
+    public function chart(): array
     {
-        $openCases = $this->workflow()->cases()
-            ->where('status', CaseStatus::InProgress)
-            ->selectRaw('current_step, count(*) as total')
-            ->groupBy('current_step')
-            ->pluck('total', 'current_step');
-
-        return collect($this->workflow()->stepList())
-            ->map(fn (WorkflowStep $step, int $index): array => [
-                'number' => $index + 1,
-                'name' => $step->name,
-                'assigneeIsUser' => $step->assigneeType === AssigneeType::User,
-                'assignee' => $step->assigneeLabel(),
-                'actions' => [
-                    ['label' => 'تأیید', 'color' => 'success'],
-                    ...collect($step->actions)->map(fn (StepAction $action): array => [
-                        'label' => $action->getLabel(),
-                        'color' => match ($action) {
-                            StepAction::Reject => 'danger',
-                            StepAction::Return => 'warning',
-                            StepAction::Edit => 'info',
-                        },
-                    ])->all(),
-                ],
-                'rejects' => $step->allows(StepAction::Reject),
-                'returns' => $step->allows(StepAction::Return) && $index > 0,
-                // e.g. the step's documents (ADR 0019).
-                'notes' => collect(WorkflowStepExtensions::all())
-                    ->flatMap(fn (StepExtension $extension): array => $extension->summary($step, $this->workflow()->subject_type))
-                    ->values()
-                    ->all(),
-                'openCases' => (int) ($openCases[$index] ?? 0),
-            ])
-            ->all();
-    }
-
-    public function subjectLabel(): string
-    {
-        return WorkflowSubjects::find($this->workflow()->subject_type)?->label() ?? 'پرونده';
-    }
-
-    public function completionSummary(): ?string
-    {
-        return WorkflowSubjects::find($this->workflow()->subject_type)?->completionSummary();
+        return WorkflowFlowchart::ofWorkflow($this->workflow());
     }
 
     private function workflow(): Workflow

@@ -104,6 +104,35 @@ class AllWorkflowCasesTest extends TestCase
         $this->get(AllWorkflowCasesResource::getUrl('view', ['record' => $case], tenant: $this->head))->assertForbidden();
     }
 
+    public function test_the_flowchart_shows_the_steps_the_case_copied_where_it_is_and_who_did_what(): void
+    {
+        $this->reviewer->update(['name' => 'بررسی‌کننده']);
+        $waiting = $this->startCase('در جریان', $this->head);
+        app(WorkflowEngine::class)->comment($waiting, $this->reviewer, 'مدارک کامل است');
+        app(WorkflowEngine::class)->approve($waiting->refresh(), $this->reviewer, 'تأیید شد');
+        $rejected = $this->startCase('رد شده', $this->head);
+        app(WorkflowEngine::class)->reject($rejected, $this->reviewer, 'ناقص');
+        $this->workflow->update(['steps' => [$this->roleStep('مرحله‌ی تازه', $this->west, 'reviewer')]]);
+
+        $foreign = $this->startCase('شعبه غرب', $this->west);
+        $flowchart = fn (WorkflowCase $case): string => AllWorkflowCasesResource::getUrl('flowchart', ['record' => $case], tenant: $this->head);
+
+        $this->actingInPanel($this->monitor, $this->head);
+        $this->get($flowchart($waiting))
+            ->assertOk()
+            ->assertSeeInOrder(['شروع فرایند', 'بررسی شعبه', 'انجام شد', 'یادداشت', 'بررسی‌کننده', 'مدارک کامل است', 'تأیید', 'بررسی‌کننده', 'تأیید شد', 'تأیید ستاد', 'مرحله‌ی فعلی', 'در انتظار مدیر ستاد'])
+            ->assertDontSee('مرحله‌ی تازه')
+            ->assertDontSee('در این مرحله رد شد');
+        $this->get($flowchart($rejected))
+            ->assertOk()
+            ->assertSeeInOrder(['بررسی شعبه', 'در این مرحله رد شد', 'رد', 'بررسی‌کننده', 'ناقص', 'تأیید ستاد'])
+            ->assertDontSee('مرحله‌ی فعلی');
+        $this->get($flowchart($foreign))->assertNotFound();
+
+        $this->actingInPanel($this->manager, $this->head);
+        $this->get($flowchart($waiting))->assertForbidden();
+    }
+
     private function startCase(string $title, Tenant $tenant): WorkflowCase
     {
         $note = TenantNote::query()->create(['title' => $title, 'tenant_id' => $tenant->id]);

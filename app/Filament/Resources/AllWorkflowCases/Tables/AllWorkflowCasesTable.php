@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources\AllWorkflowCases\Tables;
 
+use App\Filament\Resources\AllWorkflowCases\AllWorkflowCasesResource;
 use App\Models\Workflow;
 use App\Models\WorkflowCase;
 use App\Workflow\CaseStatus;
 use App\Workflow\WorkflowSubjects;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -68,6 +71,10 @@ class AllWorkflowCasesTable
             ])
             ->recordActions([
                 ViewAction::make()->label('مشاهده'),
+                Action::make('flowchart')
+                    ->label('فلوچارت فرایند')
+                    ->icon(Heroicon::OutlinedShare)
+                    ->url(fn (WorkflowCase $record): string => AllWorkflowCasesResource::getUrl('flowchart', ['record' => $record])),
             ]);
     }
 }

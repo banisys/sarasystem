@@ -4,6 +4,7 @@ namespace App\Filament\Resources\AllWorkflowCases;
 
 use App\Filament\Resources\AllWorkflowCases\Pages\ListAllWorkflowCases;
 use App\Filament\Resources\AllWorkflowCases\Pages\ViewAllWorkflowCase;
+use App\Filament\Resources\AllWorkflowCases\Pages\WorkflowCaseFlowchart;
 use App\Filament\Resources\AllWorkflowCases\Schemas\AllWorkflowCaseInfolist;
 use App\Filament\Resources\AllWorkflowCases\Tables\AllWorkflowCasesTable;
 use App\Models\WorkflowCase;
@@ -93,6 +94,7 @@ class AllWorkflowCasesResource extends Resource
         return [
             'index' => ListAllWorkflowCases::route('/'),
             'view' => ViewAllWorkflowCase::route('/{record}'),
+            'flowchart' => WorkflowCaseFlowchart::route('/{record}/flowchart'),
         ];
     }
 }
