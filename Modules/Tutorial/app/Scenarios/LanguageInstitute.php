@@ -58,12 +58,12 @@ class LanguageInstitute extends Scenario
 
     public function title(): string
     {
-        return 'آموزشگاه زبان';
+        return 'آموزشگاه زبان با یک شعبه';
     }
 
     public function description(): string
     {
-        return 'یک '.config('sarasystem.tenant_label').'، یک کارشناس ثبت‌نام با ثبت سریع و استخدام یک مدرس از فرم «همکاری با ما» با فرایند؛ پیش‌ثبت‌نام و پذیرش یک '.config('sarasystem.learner_label').' با فرایند، و تشکیل اولین کلاس تا حضور و غیاب جلسه‌ی اول.';
+        return 'یک '.config('sarasystem.tenant_label').'، ثبت کارمند (کارشناس ثبت‌نام) با ثبت سریع، ثبت کارمند (مدرس) از راه فرایند درخواست همکاری؛ ثبت یک '.config('sarasystem.learner_label').' با فرایند پیش‌ثبت‌نام و پذیرش، و تشکیل اولین کلاس تا حضور و غیاب جلسه‌ی اول.';
     }
 
     public function chapters(): array
@@ -83,7 +83,7 @@ class LanguageInstitute extends Scenario
                     ->url(fn (): string => TenantResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                     ->fill(fn (): array => ['name' => 'شعبه ونک', 'slug' => 'vanak'])
                     ->doneWhen(fn (TutorialRun $run): bool => self::branch($run) !== null),
-                Mission::make('registrar', 'ثبت کارشناس ثبت‌نام')
+                Mission::make('registrar', 'ثبت کارمند (کارشناس ثبت‌نام)')
                     ->steps([
                         "از منوی بالای پنل، {$tenant} را «شعبه ونک» کنید.",
                         'در «کارکنان → کارمندان» دکمه‌ی «ثبت سریع کارمند» را بزنید.',
@@ -101,8 +101,8 @@ class LanguageInstitute extends Scenario
                     ])
                     ->doneWhen(fn (TutorialRun $run): bool => self::registrar($run, withPanel: true) !== null),
             ],
-            'استخدام مدرس' => self::hiringMissions($tenant, $primary),
-            'پیش‌ثبت‌نام و پذیرش' => [
+            'ثبت کارمند (مدرس) از راه فرایند درخواست همکاری' => self::hiringMissions($tenant, $primary),
+            'ثبت فراگیر' => [
                 Mission::make('workflow', 'ساخت فرایند پذیرش')
                     ->steps([
                         'در «کارتابل → فرایندها» دکمه‌ی «ایجاد» را بزنید.',
@@ -360,7 +360,7 @@ class LanguageInstitute extends Scenario
                 ->url(fn (): string => WorkflowCaseResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                 ->doneWhen(fn (TutorialRun $run): bool => self::contractType($run) !== null
                     && $run->made(Contract::class)->where('contract_type_id', self::contractType($run)->getKey())->exists()) : null,
-            Mission::make('hiring', 'استخدام مدرس')
+            Mission::make('hiring', 'ثبت کارمند (مدرس)')
                 ->steps(array_values(array_filter([
                     "در «کارتابل من» ({$tenant} «{$primary}») پرونده‌ی «سارا احمدی» را باز کنید و «تأیید» را بزنید.",
                     "{$tenant} محل خدمت را «شعبه ونک» و نقش «مدرس» را بگذارید.",

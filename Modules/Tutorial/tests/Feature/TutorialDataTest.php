@@ -125,7 +125,7 @@ class TutorialDataTest extends TestCase
         $this->get(route('preregister.create'))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('programs', fn ($programs): bool => collect($programs)->pluck('id')->contains($tutorialProgram->id))
             ->where('options.tenants', fn ($tenants): bool => collect($tenants)->pluck('id')->contains($branch->id))
-            ->where('tutorial.scenario', 'آموزشگاه زبان'));
+            ->where('tutorial.scenario', 'آموزشگاه زبان با یک شعبه'));
     }
 
     public function test_the_public_form_refuses_a_tutorial_program_from_someone_else(): void
