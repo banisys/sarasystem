@@ -5,6 +5,7 @@ namespace Modules\Employee\Http\Requests;
 use App\CustomFields\ResolvedForm;
 use App\Documents\ApplicantDocuments;
 use App\Models\Tenant;
+use App\PublicSite\HiddenRecords;
 use App\Rules\IranianMobile;
 use App\Rules\JalaliDate;
 use App\Rules\NationalCode;
@@ -111,7 +112,9 @@ class StoreJobApplicationRequest extends FormRequest
         return [
             'job_position_id' => ['required', Rule::exists('employee_job_positions', 'id')
                 ->where('tenant_id', Tenant::primary()?->getKey())
-                ->where('is_active', true)],
+                ->where('is_active', true)
+                // Not someone else's tutorial position (ADR 0040).
+                ->whereNotIn('id', app(HiddenRecords::class)->keysOf(JobPosition::class))],
             'first_name' => ['required', 'string', 'max:50'],
             'last_name' => ['required', 'string', 'max:50'],
             'father_name' => $form->rulesFor('father_name', ['string', 'max:50']),

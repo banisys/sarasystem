@@ -18,8 +18,12 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Term;
+use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Filament\Resources\Employees\EmployeeResource;
+use Modules\Employee\Filament\Resources\JobPositions\JobPositionResource;
 use Modules\Employee\Models\Employee;
+use Modules\Employee\Models\JobApplication;
+use Modules\Employee\Models\JobPosition;
 use Modules\Student\Filament\Resources\Programs\ProgramResource;
 use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Program;
@@ -45,7 +49,7 @@ class LanguageInstitute extends Scenario
 
     public function description(): string
     {
-        return 'یک '.config('sarasystem.tenant_label').'، یک مدرس و یک کارشناس ثبت‌نام؛ پیش‌ثبت‌نام و پذیرش یک '.config('sarasystem.learner_label').' با فرایند، و تشکیل اولین کلاس تا حضور و غیاب جلسه‌ی اول.';
+        return 'یک '.config('sarasystem.tenant_label').'، یک کارشناس ثبت‌نام با ثبت سریع و استخدام یک مدرس از فرم «همکاری با ما» با فرایند؛ پیش‌ثبت‌نام و پذیرش یک '.config('sarasystem.learner_label').' با فرایند، و تشکیل اولین کلاس تا حضور و غیاب جلسه‌ی اول.';
     }
 
     public function chapters(): array
@@ -53,6 +57,7 @@ class LanguageInstitute extends Scenario
         $tenant = config('sarasystem.tenant_label');
         $tenants = config('sarasystem.tenant_plural_label');
         $learner = config('sarasystem.learner_label');
+        $primary = Tenant::primary()?->name ?? 'ستاد';
 
         return [
             'ساختار آموزشگاه' => [
@@ -64,24 +69,11 @@ class LanguageInstitute extends Scenario
                     ->url(fn (): string => TenantResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                     ->fill(fn (): array => ['name' => 'شعبه ونک', 'slug' => 'vanak'])
                     ->doneWhen(fn (TutorialRun $run): bool => self::branch($run) !== null),
-                Mission::make('instructor', 'ثبت مدرس')
+                Mission::make('registrar', 'ثبت کارشناس ثبت‌نام')
                     ->steps([
                         "از منوی بالای پنل، {$tenant} را «شعبه ونک» کنید.",
                         'در «کارکنان → کارمندان» دکمه‌ی «ثبت سریع کارمند» را بزنید.',
-                        'کد ملی، نام «سارا احمدی»، موبایل و عنوان شغلی «مدرس زبان» را بنویسید و نقش «مدرس» را بزنید.',
-                    ])
-                    ->url(fn (TutorialRun $run): ?string => self::branchUrl($run, EmployeeResource::class))
-                    ->fill(fn (): array => [
-                        'national_code' => '1234567891',
-                        'name' => 'سارا احمدی',
-                        'mobile' => '09120000001',
-                        'job_title' => 'مدرس زبان',
-                        'role_ids' => self::roleIds(DefaultRoles::INSTRUCTOR),
-                    ])
-                    ->doneWhen(fn (TutorialRun $run): bool => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR) !== null),
-                Mission::make('registrar', 'ثبت کارشناس ثبت‌نام')
-                    ->steps([
-                        'باز در «کارکنان → کارمندان» با «ثبت سریع کارمند»، «رضا کریمی» را ثبت کنید.',
+                        'کد ملی، نام «رضا کریمی»، موبایل و عنوان شغلی «کارشناس ثبت‌نام» را بنویسید.',
                         'نقش «کارشناس ثبت‌نام» را بزنید و «دسترسی به پنل مدیریت» را روشن کنید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::branchUrl($run, EmployeeResource::class))
@@ -94,6 +86,56 @@ class LanguageInstitute extends Scenario
                         'panel_access' => true,
                     ])
                     ->doneWhen(fn (TutorialRun $run): bool => self::registrar($run, withPanel: true) !== null),
+            ],
+            'استخدام مدرس' => [
+                Mission::make('hiring-workflow', 'ساخت فرایند استخدام')
+                    ->steps([
+                        "اگر {$tenant} را عوض کرده‌اید، به «{$primary}» برگردید.",
+                        'در «کارتابل → فرایندها» دکمه‌ی «ایجاد» را بزنید.',
+                        'نام را «استخدام مدرس» و «برای» را «درخواست همکاری» بگذارید.',
+                        "یک مرحله‌ی «مصاحبه» بسازید: {$tenant} «{$primary}»، مسئول «شخص»، شخص: خودتان؛ و ذخیره کنید.",
+                    ])
+                    ->url(fn (): string => WorkflowResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                    ->fill(fn (): array => ['name' => 'استخدام مدرس', 'subject_type' => (new JobApplication)->getMorphClass()])
+                    ->doneWhen(fn (TutorialRun $run): bool => self::hiringWorkflow($run) !== null),
+                Mission::make('job-position', 'ساخت موقعیت شغلی')
+                    ->steps([
+                        'در «همکاری با ما → موقعیت‌های شغلی» دکمه‌ی «ایجاد» را بزنید.',
+                        'عنوان را «مدرس زبان انگلیسی» بگذارید و فرایند «استخدام مدرس» را برایش انتخاب کنید.',
+                        '«نمایش در فرم همکاری با ما» را روشن بگذارید و ذخیره کنید.',
+                    ])
+                    ->url(fn (): string => JobPositionResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                    ->fill(fn (TutorialRun $run): array => [
+                        'title' => 'مدرس زبان انگلیسی',
+                        'workflow_id' => self::hiringWorkflow($run)?->getKey(),
+                        'is_active' => true,
+                    ])
+                    ->doneWhen(fn (TutorialRun $run): bool => self::jobPosition($run) !== null),
+                Mission::make('job-application', 'درخواست همکاری از سایت')
+                    ->actor('متقاضی (فرم عمومی سایت)')
+                    ->steps([
+                        'فرم «همکاری با ما» سایت را باز کنید و شغل «مدرس زبان انگلیسی» را انتخاب کنید.',
+                        'نام «سارا احمدی»، جنسیت «زن» و کد ملی ۱۲۳۴۵۶۷۸۹۱ را بنویسید.',
+                        'موبایل خودتان را بنویسید تا کد تأیید پیامک شود.',
+                        'بقیه‌ی فیلدهای لازم (سوابق تحصیلی، نشانی، رزومه‌ی PDF و …) را پر کنید و فرم را بفرستید.',
+                        'این موقعیت شغلی فقط برای شما در حالت آموزش دیده می‌شود، نه برای بازدیدکننده‌های سایت.',
+                    ])
+                    ->url(fn (): string => route('careers.create'), 'باز کردن فرم')
+                    ->doneWhen(fn (TutorialRun $run): bool => $run->made(JobApplication::class)->whereIn('job_position_id', $run->made(JobPosition::class)->select('id'))->exists()),
+                Mission::make('hiring', 'استخدام مدرس')
+                    ->steps([
+                        "در «کارتابل من» ({$tenant} «{$primary}») پرونده‌ی «سارا احمدی» را باز کنید و «تأیید» را بزنید.",
+                        "{$tenant} محل خدمت را «شعبه ونک» و نقش «مدرس» را بگذارید.",
+                        '«دسترسی به پنل مدیریت» را خاموش کنید (مدرس از «کلاس‌های من» کار می‌کند) و تأیید کنید.',
+                    ])
+                    ->url(fn (): string => WorkflowCaseResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                    ->fill(fn (TutorialRun $run): array => [
+                        'tenant_id' => self::branch($run)?->getKey(),
+                        'role_ids' => self::roleIds(DefaultRoles::INSTRUCTOR),
+                        'panel_access' => false,
+                    ])
+                    ->doneWhen(fn (TutorialRun $run): bool => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR) !== null
+                        && $run->made(JobApplication::class)->where('status', ApplicationStatus::Hired)->exists()),
             ],
             'پیش‌ثبت‌نام و پذیرش' => [
                 Mission::make('workflow', 'ساخت فرایند پذیرش')
@@ -249,6 +291,21 @@ class LanguageInstitute extends Scenario
             ->where('subject_type', (new Preregistration)->getMorphClass())
             ->get()
             ->first(fn (Workflow $workflow): bool => $workflow->stepList() !== []);
+    }
+
+    private static function hiringWorkflow(TutorialRun $run): ?Workflow
+    {
+        return $run->made(Workflow::class)
+            ->where('subject_type', (new JobApplication)->getMorphClass())
+            ->get()
+            ->first(fn (Workflow $workflow): bool => $workflow->stepList() !== []);
+    }
+
+    private static function jobPosition(TutorialRun $run): ?JobPosition
+    {
+        $workflow = self::hiringWorkflow($run);
+
+        return $workflow ? $run->made(JobPosition::class)->where('is_active', true)->where('workflow_id', $workflow->getKey())->first() : null;
     }
 
     private static function classroom(TutorialRun $run): ?Classroom

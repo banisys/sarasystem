@@ -16,7 +16,10 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Term;
+use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Models\Employee;
+use Modules\Employee\Models\JobApplication;
+use Modules\Employee\Models\JobPosition;
 use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
@@ -56,12 +59,12 @@ class LanguageInstituteScenarioTest extends TestCase
 
         $this->assertSame('vanak', $missions['tenant']->fillFor($run)['slug']);
 
-        foreach (['instructor', 'registrar'] as $key) {
-            $values = $missions[$key]->fillFor($run);
+        $registrar = $missions['registrar']->fillFor($run);
+        $this->assertTrue(Identifiers::isValidNationalCode($registrar['national_code']));
+        $this->assertNotEmpty($registrar['role_ids']);
 
-            $this->assertTrue(Identifiers::isValidNationalCode($values['national_code']));
-            $this->assertNotEmpty($values['role_ids']);
-        }
+        $this->assertSame((new JobApplication)->getMorphClass(), $missions['hiring-workflow']->fillFor($run)['subject_type']);
+        $this->assertNotEmpty($missions['hiring']->fillFor($run)['role_ids']);
 
         $this->assertSame(now()->toDateString(), $missions['term']->fillFor($run)['starts_on']);
     }
@@ -80,14 +83,28 @@ class LanguageInstituteScenarioTest extends TestCase
 
         $branch = Tenant::factory()->create();
         $this->madeInRun($run, $branch);
-        $this->assertSame('instructor', $current());
-
-        $teacher = $this->employee($run, $branch, DefaultRoles::INSTRUCTOR);
         $this->assertSame('registrar', $current());
 
         $registrar = $this->employee($run, $branch, DefaultRoles::REGISTRAR);
         $this->assertSame('registrar', $current(), 'The registrar needs panel access.');
         $this->makeStaff($registrar, $branch);
+        $this->assertSame('hiring-workflow', $current());
+
+        $hiringWorkflow = Workflow::factory()->create(['subject_type' => (new JobApplication)->getMorphClass(), 'steps' => [['name' => 'مصاحبه', 'tenant_id' => $this->primary->id, 'assignee_type' => 'user', 'user_id' => $this->owner->id, 'actions' => []]]]);
+        $this->madeInRun($run, $hiringWorkflow);
+        $this->assertSame('job-position', $current());
+
+        $position = JobPosition::factory()->for($this->primary)->create(['workflow_id' => $hiringWorkflow->id, 'is_active' => true]);
+        $this->madeInRun($run, $position);
+        $this->assertSame('job-application', $current());
+
+        $application = JobApplication::factory()->for($this->primary)->create(['job_position_id' => $position->id]);
+        $this->madeInRun($run, $application);
+        $this->assertSame('hiring', $current());
+
+        $teacher = $this->employee($run, $branch, DefaultRoles::INSTRUCTOR);
+        $this->assertSame('hiring', $current(), 'The instructor comes from the hired application.');
+        $application->update(['status' => ApplicationStatus::Hired]);
         $this->assertSame('workflow', $current());
 
         $workflow = Workflow::factory()->create(['subject_type' => (new Preregistration)->getMorphClass(), 'steps' => [['name' => 'بررسی', 'tenant_id' => $branch->id, 'assignee_type' => 'role', 'role_id' => 1, 'actions' => []]]]);
@@ -132,7 +149,7 @@ class LanguageInstituteScenarioTest extends TestCase
         $this->madeInRun($run, $branch);
         $registrar = $this->employee($run, $branch, DefaultRoles::REGISTRAR);
         $this->makeStaff($registrar, $branch);
-        $run->update(['completed_missions' => ['tenant' => now(), 'instructor' => now(), 'registrar' => now(), 'workflow' => now(), 'program' => now(), 'preregistration' => now()]]);
+        $run->update(['completed_missions' => ['tenant' => now(), 'registrar' => now(), 'hiring-workflow' => now(), 'job-position' => now(), 'job-application' => now(), 'hiring' => now(), 'workflow' => now(), 'program' => now(), 'preregistration' => now()]]);
 
         $this->actingAs($this->owner)->post(route('tutorial.act-as'))->assertRedirect();
 

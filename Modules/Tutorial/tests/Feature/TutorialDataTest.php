@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
+use Modules\Employee\Models\JobPosition;
 use Modules\Site\Models\Page;
 use Modules\Student\Models\Program;
 use Modules\Tutorial\Models\TutorialRun;
@@ -134,5 +135,22 @@ class TutorialDataTest extends TestCase
         $this->madeInRun($run, $program);
 
         $this->post(route('preregister.store'), ['program_id' => $program->id])->assertSessionHasErrors('program_id');
+    }
+
+    public function test_careers_shows_tutorial_positions_only_to_their_maker(): void
+    {
+        $real = JobPosition::factory()->for(Tenant::primary())->create(['is_active' => true]);
+        $tutorialPosition = JobPosition::factory()->for(Tenant::primary())->create(['is_active' => true]);
+        $run = TutorialRun::query()->create(['user_id' => $this->owner->id, 'scenario' => 'language-institute', 'completed_missions' => []]);
+        $this->madeInRun($run, $tutorialPosition);
+
+        $this->get(route('careers.create'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('positions', fn ($positions): bool => collect($positions)->pluck('id')->all() === [$real->id]));
+        $this->post(route('careers.store'), ['job_position_id' => $tutorialPosition->id])->assertSessionHasErrors('job_position_id');
+
+        $this->actingAs($this->owner)->withSession([TutorialMode::SESSION_KEY => $run->id]);
+
+        $this->get(route('careers.create'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('positions', fn ($positions): bool => collect($positions)->pluck('id')->contains($tutorialPosition->id)));
     }
 }

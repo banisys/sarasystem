@@ -6,6 +6,7 @@ use App\Auth\OneTimePassword;
 use App\Documents\ApplicantDocuments;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\PublicSite\HiddenRecords;
 use App\PublicSite\PublicSite;
 use App\Rules\IranianMobile;
 use App\Support\Identifiers;
@@ -45,7 +46,7 @@ class CareersController extends Controller
     {
         $tenant = $this->primaryTenant();
         [$minBirthYear, $maxBirthYear] = StoreJobApplicationRequest::birthYearRange();
-        $positions = $tenant->execute(fn () => JobPosition::query()->active()->ordered()->get(['id', 'tenant_id', 'title', 'description']));
+        $positions = $tenant->execute(fn () => app(HiddenRecords::class)->exclude(JobPosition::query()->active())->ordered()->get(['id', 'tenant_id', 'title', 'description']));
 
         return Inertia::render('Employee::Careers', [
             ...PublicSite::layoutProps($tenant),
