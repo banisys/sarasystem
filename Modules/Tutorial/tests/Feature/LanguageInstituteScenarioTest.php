@@ -35,6 +35,7 @@ use Modules\Tutorial\Livewire\TutorialBar;
 use Modules\Tutorial\Models\TutorialRun;
 use Modules\Tutorial\Scenarios\LanguageInstitute;
 use Modules\Tutorial\Scenarios\Mission;
+use Modules\Tutorial\Services\TutorialFlowchart;
 use Modules\Tutorial\Services\TutorialMode;
 use Modules\Tutorial\Services\TutorialProgress;
 use Modules\Tutorial\Tests\Concerns\RunsTutorials;
@@ -237,6 +238,32 @@ class LanguageInstituteScenarioTest extends TestCase
 
         $this->assertModelMissing($branch);
         $this->assertModelMissing($run);
+    }
+
+    public function test_flowchart_shows_the_missions_in_lanes_with_the_runs_progress(): void
+    {
+        $this->actingInPanel($this->owner, $this->primary);
+
+        $chart = app(TutorialFlowchart::class)->layout(new LanguageInstitute);
+        $this->assertSame(['خودتان (مدیر کل سیستم)', 'متقاضی (فرم عمومی سایت)', 'کارشناس ثبت‌نام', 'مدرس'], $chart['lanes']);
+        $this->assertCount(count((new LanguageInstitute)->missions()), $chart['nodes']);
+        $this->assertCount(count($chart['nodes']) - 1, $chart['edges']);
+
+        Livewire::test(StepByStepTutorial::class)
+            ->mountAction('flowchart', ['scenario' => 'language-institute'])
+            ->assertMountedActionModalSee(['ساخت فرایند پذیرش', 'کارشناس ثبت‌نام'])
+            ->assertMountedActionModalDontSee('انجام شده');
+
+        $run = $this->startTutorial($this->owner);
+        $this->madeInRun($run, Tenant::factory()->create());
+
+        Livewire::test(StepByStepTutorial::class)
+            ->mountAction('flowchart', ['scenario' => 'language-institute'])
+            ->assertMountedActionModalSee('انجام شده');
+
+        Livewire::test(StepByStepTutorial::class)
+            ->mountAction('flowchart', ['scenario' => 'missing'])
+            ->assertStatus(404);
     }
 
     private function employee(TutorialRun $run, Tenant $branch, string $role): User

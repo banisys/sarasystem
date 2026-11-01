@@ -10,7 +10,10 @@
                 <x-filament::section :heading="$item->title()" :description="count($item->missions()).' گام در '.count($item->chapters()).' بخش'">
                     <p class="text-sm text-gray-600 dark:text-gray-300">{{ $item->description() }}</p>
                     <x-slot name="footer">
-                        <x-filament::button wire:click="start('{{ $item->key() }}')" icon="heroicon-o-play">شروع</x-filament::button>
+                        <div class="flex flex-wrap gap-2">
+                            <x-filament::button wire:click="start('{{ $item->key() }}')" icon="heroicon-o-play">شروع</x-filament::button>
+                            {{ ($this->flowchartAction)(['scenario' => $item->key()]) }}
+                        </div>
                     </x-slot>
                 </x-filament::section>
             @endforeach
@@ -36,6 +39,7 @@
                         <x-filament::button wire:click="resume" icon="heroicon-o-play">ادامه در حالت آموزش</x-filament::button>
                     @endif
                 @endif
+                {{ ($this->flowchartAction)(['scenario' => $run->scenario]) }}
                 {{ $this->resetAction }}
             </div>
         </div>

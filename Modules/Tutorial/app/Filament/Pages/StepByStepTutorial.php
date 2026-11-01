@@ -8,9 +8,13 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
 use Modules\Tutorial\Models\TutorialRun;
+use Modules\Tutorial\Scenarios\Scenario;
 use Modules\Tutorial\Scenarios\Scenarios;
+use Modules\Tutorial\Services\TutorialFlowchart;
 use Modules\Tutorial\Services\TutorialMode;
 use Modules\Tutorial\Services\TutorialProgress;
 use Modules\Tutorial\Services\TutorialReset;
@@ -53,6 +57,33 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
     public function pause(): void
     {
         app(TutorialMode::class)->leave();
+    }
+
+    /**
+     * «نمای فلوچارت»: the scenario's missions as a swimlane diagram, with
+     * the run's progress when it is the scenario being followed.
+     */
+    public function flowchartAction(): Action
+    {
+        return Action::make('flowchart')
+            ->label('نمای فلوچارت')
+            ->icon(Heroicon::OutlinedShare)
+            ->color('gray')
+            ->modalHeading(fn (array $arguments): string => 'نمای فلوچارت: '.$this->flowchartScenario($arguments)->title())
+            ->modalWidth(Width::SevenExtraLarge)
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('بستن')
+            ->modalContent(function (array $arguments): View {
+                $scenario = $this->flowchartScenario($arguments);
+                $run = $this->run();
+                $run = $run?->scenario === $scenario->key() ? $run : null;
+                $current = $run ? app(TutorialProgress::class)->refresh($run) : null;
+
+                return view('tutorial::filament.flowchart', [
+                    'chart' => app(TutorialFlowchart::class)->layout($scenario, $run, $current),
+                    'hasRun' => $run !== null,
+                ]);
+            });
     }
 
     public function resetAction(): Action
@@ -99,6 +130,14 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
             'isActive' => $run !== null && app(TutorialMode::class)->run()?->is($run),
             'impersonating' => Impersonation::isActive(),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     */
+    private function flowchartScenario(array $arguments): Scenario
+    {
+        return app(Scenarios::class)->find((string) ($arguments['scenario'] ?? '')) ?? abort(404);
     }
 
     private function run(): ?TutorialRun
