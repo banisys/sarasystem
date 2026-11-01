@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Filament\Resources\AllWorkflowCases\AllWorkflowCasesResource;
 use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Tenants\TenantResource;
 use App\Filament\Resources\WorkflowCases\WorkflowCaseResource;
@@ -192,6 +193,11 @@ return [
     'resources' => [
         'subject' => 'model',
         'manage' => [
+            // «همه‌ی پرونده‌ها» is read only (ADR 0043).
+            AllWorkflowCasesResource::class => [
+                'viewAny',
+                'view',
+            ],
             RoleResource::class => [
                 'viewAny',
                 'view',

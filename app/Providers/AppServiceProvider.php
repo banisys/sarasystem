@@ -58,7 +58,7 @@ class AppServiceProvider extends ServiceProvider
 
         app(DefaultRoles::class)->grant([
             DefaultRoles::ORG_ADMIN => DefaultRoles::manage('Workflow'),
-            DefaultRoles::TENANT_MANAGER => DefaultRoles::manage('User'),
+            DefaultRoles::TENANT_MANAGER => [...DefaultRoles::manage('User'), ...DefaultRoles::view('WorkflowCase')],
             DefaultRoles::EDUCATION_OFFICER => DefaultRoles::view('User'),
             DefaultRoles::REGISTRAR => DefaultRoles::view('User'),
             DefaultRoles::FINANCE_OFFICER => DefaultRoles::view('User'),

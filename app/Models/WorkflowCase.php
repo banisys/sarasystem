@@ -76,6 +76,37 @@ class WorkflowCase extends Model
     }
 
     /**
+     * @return BelongsTo<User, $this>
+     */
+    public function assigneeUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assignee_user_id');
+    }
+
+    /**
+     * @return BelongsTo<Role, $this>
+     */
+    public function assigneeRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'assignee_role_id');
+    }
+
+    /**
+     * Who the current step waits for, e.g. «مدیر شعبه (شعبه غرب)»; null
+     * once the case is finished.
+     */
+    public function assigneeName(): ?string
+    {
+        if (! $this->isInProgress()) {
+            return null;
+        }
+
+        $who = $this->claimedBy?->name ?? $this->assigneeUser?->name ?? $this->assigneeRole?->display_name;
+
+        return $who === null ? null : trim($who.($this->assigneeTenant ? " ({$this->assigneeTenant->name})" : ''));
+    }
+
+    /**
      * The subject's title, e.g. «درخواست همکاری علی رضایی».
      */
     public function title(): string

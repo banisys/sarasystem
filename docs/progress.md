@@ -14,12 +14,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 ## Next
 - Contracts: approval workflow before issuing, the organization's signature, contracts tab on employee / learner pages; later a finance module for installments and payments that attaches to contracts.
 - Use customizable forms (ADR 0017) in the next forms (e.g. enrollment contracts). Possible additions: file fields, conditional fields.
-- Workflows: cancel / reassign a running case (super admin or workflow owner), per-step deadlines and reminders, attachments on notes, a monitor of all running cases.
+- Workflows: cancel / reassign a running case (super admin or workflow owner; from «همه‌ی پرونده‌ها»), per-step deadlines and reminders, attachments on notes.
 - Use workflows for the next approval flows (leave, contracts).
 - Real SMS provider driver (choose provider: Kavenegar / Ghasedak / …; credentials from the user).
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-01 — «کارتابل → همه‌ی پرونده‌ها» ([ADR 0043](decisions/0043-all-workflow-cases.md)): every case of the current tenant, in progress, approved or rejected, with its current step, who it waits for, start and end, filters by status / workflow / kind, and a read-only case page (subject, documents / contracts, history). Permissions `ViewAny:WorkflowCase` / `View:WorkflowCase`, given to `tenant_manager` and `org_admin` (installed on the local DB). 2 new tests (incl. cross-tenant); 507 pass (`--parallel --processes=4`); Pint passes. Not checked in a browser. No tutorial mission (a monitoring screen, not a step of the scenario).
 - 2026-11-01 — Tutorial mission «مصاحبه» didn't tick after approving the interview: it looked for the step without document / contract settings, but the designer saves empty lists there, so no step matched. It now treats empty lists as no settings. Test updated to save steps as the designer does; the 14 Tutorial tests pass; Pint passes.
 - 2026-11-01 — Tutorial mission «ساخت موقعیت شغلی»: the degree may now be asked on the position's «فیلدهای فرم» or on the whole «همکاری با ما» form (the check uses the form the applicant actually gets, `ApplicantDocuments::fields()`); the step says the mission waits for it. The 37 Tutorial and Document tests pass; Pint passes.
 - 2026-11-01 — Admin panel: collapsed repeater / builder items (e.g. workflow steps) no longer all open when an item is added, deleted or moved. Filament keeps the collapsed state only in the browser and lost it on the re-render; every repeater and builder now uses `persistCollapsed()` (browser local storage, per item), set in `AdminPanelProvider`. 1 new test; 505 pass (`--parallel --processes=4`); Pint passes. Not checked in a browser.

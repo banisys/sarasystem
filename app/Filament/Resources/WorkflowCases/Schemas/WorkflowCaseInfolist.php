@@ -32,18 +32,31 @@ class WorkflowCaseInfolist
                                 ->implode(' ← '))
                             ->columnSpanFull(),
                     ]),
-                // The subject's own entries, with the subject as their record.
-                Section::make(fn (Section $component): string => WorkflowSubjects::find(self::case($component)->subject_type)?->label() ?? 'اطلاعات')
-                    ->relationship('subject')
-                    ->schema(fn (Section $component): array => WorkflowSubjects::find(self::case($component)->subject_type)?->details() ?? [])
-                    ->columns(1),
-                // e.g. the documents of the case (ADR 0019).
-                ...collect(WorkflowStepExtensions::all())->flatMap->caseDetails()->all(),
-                Section::make('تاریخچه')
-                    ->collapsible()
-                    ->schema([CaseHistory::make()]),
+                ...self::details(),
             ])
             ->columns(1);
+    }
+
+    /**
+     * The subject, the step extensions' sections and the history; shared
+     * with «همه‌ی پرونده‌ها».
+     *
+     * @return list<Section>
+     */
+    public static function details(): array
+    {
+        return [
+            // The subject's own entries, with the subject as their record.
+            Section::make(fn (Section $component): string => WorkflowSubjects::find(self::case($component)->subject_type)?->label() ?? 'اطلاعات')
+                ->relationship('subject')
+                ->schema(fn (Section $component): array => WorkflowSubjects::find(self::case($component)->subject_type)?->details() ?? [])
+                ->columns(1),
+            // e.g. the documents of the case (ADR 0019).
+            ...collect(WorkflowStepExtensions::all())->flatMap->caseDetails()->all(),
+            Section::make('تاریخچه')
+                ->collapsible()
+                ->schema([CaseHistory::make()]),
+        ];
     }
 
     private static function case(Section $component): WorkflowCase
