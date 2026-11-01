@@ -11,6 +11,8 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\FontProviders\LocalFontProvider;
+use Filament\Forms\Components\Builder as FormBuilder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\View\FormsIconAlias;
@@ -148,6 +150,12 @@ class AdminPanelProvider extends PanelProvider
                 ]);
             }
         });
+
+        // Collapsed repeater / builder items are only known to the browser;
+        // without this, adding, deleting or moving an item (which re-renders
+        // the list) opens every collapsed item again.
+        Repeater::configureUsing(fn (Repeater $repeater) => $repeater->persistCollapsed());
+        FormBuilder::configureUsing(fn (FormBuilder $builder) => $builder->persistCollapsed());
 
         // Let server validation return the Persian errors instead of browser bubbles.
         Form::configureUsing(fn (Form $form) => $form->extraAttributes(['novalidate' => true], merge: true));

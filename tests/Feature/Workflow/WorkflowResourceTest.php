@@ -122,6 +122,18 @@ class WorkflowResourceTest extends TestCase
         $this->get(WorkflowResource::getUrl('view', ['record' => $own], tenant: $this->west))->assertOk()->assertSee('مستقل از شعبه');
     }
 
+    public function test_collapsed_steps_stay_collapsed_when_a_step_is_added(): void
+    {
+        $workflow = $this->makeWorkflow($this->head, $this->subject->type(), [$this->roleStep('بررسی', $this->head, 'reviewer')]);
+
+        $this->actingInPanel($this->designer, $this->head);
+
+        // The browser keeps each step's collapsed state, which survives the re-render.
+        $this->get(WorkflowResource::getUrl('edit', ['record' => $workflow], tenant: $this->head))
+            ->assertOk()
+            ->assertSee('filament:repeater:collapsed:form.steps-', escape: false);
+    }
+
     public function test_the_workflow_page_draws_its_steps(): void
     {
         $person = User::factory()->create(['name' => 'رضا مدیری']);
