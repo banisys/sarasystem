@@ -76,3 +76,14 @@ html:not(.dark) .fi-sidebar {
         z-index: 21;
     }
 }
+
+/* The rich editor's «{{» merge-tag list (Filament's merge-tag-suggestion.js,
+   appended to <body>) has no height limit, so a long list ran off the page
+   and its lower items could not be picked. Cap it and let it scroll, like
+   Filament's mention list; the list sets min-width: 12rem inline, which
+   tells it apart from other dropdowns teleported to <body>. */
+body > .fi-dropdown-panel.fi-dropdown-list[style*='min-width: 12rem'] {
+    max-height: min(15rem, 50vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
