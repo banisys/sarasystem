@@ -16,6 +16,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -133,6 +134,10 @@ class QuickCreateEmployeeAction
             Toggle::make('panel_access')
                 ->label('دسترسی به پنل مدیریت')
                 ->default(false)
+                ->columnSpanFull(),
+            Callout::make('فرق سمت و نقش')
+                ->description('«سمت» عنوان شغلی کارمند است (مثلاً «معلم ریاضی» یا «حسابدار») که در پرونده و فهرست کارمندان دیده می‌شود و هیچ دسترسی‌ای نمی‌دهد. «نقش» تعیین می‌کند کارمند در این '.config('sarasystem.tenant_label').' چه صفحه‌هایی را می‌بیند و چه کارهایی می‌تواند بکند؛ دو نفر با یک سمت می‌توانند نقش‌های متفاوتی داشته باشند.')
+                ->info()
                 ->columnSpanFull(),
         ];
     }
