@@ -53,10 +53,9 @@ class AmendmentRenewalTest extends TestCase
         $this->admin = User::factory()->create();
         $this->admin->makeSuperAdmin($this->primary);
 
-        $this->employment = $this->contractType($this->primary, ['title' => 'قرارداد کارمند', 'parties' => ['employee'], 'number_prefix' => 'K-']);
+        $this->employment = $this->contractType($this->primary, ['title' => 'قرارداد کارمند', 'number_prefix' => 'K-']);
         $this->raise = $this->contractType($this->primary, [
             'title' => 'الحاقیه افزایش حقوق',
-            'parties' => ['employee'],
             'is_amendment' => true,
             'body' => '<p>به قرارداد <span data-type="mergeTag" data-id="parent_number"></span> از <span data-type="mergeTag" data-id="starts_on"></span> افزوده می‌شود.</p>',
         ]);

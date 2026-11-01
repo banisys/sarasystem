@@ -2,7 +2,6 @@
 
 namespace Modules\Contract\Filament\Resources\ContractTypes\Tables;
 
-use App\Contract\ContractParties;
 use App\Filament\CustomFields\CustomizeFormAction;
 use App\Filament\Support\TextFilter;
 use Filament\Actions\DeleteAction;
@@ -26,10 +25,6 @@ class ContractTypesTable
                 TextColumn::make('title')
                     ->label('عنوان')
                     ->sortable(),
-                TextColumn::make('parties')
-                    ->label('برای')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => ContractParties::find($state)?->label() ?? $state),
                 IconColumn::make('is_amendment')
                     ->label('الحاقیه')
                     ->boolean(),

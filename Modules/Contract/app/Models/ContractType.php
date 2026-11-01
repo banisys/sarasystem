@@ -18,14 +18,12 @@ use Modules\Contract\Forms\ContractForm;
 
 /**
  * A kind of contract, e.g. «قرارداد کارمند تمام‌وقت» (ADR 0020). Defined
- * once, in the primary tenant, for one or more parties (employees,
- * learners): its text with merge tags, how it is signed, and its fields
+ * once, in the primary tenant, for any party (employees, learners):
+ * its text with merge tags, how it is signed, and its fields
  * (a customizable form per type, ADR 0017). An amendment type is used
  * for amendments of signed contracts only (ADR 0021).
- *
- * @property list<string> $parties
  */
-#[Fillable(['tenant_id', 'title', 'description', 'parties', 'is_amendment', 'body', 'signature_method', 'number_prefix', 'is_active', 'sort'])]
+#[Fillable(['tenant_id', 'title', 'description', 'is_amendment', 'body', 'signature_method', 'number_prefix', 'is_active', 'sort'])]
 class ContractType extends Model
 {
     /** @use HasFactory<ContractTypeFactory> */
@@ -74,32 +72,24 @@ class ContractType extends Model
     }
 
     /**
-     * @param  Builder<ContractType>  $query
-     */
-    public function scopeForParty(Builder $query, string $party): void
-    {
-        $query->whereJsonContains('parties', $party);
-    }
-
-    /**
      * Merge tags of the type's text: key => label.
      *
      * @return array<string, string>
      */
     public function mergeTags(): array
     {
-        return self::tagsFor($this->parties ?? [], $this->exists ? $this : null);
+        return self::tagsFor($this->exists ? $this : null);
     }
 
     /**
-     * Merge tags of a text for these parties: the contract's own values,
-     * the contract it amends or renews (ADR 0021), the person tags, every party's tags, then the added fields of the
+     * Merge tags of a text: the contract's own values, the contract it
+     * amends or renews (ADR 0021), the person tags, every party's tags
+     * (blank for a person of another party), then the added fields of the
      * type's form (once the type exists).
      *
-     * @param  list<string>  $parties
      * @return array<string, string>
      */
-    public static function tagsFor(array $parties, ?self $type): array
+    public static function tagsFor(?self $type): array
     {
         $tags = [
             'contract_title' => 'عنوان قرارداد',
@@ -117,8 +107,8 @@ class ContractType extends Model
             ...ContractParty::personTags(),
         ];
 
-        foreach ($parties as $key) {
-            $tags = [...$tags, ...(ContractParties::find($key)?->tags() ?? [])];
+        foreach (ContractParties::all() as $party) {
+            $tags = [...$tags, ...$party->tags()];
         }
 
         foreach ($type === null ? [] : ContractForm::for($type)->fields as $field) {
@@ -141,7 +131,6 @@ class ContractType extends Model
     protected function casts(): array
     {
         return [
-            'parties' => 'array',
             'is_amendment' => 'boolean',
             'signature_method' => SignatureMethod::class,
             'is_active' => 'boolean',

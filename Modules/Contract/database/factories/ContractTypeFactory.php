@@ -22,7 +22,6 @@ class ContractTypeFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'title' => 'قرارداد '.fake()->unique()->word(),
-            'parties' => ['employee', 'learner'],
             'body' => '<p>این قرارداد میان <span data-type="mergeTag" data-id="tenant_name"></span> و <span data-type="mergeTag" data-id="person_name"></span> به کد ملی <span data-type="mergeTag" data-id="national_code"></span> از <span data-type="mergeTag" data-id="starts_on"></span> بسته می‌شود.</p>',
             'signature_method' => SignatureMethod::Either,
             'is_active' => true,

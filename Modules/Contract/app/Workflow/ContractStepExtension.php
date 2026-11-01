@@ -205,7 +205,7 @@ class ContractStepExtension extends StepExtension
     }
 
     /**
-     * Active types of the party the designed workflow is for.
+     * Active contract types, if the designed workflow is for a contract party.
      *
      * @return array<int, string>
      */
@@ -214,7 +214,7 @@ class ContractStepExtension extends StepExtension
         $subjectType = data_get($livewire, 'data.subject_type');
         $party = filled($subjectType) ? ContractParties::forType((string) $subjectType) : null;
 
-        return $party === null ? [] : ContractType::definedTypes()->active()->amendments(false)->forParty($party->key())->ordered()->pluck('title', 'id')->all();
+        return $party === null ? [] : ContractType::definedTypes()->active()->amendments(false)->ordered()->pluck('title', 'id')->all();
     }
 
     private static function canAct(WorkflowCase $case): bool

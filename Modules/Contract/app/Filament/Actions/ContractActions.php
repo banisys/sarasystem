@@ -232,14 +232,13 @@ class ContractActions
     }
 
     /**
-     * Active types of the contract's party: amendment types, or types for
-     * contracts of their own.
+     * Active amendment types, or types for contracts of their own.
      *
      * @return array<int, string>
      */
     private static function typeOptions(Contract $contract, bool $amendments): array
     {
-        return ContractType::definedTypes()->active()->amendments($amendments)->forParty($contract->party)->ordered()->pluck('title', 'id')->all();
+        return ContractType::definedTypes()->active()->amendments($amendments)->ordered()->pluck('title', 'id')->all();
     }
 
     /**

@@ -285,8 +285,8 @@ class Contracts
     {
         $party = ContractParties::forRecord($record);
 
-        if ($party === null || ! in_array($party->key(), $type->parties, true)) {
-            throw new ContractException("قرارداد «{$type->title}» برای این شخص نیست.");
+        if ($party === null) {
+            throw new ContractException('برای این شخص نمی‌توان قرارداد بست.');
         }
 
         return new Contract([

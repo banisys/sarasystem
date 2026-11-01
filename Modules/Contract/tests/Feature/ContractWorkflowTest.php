@@ -68,7 +68,7 @@ class ContractWorkflowTest extends TestCase
         $this->director = User::factory()->create();
         $this->makeStaff($this->director, $this->primary);
 
-        $this->employment = $this->contractType($this->primary, ['title' => 'قرارداد کارمند', 'parties' => ['employee'], 'number_prefix' => 'K-']);
+        $this->employment = $this->contractType($this->primary, ['title' => 'قرارداد کارمند', 'number_prefix' => 'K-']);
 
         $prepare = $this->roleStep('تنظیم قرارداد', $this->primary, 'recruiter');
         $prepare['extensions'] = [ContractStepExtension::KEY => ['prepare' => [$this->employment->id]]];
@@ -156,7 +156,6 @@ class ContractWorkflowTest extends TestCase
     {
         $tuition = $this->contractType($this->primary, [
             'title' => 'قرارداد شهریه',
-            'parties' => ['learner'],
             'body' => '<p><span data-type="mergeTag" data-id="person_name"></span> فرزند <span data-type="mergeTag" data-id="father_name"></span>، <span data-type="mergeTag" data-id="program"></span></p>',
         ]);
         $preregistration = Preregistration::factory()->for($this->primary)->create();

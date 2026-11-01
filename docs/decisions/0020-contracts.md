@@ -48,8 +48,9 @@ The user chose:
 **Module `Contract`:**
 - **Contract types** (`contract_types`, «قراردادها → انواع قرارداد»):
   - Defined in the primary tenant only.
-  - Each has: a title, the parties it is for, the **text**, the **signature method** (electronic / paper / either), an optional number prefix, and active.
-  - **Text:** written in Filament's rich editor. Values are **merge tags** (`{{ person_name }}`), picked from a panel with Persian labels: the contract's own values, the parties' values and the type's added fields.
+  - Each has: a title, the **text**, the **signature method** (electronic / paper / either), an optional number prefix, and active.
+  - **Text:** written in Filament's rich editor. Values are **merge tags** (`{{ person_name }}`), picked from a panel with Persian labels: the contract's own values, every party's values and the type's added fields.
+  - A type is for any party (employee or learner). Until 2026-11-01 each type had «برای» (the parties it is for), which limited the types offered and the merge tags; the user dropped it as unneeded. A tag of another party (e.g. «کد پرسنلی» in a learner's contract) prints as a blank.
   - **Fields:** a customizable form (ADR 0017, `contract.contract`, per type). Built-in fields are start date, end date and amount (in rials). The type can add fields (wage, working hours, …), and each added field is also a merge tag.
   - Types are deactivated, not deleted, once used.
 - **Contracts** (`contracts`, per tenant):

@@ -74,7 +74,6 @@ class ContractAdminTest extends TestCase
         Livewire::test(ListContractTypes::class)
             ->callAction('create', data: [
                 'title' => 'قرارداد کارمند',
-                'parties' => ['employee'],
                 'signature_method' => SignatureMethod::Paper->value,
                 'number_prefix' => 'K-',
                 'body' => '<p>طرف قرارداد: <span data-type="mergeTag" data-id="person_name"></span></p>',
@@ -84,27 +83,26 @@ class ContractAdminTest extends TestCase
 
         $type = ContractType::query()->sole();
         $this->assertSame($this->primary->id, $type->tenant_id);
-        $this->assertSame(['employee'], $type->parties);
         $this->assertSame(SignatureMethod::Paper, $type->signature_method);
         $this->assertStringContainsString('data-id="person_name"', $type->body);
     }
 
-    public function test_merge_tags_include_the_parties_tags_and_the_types_added_fields(): void
+    public function test_merge_tags_include_every_partys_tags_and_the_types_added_fields(): void
     {
-        $type = $this->contractType($this->primary, ['parties' => ['employee']]);
+        $type = $this->contractType($this->primary, []);
         $this->addField($type, 'fwage', 'حقوق ماهانه');
 
         $tags = $type->refresh()->mergeTags();
 
         $this->assertSame('نام و نام خانوادگی', $tags['person_name']);
         $this->assertSame('عنوان شغل', $tags['job_title']);
-        $this->assertArrayNotHasKey('program', $tags);
+        $this->assertSame('برنامه‌ی آموزشی', $tags['program']);
         $this->assertSame('حقوق ماهانه', $tags['fwage']);
     }
 
     public function test_staff_prepare_a_draft_for_a_member_of_their_tenant(): void
     {
-        $type = $this->contractType($this->primary, ['parties' => ['employee']]);
+        $type = $this->contractType($this->primary, []);
         $employee = $this->employeeIn($this->branch);
 
         $this->actingInPanel($this->admin, $this->branch);
@@ -128,7 +126,7 @@ class ContractAdminTest extends TestCase
 
     public function test_issuing_fixes_the_text_numbers_it_and_tells_the_person(): void
     {
-        $type = $this->contractType($this->primary, ['parties' => ['employee'], 'number_prefix' => 'K-']);
+        $type = $this->contractType($this->primary, ['number_prefix' => 'K-']);
         $this->addField($type, 'fwage', 'حقوق ماهانه');
         $type->update(['body' => '<p><span data-type="mergeTag" data-id="person_name"></span> — <span data-type="mergeTag" data-id="tenant_name"></span> — <span data-type="mergeTag" data-id="amount_words"></span> — <span data-type="mergeTag" data-id="fwage"></span> — <span data-type="mergeTag" data-id="father_name"></span></p>']);
         $employee = $this->employeeIn($this->branch, User::factory()->create(['name' => 'سارا محمدی', 'mobile' => '09121234567']));

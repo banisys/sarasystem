@@ -30,7 +30,6 @@ use Modules\Document\Enums\DocumentStatus;
 use Modules\Document\Filament\Resources\DocumentTypes\DocumentTypeResource;
 use Modules\Document\Models\Document;
 use Modules\Document\Models\DocumentType;
-use Modules\Employee\ContractParties\EmployeeContractParty;
 use Modules\Employee\Enums\ApplicationStatus;
 use Modules\Employee\Filament\Resources\Employees\EmployeeResource;
 use Modules\Employee\Filament\Resources\JobPositions\JobPositionResource;
@@ -284,13 +283,12 @@ class LanguageInstitute extends Scenario
             $contracts ? Mission::make('contract-type', 'ساخت نوع قرارداد')
                 ->steps([
                     'در «قراردادها → انواع قرارداد» دکمه‌ی «ایجاد» را بزنید.',
-                    'عنوان را «قرارداد همکاری مدرس» بگذارید، «برای» را «کارمند» بزنید و روش امضا «الکترونیکی» بماند.',
+                    'عنوان را «قرارداد همکاری مدرس» بگذارید و روش امضا «الکترونیکی» بماند.',
                     'متن کوتاهی برای قرارداد بنویسید (با «{{» نام شخص را درج کنید) و ذخیره کنید.',
                 ])
                 ->url(fn (): string => ContractTypeResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                 ->fill(fn (): array => [
                     'title' => 'قرارداد همکاری مدرس',
-                    'parties' => [EmployeeContractParty::KEY],
                     'signature_method' => SignatureMethod::Electronic->value,
                 ])
                 ->doneWhen(fn (TutorialRun $run): bool => self::contractType($run) !== null) : null,

@@ -2,8 +2,6 @@
 
 namespace Modules\Contract\Filament\Resources\ContractTypes\Schemas;
 
-use App\Contract\ContractParties;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -34,12 +32,6 @@ class ContractTypeForm
                             ->placeholder('مثلاً: قرارداد کارمند تمام‌وقت، قرارداد شهریه')
                             ->required()
                             ->maxLength(255),
-                        CheckboxList::make('parties')
-                            ->label('برای')
-                            ->options(fn (): array => ContractParties::options())
-                            ->required()
-                            ->columns(2)
-                            ->live(),
                         ToggleButtons::make('signature_method')
                             ->label('روش امضا')
                             ->options(SignatureMethod::class)
@@ -69,7 +61,7 @@ class ContractTypeForm
                     ->schema([
                         RichEditor::make('body')
                             ->hiddenLabel()
-                            ->mergeTags(fn (Get $get, ?ContractType $record): array => ContractType::tagsFor(array_values((array) $get('parties')), $record))
+                            ->mergeTags(fn (?ContractType $record): array => ContractType::tagsFor($record))
                             ->toolbarButtons([
                                 ['bold', 'italic', 'underline'],
                                 ['h2', 'h3'],

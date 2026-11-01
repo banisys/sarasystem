@@ -36,7 +36,7 @@ LMS had «قرارداد تکمیلی» (a supplementary contract with `parent_i
 - **Contracts** get `parent_id` and `kind` (`original` / `amendment` / `renewal`).
 - **Amendment:**
   - Row action «الحاقیه» on a **signed** contract that is not itself an amendment.
-  - An amendment type of the same party is chosen, then its terms are filled in.
+  - An amendment type is chosen, then its terms are filled in.
   - It is issued and signed like any contract.
   - Its number is the main contract's number plus its own sequence, e.g. `K-12/1`, `K-12/2`. The type's sequence is not used.
 - **Renewal:**

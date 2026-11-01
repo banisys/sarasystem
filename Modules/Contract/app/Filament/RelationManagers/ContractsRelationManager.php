@@ -84,8 +84,6 @@ class ContractsRelationManager extends RelationManager
      */
     private function typeOptions(): array
     {
-        $party = ContractParties::forRecord($this->getOwnerRecord());
-
-        return $party === null ? [] : ContractType::definedTypes()->active()->amendments(false)->forParty($party->key())->ordered()->pluck('title', 'id')->all();
+        return ContractParties::forRecord($this->getOwnerRecord()) === null ? [] : ContractType::definedTypes()->active()->amendments(false)->ordered()->pluck('title', 'id')->all();
     }
 }

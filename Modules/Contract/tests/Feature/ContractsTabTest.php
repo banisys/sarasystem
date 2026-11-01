@@ -54,7 +54,7 @@ class ContractsTabTest extends TestCase
         $this->admin = User::factory()->create();
         $this->admin->makeSuperAdmin($this->primary);
 
-        $this->type = $this->contractType($this->primary, ['title' => 'قرارداد کارمند', 'parties' => ['employee']]);
+        $this->type = $this->contractType($this->primary, ['title' => 'قرارداد کارمند']);
         $this->employee = $this->employeeIn($this->branch, User::factory()->create(['name' => 'سارا محمدی']));
     }
 
@@ -82,7 +82,7 @@ class ContractsTabTest extends TestCase
     {
         $mine = $this->draftFor($this->employee, $this->type);
         $someoneElses = $this->draftFor($this->employeeIn($this->branch), $this->type);
-        $amendmentType = $this->contractType($this->primary, ['title' => 'الحاقیه', 'parties' => ['employee'], 'is_amendment' => true]);
+        $amendmentType = $this->contractType($this->primary, ['title' => 'الحاقیه', 'is_amendment' => true]);
 
         $this->actingInPanel($this->admin, $this->branch);
         Livewire::test(ContractsRelationManager::class, ['ownerRecord' => $this->employee, 'pageClass' => ViewEmployee::class])
