@@ -1,7 +1,7 @@
 {
     "name": "Class",
     "alias": "class",
-    "description": "",
+    "description": "کلاس‌ها، برنامه‌ی جلسه‌ها، حضور و غیاب، طرح درس و تکلیف",
     "keywords": [],
     "priority": 0,
     "providers": [

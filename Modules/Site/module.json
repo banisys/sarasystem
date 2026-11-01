@@ -1,7 +1,7 @@
 {
     "name": "Site",
     "alias": "site",
-    "description": "",
+    "description": "وب‌سایت شعبه‌ها: صفحه‌ساز و منو",
     "keywords": [],
     "priority": 0,
     "providers": [

@@ -140,7 +140,8 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 | Routes | `Modules/{Name}/routes/web.php` with `['auth', 'auth.session', 'tenant']` (`tenant` = `EnsureTenantSelected`). |
 | Data | Module migrations are auto-discovered; tenant-owned models use `BelongsToTenant`. |
 | Tests | `Modules/{Name}/tests`, run by the `Modules` PHPUnit suite. |
-| Enable/disable | `modules_statuses.json`. |
+| Enable/disable | `modules_statuses.json`; super admins switch modules in the admin page «ماژول‌ها» ([ManageModules](../app/Filament/Pages/ManageModules.php), service [ModuleManager](../app/Features/ModuleManager.php), [ADR 0042](decisions/0042-module-manager.md)) or with `php artisan module:disable Name`. `requires` in `module.json` lists the modules a module builds on. Any module can be off for per-feature licensing; modules talk through the hooks above, not directly ([ADR 0041](decisions/0041-independent-modules-per-feature-licensing.md)). |
+| Dependencies between modules | Only declared ones: School builds on Class and Student (`requires` in `module.json`); the Tutorial's `LanguageInstitute` scenario uses Class, Employee and Student. Everything else depends only on the core (audit of 2026-11-01, ADR 0041). |
 
 **Module list:**
 | Module | What | Notes |

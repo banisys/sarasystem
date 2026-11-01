@@ -1,9 +1,13 @@
 {
     "name": "School",
     "alias": "school",
-    "description": "",
+    "description": "پایه‌ها، برنامه‌ی درسی، نمره‌ها و کارنامه (ویژه‌ی مدرسه)",
     "keywords": [],
     "priority": 0,
+    "requires": [
+        "Class",
+        "Student"
+    ],
     "providers": [
         "Modules\\School\\Providers\\SchoolServiceProvider"
     ],

@@ -1,7 +1,7 @@
 {
     "name": "Contract",
     "alias": "contract",
-    "description": "",
+    "description": "قرارداد کارکنان و فراگیران، امضا و الحاقیه",
     "keywords": [],
     "priority": 0,
     "providers": [

@@ -1,7 +1,7 @@
 {
     "name": "Employee",
     "alias": "employee",
-    "description": "",
+    "description": "کارکنان، همکاری با ما و استخدام",
     "keywords": [],
     "priority": 0,
     "providers": [

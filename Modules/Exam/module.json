@@ -1,7 +1,7 @@
 {
     "name": "Exam",
     "alias": "exam",
-    "description": "",
+    "description": "آزمون‌های برخط و بانک سؤال",
     "keywords": [],
     "priority": 0,
     "providers": [

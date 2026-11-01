@@ -44,6 +44,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Staff / panel user | کارمند | A user holding the `panel_user` role in a tenant; only staff (and super admins) can enter the admin panel, and only for their tenants. |
 | Super admin | مدیر کل سیستم | Holder of the global `super_admin` role (in any tenant): installation-wide, bypasses all permission checks, manages tenants and role definitions. |
 | Primary tenant | شعبه‌ی اصلی | The one tenant whose public home page is the site root `/` (ADR 0009); chosen by a super admin. |
+| Module | ماژول | One switchable feature of the installation (`Modules/{Name}`: classes, contracts, exams, …). A client may have only some of them; super admins switch them in «ماژول‌ها» ([ADR 0042](decisions/0042-module-manager.md)). A module can `requires` others ([ADR 0041](decisions/0041-independent-modules-per-feature-licensing.md)). |
 | Site page | صفحه | A public page of one tenant's site at a path such as `/about-us` (`Site` module, ADR 0010); the page at `/` is the tenant's home page, which every tenant has. Its content will be made of widgets. |
 | Widget | ویجت | A building block of a site page's content (HTML, …), placed in order with the page builder (ADR 0011). Not the same as a Filament dashboard widget. |
 | Site menu | منو | A named tree of links of one tenant's site (to its pages, to any address, or a title over a submenu), made in «وب‌سایت → منوها» and chosen per tenant in the tenants list («منوی سایت»), shown in that tenant's site header (ADR 0012). |

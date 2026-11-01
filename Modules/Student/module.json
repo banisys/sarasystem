@@ -1,7 +1,7 @@
 {
     "name": "Student",
     "alias": "student",
-    "description": "",
+    "description": "فراگیران، پیش‌ثبت‌نام و پذیرش",
     "keywords": [],
     "priority": 0,
     "providers": [
