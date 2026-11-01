@@ -7,6 +7,7 @@ use App\Authorization\DefaultRoles;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Support\Identifiers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Models\Attendance;
@@ -22,6 +23,8 @@ use Modules\Student\Models\Student;
 use Modules\Tutorial\Filament\Pages\StepByStepTutorial;
 use Modules\Tutorial\Livewire\TutorialBar;
 use Modules\Tutorial\Models\TutorialRun;
+use Modules\Tutorial\Scenarios\LanguageInstitute;
+use Modules\Tutorial\Scenarios\Mission;
 use Modules\Tutorial\Services\TutorialMode;
 use Modules\Tutorial\Services\TutorialProgress;
 use Modules\Tutorial\Tests\Concerns\RunsTutorials;
@@ -44,6 +47,23 @@ class LanguageInstituteScenarioTest extends TestCase
         $this->primary->makePrimary();
         app(DefaultRoles::class)->install();
         $this->owner = User::factory()->superAdmin()->create();
+    }
+
+    public function test_fill_values_are_valid_for_the_forms(): void
+    {
+        $run = TutorialRun::query()->create(['user_id' => $this->owner->getKey(), 'scenario' => 'language-institute']);
+        $missions = collect((new LanguageInstitute)->chapters())->flatten()->keyBy(fn (Mission $mission): string => $mission->key);
+
+        $this->assertSame('vanak', $missions['tenant']->fillFor($run)['slug']);
+
+        foreach (['instructor', 'registrar'] as $key) {
+            $values = $missions[$key]->fillFor($run);
+
+            $this->assertTrue(Identifiers::isValidNationalCode($values['national_code']));
+            $this->assertNotEmpty($values['role_ids']);
+        }
+
+        $this->assertSame(now()->toDateString(), $missions['term']->fillFor($run)['starts_on']);
     }
 
     public function test_missions_open_one_after_another_as_the_rows_appear(): void

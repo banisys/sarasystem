@@ -62,6 +62,7 @@ class LanguageInstitute extends Scenario
                         'نام را «شعبه ونک» و نشانی را «vanak» بگذارید و ذخیره کنید.',
                     ])
                     ->url(fn (): string => TenantResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                    ->fill(fn (): array => ['name' => 'شعبه ونک', 'slug' => 'vanak'])
                     ->doneWhen(fn (TutorialRun $run): bool => self::branch($run) !== null),
                 Mission::make('instructor', 'ثبت مدرس')
                     ->steps([
@@ -70,6 +71,13 @@ class LanguageInstitute extends Scenario
                         'کد ملی، نام «سارا احمدی»، موبایل و عنوان شغلی «مدرس زبان» را بنویسید و نقش «مدرس» را بزنید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::branchUrl($run, EmployeeResource::class))
+                    ->fill(fn (): array => [
+                        'national_code' => '1234567891',
+                        'name' => 'سارا احمدی',
+                        'mobile' => '09120000001',
+                        'job_title' => 'مدرس زبان',
+                        'role_ids' => self::roleIds(DefaultRoles::INSTRUCTOR),
+                    ])
                     ->doneWhen(fn (TutorialRun $run): bool => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR) !== null),
                 Mission::make('registrar', 'ثبت کارشناس ثبت‌نام')
                     ->steps([
@@ -77,6 +85,14 @@ class LanguageInstitute extends Scenario
                         'نقش «کارشناس ثبت‌نام» را بزنید و «دسترسی به پنل مدیریت» را روشن کنید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::branchUrl($run, EmployeeResource::class))
+                    ->fill(fn (): array => [
+                        'national_code' => '1002003008',
+                        'name' => 'رضا کریمی',
+                        'mobile' => '09120000002',
+                        'job_title' => 'کارشناس ثبت‌نام',
+                        'role_ids' => self::roleIds(DefaultRoles::REGISTRAR),
+                        'panel_access' => true,
+                    ])
                     ->doneWhen(fn (TutorialRun $run): bool => self::registrar($run, withPanel: true) !== null),
             ],
             'پیش‌ثبت‌نام و پذیرش' => [
@@ -123,6 +139,11 @@ class LanguageInstitute extends Scenario
                         'در «کلاس‌ها → دوره‌های آموزشی» دوره‌ی «ترم پاییز» را با تاریخ شروع امروز و پایان سه ماه بعد بسازید.',
                     ])
                     ->url(fn (): string => TermResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                    ->fill(fn (): array => [
+                        'title' => 'ترم پاییز',
+                        'starts_on' => now()->toDateString(),
+                        'ends_on' => now()->addMonths(3)->toDateString(),
+                    ])
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(Term::class)->exists()),
                 Mission::make('classroom', 'ساخت کلاس')
                     ->steps([
@@ -130,6 +151,11 @@ class LanguageInstitute extends Scenario
                         'نام «English A1»، دوره‌ی «ترم پاییز» و نوع «حضوری» را بگذارید و ذخیره کنید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::branchUrl($run, ClassroomResource::class))
+                    ->fill(fn (TutorialRun $run): array => [
+                        'title' => 'English A1',
+                        'term_id' => $run->made(Term::class)->oldest('id')->value('id'),
+                        'mode' => 'in_person',
+                    ])
                     ->doneWhen(fn (TutorialRun $run): bool => self::classroom($run) !== null),
                 Mission::make('members', 'افزودن اعضای کلاس')
                     ->steps([
@@ -200,6 +226,16 @@ class LanguageInstitute extends Scenario
             ->first(fn (?User $user): bool => $user !== null
                 && in_array($role->getKey(), $user->roleIdsIn($branch))
                 && (! $withPanel || $user->staffTenants()->whereKey($branch->getKey())->exists()));
+    }
+
+    /**
+     * The ids (as the form's checkboxes send them) of the default role.
+     *
+     * @return list<string>
+     */
+    private static function roleIds(string $roleName): array
+    {
+        return Role::query()->whereNull('tenant_id')->where('name', $roleName)->pluck('id')->map(fn (int $id): string => (string) $id)->all();
     }
 
     private static function registrar(TutorialRun $run, bool $withPanel): ?User

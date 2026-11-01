@@ -18,7 +18,7 @@ class TutorialGuide
     public function __construct(private TutorialMode $mode, private TutorialProgress $progress) {}
 
     /**
-     * @return array{scenario: string, done: int, total: int, finished: bool, mission: array{key: string, title: string, actor: string, steps: list<string>, url: string|null, urlLabel: string}|null, actAs: array{name: string, url: string}|null, ownAccountUrl: string|null, pageUrl: string}|null
+     * @return array{scenario: string, done: int, total: int, finished: bool, mission: array{key: string, title: string, actor: string, steps: list<string>, url: string|null, urlLabel: string, fill: array<string, mixed>}|null, actAs: array{name: string, url: string}|null, ownAccountUrl: string|null, pageUrl: string}|null
      */
     public function data(): ?array
     {
@@ -42,6 +42,7 @@ class TutorialGuide
                 'steps' => $mission->stepList(),
                 'url' => $mission->urlFor($run),
                 'urlLabel' => $mission->urlLabel(),
+                'fill' => $mission->fillFor($run),
             ] : null,
             'actAs' => $mission ? $this->actAs($run, $mission) : null,
             // A mission done with one's own account while signed in as someone else.

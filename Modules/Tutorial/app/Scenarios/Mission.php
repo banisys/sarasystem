@@ -26,6 +26,8 @@ final class Mission
 
     private ?Closure $doneWhen = null;
 
+    private ?Closure $fill = null;
+
     private function __construct(public readonly string $key, public readonly string $title) {}
 
     public static function make(string $key, string $title): self
@@ -63,6 +65,19 @@ final class Mission
     {
         $this->url = $url;
         $this->urlLabel = $label;
+
+        return $this;
+    }
+
+    /**
+     * The values the bar's «پر کردن خودکار» writes into the open form or
+     * modal, keyed by field name (the Filament state path without its prefix).
+     *
+     * @param  Closure(TutorialRun): array<string, mixed>  $fill
+     */
+    public function fill(Closure $fill): self
+    {
+        $this->fill = $fill;
 
         return $this;
     }
@@ -108,6 +123,14 @@ final class Mission
     public function urlLabel(): string
     {
         return $this->urlLabel ?? 'برو به صفحه';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function fillFor(TutorialRun $run): array
+    {
+        return $this->fill ? ($this->fill)($run) : [];
     }
 
     public function isDone(TutorialRun $run): bool
