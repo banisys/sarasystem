@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Support\Identifiers;
+use App\Workflow\WorkflowEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Models\Attendance;
@@ -16,7 +17,13 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Term;
+use Modules\Contract\Models\Contract;
+use Modules\Contract\Models\ContractType;
+use Modules\Document\Enums\DocumentStatus;
+use Modules\Document\Models\Document;
+use Modules\Document\Models\DocumentType;
 use Modules\Employee\Enums\ApplicationStatus;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Models\Employee;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
@@ -88,18 +95,52 @@ class LanguageInstituteScenarioTest extends TestCase
         $registrar = $this->employee($run, $branch, DefaultRoles::REGISTRAR);
         $this->assertSame('registrar', $current(), 'The registrar needs panel access.');
         $this->makeStaff($registrar, $branch);
+        $this->assertSame('document-type', $current());
+
+        $degree = DocumentType::factory()->for($this->primary)->create(['is_active' => true]);
+        $this->madeInRun($run, $degree);
+        $this->assertSame('contract-type', $current());
+
+        $contractType = ContractType::factory()->for($this->primary)->create(['is_active' => true, 'is_amendment' => false]);
+        $this->madeInRun($run, $contractType);
         $this->assertSame('hiring-workflow', $current());
 
-        $hiringWorkflow = Workflow::factory()->create(['subject_type' => (new JobApplication)->getMorphClass(), 'steps' => [['name' => 'مصاحبه', 'tenant_id' => $this->primary->id, 'assignee_type' => 'user', 'user_id' => $this->owner->id, 'actions' => []]]]);
+        $step = fn (string $name, array $extensions = []): array => ['name' => $name, 'tenant_id' => $this->primary->id, 'assignee_type' => 'user', 'user_id' => $this->owner->id, 'actions' => [], 'extensions' => $extensions];
+        $withoutChecks = Workflow::factory()->create(['subject_type' => (new JobApplication)->getMorphClass(), 'steps' => [$step('مصاحبه')]]);
+        $this->madeInRun($run, $withoutChecks);
+        $this->assertSame('hiring-workflow', $current(), 'The workflow checks the degree and prepares the contract.');
+
+        $hiringWorkflow = Workflow::factory()->create(['subject_type' => (new JobApplication)->getMorphClass(), 'steps' => [
+            $step('بررسی مدارک', ['documents' => ['verify' => [(string) $degree->id]]]),
+            $step('مصاحبه'),
+            $step('تنظیم قرارداد', ['contracts' => ['prepare' => [(string) $contractType->id]]]),
+        ]]);
         $this->madeInRun($run, $hiringWorkflow);
         $this->assertSame('job-position', $current());
 
         $position = JobPosition::factory()->for($this->primary)->create(['workflow_id' => $hiringWorkflow->id, 'is_active' => true]);
         $this->madeInRun($run, $position);
+        $this->assertSame('job-position', $current(), 'Its form asks for the degree.');
+        $position->formCustomizations()->create(['tenant_id' => $this->primary->id, 'form' => JobApplicationForm::KEY, 'field_modes' => ['document_'.$degree->id => 'required'], 'fields' => []]);
         $this->assertSame('job-application', $current());
 
         $application = JobApplication::factory()->for($this->primary)->create(['job_position_id' => $position->id]);
         $this->madeInRun($run, $application);
+        $this->assertSame('job-application', $current(), 'The applicant uploads the degree.');
+        $document = Document::factory()->create(['tenant_id' => $this->primary->id, 'document_type_id' => $degree->id, 'holder' => 'employee', 'documentable_type' => $application->getMorphClass(), 'documentable_id' => $application->id]);
+        $this->madeInRun($run, $document);
+        $this->assertSame('document-check', $current());
+
+        $case = app(WorkflowEngine::class)->start($hiringWorkflow, $application);
+        $document->update(['status' => DocumentStatus::Approved]);
+        $this->assertSame('document-check', $current(), 'The case moves on after the check.');
+        $case->update(['current_step' => 1]);
+        $this->assertSame('interview', $current());
+
+        $case->update(['current_step' => 2]);
+        $this->assertSame('contract-draft', $current());
+
+        $this->madeInRun($run, Contract::factory()->create(['tenant_id' => $this->primary->id, 'contract_type_id' => $contractType->id, 'party' => 'employee', 'contractable_type' => $application->getMorphClass(), 'contractable_id' => $application->id]));
         $this->assertSame('hiring', $current());
 
         $teacher = $this->employee($run, $branch, DefaultRoles::INSTRUCTOR);
@@ -149,7 +190,7 @@ class LanguageInstituteScenarioTest extends TestCase
         $this->madeInRun($run, $branch);
         $registrar = $this->employee($run, $branch, DefaultRoles::REGISTRAR);
         $this->makeStaff($registrar, $branch);
-        $run->update(['completed_missions' => ['tenant' => now(), 'registrar' => now(), 'hiring-workflow' => now(), 'job-position' => now(), 'job-application' => now(), 'hiring' => now(), 'workflow' => now(), 'program' => now(), 'preregistration' => now()]]);
+        $run->update(['completed_missions' => ['tenant' => now(), 'registrar' => now(), 'document-type' => now(), 'contract-type' => now(), 'hiring-workflow' => now(), 'job-position' => now(), 'job-application' => now(), 'document-check' => now(), 'interview' => now(), 'contract-draft' => now(), 'hiring' => now(), 'workflow' => now(), 'program' => now(), 'preregistration' => now()]]);
 
         $this->actingAs($this->owner)->post(route('tutorial.act-as'))->assertRedirect();
 
