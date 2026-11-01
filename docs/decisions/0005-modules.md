@@ -13,7 +13,7 @@
 ## Decision
 - **`app/` = the platform core** that every module builds on: tenancy (`Tenant`, `BelongsToTenant`), users, roles and role-assignment rules, authentication, profile, the admin panel provider and shared support code. The core never depends on a module.
 - **`Modules/{Name}` = one business area each.** Examples: classrooms, exams, courses, finance. Every part ported from LMS lands in a module.
-- Modules may depend on the core freely. A dependency between modules should be rare and explicit (listed in the module's `module.json` / docs).
+- Modules may depend on the core freely. A dependency between modules should be rare and explicit (listed in the module's `module.json` / docs). Since [ADR 0041](0041-independent-modules-per-feature-licensing.md) this is a product requirement: any module can be disabled for per-feature licensing.
 - **Wiring** (done in the core, so modules need no boilerplate):
   - **Filament:** `AdminPanelProvider::discoverModules()` discovers `Modules/{Name}/app/Filament/{Resources,Pages,Widgets}` of every **enabled** module.
   - **Inertia:** module pages live in `Modules/{Name}/resources/js/Pages` and are rendered as `'{Name}::Page'`. `resources/js/app.js` resolves them, and `AppServiceProvider` registers the same namespaces for Inertia's test page finder. The `@` alias (Vite) points to `resources/js` for shared layouts and components.

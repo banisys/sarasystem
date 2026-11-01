@@ -29,6 +29,14 @@ _(TODO: formatter/linter, naming rules, file naming.)_
 
 - Create rows with Eloquent (`create()`, `save()`), not query-builder `insert()`, in code a web request runs. The step-by-step tutorial records rows through model events and deletes them on «شروع دوباره» ([ADR 0040](decisions/0040-step-by-step-tutorial.md)). Public-site lists of tenants or other records a tutorial could make go through `HiddenRecords::exclude()`.
 
+## Keeping the tutorial up to date ([ADR 0040](decisions/0040-step-by-step-tutorial.md))
+The step-by-step tutorial («آموزش گام‌به‌گام», module `Tutorial`) is developed together with the project, not afterwards. At the end of every task:
+
+1. **Check** whether the change adds or changes something a client would do or see: a screen, form, action, workflow, role, public page or setting. Pure refactors, fixes without visible change and internal tooling need nothing.
+2. **If it does**, update the scenarios it applies to in [Modules/Tutorial/app/Scenarios](../Modules/Tutorial/app/Scenarios): add a mission (or steps to an existing one) with its state check, fix missions whose screens, labels or flow changed, and remove missions for removed features. Keep missions in the order a new client would do them.
+3. If a new feature fits a scenario that doesn't exist yet (school, company), note it in `progress.md` under the tutorial's «In progress» item so it is added with that scenario.
+4. Update the tutorial's tests for the changed checks, and mention the tutorial change (or that none was needed) in the task summary.
+
 ## Patterns we avoid
 _(TODO: things that look tempting but we decided against — link ADR if any.)_
 
@@ -41,6 +49,15 @@ _(TODO: things that look tempting but we decided against — link ADR if any.)_
 6. Document the module in `docs/architecture.md` (module list) and, if it was ported, in `docs/legacy-lms.md` → Porting status.
 
 Business features never go in `app/`; the core in `app/` is only for platform concerns used by every module.
+
+## Independent modules ([ADR 0041](decisions/0041-independent-modules-per-feature-licensing.md))
+Some clients pay per feature, so an installation must work with any module disabled.
+- A module uses only the core in `app/` and its own code. No `use Modules\Other\…`, no foreign keys to another module's tables, no other module's permissions, routes or pages.
+- To work with another module, use a core hook (an interface or registry in `app/`, an event, `ModelRelationManagers`) or a hook owned by the module being extended. When the other module is disabled, the hook is simply not registered and nothing breaks.
+- A real dependency (a module that only makes sense on top of another, like School on Class) is the exception: discuss it with the user, declare it in `module.json` (`requires`) and in `architecture.md`.
+- Cross-module features (tutorial missions, default-role grants, tabs, workflow steps) check `Module::isEnabled('Name')` and are left out otherwise.
+- Tests that need another module skip when it is disabled; core tests assume no module.
+- **Before a module or cross-module feature is done,** disable each module it touches (`php artisan module:disable Name`) and run the remaining tests and a page load, then enable it again.
 
 ## Tenancy rules (see [ADR 0002](decisions/0002-tenancy-model.md))
 - A model whose rows belong to one tenant **must** `use BelongsToTenant`, and its table needs a `tenant_id` foreign key to `tenants`.
