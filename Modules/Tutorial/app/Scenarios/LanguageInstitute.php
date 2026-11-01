@@ -3,10 +3,10 @@
 namespace Modules\Tutorial\Scenarios;
 
 use App\Authorization\DefaultRoles;
+use App\Documents\ApplicantDocuments;
 use App\Filament\Resources\Tenants\TenantResource;
 use App\Filament\Resources\WorkflowCases\WorkflowCaseResource;
 use App\Filament\Resources\Workflows\WorkflowResource;
-use App\Models\FormCustomization;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -310,7 +310,7 @@ class LanguageInstitute extends Scenario
                     'در «همکاری با ما → موقعیت‌های شغلی» دکمه‌ی «ایجاد» را بزنید.',
                     'عنوان را «مدرس زبان انگلیسی» بگذارید و فرایند «استخدام مدرس» را برایش انتخاب کنید.',
                     '«نمایش در فرم همکاری با ما» را روشن بگذارید و ذخیره کنید.',
-                    $documents ? 'از منوی ردیف موقعیت «فیلدهای فرم» را بزنید و در بخش «مدارک»، «مدرک تحصیلی» را «الزامی» کنید تا متقاضی آن را بارگذاری کند.' : null,
+                    $documents ? 'از منوی ردیف موقعیت «فیلدهای فرم» را بزنید، در بخش «مدارک»، «مدرک تحصیلی» را «الزامی» کنید و ذخیره کنید تا متقاضی آن را بارگذاری کند. تا این کار انجام نشود، این مأموریت تیک نمی‌خورد.' : null,
                 ])))
                 ->url(fn (): string => JobPositionResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                 ->fill(fn (TutorialRun $run): array => [
@@ -462,9 +462,10 @@ class LanguageInstitute extends Scenario
         $type = self::enabled('Document') ? self::documentType($run) : null;
 
         return $workflow ? $run->made(JobPosition::class)->where('is_active', true)->where('workflow_id', $workflow->getKey())->get()
-            // With documents on, its «فیلدهای فرم» ask for the degree.
-            ->first(fn (JobPosition $position): bool => $type === null || $position->formCustomizations()->withoutGlobalScopes()->get()
-                ->contains(fn (FormCustomization $setup): bool => in_array($setup->field_modes['document_'.$type->getKey()] ?? null, ['required', 'optional'], true))) : null;
+            // With documents on, its form asks for the degree (set on the
+            // position's «فیلدهای فرم» or on the whole form).
+            ->first(fn (JobPosition $position): bool => $type === null || collect(app(ApplicantDocuments::class)->fields('employee', $position->getKey()))
+                ->contains('id', $type->getKey())) : null;
     }
 
     private static function classroom(TutorialRun $run): ?Classroom
