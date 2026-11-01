@@ -9,9 +9,11 @@ use App\Http\Middleware\MakeFilamentTenantCurrent;
 use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\View\FormsIconAlias;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -23,6 +25,7 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
 use Filament\Support\View\Components\ModalComponent;
@@ -135,6 +138,17 @@ class AdminPanelProvider extends PanelProvider
      */
     private function configureComponentDefaults(): void
     {
+        // Filament draws «تراز ابتدا» / «تراز انتها» with left / right icons;
+        // in a right-to-left panel start is the right side, so swap them.
+        Filament::serving(function (): void {
+            if (__('filament-panels::layout.direction') === 'rtl') {
+                FilamentIcon::register([
+                    FormsIconAlias::COMPONENTS_RICH_EDITOR_TOOLBAR_ALIGN_START => 'fi-o-align-end',
+                    FormsIconAlias::COMPONENTS_RICH_EDITOR_TOOLBAR_ALIGN_END => 'fi-o-align-start',
+                ]);
+            }
+        });
+
         // Let server validation return the Persian errors instead of browser bubbles.
         Form::configureUsing(fn (Form $form) => $form->extraAttributes(['novalidate' => true], merge: true));
         Step::configureUsing(fn (Step $step) => $step->extraAttributes(['novalidate' => true], merge: true));
