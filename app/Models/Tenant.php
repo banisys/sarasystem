@@ -53,6 +53,41 @@ class Tenant extends BaseTenant
     }
 
     /**
+     * Why this tenant cannot be deleted, or null when it can. Beyond this,
+     * a tenant with data in tables that reference it is refused by the
+     * database (see deleteWithAccess()).
+     */
+    public function deletionBlocker(): ?string
+    {
+        if ($this->is_primary) {
+            return 'اصلی را نمی‌توان حذف کرد؛ اول یکی دیگر را اصلی کنید.';
+        }
+
+        $holdsSuperAdmin = DB::table('model_has_roles')
+            ->where('tenant_id', $this->getKey())
+            ->whereIn('role_id', DB::table('roles')->whereNull('tenant_id')->where('name', Role::SUPER_ADMIN)->select('id'))
+            ->exists();
+
+        return $holdsSuperAdmin ? 'مدیر کل سامانه در این مورد نقش دارد؛ اول نقش او را به جای دیگری منتقل کنید.' : null;
+    }
+
+    /**
+     * Delete the tenant with the roles and role assignments that belong to
+     * it, all or nothing. Throws QueryException when other data (employees,
+     * classes, …) still references it: deactivate it instead.
+     */
+    public function deleteWithAccess(): void
+    {
+        DB::transaction(function (): void {
+            DB::table('model_has_roles')->where('tenant_id', $this->getKey())->delete();
+            DB::table('model_has_permissions')->where('tenant_id', $this->getKey())->delete();
+            DB::table('roles')->where('tenant_id', $this->getKey())->delete();
+
+            $this->delete();
+        });
+    }
+
+    /**
      * Public home page: the site root for the primary tenant, /{slug} for the others.
      */
     public function homeUrl(): string

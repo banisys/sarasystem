@@ -9,7 +9,8 @@ use App\Models\User;
  * Tenants are installation-level data: only the super admin manages them,
  * and that happens through Gate::before. No role grants these abilities,
  * so TenantResource is excluded from Shield's permission generation.
- * Tenants are deactivated, never deleted (their data and roles hang off them).
+ * Deactivating is the normal way to retire a tenant; deleting is allowed
+ * only for one without data (TenantResource, Tenant::deleteWithAccess()).
  */
 class TenantPolicy
 {

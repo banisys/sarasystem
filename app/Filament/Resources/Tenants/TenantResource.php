@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -20,6 +21,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\QueryException;
 
 /**
  * Installation-level list of tenants; super admin only (TenantPolicy).
@@ -139,6 +141,27 @@ class TenantResource extends Resource implements IndependentOfTenant
                         $record->makePrimary();
 
                         Notification::make()->title("«{$record->name}» اصلی شد.")->success()->send();
+                    }),
+                DeleteAction::make()
+                    ->modalDescription('نقش‌ها و دسترسی‌های این مورد هم پاک می‌شود. اگر داده‌ای (کارمند، کلاس، …) به آن وصل باشد حذف نمی‌شود و باید غیرفعالش کنید.')
+                    ->visible(fn (Tenant $record): bool => ! $record->is_primary)
+                    ->action(function (Tenant $record, DeleteAction $action): void {
+                        if (($blocker = $record->deletionBlocker()) !== null) {
+                            Notification::make()->title($blocker)->danger()->send();
+                            $action->halt();
+                        }
+
+                        try {
+                            $record->deleteWithAccess();
+                        } catch (QueryException) {
+                            Notification::make()
+                                ->title("«{$record->name}» داده دارد و حذف نمی‌شود؛ به‌جای حذف، غیرفعالش کنید.")
+                                ->danger()
+                                ->send();
+                            $action->halt();
+                        }
+
+                        $action->success();
                     }),
                 ...collect(static::$recordActionFactories)->flatMap(fn (Closure $callback): iterable => $callback())->all(),
             ]);

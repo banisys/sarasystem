@@ -6,6 +6,7 @@ use App\Filament\Resources\Tenants\Pages\ManageTenants;
 use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -96,5 +97,48 @@ class TenantResourceTest extends TestCase
             ->callAction(TestAction::make('edit')->table($tenant), ['is_active' => false]);
 
         $this->assertTrue($tenant->fresh()->is_active);
+    }
+
+    public function test_super_admin_deletes_a_tenant_with_its_roles(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $other = Tenant::factory()->create();
+        $staff = User::factory()->create();
+        $this->makeStaff($staff, $other);
+        $this->roleWithPermissions('manager', ['ViewAny:User']);
+        $this->grantRole($staff, $other, 'manager');
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->callAction(TestAction::make(DeleteAction::getDefaultName())->table($other));
+
+        $this->assertDatabaseMissing('tenants', ['id' => $other->id]);
+        $this->assertDatabaseMissing('model_has_roles', ['tenant_id' => $other->id]);
+        $this->assertDatabaseHas('tenants', ['id' => $tenant->id]);
+    }
+
+    public function test_the_primary_tenant_cannot_be_deleted(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $tenant->makePrimary();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->assertActionHidden(TestAction::make(DeleteAction::getDefaultName())->table($tenant));
+
+        $this->assertDatabaseHas('tenants', ['id' => $tenant->id]);
+    }
+
+    public function test_a_tenant_holding_a_super_admin_cannot_be_deleted(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
+        $held = Tenant::query()->where('slug', 'head-office')->firstOrFail();
+        $this->actingInPanel($admin, $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->callAction(TestAction::make(DeleteAction::getDefaultName())->table($held));
+
+        $this->assertDatabaseHas('tenants', ['id' => $held->id]);
     }
 }
