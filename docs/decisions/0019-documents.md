@@ -50,7 +50,7 @@ The user chose:
 **Module `Document`:**
 - **Document types** (`document_types`, «مدارک → انواع مدرک»):
   - Defined in the primary tenant's panel only.
-  - Each has a title, file kind (image / PDF / both), file count/size limits, optional expiry and the **roles that may upload** and **roles that may check** it. Holder and public-form requirements are configured per form instead ([ADR 0034](0034-document-requests-per-form.md)).
+  - Each has a title, file kind (image / PDF / both), file count/size limits, and optional expiry. (Until 2026-11-01 each type also had its own lists of roles that may upload / check it; they were dropped, see below.) Holder and public-form requirements are configured per form instead ([ADR 0034](0034-document-requests-per-form.md)).
   - Types are deactivated, not deleted, once used.
 - **Documents** (`documents`):
   - At most one per record and type. Uploading again replaces the files and sets the status back to pending. Old versions are not kept.
@@ -58,13 +58,13 @@ The user chose:
   - Optional expiry date. An expired or rejected document counts as missing.
   - Files are on the private disk (medialibrary) and are shown only through **signed links valid for 30 minutes**, handed to people who may see the document.
   - A document is first attached to the applicant record in the primary tenant. On acceptance it moves to the member record, its tenant and the user.
-- **Who may upload or check** outside workflows: holders of the type's upload / check roles **in the document's tenant** (super admins always).
+- **Who may upload or check** outside workflows (the «مدارک» list and the person's «مدارک» tab): the role's permissions **in the document's tenant**: `Create:Document` uploads, `Update:Document` approves or rejects, for every type (super admins always; the default `registrar` role has both). Per-type role lists were dropped on 2026-11-01: the user found them redundant, since the work that needs a specific person is done in workflow steps.
   - «مدارک → مدارک» lists the current tenant's documents (Shield `ViewAny:Document`), with filters for type, status and expiry (expired / within 30 days).
   - It has actions to upload for an applicant or member of the tenant, view files, approve, reject, upload again and delete.
 - **Documents in workflow steps** (`DocumentStepExtension`): each step can name:
   - «مدارکی که در این مرحله بارگذاری می‌شوند»: the step can't be approved until each has files and is neither rejected nor expired. A document the applicant uploaded counts.
   - «مدارکی که در این مرحله تأیید می‌شوند»: the step can't be approved until each is approved.
-  - The assignee does this in the cartable («بارگذاری مدارک», «بررسی مدارک»), **whatever the type's roles**: the step assignment is the authorization, as for the rest of the cartable. Each upload / check is written to the case history as a note.
+  - The assignee does this in the cartable («بارگذاری مدارک», «بررسی مدارک»), **whatever their permissions**: the step assignment is the authorization, as for the rest of the cartable. Each upload / check is written to the case history as a note.
   - The cartable shows a «مدارک» section: the required documents with their status, then any others.
 - **Public forms:** «همکاری با ما» and «پیش‌ثبت‌نام» request the documents selected in their form settings (whole form and per position/program), with required / optional / not asked modes ([ADR 0034](0034-document-requests-per-form.md)).
   - Required ones must be sent, unless the open application already has them.

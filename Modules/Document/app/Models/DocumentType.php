@@ -5,7 +5,6 @@ namespace Modules\Document\Models;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,16 +16,11 @@ use Modules\Document\Enums\FileKind;
 /**
  * A kind of document people have, e.g. «کارت ملی» (ADR 0019). Defined
  * once, in the primary tenant, independently of public forms and holder
- * kinds. Holders of its upload roles may upload it and holders of its
- * verify roles may approve or reject it, in the document's tenant; a
- * workflow step may also ask its assignee to do either.
- *
- * @property list<int> $upload_role_ids
- * @property list<int> $verify_role_ids
+ * kinds.
  */
 #[Fillable([
     'tenant_id', 'title', 'description', 'file_kind', 'max_files', 'max_kilobytes', 'has_expiry',
-    'upload_role_ids', 'verify_role_ids', 'is_active', 'sort',
+    'is_active', 'sort',
 ])]
 class DocumentType extends Model
 {
@@ -65,16 +59,6 @@ class DocumentType extends Model
         $query->orderBy('sort')->orderBy('title');
     }
 
-    public function allowsUpload(User $user, Tenant $tenant): bool
-    {
-        return $user->isSuperAdmin() || array_intersect($user->roleIdsIn($tenant), $this->upload_role_ids) !== [];
-    }
-
-    public function allowsVerify(User $user, Tenant $tenant): bool
-    {
-        return $user->isSuperAdmin() || array_intersect($user->roleIdsIn($tenant), $this->verify_role_ids) !== [];
-    }
-
     /**
      * Rules for one uploaded file.
      *
@@ -108,8 +92,6 @@ class DocumentType extends Model
         return [
             'file_kind' => FileKind::class,
             'has_expiry' => 'boolean',
-            'upload_role_ids' => 'array',
-            'verify_role_ids' => 'array',
             'is_active' => 'boolean',
         ];
     }

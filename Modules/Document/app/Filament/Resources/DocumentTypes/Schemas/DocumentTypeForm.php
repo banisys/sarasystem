@@ -2,8 +2,6 @@
 
 namespace Modules\Document\Filament\Resources\DocumentTypes\Schemas;
 
-use App\Models\Role;
-use BezhanSalleh\FilamentShield\Support\Utils;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,7 +12,8 @@ use Modules\Document\Enums\FileKind;
 use Modules\Document\Models\DocumentType;
 
 /**
- * Reusable document metadata and staff permissions; form requests are configured separately.
+ * Reusable document metadata; who uploads and checks follows the Document
+ * permissions and workflow steps, form requests are configured separately.
  */
 class DocumentTypeForm
 {
@@ -62,19 +61,6 @@ class DocumentTypeForm
                             ->label('فعال')
                             ->default(true),
                     ]),
-                Section::make('چه کسی بارگذاری و بررسی می‌کند')
-                    ->description('در هر '.config('sarasystem.tenant_label').'، دارندگان این نقش‌ها می‌توانند این مدرک را بارگذاری یا تأیید کنند. در فرایندها، مسئول هر مرحله هم کار مدارکی را که برای آن مرحله تعیین شده انجام می‌دهد.')
-                    ->columns(2)
-                    ->schema([
-                        Select::make('upload_role_ids')
-                            ->label('نقش‌های مجاز به بارگذاری')
-                            ->multiple()
-                            ->options(fn (): array => self::roleOptions()),
-                        Select::make('verify_role_ids')
-                            ->label('نقش‌های مجاز به تأیید یا رد')
-                            ->multiple()
-                            ->options(fn (): array => self::roleOptions()),
-                    ]),
             ])
             ->columns(1);
     }
@@ -82,27 +68,9 @@ class DocumentTypeForm
     /** @param array<string, mixed> $data */
     public static function save(?DocumentType $type, array $data): DocumentType
     {
-        $data['upload_role_ids'] = array_map('intval', (array) ($data['upload_role_ids'] ?? []));
-        $data['verify_role_ids'] = array_map('intval', (array) ($data['verify_role_ids'] ?? []));
         $type ??= new DocumentType;
         $type->fill($data)->save();
 
         return $type;
-    }
-
-    /**
-     * Global roles, except super admin and panel access.
-     *
-     * @return array<int, string>
-     */
-    private static function roleOptions(): array
-    {
-        return Role::query()
-            ->whereNull('tenant_id')
-            ->whereNotIn('name', [Role::SUPER_ADMIN, Utils::getPanelUserRoleName()])
-            ->orderBy('name')
-            ->get()
-            ->mapWithKeys(fn (Role $role): array => [$role->getKey() => $role->display_name])
-            ->all();
     }
 }

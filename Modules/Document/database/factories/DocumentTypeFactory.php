@@ -25,8 +25,6 @@ class DocumentTypeFactory extends Factory
             'file_kind' => FileKind::ImageOrPdf,
             'max_files' => 2,
             'max_kilobytes' => 5120,
-            'upload_role_ids' => [],
-            'verify_role_ids' => [],
             'is_active' => true,
         ];
     }

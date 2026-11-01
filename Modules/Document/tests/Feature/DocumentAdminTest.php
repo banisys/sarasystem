@@ -45,8 +45,8 @@ class DocumentAdminTest extends TestCase
         $this->west = Tenant::factory()->create(['name' => 'غرب']);
 
         $this->roleWithPermissions('hr', ['ViewAny:Document', 'View:Document', 'Delete:Document', 'ViewAny:DocumentType', 'Create:DocumentType', 'Update:DocumentType']);
-        $uploader = $this->roleWithPermissions('uploader', []);
-        $verifier = $this->roleWithPermissions('verifier', []);
+        $this->roleWithPermissions('uploader', ['Create:Document']);
+        $this->roleWithPermissions('verifier', ['Update:Document']);
 
         $this->clerk = User::factory()->create();
         foreach ([$this->primary, $this->west] as $tenant) {
@@ -55,7 +55,7 @@ class DocumentAdminTest extends TestCase
         }
         $this->grantRole($this->clerk, $this->west, 'uploader');
 
-        $this->idCard = $this->documentType($this->primary, ['title' => 'کارت ملی', 'upload_role_ids' => [$uploader->id], 'verify_role_ids' => [$verifier->id]]);
+        $this->idCard = $this->documentType($this->primary, ['title' => 'کارت ملی']);
     }
 
     public function test_types_are_defined_in_the_primary_tenant_only(): void
@@ -92,7 +92,7 @@ class DocumentAdminTest extends TestCase
         Livewire::test(ListDocuments::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$foreign]);
     }
 
-    public function test_upload_roles_upload_and_verify_roles_check(): void
+    public function test_create_permission_uploads_and_update_permission_checks(): void
     {
         $employee = Employee::factory()->for($this->west)->create();
 
@@ -122,7 +122,7 @@ class DocumentAdminTest extends TestCase
         $this->assertSame(DocumentStatus::Approved, $document->refresh()->status);
     }
 
-    public function test_without_an_upload_role_nothing_can_be_uploaded(): void
+    public function test_without_the_create_permission_nothing_can_be_uploaded(): void
     {
         $this->actingInPanel($this->clerk, $this->primary);
 

@@ -20,7 +20,8 @@ use Modules\Document\Services\Documents;
 
 /**
  * What can be done to one document in the documents list (ADR 0019).
- * Uploading and checking follow the type's roles in the current tenant.
+ * Outside workflows, uploading needs `Create:Document` and checking
+ * `Update:Document` in the current tenant.
  */
 class DocumentActions
 {
@@ -175,18 +176,14 @@ class DocumentActions
         return filled($value) ? substr((string) $value, 0, 10) : null;
     }
 
-    public static function canUpload(?DocumentType $type, ?Tenant $tenant = null): bool
+    public static function canUpload(?DocumentType $type): bool
     {
-        $tenant ??= Filament::getTenant();
-
-        return $type !== null && $tenant instanceof Tenant && $type->allowsUpload(self::user(), $tenant);
+        return $type !== null && Filament::getTenant() instanceof Tenant && self::user()->can('create', Document::class);
     }
 
     public static function canVerify(Document $document): bool
     {
-        $tenant = Filament::getTenant();
-
-        return $tenant instanceof Tenant && $document->documentType->allowsVerify(self::user(), $tenant);
+        return Filament::getTenant() instanceof Tenant && self::user()->can('update', $document);
     }
 
     private static function user(): User
