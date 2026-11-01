@@ -431,7 +431,8 @@ class LanguageInstitute extends Scenario
             return false;
         }
 
-        $index = collect($case->stepList())->search(fn (WorkflowStep $step): bool => $step->extension('documents') === [] && $step->extension('contracts') === []);
+        // The designer saves empty lists (`documents.verify: []`), not nothing.
+        $index = collect($case->stepList())->search(fn (WorkflowStep $step): bool => collect([...$step->extension('documents'), ...$step->extension('contracts')])->flatten()->isEmpty());
 
         return $index !== false && ($case->status === CaseStatus::Completed || $case->current_step > $index);
     }

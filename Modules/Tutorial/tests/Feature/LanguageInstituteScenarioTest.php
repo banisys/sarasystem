@@ -113,7 +113,8 @@ class LanguageInstituteScenarioTest extends TestCase
 
         $hiringWorkflow = Workflow::factory()->create(['subject_type' => (new JobApplication)->getMorphClass(), 'steps' => [
             $step('بررسی مدارک', ['documents' => ['verify' => [(string) $degree->id]]]),
-            $step('مصاحبه'),
+            // As the designer saves it: empty lists, not no settings.
+            $step('مصاحبه', ['documents' => ['upload' => [], 'verify' => []], 'contracts' => ['prepare' => []]]),
             $step('تنظیم قرارداد', ['contracts' => ['prepare' => [(string) $contractType->id]]]),
         ]]);
         $this->madeInRun($run, $hiringWorkflow);
