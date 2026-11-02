@@ -62,6 +62,7 @@ use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
 use Modules\Tutorial\Models\TutorialRun;
 use Modules\Tutorial\Scenarios\Concerns\AppliesForJobs;
+use Modules\Tutorial\Scenarios\Concerns\FindsEmployees;
 
 /**
  * A language institute with one branch, the fewest options (ADR 0040):
@@ -70,7 +71,7 @@ use Modules\Tutorial\Scenarios\Concerns\AppliesForJobs;
  */
 class LanguageInstitute extends Scenario
 {
-    use AppliesForJobs;
+    use AppliesForJobs, FindsEmployees;
 
     /** The applicant's degree in «انجام خودکار»: a blank one-page PDF. */
     private const string SAMPLE_PDF = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
@@ -348,18 +349,7 @@ class LanguageInstitute extends Scenario
      */
     private static function employeeWithRole(TutorialRun $run, string $roleName, bool $withPanel = false): ?User
     {
-        $branch = self::branch($run);
-        $role = Role::query()->whereNull('tenant_id')->where('name', $roleName)->first();
-
-        if ($branch === null || $role === null) {
-            return null;
-        }
-
-        return $run->made(Employee::class)->where('tenant_id', $branch->getKey())->with('user')->get()
-            ->map(fn (Employee $employee): ?User => $employee->user)
-            ->first(fn (?User $user): bool => $user !== null
-                && in_array($role->getKey(), $user->roleIdsIn($branch))
-                && (! $withPanel || $user->staffTenants()->whereKey($branch->getKey())->exists()));
+        return self::employeeIn($run, self::branch($run), $roleName, $withPanel);
     }
 
     private static function registrar(TutorialRun $run, bool $withPanel): ?User

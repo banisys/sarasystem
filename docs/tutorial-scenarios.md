@@ -10,7 +10,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 |---|---|---|---|---|---|
 | 1 | «آموزشگاه زبان با یک شعبه» | language institutes; everyone's first scenario | 20 | Employee, Student, Class (+ Document, Contract) | **built** ([LanguageInstitute](../Modules/Tutorial/app/Scenarios/LanguageInstitute.php)) |
 | 2 | «مدیریت سامانه و دسترسی‌ها» | every installer / head office | 13 | none (+ Employee for the workflow chapter) | **built** ([SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAdministration.php)) |
-| 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 30 | Student, Class, School (+ Document) | planned |
+| 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 26 | Class, Employee, School, Student (+ Document, Exam) | **built** ([School](../Modules/Tutorial/app/Scenarios/School.php)) |
 | 4 | «کارگزینی: مدارک و قراردادها» | every organization with staff | 18 | Employee, Document, Contract | planned |
 | 5 | «آموزش سازمانی کارکنان» | companies (TMS) | 17 | Employee, Class, Exam | planned |
 | 6 | «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» | institutes and schools with branches | 16 | Student, Class | planned |
@@ -114,59 +114,57 @@ Implemented in [SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAd
 
 ---
 
-## 3. «مدرسه: از پیش‌ثبت‌نام تا کارنامه»
+## 3. «مدرسه: از پیش‌ثبت‌نام تا کارنامه» (built)
+
+Implemented in [School](../Modules/Tutorial/app/Scenarios/School.php).
 
 **Who it is for:** school chains (the first deployment, سرای دانش).
-**Goal:** a school year end to end: structure, admission with parents, classes and weekly timetable, attendance with SMS to parents, homework, scores, report card, and the parent's view.
-**Modules:** Student, Class, School (+ Document for the birth certificate, + Exam for the optional chapter).
-**Actors:** خودتان, «معاون آموزشی» (education officer), «معلم», «دانش‌آموز», «ولی» (parent), applicant (public form).
+**Goal:** a school year end to end: structure, admission with the father as guardian, a class with a weekly timetable and a teaching plan, attendance with the absence SMS, homework, scores, the report card, promotion, and an exam.
+**Modules:** requires Class, Employee, School, Student. Document adds the birth certificate to the admission; Exam adds the last chapter.
+**Actors:** خودتان, «معاون آموزشی» (زهرا کاظمی, `education_officer`), «معلم» (نرگس مرادی, `instructor`), «دانش‌آموز» (امیر حسینی, signs in with his father's mobile), applicant (public form).
 
-**Sample data:** school «دبیرستان نمونه» (`nemooneh`); academic year «سال تحصیلی ۱۴۰۵-۱۴۰۶» (term over the current dates); stage «متوسطه اول» with grade «هفتم»; subjects «ریاضی», «علوم»; teacher «نرگس مرادی»; student «امیر حسینی» with father «محمد حسینی»; class «هفتم الف».
+**Sample data:** school «دبیرستان نمونه» (`nemooneh`); stage «متوسطه اول» (numeric) with grades «هفتم», «هشتم»; subjects «ریاضی» (×4), «علوم» (×3); term «سال تحصیلی ۱۴۰۵-۱۴۰۶» from today for nine months and a holiday a week from today; father «محمد حسینی»; class «هفتم الف»; plan «ریاضی هفتم» (3 topics); score period «نوبت اول»; exam «آزمونک ریاضی».
 
-| # | Mission | Actor | Where | Done when |
-|---|---|---|---|---|
-| **A. ساختار مدرسه** |||||
-| 1 | Create the school | you | «شعبه‌ها» | tenant made |
-| 2 | Education officer «زهرا کاظمی» by quick entry, role «کارشناس آموزش», panel access | you | «کارکنان → کارمندان» | employee with `education_officer` + panel |
-| 3 | Teacher «نرگس مرادی» by quick entry with role «مدرس», no panel access | you | same | employee with `instructor` |
-| 4 | Stage «متوسطه اول» (score scale: number out of 20) and grade «هفتم» | you | «مدرسه → دوره‌های تحصیلی», «پایه‌ها و برنامه‌ی درسی» | stage and grade made |
-| 5 | Subjects «ریاضی» and «علوم», and grade 7's curriculum (coefficients, weekly hours) | you | «کلاس‌ها → درس‌ها», the grade's curriculum | curriculum rows for the grade |
-| 6 | Academic year as a term, and «تعطیلات» (one holiday next week) | you | «کلاس‌ها → دوره‌های آموزشی», «تعطیلات» | term and holiday made |
-| **B. پیش‌ثبت‌نام و پذیرش** |||||
-| 7 | Admission workflow: step «بررسی مدارک» by the education officer in the school | you | «کارتابل → فرایندها» | workflow for preregistrations |
-| 8 | Program «پایه هفتم» offered in the school; in «تنظیم فرم پیش‌ثبت‌نام» turn on father/mother fields and «موبایل ورود», and add a field «معدل سال قبل» | you | «پیش‌ثبت‌نام → برنامه‌های آموزشی» | program + form customization with parents' fields on |
-| 9 | (Document on) document type «شناسنامه» asked as required in the program's «فیلدهای فرم» | you | «مدارک → انواع مدرک», program row | type required on the program's form |
-| 10 | Preregister «امیر حسینی» with the father's details and «موبایل ورود: پدر», upload the birth certificate | applicant | `/preregister` | preregistration (+ document) made |
-| 11 | As the education officer: check the document, edit a field with «ویرایش اطلاعات», approve with role «فراگیر» | education officer | «کارتابل من» | student made; father is a guardian |
-| 12 | See the learner page tabs «اولیا» and «پرونده‌ی تحصیلی» | you | learner page | (merge into 11's steps) |
-| **C. کلاس و برنامه‌ی هفتگی** |||||
-| 13 | Class «هفتم الف» with grade «هفتم», capacity 30 | you | «کلاس‌ها → کلاس‌ها» (school) | classroom with grade (ClassroomExtensions) |
-| 14 | Members: the student as «فراگیر» (an academic record is filled in), the teacher as «مدرس» | you | class tab «اعضا» | members + enrollment record |
-| 15 | Teaching plan «ریاضی هفتم» with three topics | you | «کلاس‌ها → طرح‌های درس» | plan with topics |
-| 16 | Weekly schedule for «ریاضی» with the teacher and the plan, from today for four weeks; see the holiday skipped and the plan's forecast | you | class tab «برنامه» | schedule with weekly sessions |
-| **D. کلاس در جریان** |||||
-| 17 | As the teacher: in «کلاس‌های من» take attendance of the first session, mark the student «غایب» (the father gets an SMS: see `storage/logs/sms.log`) | teacher | `/my-classes` | an absence in the run's session |
-| 18 | As the teacher: record the session content (topic done, summary) and homework due in 3 days | teacher | session page | session content with homework |
-| 19 | As the student (signed in with the father's mobile): hand in the homework with a file | student | `/my-classes` | submission made |
-| 20 | As the teacher: grade it with feedback | teacher | session page | submission graded |
-| 21 | As the father: see «کلاس‌های امیر»: the absence, homework and score | parent | user panel | (merge into 20's steps, or a read-only tick) |
-| **E. نمره و کارنامه** |||||
-| 22 | Score period «نوبت اول» for the year, covering today, teachers' closing date in a week | you | «مدرسه → دوره‌های نمره‌دهی» | score period made |
-| 23 | As the teacher: enter the student's score in «دفتر نمره» | teacher | user panel «دفتر نمره» | score made |
-| 24 | Publish the report card («انتشار کارنامه») | you | score period row | period published |
-| 25 | As the student / father: see «کارنامه» and download the PDF | student | user panel «کارنامه» | (read-only; merge into 24) |
-| 26 | Promote the record to next year («ارتقا به سال بعد») | you | «پرونده‌های تحصیلی» | a record for the next year made |
-| **F. آزمون (optional, Exam on)** |||||
-| 27 | Question bank «ریاضی هفتم» with 3 choice questions and 1 written question | you | exam screens | bank + 4 questions |
-| 28 | Exam drawing the 4 questions for role «فراگیر», open now for an hour | you | «آزمون‌ها» | exam made |
-| 29 | As the student: take it in `/exams` | student | user panel | attempt submitted |
-| 30 | Grade the written answer in «نتایج آزمون‌ها» | you | results | attempt fully graded |
+| # | Mission | Actor | Done when |
+|---|---|---|---|
+| **A. ساختار مدرسه** ||||
+| 1 | The school | you | tenant made |
+| 2 | Education officer by quick entry, panel access | you | employee with `education_officer` + panel in the school |
+| 3 | Teacher by quick entry, no panel | you | employee with `instructor` |
+| 4 | Stage «متوسطه اول» and grades «هفتم», «هشتم» (head office) | you | a grade of the run's stage that has a next grade |
+| 5 | Subjects and grade 7's curriculum | you | ≥ 2 curriculum rows for the grade |
+| 6 | School year and a holiday next week | you | term and holiday made |
+| **B. پیش‌ثبت‌نام و پذیرش** ||||
+| 7 | Admission workflow (step by role «کارشناس آموزش» in the school); with Document on, the type «شناسنامه» checked in the step | you | workflow (+ type) |
+| 8 | Program «پایه هفتم» in the school; its «فیلدهای فرم»: father and «موبایل ورود» required, added field «معدل سال قبل», (Document) «شناسنامه» required | you | the program's own form setup asks for the father (and the document) |
+| 9 | Preregister «امیر حسینی» with the father's details, login mobile «پدر», (the birth certificate) | applicant | preregistration with `father` (+ upload) |
+| 10 | As the officer: (check the document,) approve as «فراگیر»; the father becomes a guardian | officer | student + guardianship made |
+| **C. کلاس و برنامه‌ی هفتگی** ||||
+| 11 | Class «هفتم الف» with grade «هفتم» | you | classroom with the grade |
+| 12 | Members: student and teacher; the academic record is filled in | you | enrollment for the class + teacher member |
+| 13 | Teaching plan «ریاضی هفتم» (head office) | you | plan with ≥ 2 topics |
+| 14 | Weekly schedule: math, teacher, plan, today's weekday, four weeks, starting in ten minutes; next week's holiday is skipped | you | weekly schedule with a session |
+| **D. کلاس در جریان** ||||
+| 15 | Attendance: the student absent; the father gets the SMS | teacher | an absence |
+| 16 | Session content (first topic) and homework due in 3 days | teacher | the first session has homework |
+| 17 | Hand in the homework | student | submission |
+| 18 | Grade it; the steps show the father's «کلاس‌های امیر» | teacher | submission scored |
+| **E. نمره و کارنامه** ||||
+| 19 | Score period «نوبت اول», entry closes in a week | you | period for the year |
+| 20 | Score 18 in «دفتر نمره» | teacher | score made |
+| 21 | «انتشار کارنامه»; the steps show «کارنامه» and its PDF | you | period published |
+| 22 | Next year's term and «ارتقا به سال بعد» | you | a record in another term |
+| **F. آزمون آنلاین** (Exam on) ||||
+| 23 | Bank «ریاضی هفتم»: 3 choice + 1 written questions | you | bank with a written question |
+| 24 | Exam: 4 questions from the bank, role «فراگیر», now for an hour | you | published exam drawing from the bank |
+| 25 | Take it | student | attempt submitted |
+| 26 | Grade the written answer | you | attempt completed |
 
-**Notes for building:**
-- The longest scenario. Split it into two runs if testing shows it is tiring: «مدرسه ۱: ساختار و پذیرش» (A–C) and «مدرسه ۲: سال تحصیلی» (D–F, starting from scenario 1's data is not possible: each run makes its own). Better: keep one scenario and rely on «انجام خودکار» to skip ahead.
-- The student signs in with the father's mobile (ADR 0028), so «ورود با حساب …» uses impersonation as usual.
-- The score period's dates must cover the session; the teacher's attendance window must be open (schedule the first session minutes ahead in `perform()`).
-- Read-only missions (12, 21, 25) are merged into the previous mission's steps unless the engine gets a «خواندم» tick.
+**Differences from the first design:** the parents' fields are turned on in the program's «فیلدهای فرم» rather than the whole «تنظیم فرم پیش‌ثبت‌نام» (a whole-form setup may already exist and would change real data); the document type is made in the workflow mission; the read-only missions (learner page tabs, the parent's view, the report card view) are steps of the missions before them.
+
+**Notes:**
+- The first session starts ten minutes after the schedule is saved, so the teacher can take attendance and record content at once (it fails in the last minutes before midnight, like scenario 1).
+- `Grade::next()` follows the head office's grades in order; the scenario's «هشتم» comes right after its «هفتم».
 
 ---
 
@@ -318,6 +316,6 @@ Implemented in [SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAd
 ## Implementation order (suggested)
 
 1. ~~`Scenario::requiredModules()`~~ and ~~scenario 2~~ (done). Still open in the engine: a read-only «خواندم» tick (optional) and a decision on queued imports (before scenario 5).
-2. Scenario 3 «مدرسه»: the first real deployment.
+2. ~~Scenario 3 «مدرسه»~~ (done).
 3. Scenario 4 «کارگزینی».
 4. Scenario 6, then 5, then 7.
