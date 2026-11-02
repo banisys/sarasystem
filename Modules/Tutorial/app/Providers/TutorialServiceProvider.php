@@ -11,6 +11,7 @@ use Inertia\Inertia;
 use Livewire\Livewire;
 use Modules\Tutorial\Livewire\TutorialBar;
 use Modules\Tutorial\Models\TutorialRecord;
+use Modules\Tutorial\Scenarios\BranchOperations;
 use Modules\Tutorial\Scenarios\HumanResources;
 use Modules\Tutorial\Scenarios\LanguageInstitute;
 use Modules\Tutorial\Scenarios\Scenarios;
@@ -59,6 +60,7 @@ class TutorialServiceProvider extends ModuleServiceProvider
         app(Scenarios::class)->register(LanguageInstitute::class);
         app(Scenarios::class)->register(School::class);
         app(Scenarios::class)->register(HumanResources::class);
+        app(Scenarios::class)->register(BranchOperations::class);
 
         // Every row made in tutorial mode belongs to the run (ADR 0040).
         Event::listen('eloquent.created: *', fn (string $event, array $models) => app(TutorialRecorder::class)->created($models[0]));

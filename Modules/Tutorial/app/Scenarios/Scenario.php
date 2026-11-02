@@ -4,6 +4,7 @@ namespace Modules\Tutorial\Scenarios;
 
 use App\Models\Role;
 use App\Models\WorkflowCase;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Nwidart\Modules\Facades\Module;
 
@@ -100,5 +101,18 @@ abstract class Scenario
     protected static function caseOf(Model $subject): WorkflowCase
     {
         return WorkflowCase::withoutTenantScope()->where('subject_type', $subject->getMorphClass())->where('subject_id', $subject->getKey())->latest('id')->firstOrFail();
+    }
+
+    /**
+     * Ten minutes from now for an hour, within today: a teacher may take
+     * attendance from a little before a session starts.
+     *
+     * @return array{CarbonInterface, CarbonInterface}
+     */
+    protected static function soon(): array
+    {
+        $start = now()->addMinutes(10)->startOfMinute();
+
+        return [$start, $start->copy()->addHour()->min($start->copy()->setTime(23, 59))];
     }
 }

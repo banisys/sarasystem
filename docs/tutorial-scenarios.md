@@ -13,7 +13,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 | 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 26 | Class, Employee, School, Student (+ Document, Exam) | **built** ([School](../Modules/Tutorial/app/Scenarios/School.php)) |
 | 4 | «کارگزینی: مدارک و قراردادها» | every organization with staff | 18 | Contract, Document, Employee | **built** ([HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources.php)) |
 | 5 | «آموزش سازمانی کارکنان» | companies (TMS) | 17 | Employee, Class, Exam | planned |
-| 6 | «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» | institutes and schools with branches | 16 | Student, Class | planned |
+| 6 | «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» | institutes and schools with branches | 20 | Class, Employee, Student | **built** ([BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperations.php)) |
 | 7 | «وب‌سایت سازمان» | every organization with a public site | 10 | Site (+ Employee, Student for the form links) | planned |
 
 **Order offered to a client:** 2 first (who can do what), then the one that matches the organization (1, 3 or 5), then 4, 6 and 7 as needed. Scenarios are independent of each other: each makes its own data from scratch, so any one can be run alone and reset alone.
@@ -251,40 +251,49 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 
 ---
 
-## 6. «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه»
+## 6. «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» (built)
+
+Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperations.php).
 
 **Who it is for:** institutes and schools with several branches, after scenario 1 or 3.
-**Goal:** the everyday changes: programs offered in some branches, monthly and weekly timetables, clashes, holidays, moving and cancelling sessions, substitutes, make-ups, sub-classes, capacity, learners leaving.
-**Modules:** Student, Class.
-**Actors:** خودتان, «کارشناس آموزش» of a branch, teachers.
+**Goal:** the everyday work of a branch: programs offered in some branches, a class with a capacity and a sub-class, weekly and monthly timetables and clashes, a branch holiday, a substitute who takes attendance, a moved session, a cancellation with a make-up, a learner who leaves.
+**Modules:** requires Class, Employee, Student.
+**Actors:** خودتان, «کارشناس آموزش شعبه پونک» (مینا جعفری, does the branch's class work), «کارشناس آموزش شعبه تجریش» (کامران صدری), «مدرس جایگزین» (رضا توکلی), applicant.
 
-**Sample data:** branches «شعبه پونک», «شعبه تجریش»; programs «مکالمه‌ی پیشرفته» (both) and «IELTS» (تجریش only); teachers «بهاره امینی», «رضا توکلی»; classes «Conversation B2», «IELTS Prep».
+**Sample data:** branches «شعبه پونک» (`pounak`), «شعبه تجریش» (`tajrish`), told apart by order; teacher «بهاره امینی» (instructor in both); programs «مکالمه‌ی پیشرفته» (both branches, with the select field «سطح فعلی زبان») and «IELTS» (تجریش only); learners «نگار رحمانی», «پویا کریمی»; term «ترم زمستان»; classes «Conversation B2» (+ sub-class «گروه ب») and «IELTS Prep».
 
-| # | Mission | Actor | Where | Done when |
-|---|---|---|---|---|
-| **A. شعبه‌ها و برنامه‌ها** |||||
-| 1 | Two branches and an education officer in each (quick entry) | you | | 2 tenants + officers |
-| 2 | Programs: «مکالمه‌ی پیشرفته» in both branches, «IELTS» only in «شعبه تجریش»; see `/preregister` offer each where it is given | you | «برنامه‌های آموزشی» | programs with availability |
-| 3 | A preregistration form field for one program only («سطح فعلی زبان», single choice) in its «فیلدهای فرم» | you | program row | program customization |
-| 4 | Two learners admitted (via `/preregister` and the cartable, or `perform()`), one per branch | applicant / officer | | 2 students |
-| **B. برنامه‌ی کلاس‌ها** |||||
-| 5 | Class «Conversation B2» in پونک, capacity 2, and its sub-class «Conversation B2 - گروه ب» (members come from the parent class) | officer | «کلاس‌ها» | class + child class |
-| 6 | Try to add a third learner past capacity and read the refusal; add the two learners | officer | tab «اعضا» | 2 attendee members |
-| 7 | Monthly schedule: «دومین دوشنبه‌ی هر ماه», for three months | officer | tab «برنامه» | monthly schedule |
-| 8 | Weekly schedule Sat/Mon/Wed for the same teacher; try a time clashing with the teacher's class in the other branch and read the refusal; then a free time | officer | tab «برنامه» | weekly schedule saved |
-| 9 | A branch holiday next week: the schedules rebuild without it | officer | «تعطیلات» | holiday + a session removed |
-| **C. تغییرات روزمره** |||||
-| 10 | Move a session to another day and room | officer | tab «جلسه‌ها» | moved session (`original_starts_at`) |
-| 11 | Give a session a substitute teacher | officer | same | session with a substitute |
-| 12 | Cancel a session with a reason, then add a make-up session | officer | same | cancelled + make-up session |
-| 13 | As the substitute: take attendance of that session in «کلاس‌های من» | substitute | `/my-classes` | attendance by the substitute |
-| 14 | See all of the branch's upcoming sessions in «کلاس‌ها → جلسه‌ها» and the absences per learner in «اعضا» | officer | | (merge into 13) |
-| 15 | A learner leaves: set a leave date | officer | tab «اعضا» | member with `left_on` |
-| 16 | Deactivate the program for new preregistrations | you | programs | program inactive |
+| # | Mission | Actor | Done when |
+|---|---|---|---|
+| **A. شعبه‌ها و برنامه‌ها** ||||
+| 1 | Two branches | you | 2 tenants |
+| 2 | An education officer in each (quick entry, panel) | you | `education_officer` + panel in both |
+| 3 | Bahareh instructor in both branches (same national code), Reza in the first | you | roles as said |
+| 4 | Admission workflow, one step for yourself | you | workflow for preregistrations |
+| 5 | «مکالمه‌ی پیشرفته» in both branches, «IELTS» in تجریش only | you | both availabilities |
+| 6 | The program's own select field | you | program form setup with a select field |
+| **B. پذیرش** ||||
+| 7 | Two preregistrations for پونک; see IELTS offer only تجریش | applicant | 2 preregistrations |
+| 8 | Admit both into پونک | you | 2 learners in the branch |
+| **C. کلاس‌ها و برنامه‌ی آن‌ها** ||||
+| 9 | Term «ترم زمستان» | you | term |
+| 10 | «Conversation B2» with capacity 1, the capacity refusal, capacity 2, both learners and the teacher | officer 1 | class with 2 attendees and the teacher |
+| 11 | Sub-class with one learner from the parent | officer 1 | sub-class with an attendee |
+| 12 | Weekly schedule: today, +2 and +4 days, four weeks, starting in ten minutes | officer 1 | weekly schedule with ≥ 3 sessions |
+| 13 | «IELTS Prep» in تجریش, monthly «دومین» (tomorrow's weekday) for three months; the teacher clash is shown first | officer 2 | monthly schedule with a week of month |
+| 14 | Branch holiday a week from today; that day's session goes | officer 1 | branch holiday, no session on it |
+| **D. تغییرهای روزمره** ||||
+| 15 | «مدرس جایگزین» on today's session | officer 1 | a substituted session |
+| 16 | The substitute takes attendance (one late 10 minutes) | substitute | attendance recorded by him |
+| 17 | «جابه‌جایی» of the second session to five days from today, «اتاق ۳» | officer 1 | a moved session |
+| 18 | «لغو جلسه» of the third with a reason, and a make-up in three days | officer 1 | cancelled + make-up session |
+| 19 | A learner leaves («تاریخ خروج» today) | officer 1 | member with a leave date |
+| 20 | Deactivate «مکالمه‌ی پیشرفته» | you | inactive program |
 
-**Notes for building:**
-- Mission 8's refused clash is taught in the steps; the check only sees the saved schedule.
-- Mission 16 changes a row made in the run (allowed).
+**Differences from the first design:** the admission step is yours (not each branch's officer), so one workflow serves both branches; the two classes are in different branches so the teacher clash crosses branches; the substitute takes today's session, the only one whose attendance is open.
+
+**Notes:**
+- The days are chosen apart (B2 on today, +2, +4; IELTS on +1; make-up on +3; moved session on +5) so the same teacher never clashes, whatever the weekday.
+- Mission 13's refused clash and mission 10's refused capacity are taught in the steps; the checks see the saved result.
 
 ---
 
@@ -321,4 +330,4 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 1. ~~`Scenario::requiredModules()`~~ and ~~scenario 2~~ (done). Still open in the engine: a read-only «خواندم» tick (optional) and a decision on queued imports (before scenario 5).
 2. ~~Scenario 3 «مدرسه»~~ (done).
 3. ~~Scenario 4 «کارگزینی»~~ (done).
-4. Scenario 6, then 5, then 7.
+4. ~~Scenario 6~~ (done), then 5, then 7.

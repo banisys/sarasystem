@@ -14,7 +14,6 @@ use App\Models\Workflow;
 use App\Workflow\AssigneeType;
 use App\Workflow\WorkflowEngine;
 use App\Workflow\WorkflowStep;
-use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Class\Enums\AttendanceStatus;
@@ -597,19 +596,6 @@ class School extends Scenario
                 }))
                 ->doneWhen(fn (TutorialRun $run): bool => self::attempt($run)?->status === AttemptStatus::Completed),
         ];
-    }
-
-    /**
-     * Ten minutes from now for an hour, within today: the teacher may take
-     * attendance from a little before a session starts.
-     *
-     * @return array{CarbonInterface, CarbonInterface}
-     */
-    private static function soon(): array
-    {
-        $start = now()->addMinutes(10)->startOfMinute();
-
-        return [$start, $start->copy()->addHour()->min($start->copy()->setTime(23, 59))];
     }
 
     private static function registerEmployee(TutorialRun $run, User $owner, string $name, string $nationalCode, string $mobile, string $jobTitle, string $role, bool $panelAccess): mixed
