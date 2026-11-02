@@ -32,7 +32,7 @@
         {{-- Arrow into the step --}}
         <div class="flex flex-col items-center py-1 text-gray-400 dark:text-gray-500">
             <div class="h-5 w-px bg-gray-300 dark:bg-white/20"></div>
-            <span class="text-xs">{{ $loop->first ? '' : 'تأیید' }}</span>
+            <span class="text-xs">{{ $step['incoming'] ?? ($loop->first ? '' : 'تأیید') }}</span>
             <x-filament::icon icon="heroicon-m-chevron-down" class="h-5 w-5" />
         </div>
 
@@ -113,6 +113,7 @@
     @endforeach
 
     {{-- End --}}
+    @if ($chart['showCompletion'])
     <div class="flex flex-col items-center py-1 text-gray-400 dark:text-gray-500">
         <div class="h-5 w-px bg-gray-300 dark:bg-white/20"></div>
         <span class="text-xs">{{ $stepCount ? 'تأیید نهایی' : '' }}</span>
@@ -130,4 +131,5 @@
             <p class="text-xs">{{ $chart['completionSummary'] }}</p>
         @endif
     </div>
+    @endif
 </div>

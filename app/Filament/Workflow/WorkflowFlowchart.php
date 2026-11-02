@@ -31,7 +31,7 @@ class WorkflowFlowchart
     public const string REJECTED = 'rejected';
 
     /**
-     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, notes: list<string>, openCases: int, state: ?string, history: list<array<string, mixed>>, waiting: ?string}>, completed: bool, started: list<array<string, mixed>>}
+     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, notes: list<string>, openCases: int, state: ?string, history: list<array<string, mixed>>, waiting: ?string}>, completed: bool, showCompletion: bool, started: list<array<string, mixed>>}
      */
     public static function ofWorkflow(Workflow $workflow): array
     {
@@ -55,23 +55,59 @@ class WorkflowFlowchart
      * and what was done in each step: who approved,
      * returned, edited or rejected it, when, and their notes.
      *
-     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array<string, mixed>>, completed: bool, started: list<array<string, mixed>>}
+     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array<string, mixed>>, completed: bool, showCompletion: bool, started: list<array<string, mixed>>}
      */
     public static function ofCase(WorkflowCase $case): array
     {
         $case->loadMissing(['actions' => fn ($query) => $query->orderBy('id'), 'actions.user', 'claimedBy']);
-        $history = $case->actions->groupBy(fn (WorkflowCaseAction $action): string => $action->from_step === null ? 'start' : (string) $action->from_step);
-        $chart = self::stepsOf($case);
+        $chart = self::chart(
+            $case->stepList(),
+            $case->subject_type,
+            fn (): int => 0,
+            fn (): ?string => null,
+            completed: $case->status === CaseStatus::Completed,
+        );
+        $definitions = $chart['steps'];
+        $chart['steps'] = [];
+        $chart['showCompletion'] = $chart['completed'];
 
-        $chart['started'] = self::entries($history->get('start', collect())->values()->all(), $case);
-        foreach ($chart['steps'] as $index => $step) {
-            $chart['steps'][$index]['history'] = self::entries($history->get((string) $index, collect())->values()->all(), $case);
-            if ($step['state'] === self::CURRENT) {
-                $since = $case->step_started_at === null ? '' : ' از '.self::jalali($case->step_started_at);
-                $chart['steps'][$index]['waiting'] = $case->claimedBy !== null
-                    ? "در دست {$case->claimedBy->name}{$since}"
-                    : 'در انتظار '.$case->assigneeName().$since;
+        foreach ($case->actions as $action) {
+            if ($action->type === CaseActionType::Started) {
+                $chart['started'] = self::entries([$action], $case);
+            } else {
+                $visit = array_key_last($chart['steps']);
+                if ($visit !== null) {
+                    $chart['steps'][$visit]['history'] = [
+                        ...$chart['steps'][$visit]['history'],
+                        ...self::entries([$action], $case),
+                    ];
+                    $chart['steps'][$visit]['state'] = match ($action->type) {
+                        CaseActionType::Approved, CaseActionType::Completed => self::DONE,
+                        CaseActionType::Rejected => self::REJECTED,
+                        default => $chart['steps'][$visit]['state'],
+                    };
+                    $chart['steps'][$visit]['rejects'] = $action->type === CaseActionType::Rejected;
+                }
             }
+
+            if (in_array($action->type, [CaseActionType::Started, CaseActionType::Approved, CaseActionType::Returned], true)
+                && $action->to_step !== null && isset($definitions[$action->to_step])) {
+                $step = $definitions[$action->to_step];
+                $step['actions'] = [];
+                $step['returns'] = false;
+                $step['rejects'] = false;
+                $step['incoming'] = $action->type === CaseActionType::Started ? '' : $action->type->getLabel();
+                $chart['steps'][] = $step;
+            }
+        }
+
+        $visit = array_key_last($chart['steps']);
+        if ($case->status === CaseStatus::InProgress && $visit !== null) {
+            $chart['steps'][$visit]['state'] = self::CURRENT;
+            $since = $case->step_started_at === null ? '' : ' از '.self::jalali($case->step_started_at);
+            $chart['steps'][$visit]['waiting'] = $case->claimedBy !== null
+                ? "در دست {$case->claimedBy->name}{$since}"
+                : 'در انتظار '.$case->assigneeName().$since;
         }
 
         return $chart;
@@ -105,41 +141,10 @@ class WorkflowFlowchart
     }
 
     /**
-     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, notes: list<string>, openCases: int, state: ?string, history: list<array<string, mixed>>, waiting: ?string}>, completed: bool, started: list<array<string, mixed>>}
-     */
-    private static function stepsOf(WorkflowCase $case): array
-    {
-        $rejectedAt = $case->status === CaseStatus::Rejected
-            ? $case->actions()->where('type', CaseActionType::Rejected)->latest('id')->value('from_step')
-            : null;
-
-        return self::chart(
-            $case->stepList(),
-            $case->subject_type,
-            fn (): int => 0,
-            fn (int $index): ?string => match ($case->status) {
-                CaseStatus::Completed => self::DONE,
-                CaseStatus::InProgress => match (true) {
-                    $index < $case->current_step => self::DONE,
-                    $index === $case->current_step => self::CURRENT,
-                    default => null,
-                },
-                CaseStatus::Rejected => match (true) {
-                    $rejectedAt === null => null,
-                    $index < $rejectedAt => self::DONE,
-                    $index === $rejectedAt => self::REJECTED,
-                    default => null,
-                },
-            },
-            completed: $case->status === CaseStatus::Completed,
-        );
-    }
-
-    /**
      * @param  list<WorkflowStep>  $steps
      * @param  callable(int): int  $openCases
      * @param  callable(int): ?string  $state
-     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, notes: list<string>, openCases: int, state: ?string, history: list<array<string, mixed>>, waiting: ?string}>, completed: bool, started: list<array<string, mixed>>}
+     * @return array{subjectLabel: string, completionSummary: ?string, steps: list<array{number: int, name: string, assigneeIsUser: bool, assignee: string, actions: list<array{label: string, color: string}>, rejects: bool, returns: bool, notes: list<string>, openCases: int, state: ?string, history: list<array<string, mixed>>, waiting: ?string}>, completed: bool, showCompletion: bool, started: list<array<string, mixed>>}
      */
     private static function chart(array $steps, string $subjectType, callable $openCases, callable $state, bool $completed): array
     {
@@ -149,6 +154,7 @@ class WorkflowFlowchart
             'subjectLabel' => $subject?->label() ?? 'پرونده',
             'completionSummary' => $subject?->completionSummary(),
             'completed' => $completed,
+            'showCompletion' => true,
             'started' => [],
             'steps' => collect($steps)
                 ->map(fn (WorkflowStep $step, int $index): array => [

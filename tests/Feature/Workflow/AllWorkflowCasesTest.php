@@ -122,15 +122,50 @@ class AllWorkflowCasesTest extends TestCase
             ->assertOk()
             ->assertSeeInOrder(['شروع فرایند', 'بررسی شعبه', 'انجام شد', 'یادداشت', 'بررسی‌کننده', 'مدارک کامل است', 'تأیید', 'بررسی‌کننده', 'تأیید شد', 'تأیید ستاد', 'مرحله‌ی فعلی', 'در انتظار مدیر ستاد'])
             ->assertDontSee('مرحله‌ی تازه')
-            ->assertDontSee('در این مرحله رد شد');
+            ->assertDontSee('در این مرحله رد شد')
+            ->assertDontSee('رد ← پایان')
+            ->assertDontSee('می‌تواند به مرحله‌ی قبل برگرداند')
+            ->assertDontSee('پایان: تأیید نهایی');
         $this->get($flowchart($rejected))
             ->assertOk()
-            ->assertSeeInOrder(['بررسی شعبه', 'در این مرحله رد شد', 'رد', 'بررسی‌کننده', 'ناقص', 'تأیید ستاد'])
-            ->assertDontSee('مرحله‌ی فعلی');
+            ->assertSeeInOrder(['بررسی شعبه', 'در این مرحله رد شد', 'رد', 'بررسی‌کننده', 'ناقص', 'رد ← پایان'])
+            ->assertDontSee('مرحله‌ی فعلی')
+            ->assertDontSee('تأیید ستاد')
+            ->assertDontSee('پایان: تأیید نهایی');
         $this->get($flowchart($foreign))->assertNotFound();
 
         $this->actingInPanel($this->manager, $this->head);
         $this->get($flowchart($waiting))->assertForbidden();
+    }
+
+    public function test_the_flowchart_only_shows_reached_steps_and_repeats_actual_return_visits(): void
+    {
+        $case = $this->startCase('مسیر واقعی', $this->head);
+        $url = AllWorkflowCasesResource::getUrl('flowchart', ['record' => $case], tenant: $this->head);
+        $this->actingInPanel($this->monitor, $this->head);
+
+        $this->get($url)->assertOk()
+            ->assertSee('بررسی شعبه')
+            ->assertDontSee('تأیید ستاد')
+            ->assertDontSee('رد ← پایان')
+            ->assertDontSee('پایان: تأیید نهایی');
+
+        $engine = app(WorkflowEngine::class);
+        $engine->approve($case->refresh(), $this->reviewer, 'بررسی نخست');
+        $engine->returnTo($case->refresh(), $this->manager, 0, 'نیاز به بازبینی');
+
+        $this->get($url)->assertOk()
+            ->assertSeeInOrder(['بررسی شعبه', 'بررسی نخست', 'تأیید ستاد', 'نیاز به بازبینی', 'برگشت', 'بررسی شعبه', 'مرحله‌ی فعلی'])
+            ->assertDontSee('رد ← پایان')
+            ->assertDontSee('پایان: تأیید نهایی');
+
+        $engine->approve($case->refresh(), $this->reviewer, 'بررسی دوباره');
+        $engine->approve($case->refresh(), $this->manager, 'پذیرفته شد');
+
+        $this->get($url)->assertOk()
+            ->assertSeeInOrder(['بررسی شعبه', 'بررسی نخست', 'تأیید ستاد', 'نیاز به بازبینی', 'بررسی شعبه', 'بررسی دوباره', 'تأیید ستاد', 'پذیرفته شد', 'پایان: تأیید نهایی'])
+            ->assertDontSee('رد ← پایان')
+            ->assertDontSee('مرحله‌ی فعلی');
     }
 
     private function startCase(string $title, Tenant $tenant): WorkflowCase
