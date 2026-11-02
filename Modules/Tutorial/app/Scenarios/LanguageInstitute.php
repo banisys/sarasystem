@@ -12,8 +12,16 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowCase;
+use App\Workflow\AssigneeType;
 use App\Workflow\CaseStatus;
+use App\Workflow\WorkflowEngine;
 use App\Workflow\WorkflowStep;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Modules\Class\Enums\AttendanceStatus;
+use Modules\Class\Enums\ClassMode;
+use Modules\Class\Enums\Frequency;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\Terms\TermResource;
 use Modules\Class\Models\Attendance;
@@ -22,20 +30,36 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Term;
+use Modules\Class\Services\AttendanceRegister;
+use Modules\Class\Services\ClassMembers;
+use Modules\Class\Services\SessionPlanner;
 use Modules\Contract\Enums\SignatureMethod;
 use Modules\Contract\Filament\Resources\ContractTypes\ContractTypeResource;
 use Modules\Contract\Models\Contract;
 use Modules\Contract\Models\ContractType;
+use Modules\Contract\Services\Contracts;
 use Modules\Document\Enums\DocumentStatus;
+use Modules\Document\Enums\FileKind;
 use Modules\Document\Filament\Resources\DocumentTypes\DocumentTypeResource;
 use Modules\Document\Models\Document;
 use Modules\Document\Models\DocumentType;
+use Modules\Document\Services\Documents;
 use Modules\Employee\Enums\ApplicationStatus;
+use Modules\Employee\Enums\EducationLevel;
+use Modules\Employee\Enums\EmploymentType;
+use Modules\Employee\Enums\Gender as EmployeeGender;
+use Modules\Employee\Enums\Nationality as EmployeeNationality;
+use Modules\Employee\Enums\UniversityType;
 use Modules\Employee\Filament\Resources\Employees\EmployeeResource;
 use Modules\Employee\Filament\Resources\JobPositions\JobPositionResource;
+use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Models\Employee;
 use Modules\Employee\Models\JobApplication;
 use Modules\Employee\Models\JobPosition;
+use Modules\Employee\Services\RegisterEmployee;
+use Modules\Student\Enums\Gender as StudentGender;
+use Modules\Student\Enums\Nationality as StudentNationality;
+use Modules\Student\Enums\PreregistrationStatus;
 use Modules\Student\Filament\Resources\Programs\ProgramResource;
 use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Program;
@@ -50,6 +74,9 @@ use Nwidart\Modules\Facades\Module;
  */
 class LanguageInstitute extends Scenario
 {
+    /** The applicant's degree in «انجام خودکار»: a blank one-page PDF. */
+    private const string SAMPLE_PDF = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
+
     public function key(): string
     {
         return 'language-institute';
@@ -81,6 +108,7 @@ class LanguageInstitute extends Scenario
                     ])
                     ->url(fn (): string => TenantResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                     ->fill(fn (): array => ['name' => 'شعبه ونک', 'slug' => 'vanak'])
+                    ->perform(fn (): Tenant => Tenant::query()->create(['name' => 'شعبه ونک', 'slug' => 'vanak', 'is_active' => true]))
                     ->doneWhen(fn (TutorialRun $run): bool => self::branch($run) !== null),
                 Mission::make('registrar', 'ثبت کارمند (کارشناس ثبت‌نام)')
                     ->steps([
@@ -98,6 +126,14 @@ class LanguageInstitute extends Scenario
                         'role_ids' => self::roleIds(DefaultRoles::REGISTRAR),
                         'panel_access' => true,
                     ])
+                    ->perform(fn (TutorialRun $run, User $owner): Employee => app(RegisterEmployee::class)->register(
+                        $owner,
+                        self::branch($run),
+                        person: ['name' => 'رضا کریمی', 'national_code' => '1002003008', 'mobile' => '09120000002'],
+                        employment: ['job_title' => 'کارشناس ثبت‌نام', 'employment_type' => EmploymentType::FullTime, 'hired_at' => today()],
+                        roleIds: self::roleIds(DefaultRoles::REGISTRAR),
+                        panelAccess: true,
+                    ))
                     ->doneWhen(fn (TutorialRun $run): bool => self::registrar($run, withPanel: true) !== null),
             ],
             'ثبت کارمند (مدرس) از راه فرایند درخواست همکاری' => self::hiringMissions($tenant, $primary),
@@ -110,6 +146,12 @@ class LanguageInstitute extends Scenario
                     ])
                     ->url(fn (): string => WorkflowResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                     ->fill(fn (): array => ['name' => 'پذیرش زبان‌آموز', 'subject_type' => (new Preregistration)->getMorphClass()])
+                    ->perform(fn (TutorialRun $run): Workflow => Workflow::query()->create([
+                        'subject_type' => (new Preregistration)->getMorphClass(),
+                        'name' => 'پذیرش زبان‌آموز',
+                        'is_active' => true,
+                        'steps' => [(new WorkflowStep('بررسی پیش‌ثبت‌نام', self::branch($run)->getKey(), AssigneeType::Role, (int) self::roleIds(DefaultRoles::REGISTRAR)[0], null, []))->toArray()],
+                    ]))
                     ->doneWhen(fn (TutorialRun $run): bool => self::admissionWorkflow($run) !== null),
                 Mission::make('program', 'ساخت برنامه‌ی آموزشی')
                     ->steps([
@@ -118,6 +160,16 @@ class LanguageInstitute extends Scenario
                         'آن را در «شعبه ونک» ارائه دهید و فعال ذخیره کنید.',
                     ])
                     ->url(fn (): string => ProgramResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                    ->perform(function (TutorialRun $run): void {
+                        $program = Program::query()->create([
+                            'tenant_id' => Tenant::primary()->getKey(),
+                            'workflow_id' => self::admissionWorkflow($run)->getKey(),
+                            'title' => 'زبان انگلیسی - مقدماتی',
+                            'all_tenants' => false,
+                            'is_active' => true,
+                        ]);
+                        $program->availableInTenants()->attach(self::branch($run));
+                    })
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(Program::class)->where('is_active', true)->whereIn('workflow_id', $run->made(Workflow::class)->select('id'))->exists()),
                 Mission::make('preregistration', 'پیش‌ثبت‌نام از سایت')
                     ->actor('متقاضی (فرم عمومی سایت)')
@@ -128,6 +180,28 @@ class LanguageInstitute extends Scenario
                         'این برنامه و «شعبه ونک» فقط برای شما در حالت آموزش دیده می‌شوند، نه برای بازدیدکننده‌های سایت.',
                     ])
                     ->url(fn (): string => route('preregister.create'), 'باز کردن فرم')
+                    ->perform(fn (TutorialRun $run): mixed => Tenant::primary()->execute(function () use ($run): void {
+                        $program = $run->made(Program::class)->where('is_active', true)->oldest('id')->firstOrFail();
+                        $preregistration = Preregistration::query()->create([
+                            'tenant_id' => $program->tenant_id,
+                            'program_id' => $program->getKey(),
+                            'program_title' => $program->title,
+                            'preferred_tenant_id' => self::branch($run)?->getKey(),
+                            'status' => PreregistrationStatus::Submitted,
+                            'first_name' => 'علی',
+                            'last_name' => 'رضایی',
+                            'father_name' => 'حسن',
+                            'nationality' => StudentNationality::Iranian,
+                            'national_code' => '0013542419',
+                            'birth_date' => '2010-05-01',
+                            'gender' => StudentGender::Male,
+                            'mobile' => '09120000004',
+                            'city' => 'تهران',
+                            'address' => 'تهران، ونک',
+                            'custom_fields' => [],
+                        ]);
+                        app(WorkflowEngine::class)->start($program->workflow, $preregistration);
+                    }))
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(Preregistration::class)->exists()),
                 Mission::make('admission', "پذیرش {$learner}")
                     ->actor('کارشناس ثبت‌نام', fn (TutorialRun $run): ?User => self::registrar($run, withPanel: true))
@@ -137,6 +211,11 @@ class LanguageInstitute extends Scenario
                         "{$tenant} را «شعبه ونک» و نقش «{$learner}» را بگذارید و تأیید کنید.",
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::branchUrl($run, WorkflowCaseResource::class))
+                    ->perform(fn (TutorialRun $run): mixed => self::branch($run)->execute(fn () => app(WorkflowEngine::class)->approve(
+                        self::caseOf($run->made(Preregistration::class)->oldest('id')->firstOrFail()),
+                        self::registrar($run, withPanel: true),
+                        data: ['tenant_id' => self::branch($run)->getKey(), 'role_ids' => self::roleIds(DefaultRoles::LEARNER), 'enrolled_at' => today()->toDateString()],
+                    )))
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(Student::class)->exists()),
             ],
             'تشکیل کلاس' => [
@@ -151,6 +230,13 @@ class LanguageInstitute extends Scenario
                         'starts_on' => now()->toDateString(),
                         'ends_on' => now()->addMonths(3)->toDateString(),
                     ])
+                    ->perform(fn (): Term => Term::query()->create([
+                        'tenant_id' => Tenant::primary()->getKey(),
+                        'title' => 'ترم پاییز',
+                        'starts_on' => today(),
+                        'ends_on' => today()->addMonths(3),
+                        'is_active' => true,
+                    ]))
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(Term::class)->exists()),
                 Mission::make('classroom', 'ساخت کلاس')
                     ->steps([
@@ -163,6 +249,13 @@ class LanguageInstitute extends Scenario
                         'term_id' => $run->made(Term::class)->oldest('id')->value('id'),
                         'mode' => 'in_person',
                     ])
+                    ->perform(fn (TutorialRun $run): Classroom => Classroom::query()->create([
+                        'tenant_id' => self::branch($run)->getKey(),
+                        'term_id' => $run->made(Term::class)->oldest('id')->value('id'),
+                        'title' => 'English A1',
+                        'mode' => ClassMode::InPerson,
+                        'is_active' => true,
+                    ]))
                     ->doneWhen(fn (TutorialRun $run): bool => self::classroom($run) !== null),
                 Mission::make('members', 'افزودن اعضای کلاس')
                     ->steps([
@@ -170,6 +263,19 @@ class LanguageInstitute extends Scenario
                         "با «افزودن عضو»، «علی رضایی» را با نقش «{$learner}» و «سارا احمدی» را با نقش «مدرس» اضافه کنید.",
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classroomUrl($run))
+                    ->perform(fn (TutorialRun $run): mixed => self::branch($run)->execute(function () use ($run): void {
+                        $roles = ClassRole::withoutTenantScope()->where('tenant_id', Tenant::primary()->getKey())->orderBy('sort')->get();
+                        $instructorRoleIds = self::roleIds(DefaultRoles::INSTRUCTOR);
+                        $members = app(ClassMembers::class);
+
+                        $members->add(self::classroom($run), $roles->firstOrFail('is_attendee', true), [self::learner($run)->getKey()]);
+                        $members->add(
+                            self::classroom($run),
+                            $roles->first(fn (ClassRole $role): bool => ! $role->is_attendee && array_intersect($instructorRoleIds, $role->allowed_role_ids ?? []) !== [])
+                                ?? $roles->firstOrFail(fn (ClassRole $role): bool => ! $role->is_attendee && $role->takes_attendance),
+                            [self::employeeWithRole($run, DefaultRoles::INSTRUCTOR)->getKey()],
+                        );
+                    }))
                     ->doneWhen(function (TutorialRun $run): bool {
                         $attendeeRoles = ClassRole::withoutTenantScope()->where('is_attendee', true)->select('id');
                         $members = $run->made(ClassMember::class)->whereNull('left_on');
@@ -184,6 +290,19 @@ class LanguageInstitute extends Scenario
                         'ذخیره کنید و جلسه را در زبانه‌ی «جلسه‌ها» ببینید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classroomUrl($run))
+                    ->perform(function (TutorialRun $run): void {
+                        // Soon, so the teacher can take attendance now; within today.
+                        $start = now()->addMinutes(10)->startOfMinute();
+                        $end = $start->copy()->addHour()->min($start->copy()->setTime(23, 59));
+
+                        self::branch($run)->execute(fn () => app(SessionPlanner::class)->saveSchedule(null, self::classroom($run), [
+                            'frequency' => Frequency::Once,
+                            'starts_on' => $start->toDateString(),
+                            'start_time' => $start->format('H:i'),
+                            'end_time' => $end->format('H:i'),
+                            'teacher_id' => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR)->getKey(),
+                        ]));
+                    })
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(ClassSession::class)->exists()),
                 Mission::make('attendance', 'حضور و غیاب جلسه‌ی اول')
                     ->actor('مدرس', fn (TutorialRun $run): ?User => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR))
@@ -193,6 +312,11 @@ class LanguageInstitute extends Scenario
                         "«{$learner}» را «حاضر» بزنید و حضور و غیاب را ثبت کنید.",
                     ])
                     ->url(fn (): string => route('my-classes.index'))
+                    ->perform(fn (TutorialRun $run): mixed => self::branch($run)->execute(fn () => app(AttendanceRegister::class)->record(
+                        $run->made(ClassSession::class)->oldest('starts_at')->firstOrFail(),
+                        [self::learner($run)->getKey() => ['status' => AttendanceStatus::Present]],
+                        self::employeeWithRole($run, DefaultRoles::INSTRUCTOR),
+                    )))
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(Attendance::class)->exists()),
             ],
         ];
@@ -280,6 +404,14 @@ class LanguageInstitute extends Scenario
                 ])
                 ->url(fn (): string => DocumentTypeResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                 ->fill(fn (): array => ['title' => 'مدرک تحصیلی'])
+                ->perform(fn (): DocumentType => DocumentType::query()->create([
+                    'tenant_id' => Tenant::primary()->getKey(),
+                    'title' => 'مدرک تحصیلی',
+                    'file_kind' => FileKind::ImageOrPdf,
+                    'max_files' => 1,
+                    'max_kilobytes' => 5120,
+                    'is_active' => true,
+                ]))
                 ->doneWhen(fn (TutorialRun $run): bool => self::documentType($run) !== null) : null,
             $contracts ? Mission::make('contract-type', 'ساخت نوع قرارداد')
                 ->steps([
@@ -292,6 +424,14 @@ class LanguageInstitute extends Scenario
                     'title' => 'قرارداد همکاری مدرس',
                     'signature_method' => SignatureMethod::Electronic->value,
                 ])
+                ->perform(fn (): ContractType => ContractType::query()->create([
+                    'tenant_id' => Tenant::primary()->getKey(),
+                    'title' => 'قرارداد همکاری مدرس',
+                    'body' => '<p>این قرارداد میان <span data-type="mergeTag" data-id="tenant_name"></span> و <span data-type="mergeTag" data-id="person_name"></span> برای تدریس زبان انگلیسی از <span data-type="mergeTag" data-id="starts_on"></span> تا <span data-type="mergeTag" data-id="ends_on"></span> بسته می‌شود.</p>',
+                    'signature_method' => SignatureMethod::Electronic,
+                    'is_amendment' => false,
+                    'is_active' => true,
+                ]))
                 ->doneWhen(fn (TutorialRun $run): bool => self::contractType($run) !== null) : null,
             Mission::make('hiring-workflow', 'ساخت فرایند استخدام')
                 ->steps(array_values(array_filter([
@@ -305,6 +445,20 @@ class LanguageInstitute extends Scenario
                 ])))
                 ->url(fn (): string => WorkflowResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                 ->fill(fn (): array => ['name' => 'استخدام مدرس', 'subject_type' => (new JobApplication)->getMorphClass()])
+                ->perform(function (TutorialRun $run, User $owner) use ($documents, $contracts): void {
+                    $step = fn (string $name, array $extensions = []): array => (new WorkflowStep($name, Tenant::primary()->getKey(), AssigneeType::User, null, $owner->getKey(), [], $extensions))->toArray();
+
+                    Workflow::query()->create([
+                        'subject_type' => (new JobApplication)->getMorphClass(),
+                        'name' => 'استخدام مدرس',
+                        'is_active' => true,
+                        'steps' => array_values(array_filter([
+                            $documents ? $step('بررسی مدارک', ['documents' => ['upload' => [], 'verify' => [(string) self::documentType($run)->getKey()]]]) : null,
+                            $step('مصاحبه'),
+                            $contracts ? $step('تنظیم قرارداد', ['contracts' => ['prepare' => [(string) self::contractType($run)->getKey()]]]) : null,
+                        ])),
+                    ]);
+                })
                 ->doneWhen(fn (TutorialRun $run): bool => self::hiringWorkflow($run) !== null),
             Mission::make('job-position', 'ساخت موقعیت شغلی')
                 ->steps(array_values(array_filter([
@@ -319,6 +473,23 @@ class LanguageInstitute extends Scenario
                     'workflow_id' => self::hiringWorkflow($run)?->getKey(),
                     'is_active' => true,
                 ])
+                ->perform(function (TutorialRun $run) use ($documents): void {
+                    $position = JobPosition::query()->create([
+                        'tenant_id' => Tenant::primary()->getKey(),
+                        'workflow_id' => self::hiringWorkflow($run)->getKey(),
+                        'title' => 'مدرس زبان انگلیسی',
+                        'is_active' => true,
+                    ]);
+
+                    if ($documents) {
+                        $position->formCustomizations()->create([
+                            'tenant_id' => $position->tenant_id,
+                            'form' => JobApplicationForm::KEY,
+                            'field_modes' => ['document_'.self::documentType($run)->getKey() => 'required'],
+                            'fields' => [],
+                        ]);
+                    }
+                })
                 ->doneWhen(fn (TutorialRun $run): bool => self::jobPosition($run) !== null),
             Mission::make('job-application', 'درخواست همکاری از سایت')
                 ->actor('متقاضی (فرم عمومی سایت)')
@@ -331,6 +502,40 @@ class LanguageInstitute extends Scenario
                     'این موقعیت شغلی فقط برای شما در حالت آموزش دیده می‌شود، نه برای بازدیدکننده‌های سایت.',
                 ])))
                 ->url(fn (): string => route('careers.create'), 'باز کردن فرم')
+                ->perform(fn (TutorialRun $run): mixed => Tenant::primary()->execute(function () use ($run, $documents): void {
+                    $position = self::jobPosition($run);
+                    $application = JobApplication::query()->create([
+                        'tenant_id' => $position->tenant_id,
+                        'job_position_id' => $position->getKey(),
+                        'job_title' => $position->title,
+                        'status' => ApplicationStatus::Submitted,
+                        'first_name' => 'سارا',
+                        'last_name' => 'احمدی',
+                        'father_name' => 'محمد',
+                        'nationality' => EmployeeNationality::Iranian,
+                        'national_code' => '1234567891',
+                        'birth_date' => '1995-03-21',
+                        'gender' => EmployeeGender::Female,
+                        'mobile' => '09120000003',
+                        'postal_code' => '1969764311',
+                        'address' => 'تهران، ونک',
+                        'education' => [[
+                            'level' => EducationLevel::Bachelor->value, 'major' => 'آموزش زبان انگلیسی', 'orientation' => null,
+                            'average' => 17.5, 'rank' => null, 'graduation_date' => '2018-06-21',
+                            'university_type' => UniversityType::State->value, 'university' => 'دانشگاه تهران',
+                        ]],
+                        'work_history' => [],
+                        'custom_fields' => [],
+                    ]);
+
+                    if ($documents) {
+                        $path = 'tutorial/'.Str::random(16).'/degree.pdf';
+                        Storage::disk('local')->put($path, self::SAMPLE_PDF);
+                        app(Documents::class)->upload($application, self::documentType($run), [$path], null, null);
+                    }
+
+                    app(WorkflowEngine::class)->start($position->workflow, $application);
+                }))
                 ->doneWhen(fn (TutorialRun $run): bool => self::application($run) !== null
                     && (! $documents || self::applicantDocument($run) !== null)),
             $documents ? Mission::make('document-check', 'بررسی مدارک')
@@ -340,6 +545,10 @@ class LanguageInstitute extends Scenario
                     'بعد «تأیید» پرونده را بزنید تا به مرحله‌ی «مصاحبه» برود.',
                 ])
                 ->url(fn (): string => WorkflowCaseResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                ->perform(fn (TutorialRun $run, User $owner): mixed => Tenant::primary()->execute(function () use ($run, $owner): void {
+                    app(Documents::class)->approve(self::applicantDocument($run), $owner);
+                    app(WorkflowEngine::class)->approve(self::applicationCase($run), $owner);
+                }))
                 ->doneWhen(fn (TutorialRun $run): bool => self::applicantDocument($run)?->status === DocumentStatus::Approved
                     && (self::applicationCase($run)?->current_step ?? 0) > 0) : null,
             Mission::make('interview', 'مصاحبه')
@@ -350,6 +559,7 @@ class LanguageInstitute extends Scenario
                         : 'پس از مصاحبه (این‌جا فرضی)، «تأیید» را بزنید.',
                 ])
                 ->url(fn (): string => WorkflowCaseResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                ->perform(fn (TutorialRun $run, User $owner): mixed => Tenant::primary()->execute(fn () => app(WorkflowEngine::class)->approve(self::applicationCase($run), $owner)))
                 ->doneWhen(fn (TutorialRun $run): bool => self::passedInterview($run)),
             $contracts ? Mission::make('contract-draft', 'تنظیم قرارداد')
                 ->steps([
@@ -357,6 +567,13 @@ class LanguageInstitute extends Scenario
                     'تاریخ شروع و پایان (و اگر خواست، مبلغ) را بنویسید و ذخیره کنید؛ با «متن قرارداد» متن نهایی را ببینید.',
                 ])
                 ->url(fn (): string => WorkflowCaseResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                ->perform(fn (TutorialRun $run, User $owner): mixed => Tenant::primary()->execute(fn () => app(Contracts::class)->saveDraft(
+                    null,
+                    self::contractType($run),
+                    self::application($run),
+                    ['starts_on' => today()->toDateString(), 'ends_on' => today()->addYear()->toDateString()],
+                    $owner,
+                )))
                 ->doneWhen(fn (TutorialRun $run): bool => self::contractType($run) !== null
                     && $run->made(Contract::class)->where('contract_type_id', self::contractType($run)->getKey())->exists()) : null,
             Mission::make('hiring', 'ثبت کارمند (مدرس)')
@@ -372,9 +589,29 @@ class LanguageInstitute extends Scenario
                     'role_ids' => self::roleIds(DefaultRoles::INSTRUCTOR),
                     'panel_access' => false,
                 ])
+                ->perform(fn (TutorialRun $run, User $owner): mixed => Tenant::primary()->execute(fn () => app(WorkflowEngine::class)->approve(self::applicationCase($run), $owner, data: [
+                    'tenant_id' => self::branch($run)->getKey(),
+                    'role_ids' => self::roleIds(DefaultRoles::INSTRUCTOR),
+                    'panel_access' => false,
+                    'employment_type' => EmploymentType::FullTime->value,
+                    'hired_at' => today()->toDateString(),
+                ])))
                 ->doneWhen(fn (TutorialRun $run): bool => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR) !== null
                     && $run->made(JobApplication::class)->where('status', ApplicationStatus::Hired)->exists()),
         ]));
+    }
+
+    /**
+     * The learner admitted in the run.
+     */
+    private static function learner(TutorialRun $run): User
+    {
+        return User::query()->findOrFail($run->made(Student::class)->oldest('id')->value('user_id'));
+    }
+
+    private static function caseOf(Model $subject): WorkflowCase
+    {
+        return WorkflowCase::withoutTenantScope()->where('subject_type', $subject->getMorphClass())->where('subject_id', $subject->getKey())->latest('id')->firstOrFail();
     }
 
     private static function enabled(string $module): bool

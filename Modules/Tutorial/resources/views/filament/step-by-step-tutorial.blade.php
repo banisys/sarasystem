@@ -13,6 +13,9 @@
                         <div class="flex flex-wrap gap-2">
                             <x-filament::button wire:click="start('{{ $item->key() }}')" icon="heroicon-o-play">شروع</x-filament::button>
                             {{ ($this->flowchartAction)(['scenario' => $item->key()]) }}
+                            @if ($item->canAutoComplete())
+                                {{ ($this->autoCompleteAction)(['scenario' => $item->key()]) }}
+                            @endif
                         </div>
                     </x-slot>
                 </x-filament::section>
@@ -40,6 +43,9 @@
                     @endif
                 @endif
                 {{ ($this->flowchartAction)(['scenario' => $run->scenario]) }}
+                @if ($current !== null && $scenario->canAutoComplete())
+                    {{ $this->autoCompleteAction }}
+                @endif
                 {{ $this->resetAction }}
             </div>
         </div>

@@ -9,7 +9,10 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Support\Identifiers;
 use App\Workflow\WorkflowEngine;
+use BezhanSalleh\FilamentShield\Support\Utils;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
@@ -17,6 +20,7 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Term;
+use Modules\Class\Services\DefaultClassRoles;
 use Modules\Contract\Models\Contract;
 use Modules\Contract\Models\ContractType;
 use Modules\Document\Enums\DocumentStatus;
@@ -260,6 +264,47 @@ class LanguageInstituteScenarioTest extends TestCase
 
         $this->assertModelMissing($branch);
         $this->assertModelMissing($run);
+    }
+
+    public function test_auto_complete_does_every_mission_and_starting_again_deletes_it(): void
+    {
+        Storage::fake('local');
+        app(DefaultClassRoles::class)->install();
+        $this->roleWithPermissions(Utils::getPanelUserRoleName(), []);
+        $this->actingInPanel($this->owner, $this->primary);
+
+        Livewire::test(StepByStepTutorial::class)
+            ->callAction(TestAction::make('autoComplete')->arguments(['scenario' => 'language-institute']))
+            ->assertNotified('همه‌ی گام‌ها انجام شد');
+
+        $run = TutorialRun::query()->where('user_id', $this->owner->id)->sole();
+        $this->assertNotNull($run->completed_at);
+        $this->assertCount(count((new LanguageInstitute)->missions()), $run->completed_missions);
+        $this->assertSame(ApplicationStatus::Hired, $run->made(JobApplication::class)->sole()->status);
+        $this->assertNotNull($run->made(Contract::class)->sole()->issued_at);
+        $this->assertTrue($run->made(Attendance::class)->exists());
+        $branch = Tenant::query()->where('slug', 'vanak')->sole();
+
+        Livewire::test(StepByStepTutorial::class)->callAction('reset')->assertNotified('آموزش از اول');
+
+        $this->assertModelMissing($branch);
+        $this->assertModelMissing($run);
+        $this->assertSame(0, Attendance::withoutTenantScope()->count());
+    }
+
+    public function test_auto_complete_stops_at_a_mission_that_fails_and_keeps_the_ones_before(): void
+    {
+        // «vanak» is taken outside the tutorial, so the first mission can't be done.
+        Tenant::factory()->create(['slug' => 'vanak']);
+        $this->actingInPanel($this->owner, $this->primary);
+
+        Livewire::test(StepByStepTutorial::class)
+            ->callAction(TestAction::make('autoComplete')->arguments(['scenario' => 'language-institute']))
+            ->assertNotified('انجام خودکار متوقف شد');
+
+        $run = TutorialRun::query()->where('user_id', $this->owner->id)->sole();
+        $this->assertSame([], $run->completed_missions);
+        $this->assertSame(0, $run->records()->count());
     }
 
     public function test_flowchart_shows_the_missions_in_lanes_with_the_runs_progress(): void

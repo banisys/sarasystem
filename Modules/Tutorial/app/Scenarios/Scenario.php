@@ -27,6 +27,20 @@ abstract class Scenario
         return array_merge(...array_values($this->chapters()));
     }
 
+    /**
+     * Whether «انجام خودکار همه‌ی گام‌ها» can do every mission.
+     */
+    public function canAutoComplete(): bool
+    {
+        foreach ($this->missions() as $mission) {
+            if (! $mission->canPerform()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function mission(string $key): ?Mission
     {
         foreach ($this->missions() as $mission) {

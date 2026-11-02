@@ -28,6 +28,8 @@ final class Mission
 
     private ?Closure $fill = null;
 
+    private ?Closure $perform = null;
+
     private function __construct(public readonly string $key, public readonly string $title) {}
 
     public static function make(string $key, string $title): self
@@ -83,6 +85,19 @@ final class Mission
     }
 
     /**
+     * What «انجام خودکار همه‌ی گام‌ها» does for the mission: the rows the
+     * person would make, through the same services as the screens.
+     *
+     * @param  Closure(TutorialRun, User): mixed  $perform  the run and its owner
+     */
+    public function perform(Closure $perform): self
+    {
+        $this->perform = $perform;
+
+        return $this;
+    }
+
+    /**
      * @param  Closure(TutorialRun): bool  $check
      */
     public function doneWhen(Closure $check): self
@@ -131,6 +146,18 @@ final class Mission
     public function fillFor(TutorialRun $run): array
     {
         return $this->fill ? ($this->fill)($run) : [];
+    }
+
+    public function canPerform(): bool
+    {
+        return $this->perform !== null;
+    }
+
+    public function performFor(TutorialRun $run, User $owner): void
+    {
+        if ($this->perform !== null) {
+            ($this->perform)($run, $owner);
+        }
     }
 
     public function isDone(TutorialRun $run): bool

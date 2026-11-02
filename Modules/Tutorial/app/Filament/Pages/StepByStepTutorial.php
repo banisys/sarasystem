@@ -4,6 +4,7 @@ namespace Modules\Tutorial\Filament\Pages;
 
 use App\Auth\Impersonation;
 use App\Filament\Support\IndependentOfTenant;
+use App\Models\Tenant;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -14,6 +15,7 @@ use Illuminate\Contracts\View\View;
 use Modules\Tutorial\Models\TutorialRun;
 use Modules\Tutorial\Scenarios\Scenario;
 use Modules\Tutorial\Scenarios\Scenarios;
+use Modules\Tutorial\Services\TutorialAutoComplete;
 use Modules\Tutorial\Services\TutorialFlowchart;
 use Modules\Tutorial\Services\TutorialMode;
 use Modules\Tutorial\Services\TutorialProgress;
@@ -46,7 +48,7 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
     {
         abort_if(app(Scenarios::class)->find($scenario) === null || $this->run() !== null, 404);
 
-        app(TutorialMode::class)->enter(TutorialRun::query()->create(['user_id' => auth()->id(), 'scenario' => $scenario, 'completed_missions' => []]));
+        app(TutorialMode::class)->enter($this->newRun($scenario));
     }
 
     public function resume(): void
@@ -86,6 +88,40 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
             });
     }
 
+    /**
+     * «انجام خودکار همه‌ی گام‌ها»: the remaining missions are done with the
+     * scenario's sample data, in tutorial mode, so «شروع دوباره» deletes it.
+     * With no run yet (e.g. after starting again) it starts one.
+     */
+    public function autoCompleteAction(): Action
+    {
+        return Action::make('autoComplete')
+            ->label('انجام خودکار همه‌ی گام‌ها')
+            ->icon(Heroicon::OutlinedBolt)
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('انجام خودکار همه‌ی گام‌ها')
+            ->modalDescription('گام‌های باقی‌مانده یکی‌یکی با داده‌های نمونه‌ی سناریو انجام و در پایگاه داده ذخیره می‌شوند، همان‌طور که اگر خودتان انجام می‌دادید. این داده‌ها جزو آموزش‌اند و با «شروع دوباره» پاک می‌شوند.')
+            ->modalSubmitActionLabel('انجام بده')
+            ->disabled(fn (): bool => Impersonation::isActive())
+            ->action(function (array $arguments, TutorialAutoComplete $autoComplete): void {
+                $run = $this->run() ?? $this->newRun((string) ($arguments['scenario'] ?? ''));
+                abort_unless(app(TutorialProgress::class)->scenario($run)->canAutoComplete(), 404);
+
+                try {
+                    $count = $autoComplete->complete($run, auth()->user());
+                } catch (RuntimeException $exception) {
+                    Notification::make()->danger()->title('انجام خودکار متوقف شد')->body($exception->getMessage())->persistent()->send();
+
+                    return;
+                }
+
+                Notification::make()->success()->title('همه‌ی گام‌ها انجام شد')->body(number_format($count).' گام به‌طور خودکار انجام شد.')->send();
+                // The tenant menu now lists the new branch.
+                $this->redirect(static::getUrl(tenant: Tenant::primary()));
+            });
+    }
+
     public function resetAction(): Action
     {
         return Action::make('reset')
@@ -110,6 +146,8 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
                 }
 
                 Notification::make()->success()->title('آموزش از اول')->body(number_format($count).' رکورد آموزشی پاک شد.')->send();
+                // The page's tenant (e.g. the tutorial's branch) may be gone.
+                $this->redirect(static::getUrl(tenant: Tenant::primary()));
             });
     }
 
@@ -138,6 +176,13 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
     private function flowchartScenario(array $arguments): Scenario
     {
         return app(Scenarios::class)->find((string) ($arguments['scenario'] ?? '')) ?? abort(404);
+    }
+
+    private function newRun(string $scenario): TutorialRun
+    {
+        abort_if(app(Scenarios::class)->find($scenario) === null, 404);
+
+        return TutorialRun::query()->create(['user_id' => auth()->id(), 'scenario' => $scenario, 'completed_missions' => []]);
     }
 
     private function run(): ?TutorialRun
