@@ -75,6 +75,27 @@ class LanguageInstituteScenarioTest extends TestCase
         $this->assertNotEmpty($missions['hiring']->fillFor($run)['role_ids']);
 
         $this->assertSame(now()->toDateString(), $missions['term']->fillFor($run)['starts_on']);
+
+        $this->assertSame([
+            'name' => 'پذیرش زبان‌آموز',
+            'subject_type' => (new Preregistration)->getMorphClass(),
+        ], $missions['workflow']->fillFor($run));
+
+        $completed = [];
+        foreach ($missions as $key => $mission) {
+            if ($key === 'workflow') {
+                break;
+            }
+
+            $completed[$key] = now()->toIso8601String();
+        }
+        $run->update(['completed_missions' => $completed]);
+        $this->withSession([TutorialMode::SESSION_KEY => $run->id]);
+        $this->actingInPanel($this->owner, $this->primary);
+
+        Livewire::test(TutorialBar::class)
+            ->assertSee('ساخت فرایند پذیرش')
+            ->assertSee('پر کردن خودکار');
     }
 
     public function test_missions_open_one_after_another_as_the_rows_appear(): void

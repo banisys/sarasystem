@@ -109,6 +109,7 @@ class LanguageInstitute extends Scenario
                         "یک مرحله بسازید: {$tenant} «شعبه ونک»، مسئول «نقش»، نقش «کارشناس ثبت‌نام»، و ذخیره کنید.",
                     ])
                     ->url(fn (): string => WorkflowResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
+                    ->fill(fn (): array => ['name' => 'پذیرش زبان‌آموز', 'subject_type' => (new Preregistration)->getMorphClass()])
                     ->doneWhen(fn (TutorialRun $run): bool => self::admissionWorkflow($run) !== null),
                 Mission::make('program', 'ساخت برنامه‌ی آموزشی')
                     ->steps([
