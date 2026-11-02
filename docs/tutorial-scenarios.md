@@ -11,7 +11,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 | 1 | «آموزشگاه زبان با یک شعبه» | language institutes; everyone's first scenario | 20 | Employee, Student, Class (+ Document, Contract) | **built** ([LanguageInstitute](../Modules/Tutorial/app/Scenarios/LanguageInstitute.php)) |
 | 2 | «مدیریت سامانه و دسترسی‌ها» | every installer / head office | 13 | none (+ Employee for the workflow chapter) | **built** ([SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAdministration.php)) |
 | 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 26 | Class, Employee, School, Student (+ Document, Exam) | **built** ([School](../Modules/Tutorial/app/Scenarios/School.php)) |
-| 4 | «کارگزینی: مدارک و قراردادها» | every organization with staff | 18 | Employee, Document, Contract | planned |
+| 4 | «کارگزینی: مدارک و قراردادها» | every organization with staff | 18 | Contract, Document, Employee | **built** ([HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources.php)) |
 | 5 | «آموزش سازمانی کارکنان» | companies (TMS) | 17 | Employee, Class, Exam | planned |
 | 6 | «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» | institutes and schools with branches | 16 | Student, Class | planned |
 | 7 | «وب‌سایت سازمان» | every organization with a public site | 10 | Site (+ Employee, Student for the form links) | planned |
@@ -168,43 +168,46 @@ Implemented in [School](../Modules/Tutorial/app/Scenarios/School.php).
 
 ---
 
-## 4. «کارگزینی: مدارک و قراردادها»
+## 4. «کارگزینی: مدارک و قراردادها» (built)
+
+Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources.php).
 
 **Who it is for:** HR in any organization.
-**Goal:** the full life of a staff member's paperwork: a hiring workflow across tenants, documents with expiry, contract types with their own fields, electronic and paper signatures, amendments, renewals and the reminders.
-**Modules:** Employee, Document, Contract.
-**Actors:** خودتان, «مدیر شعبه» (interviewer in the branch), applicant, the new employee.
+**Goal:** a staff member's paperwork from application to renewal: a hiring workflow across tenants with an edit and a return, documents with expiry, a contract type with its own fields, electronic and paper signatures, an amendment, a renewal, a contract ending soon and a cancellation.
+**Modules:** requires Contract, Document, Employee.
+**Actors:** خودتان, «مدیر {tenant_label}» (بهرام قاسمی, 0100120105, the interviewer in the branch), applicant, the new employee (لیلا فرهادی, 0110130103).
 
-**Sample data:** branch «شعبه مرکزی»; position «کارشناس مالی»; applicant «لیلا فرهادی»; document types «کارت ملی» (no expiry), «گواهی سلامت» (with expiry); contract type «قرارداد کار معین» with added fields «حقوق ماهانه» and «ساعت کار هفتگی»; amendment type «الحاقیه افزایش حقوق».
+**Sample data:** branch «شعبه مرکزی» (`markazi`); document types «کارت ملی», «گواهی سلامت» (with expiry); contract type «قرارداد کار معین» (electronic; amount required; added fields «حقوق ماهانه», «ساعت کار هفتگی»); amendment type «الحاقیه افزایش حقوق» (paper); workflow «استخدام کارشناس مالی»; position «کارشناس مالی».
 
-| # | Mission | Actor | Where | Done when |
-|---|---|---|---|---|
-| **A. آماده‌سازی** |||||
-| 1 | Branch and its manager with panel access (quick entry) | you | «شعبه‌ها», «کارمندان» | tenant + manager |
-| 2 | Document types «کارت ملی» and «گواهی سلامت» (with expiry) | you | «مدارک → انواع مدرک» | 2 types, one with `has_expiry` |
-| 3 | Contract type «قرارداد کار معین»: text with merge tags (name, national code, start/end, amount in words); in «فیلدهای قرارداد» make the amount required and add «حقوق ماهانه», «ساعت کار هفتگی» | you | «قراردادها → انواع قرارداد» | type with a form customization and added fields |
-| 4 | Amendment type «الحاقیه افزایش حقوق» («الحاقیه است») | you | same | type with `is_amendment` |
-| **B. استخدام** |||||
-| 5 | «تنظیم فرم همکاری با ما»: make «سوابق کاری» optional and add the field «سابقه‌ی نرم‌افزار حسابداری» | you | «همکاری با ما → موقعیت‌های شغلی» | whole-form customization |
-| 6 | Hiring workflow: «بررسی مدارک» (you, check «کارت ملی»), «مصاحبه» (branch manager, in the branch; allow «برگشت»), «تنظیم قرارداد» (you, prepare the contract type), with «ویرایش اطلاعات» allowed in step 1 | you | «کارتابل → فرایندها» | workflow with the three steps and settings |
-| 7 | Position «کارشناس مالی» with the workflow; in its «فیلدهای فرم» ask «کارت ملی» as required and «گواهی سلامت» as optional | you | positions | position + its customization |
-| 8 | Apply as «لیلا فرهادی» with the documents | applicant | `/careers` | application + documents |
-| 9 | Check «کارت ملی», correct a typo with «ویرایش اطلاعات», approve | you | «کارتابل من» | document approved, case at step 1, an edit in history |
-| 10 | As the branch manager: interview, return to step 1 with a note (a missing document), then you approve again, then the manager approves | manager / you | «کارتابل من» | case history has a return, case at step 2 |
-| 11 | Prepare the contract: dates, amount, monthly salary, hours; read «متن قرارداد» | you | «کارتابل من» | draft with the answers |
-| 12 | Final approval: hire into «شعبه مرکزی» with role «کارمند» and panel access off; the contract is issued and an SMS is sent | you | «کارتابل من» | employee made, contract issued |
-| **C. پرونده‌ی کارمند** |||||
-| 13 | On the employee page, tab «مدارک»: upload «گواهی سلامت» with an expiry date next month, approve it | you | «کارکنان → کارمندان» → «مشاهده» | document approved with `expires_at` |
-| 14 | As the employee: sign the contract in `/contracts` with the SMS code | employee | user panel | contract signed electronically |
-| 15 | Amendment «الحاقیه افزایش حقوق» on the signed contract (numbered `…/1`), issue it, record a paper signature with a scan | you | «قراردادها → قراردادها» | amendment signed on paper |
-| 16 | Renew the contract («تمدید»): a draft starting the day after it ends; issue it | you | same | renewal issued |
-| 17 | A second contract ending within 30 days, and see the filter «پایان نزدیک» and the coloured end date (the reminder itself comes from the scheduler at 08:00) | you | same | a contract ending soon |
-| 18 | Cancel the last one with a reason | you | same | cancelled contract |
+| # | Mission | Actor | Done when |
+|---|---|---|---|
+| **A. آماده‌سازی** ||||
+| 1 | Branch and its manager (quick entry, panel access) | you | manager employee with `tenant_manager` + panel |
+| 2 | Document types, one with expiry | you | both types |
+| 3 | Contract type and its «فیلدهای قرارداد» | you | type whose form requires the amount and has added fields |
+| 4 | Amendment type, paper signature | you | amendment type signed on paper |
+| **B. استخدام** ||||
+| 5 | Workflow: «بررسی مدارک» (you; checks «کارت ملی»; «ویرایش اطلاعات» allowed), «مصاحبه» (role «مدیر {tenant_label}» in the branch; «برگشت»), «تنظیم قرارداد» (you; prepares the type) | you | all three settings |
+| 6 | Position with its «فیلدهای فرم»: résumé optional, an added field, «کارت ملی» required, «گواهی سلامت» optional | you | position whose form requires the ID card |
+| 7 | Apply with the ID card | applicant | upload + case |
+| 8 | Check the document, «ویرایش اطلاعات» (last name), approve | you | an edit in the history, case past step 1 |
+| 9 | As the manager: «برگشت» with a reason | manager | a return |
+| 10 | You approve again with a note; the manager approves the interview | you / manager | case at the contract step after the return |
+| 11 | «تنظیم قرارداد» with the amount and the added fields | you | draft with an amount |
+| 12 | Hire into the branch as «کارمند»; the contract is issued and an SMS sent | you | employee from the application, contract issued |
+| **C. پرونده‌ی کارمند** ||||
+| 13 | Employee page → «مدارک»: «گواهی سلامت» expiring next month, approved | you | approved document with an expiry |
+| 14 | Sign the contract in `/contracts` with the SMS code | employee | signed electronically |
+| 15 | «الحاقیه» (numbered `…/1`), «صدور», «ثبت امضای کاغذی» | you | amendment signed on paper |
+| 16 | «تمدید» and «صدور» | you | renewal issued |
+| 17 | A second contract ending in 20 days, issued; the «پایان نزدیک» filter | you | issued contract ending within 30 days |
+| 18 | «لغو قرارداد» with a reason | you | it is cancelled |
 
-**Notes for building:**
-- Scenario 1 already does a lighter hiring; this one adds returning, editing, roles in another tenant, expiry, amendments, renewals and both signatures.
-- Mission 14 needs the SMS code (see the engine gaps). `perform()` uses `Contracts::signElectronically()`.
-- Mission 15's scan is a sample file, like the degree in scenario 1.
+**Differences from the first design:** the form changes are on the position's «فیلدهای فرم», not the whole «تنظیم فرم همکاری با ما» (a whole-form setup may already exist, and resetting would not restore it); the branch and its manager are one mission; the return and the second approvals are three missions.
+
+**Notes:**
+- The reminders themselves run from the scheduler at 08:00; the scenario shows the list's «پایان نزدیک» instead of waiting.
+- Signing needs the SMS code (`storage/logs/sms.log` with the `log` driver); `perform()` calls `Contracts::signElectronically()`.
 
 ---
 
@@ -317,5 +320,5 @@ Implemented in [School](../Modules/Tutorial/app/Scenarios/School.php).
 
 1. ~~`Scenario::requiredModules()`~~ and ~~scenario 2~~ (done). Still open in the engine: a read-only «خواندم» tick (optional) and a decision on queued imports (before scenario 5).
 2. ~~Scenario 3 «مدرسه»~~ (done).
-3. Scenario 4 «کارگزینی».
+3. ~~Scenario 4 «کارگزینی»~~ (done).
 4. Scenario 6, then 5, then 7.
