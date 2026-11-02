@@ -19,11 +19,13 @@ class Scenarios
     }
 
     /**
+     * The scenarios whose modules are on, to choose from.
+     *
      * @return array<string, Scenario>
      */
     public function all(): array
     {
-        return array_map(fn (string $scenario): Scenario => app($scenario), $this->scenarios);
+        return array_filter(array_map(fn (string $scenario): Scenario => app($scenario), $this->scenarios), fn (Scenario $scenario): bool => $scenario->isAvailable());
     }
 
     public function find(string $key): ?Scenario

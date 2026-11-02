@@ -46,7 +46,7 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
 
     public function start(string $scenario): void
     {
-        abort_if(app(Scenarios::class)->find($scenario) === null || $this->run() !== null, 404);
+        abort_if($this->run() !== null, 404);
 
         app(TutorialMode::class)->enter($this->newRun($scenario));
     }
@@ -180,7 +180,7 @@ class StepByStepTutorial extends Page implements IndependentOfTenant
 
     private function newRun(string $scenario): TutorialRun
     {
-        abort_if(app(Scenarios::class)->find($scenario) === null, 404);
+        abort_unless(app(Scenarios::class)->find($scenario)?->isAvailable(), 404);
 
         return TutorialRun::query()->create(['user_id' => auth()->id(), 'scenario' => $scenario, 'completed_missions' => []]);
     }

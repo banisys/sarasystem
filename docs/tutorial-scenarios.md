@@ -9,7 +9,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 | # | Scenario | For | Missions (about) | Modules it needs | Status |
 |---|---|---|---|---|---|
 | 1 | «آموزشگاه زبان با یک شعبه» | language institutes; everyone's first scenario | 20 | Employee, Student, Class (+ Document, Contract) | **built** ([LanguageInstitute](../Modules/Tutorial/app/Scenarios/LanguageInstitute.php)) |
-| 2 | «مدیریت سامانه و دسترسی‌ها» | every installer / head office | 11 | none (core) | planned |
+| 2 | «مدیریت سامانه و دسترسی‌ها» | every installer / head office | 13 | none (+ Employee for the workflow chapter) | **built** ([SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAdministration.php)) |
 | 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 30 | Student, Class, School (+ Document) | planned |
 | 4 | «کارگزینی: مدارک و قراردادها» | every organization with staff | 18 | Employee, Document, Contract | planned |
 | 5 | «آموزش سازمانی کارکنان» | companies (TMS) | 17 | Employee, Class, Exam | planned |
@@ -57,7 +57,7 @@ The engine's rules ([ADR 0040](decisions/0040-step-by-step-tutorial.md)) shape w
 - **Every mission gets `fill()` where it has a form and `perform()`**, so «پر کردن خودکار» and «انجام خودکار همه‌ی گام‌ها» keep working (`Scenario::canAutoComplete()` needs all of them). `perform()` goes through the same services as the screens, never raw inserts.
 - **Sample data is fixed and named in the steps** (people, codes, titles), with valid national codes, and fake mobiles `0912000xxxx` so no real person gets an SMS.
 - **Each scenario gets a test** that walks its missions in order (like `test_missions_open_one_after_another_as_the_rows_appear`) and one that runs `autoComplete` and then `reset`.
-- **Modules:** a scenario lists the modules it needs, and its optional missions check `Module::isEnabled()` (ADR 0041). Engine change needed first: `Scenario::requiredModules()`, so the page hides a scenario whose modules are off (a known issue today).
+- **Modules:** a scenario lists the modules it can't do without in `Scenario::requiredModules()` (the page doesn't offer it while one is off), and its optional missions check `Scenario::enabled()` (ADR 0041).
 - **Engine gaps, by the scenario that hits them:**
   - *Queued work is not recorded* (5: the CSV import, 3/6: absence SMS jobs). For imports, record the import's rows by the `imports` row made in the run, or run the import synchronously in tutorial mode.
   - *Time windows* (1, 3, 5, 6: attendance opens 15 minutes before a session; teachers' content and score deadlines). Sessions are scheduled a few minutes ahead; score periods are given dates around today.
@@ -76,37 +76,41 @@ Possible additions later: the instructor signing her contract in `/contracts`, a
 
 ---
 
-## 2. «مدیریت سامانه و دسترسی‌ها»
+## 2. «مدیریت سامانه و دسترسی‌ها» (built)
+
+Implemented in [SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAdministration.php), offered first.
 
 **Who it is for:** the person who installs or runs the system for the organization (super admin, head-office IT).
-**Goal:** the organization's structure, who can see and do what, and how to check it. Everything else builds on this.
-**Modules:** none beyond the core.
-**Actors:** خودتان (مدیر کل سیستم), «مدیر شعبه» (an account made in the scenario).
+**Goal:** the organization's structure, who can see and do what, and how a case moves through a workflow. Everything else builds on this.
+**Modules:** none required. The workflow chapter needs a subject, and today every subject comes from a module, so it uses job applications and is left out while Employee is off (ADR 0041).
+**Actors:** خودتان (مدیر کل سیستم), «مدیر {tenant_label}» (مریم صادقی, made in the scenario), the applicant (public form).
 
-**Sample data:** branches «شعبه شرق» (`east`) and «شعبه غرب» (`west`); users «مریم صادقی» (branch manager) and «حمید نوری» (staff in both branches); a custom role «مسئول کتابخانه».
+**Sample data:** branches «شعبه شرق» (`east`), «شعبه غرب» (`west`), told apart by the order they were made; users «مریم صادقی» (0020040067), «حمید نوری» (0030050073), «سمیرا عباسی» (0040060081); role «مسئول کتابخانه» (`librarian`); workflow «جذب کارشناس پشتیبانی», position «کارشناس پشتیبانی», applicant «نیما شریفی» (0050070096).
 
 | # | Mission | Actor | Where | Done when |
 |---|---|---|---|---|
 | **A. ساختار سازمان** |||||
-| 1 | Create two branches | you | «شعبه‌ها» | 2 tenants made in the run |
+| 1 | Two branches; the steps explain home pages and the primary tenant | you | «شعبه‌ها» | 2 tenants made |
 | **B. کاربران و نقش‌ها** |||||
-| 2 | Make the branch manager: user «مریم صادقی» with the default role «مدیر {tenant_label}» in «شعبه شرق» | you | «کاربران» (tenant «شعبه شرق») | the user holds `tenant_manager` there |
-| 3 | Make a custom role «مسئول کتابخانه» with a few permissions | you | «نقش‌ها» | a role made in the run with ≥ 1 permission |
-| 4 | Add «حمید نوری» to «شعبه شرق» with «کارمند», then add the same person to «شعبه غرب» with «مسئول کتابخانه» (one person, roles per tenant); then find him in «نقشه‌ی دسترسی», user × tenant view | you | «کاربران» in each tenant | the user holds roles in both tenants |
-| **C. از نگاه دیگران** |||||
-| 5 | Sign in as «مریم صادقی» and see that she only sees her branch, cannot give «مدیر ستاد» and cannot edit a super admin (rule of ADR 0003). She adds a «کارمند» of her own | branch manager | «کاربران» | a user made by her (role assignment with her as the actor) in «شعبه شرق» |
-| 6 | Back to yourself; deactivate «شعبه غرب» and see it leave the tenant menu and the site | you | «شعبه‌ها» | the run's `west` tenant is inactive |
-| **D. فرایندها و کارتابل** |||||
-| 7 | A two-step workflow for job applications («درخواست همکاری»): step 1 role «مدیر شعبه» in «شعبه شرق», step 2 yourself; allow «برگشت» and «رد» in step 2 | you | «کارتابل → فرایندها» | workflow with 2 steps and the actions |
-| 8 | Start a case (e.g. an application on `/careers`, through `perform()` when needed) | applicant | public form | a case of the workflow |
-| 9 | As «مریم صادقی»: claim it, write a note, approve | branch manager | «کارتابل من» | the case past step 0 with a note |
-| 10 | As yourself: return it to step 1 with a reason, then (as her) approve again | you / manager | «کارتابل من» | the case history has a «برگشت» |
-| 11 | Follow the case in «همه‌ی پرونده‌ها» and its «فلوچارت فرایند»; reject it with a reason. Closing steps: «ماژول‌ها» lists what each module does and needs (read only: switching a module is not a tutorial row and affects real users) | you | «کارتابل → همه‌ی پرونده‌ها» | the case is rejected |
+| 2 | «مریم صادقی» with «مدیر {tenant_label}» and panel access in «شعبه شرق» | you | «کاربران» (شعبه شرق) | a user with `tenant_manager` + `panel_user` there |
+| 3 | Role «مسئول کتابخانه» with a few permissions | you | «نقش‌ها» | a role made in the run with ≥ 1 permission |
+| 4 | «حمید نوری» as «کارمند» in «شعبه شرق», then «افزودن کاربر موجود» in «شعبه غرب» with the new role; see him in «نقشه‌ی دسترسی» | you | «کاربران» in both | staff in the first branch and the new role in the second |
+| **C. از نگاه مدیر** |||||
+| 5 | As the manager: see what she may not give (ADR 0003) and add «سمیرا عباسی» as «کارمند» | manager | «کاربران» | a third user with `staff` in the first branch |
+| 6 | Back to yourself; deactivate «شعبه غرب» | you | «شعبه‌ها» | the second branch is inactive |
+| **D. فرایند و کارتابل** (Employee on) |||||
+| 7 | Workflow for job applications: «بررسی در شعبه» (role «مدیر {tenant_label}» in «شعبه شرق»), «تأیید نهایی» (yourself, «برگشت» and «رد» allowed) | you | «کارتابل → فرایندها» | first step by role, a step allowing return and reject |
+| 8 | Job position «کارشناس پشتیبانی» with the workflow | you | «موقعیت‌های شغلی» | active position with it |
+| 9 | Apply as «نیما شریفی» | applicant | `/careers` | the application's case exists |
+| 10 | As the manager: «برداشتن کار», «افزودن یادداشت», «تأیید» | manager | «کارتابل من» (شعبه شرق) | the case has a note and an approval |
+| 11 | As yourself: «برگشت» to the first step with a reason | you | «کارتابل من» | the case has a return |
+| 12 | As the manager: approve again | manager | «کارتابل من» | an approval after the return |
+| 13 | As yourself: «رد» with a reason; follow it in «همه‌ی پرونده‌ها» and «فلوچارت فرایند»; the steps mention «ماژول‌ها» (read only) | you | «کارتابل من», «همه‌ی پرونده‌ها» | the case is rejected |
 
-**Notes for building:**
-- Read-only parts (the primary tenant and `/{slug}`, the access map, the module manager) are steps inside missions that create something, since a page visit is not a row.
-- Mission 5 needs the branch manager to have panel access («دسترسی به پنل مدیریت»).
-- If Employee is off, the workflow in 7–11 needs a subject; today every subject comes from a module (job application, preregistration). Then the chapter is left out (ADR 0041).
+**Notes:**
+- Read-only parts (home pages, the access map, the module manager) are steps inside missions that create something, since a page visit is not a row.
+- Mission 5 can't check that the manager made the user (role assignments record no actor); it checks a third staff member in the branch.
+- `perform()` makes users and roles as the screens do (roles per tenant through the permission team).
 
 ---
 
@@ -313,8 +317,7 @@ Possible additions later: the instructor signing her contract in `/contracts`, a
 
 ## Implementation order (suggested)
 
-1. Engine first: `Scenario::requiredModules()`, a read-only «خواندم» tick (optional), and a decision on queued imports.
-2. Scenario 2 «مدیریت سامانه و دسترسی‌ها»: small, core only, needed by every client.
-3. Scenario 3 «مدرسه»: the first real deployment.
-4. Scenario 4 «کارگزینی».
-5. Scenario 6, then 5, then 7.
+1. ~~`Scenario::requiredModules()`~~ and ~~scenario 2~~ (done). Still open in the engine: a read-only «خواندم» tick (optional) and a decision on queued imports (before scenario 5).
+2. Scenario 3 «مدرسه»: the first real deployment.
+3. Scenario 4 «کارگزینی».
+4. Scenario 6, then 5, then 7.

@@ -2,6 +2,11 @@
 
 namespace Modules\Tutorial\Scenarios;
 
+use App\Models\Role;
+use App\Models\WorkflowCase;
+use Illuminate\Database\Eloquent\Model;
+use Nwidart\Modules\Facades\Module;
+
 /**
  * A tutorial for one kind of client, e.g. a language institute (ADR 0040):
  * chapters of missions, done in order.
@@ -18,6 +23,28 @@ abstract class Scenario
      * @return array<string, list<Mission>> chapter title => missions
      */
     abstract public function chapters(): array;
+
+    /**
+     * Modules the scenario can't do without (ADR 0041); while one is off
+     * the scenario is not offered. Optional parts check enabled() instead.
+     *
+     * @return list<string>
+     */
+    public function requiredModules(): array
+    {
+        return [];
+    }
+
+    public function isAvailable(): bool
+    {
+        foreach ($this->requiredModules() as $module) {
+            if (! static::enabled($module)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /**
      * @return list<Mission>
@@ -50,5 +77,28 @@ abstract class Scenario
         }
 
         return null;
+    }
+
+    protected static function enabled(string $module): bool
+    {
+        return Module::find($module)?->isEnabled() ?? false;
+    }
+
+    /**
+     * The ids (as the forms' checkboxes send them) of the global roles.
+     *
+     * @return list<string>
+     */
+    protected static function roleIds(string ...$roleNames): array
+    {
+        return Role::query()->whereNull('tenant_id')->whereIn('name', $roleNames)->pluck('id')->map(fn (int $id): string => (string) $id)->all();
+    }
+
+    /**
+     * The record's latest workflow case.
+     */
+    protected static function caseOf(Model $subject): WorkflowCase
+    {
+        return WorkflowCase::withoutTenantScope()->where('subject_type', $subject->getMorphClass())->where('subject_id', $subject->getKey())->latest('id')->firstOrFail();
     }
 }

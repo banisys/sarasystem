@@ -16,7 +16,6 @@ use App\Workflow\AssigneeType;
 use App\Workflow\CaseStatus;
 use App\Workflow\WorkflowEngine;
 use App\Workflow\WorkflowStep;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Class\Enums\AttendanceStatus;
@@ -45,11 +44,8 @@ use Modules\Document\Models\Document;
 use Modules\Document\Models\DocumentType;
 use Modules\Document\Services\Documents;
 use Modules\Employee\Enums\ApplicationStatus;
-use Modules\Employee\Enums\EducationLevel;
 use Modules\Employee\Enums\EmploymentType;
-use Modules\Employee\Enums\Gender as EmployeeGender;
-use Modules\Employee\Enums\Nationality as EmployeeNationality;
-use Modules\Employee\Enums\UniversityType;
+use Modules\Employee\Enums\Gender;
 use Modules\Employee\Filament\Resources\Employees\EmployeeResource;
 use Modules\Employee\Filament\Resources\JobPositions\JobPositionResource;
 use Modules\Employee\Forms\JobApplicationForm;
@@ -65,7 +61,7 @@ use Modules\Student\Models\Preregistration;
 use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
 use Modules\Tutorial\Models\TutorialRun;
-use Nwidart\Modules\Facades\Module;
+use Modules\Tutorial\Scenarios\Concerns\AppliesForJobs;
 
 /**
  * A language institute with one branch, the fewest options (ADR 0040):
@@ -74,6 +70,8 @@ use Nwidart\Modules\Facades\Module;
  */
 class LanguageInstitute extends Scenario
 {
+    use AppliesForJobs;
+
     /** The applicant's degree in «انجام خودکار»: a blank one-page PDF. */
     private const string SAMPLE_PDF = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
 
@@ -90,6 +88,11 @@ class LanguageInstitute extends Scenario
     public function description(): string
     {
         return 'یک '.config('sarasystem.tenant_label').'، ثبت کارمند (کارشناس ثبت‌نام) با ثبت سریع، ثبت کارمند (مدرس) از راه فرایند درخواست همکاری؛ ثبت یک '.config('sarasystem.learner_label').' با فرایند پیش‌ثبت‌نام و پذیرش، و تشکیل اولین کلاس تا حضور و غیاب جلسه‌ی اول.';
+    }
+
+    public function requiredModules(): array
+    {
+        return ['Class', 'Employee', 'Student'];
     }
 
     public function chapters(): array
@@ -359,16 +362,6 @@ class LanguageInstitute extends Scenario
                 && (! $withPanel || $user->staffTenants()->whereKey($branch->getKey())->exists()));
     }
 
-    /**
-     * The ids (as the form's checkboxes send them) of the default role.
-     *
-     * @return list<string>
-     */
-    private static function roleIds(string $roleName): array
-    {
-        return Role::query()->whereNull('tenant_id')->where('name', $roleName)->pluck('id')->map(fn (int $id): string => (string) $id)->all();
-    }
-
     private static function registrar(TutorialRun $run, bool $withPanel): ?User
     {
         return self::employeeWithRole($run, DefaultRoles::REGISTRAR, $withPanel);
@@ -502,40 +495,15 @@ class LanguageInstitute extends Scenario
                     'این موقعیت شغلی فقط برای شما در حالت آموزش دیده می‌شود، نه برای بازدیدکننده‌های سایت.',
                 ])))
                 ->url(fn (): string => route('careers.create'), 'باز کردن فرم')
-                ->perform(fn (TutorialRun $run): mixed => Tenant::primary()->execute(function () use ($run, $documents): void {
-                    $position = self::jobPosition($run);
-                    $application = JobApplication::query()->create([
-                        'tenant_id' => $position->tenant_id,
-                        'job_position_id' => $position->getKey(),
-                        'job_title' => $position->title,
-                        'status' => ApplicationStatus::Submitted,
-                        'first_name' => 'سارا',
-                        'last_name' => 'احمدی',
-                        'father_name' => 'محمد',
-                        'nationality' => EmployeeNationality::Iranian,
-                        'national_code' => '1234567891',
-                        'birth_date' => '1995-03-21',
-                        'gender' => EmployeeGender::Female,
-                        'mobile' => '09120000003',
-                        'postal_code' => '1969764311',
-                        'address' => 'تهران، ونک',
-                        'education' => [[
-                            'level' => EducationLevel::Bachelor->value, 'major' => 'آموزش زبان انگلیسی', 'orientation' => null,
-                            'average' => 17.5, 'rank' => null, 'graduation_date' => '2018-06-21',
-                            'university_type' => UniversityType::State->value, 'university' => 'دانشگاه تهران',
-                        ]],
-                        'work_history' => [],
-                        'custom_fields' => [],
-                    ]);
-
-                    if ($documents) {
+                ->perform(fn (TutorialRun $run): JobApplication => self::applyForJob(
+                    self::jobPosition($run),
+                    ['first_name' => 'سارا', 'last_name' => 'احمدی', 'national_code' => '1234567891', 'gender' => Gender::Female, 'mobile' => '09120000003'],
+                    $documents ? function (JobApplication $application) use ($run): void {
                         $path = 'tutorial/'.Str::random(16).'/degree.pdf';
                         Storage::disk('local')->put($path, self::SAMPLE_PDF);
                         app(Documents::class)->upload($application, self::documentType($run), [$path], null, null);
-                    }
-
-                    app(WorkflowEngine::class)->start($position->workflow, $application);
-                }))
+                    } : null,
+                ))
                 ->doneWhen(fn (TutorialRun $run): bool => self::application($run) !== null
                     && (! $documents || self::applicantDocument($run) !== null)),
             $documents ? Mission::make('document-check', 'بررسی مدارک')
@@ -607,16 +575,6 @@ class LanguageInstitute extends Scenario
     private static function learner(TutorialRun $run): User
     {
         return User::query()->findOrFail($run->made(Student::class)->oldest('id')->value('user_id'));
-    }
-
-    private static function caseOf(Model $subject): WorkflowCase
-    {
-        return WorkflowCase::withoutTenantScope()->where('subject_type', $subject->getMorphClass())->where('subject_id', $subject->getKey())->latest('id')->firstOrFail();
-    }
-
-    private static function enabled(string $module): bool
-    {
-        return Module::find($module)?->isEnabled() ?? false;
     }
 
     private static function documentType(TutorialRun $run): ?DocumentType

@@ -13,6 +13,7 @@ use Modules\Tutorial\Livewire\TutorialBar;
 use Modules\Tutorial\Models\TutorialRecord;
 use Modules\Tutorial\Scenarios\LanguageInstitute;
 use Modules\Tutorial\Scenarios\Scenarios;
+use Modules\Tutorial\Scenarios\SystemAdministration;
 use Modules\Tutorial\Services\TutorialGuide;
 use Modules\Tutorial\Services\TutorialMode;
 use Modules\Tutorial\Services\TutorialRecorder;
@@ -52,6 +53,7 @@ class TutorialServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
+        app(Scenarios::class)->register(SystemAdministration::class);
         app(Scenarios::class)->register(LanguageInstitute::class);
 
         // Every row made in tutorial mode belongs to the run (ADR 0040).
