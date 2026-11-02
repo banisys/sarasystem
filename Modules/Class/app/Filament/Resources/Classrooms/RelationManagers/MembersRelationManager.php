@@ -5,6 +5,7 @@ namespace Modules\Class\Filament\Resources\Classrooms\RelationManagers;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Identifiers;
+use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -36,6 +37,8 @@ class MembersRelationManager extends RelationManager
     protected static string $relationship = 'members';
 
     protected static ?string $title = 'اعضا';
+
+    protected static string|BackedEnum|null $icon = Heroicon::OutlinedUsers;
 
     protected static ?string $modelLabel = 'عضو';
 

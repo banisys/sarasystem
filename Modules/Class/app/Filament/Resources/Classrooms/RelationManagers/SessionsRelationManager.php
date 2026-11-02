@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Filament\Resources\Classrooms\RelationManagers;
 
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -30,6 +31,8 @@ class SessionsRelationManager extends RelationManager
     protected static string $relationship = 'sessions';
 
     protected static ?string $title = 'جلسه‌ها';
+
+    protected static string|BackedEnum|null $icon = Heroicon::OutlinedClock;
 
     protected static ?string $modelLabel = 'جلسه';
 

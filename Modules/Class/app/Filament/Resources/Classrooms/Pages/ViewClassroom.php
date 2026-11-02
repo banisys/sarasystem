@@ -2,8 +2,12 @@
 
 namespace Modules\Class\Filament\Resources\Classrooms\Pages;
 
+use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Component;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Support\ClassroomExtensions;
 
@@ -22,6 +26,17 @@ class ViewClassroom extends ViewRecord
     public function getContentTabLabel(): ?string
     {
         return 'اطلاعات';
+    }
+
+    public function getContentTabIcon(): string|BackedEnum|Htmlable|null
+    {
+        return Heroicon::OutlinedInformationCircle;
+    }
+
+    public function getRelationManagersContentComponent(): Component
+    {
+        return parent::getRelationManagersContentComponent()
+            ->extraAttributes(['class' => 'classroom-tabs']);
     }
 
     protected function getHeaderActions(): array

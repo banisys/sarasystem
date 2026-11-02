@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Filament\Resources\Classrooms\RelationManagers;
 
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
@@ -37,6 +38,8 @@ class SchedulesRelationManager extends RelationManager
     protected static string $relationship = 'schedules';
 
     protected static ?string $title = 'برنامه';
+
+    protected static string|BackedEnum|null $icon = Heroicon::OutlinedCalendarDays;
 
     protected static ?string $modelLabel = 'برنامه';
 
