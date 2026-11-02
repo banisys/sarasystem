@@ -9,7 +9,7 @@
                 setMin(value) {
                     this.min = value;
                     localStorage.setItem('tutorialBarMin', value ? '1' : '0');
-                    this.$nextTick(() => this.clamp());
+                    this.$nextTick(() => { this.clamp(); this.$el.focus({ preventScroll: true }); });
                 },
                 note: null,
                 fill(values) {
@@ -59,12 +59,15 @@
             }"
             x-init="$nextTick(() => clamp())"
             x-on:resize.window="clamp()"
+            tabindex="-1"
+            x-on:pointerdown="if (! $event.target.closest('a, button, input, select, textarea')) { $el.focus({ preventScroll: true }); }"
+            x-on:click.outside="if ($el.contains(document.activeElement)) { document.activeElement.blur(); }"
             x-on:pointermove="move($event)"
             x-on:pointerup="end()"
             x-on:pointercancel="end()"
             x-bind:style="pos && ! min ? `left:${pos.x}px;top:${pos.y}px;bottom:auto;right:auto` : ''"
             x-bind:class="min ? 'rounded-full' : 'w-[min(30rem,calc(100vw-2rem))] rounded-2xl'"
-            class="fixed bottom-4 left-4 z-30 overflow-hidden border border-gray-200 bg-white text-gray-950 shadow-xl dark:border-white/10 dark:bg-gray-900 dark:text-white">
+            class="fixed bottom-4 left-4 z-30 overflow-hidden border border-gray-200 bg-white text-gray-950 opacity-75 shadow-xl transition-opacity duration-200 focus-within:opacity-100 motion-reduce:transition-none dark:border-white/10 dark:bg-gray-900 dark:text-white">
             <button type="button" x-show="min" x-on:click="setMin(false)" aria-label="باز کردن آموزش" title="باز کردن آموزش"
                 class="relative flex h-14 w-14 items-center justify-center text-primary-600 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-primary-500 dark:text-primary-400">
                 <svg aria-hidden="true" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3 9 9-5 9 5-9 5-9-5Zm3 2v6l6 3 6-3v-6M21 9v7" /></svg>
@@ -132,27 +135,27 @@
 
                 </div>
 
-                <div class="flex shrink-0 flex-wrap items-center gap-2 border-t border-gray-100 bg-white px-5 py-4 text-sm dark:border-white/10 dark:bg-gray-900">
+                <div class="flex shrink-0 flex-wrap items-center gap-2 border-t border-gray-100 bg-white px-5 py-3 text-xs dark:border-white/10 dark:bg-gray-900">
                     @if (! $guide['finished'] && $guide['mission']['url'])
-                        <a href="{{ $guide['mission']['url'] }}" class="rounded-lg bg-primary-600 px-4 py-2.5 font-medium text-white shadow-sm hover:bg-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500">{{ $guide['mission']['urlLabel'] }}</a>
+                        <a href="{{ $guide['mission']['url'] }}" class="rounded-md bg-primary-600 px-2.5 py-1.5 font-medium text-white shadow-sm hover:bg-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500">{{ $guide['mission']['urlLabel'] }}</a>
                     @endif
                     @if (! $guide['finished'] && $guide['mission']['fill'])
-                        <button type="button" x-on:click="fill(@js($guide['mission']['fill']))" class="rounded-lg bg-success-600 px-3 py-2.5 font-medium text-white shadow-sm hover:bg-success-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success-500">پر کردن خودکار</button>
+                        <button type="button" x-on:click="fill(@js($guide['mission']['fill']))" class="rounded-md bg-success-600 px-2.5 py-1.5 font-medium text-white shadow-sm hover:bg-success-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success-500">پر کردن خودکار</button>
                     @endif
                     @if ($guide['actAs'])
                         <form method="POST" action="{{ $guide['actAs']['url'] }}">
                             @csrf
-                            <button type="submit" class="rounded-lg bg-amber-50 px-3 py-2.5 text-amber-800 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20">ورود با حساب {{ $guide['actAs']['name'] }}</button>
+                            <button type="submit" class="rounded-md bg-amber-50 px-2.5 py-1.5 text-amber-800 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20">ورود با حساب {{ $guide['actAs']['name'] }}</button>
                         </form>
                     @endif
                     @if ($guide['ownAccountUrl'])
                         <form method="POST" action="{{ $guide['ownAccountUrl'] }}">
                             @csrf
-                            <button type="submit" class="rounded-lg bg-amber-50 px-3 py-2.5 text-amber-800 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20">بازگشت به حساب خودم</button>
+                            <button type="submit" class="rounded-md bg-amber-50 px-2.5 py-1.5 text-amber-800 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20">بازگشت به حساب خودم</button>
                         </form>
                     @endif
                     @unless (\App\Auth\Impersonation::isActive())
-                        <a href="{{ $guide['pageUrl'] }}" class="ms-auto rounded-lg px-2 py-2.5 text-xs text-gray-500 hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-500 dark:text-gray-400">همه‌ی گام‌ها</a>
+                        <a href="{{ $guide['pageUrl'] }}" class="ms-auto rounded-md px-2 py-1.5 text-xs text-gray-500 hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-500 dark:text-gray-400">همه‌ی گام‌ها</a>
                     @endunless
                 </div>
             </div>

@@ -476,6 +476,20 @@
             return window.Alpine ? window.Alpine.store('sidebar') : null;
         }
 
+        function expandActiveGroups() {
+            const nav = document.querySelector('.fi-sidebar-nav-groups');
+            const store = getSidebarStore();
+
+            if (!nav || !store || !Array.isArray(store.collapsedGroups)) {
+                return;
+            }
+
+            const activeLabels = Array.from(nav.querySelectorAll('.fi-sidebar-group.fi-active[data-group-label]'))
+                .map((group) => group.dataset.groupLabel);
+
+            store.collapsedGroups = store.collapsedGroups.filter((label) => !activeLabels.includes(label));
+        }
+
         function collapseAllGroups() {
             const store = getSidebarStore();
             const labels = getGroupLabels();
@@ -504,8 +518,10 @@
             applyQueryFromUrl();
             bindCollapseAllBtn();
             renderHistory();
+            window.Alpine?.nextTick(expandActiveGroups);
         }
 
+        document.addEventListener('alpine:initialized', expandActiveGroups);
         document.addEventListener('livewire:navigated', init);
         document.addEventListener('DOMContentLoaded', init);
         init();
