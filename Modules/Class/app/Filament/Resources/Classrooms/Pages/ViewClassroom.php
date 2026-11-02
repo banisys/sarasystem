@@ -3,7 +3,6 @@
 namespace Modules\Class\Filament\Resources\Classrooms\Pages;
 
 use BackedEnum;
-use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Component;
 use Filament\Support\Icons\Heroicon;
@@ -44,8 +43,6 @@ class ViewClassroom extends ViewRecord
         return [
             // Actions other modules add, e.g. the score book (ADR 0032).
             ...ClassroomExtensions::components('actions'),
-            EditAction::make()
-                ->modalWidth('3xl'),
         ];
     }
 }
