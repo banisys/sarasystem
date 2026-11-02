@@ -6,7 +6,7 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Step-by-step tutorial (`Tutorial` module, ADR 0040): language-institute scenario done; school and company scenarios next.
+- Step-by-step tutorial (`Tutorial` module, ADR 0040): language-institute scenario done. Six more scenarios designed in [tutorial-scenarios.md](tutorial-scenarios.md) (system & access, school, HR documents & contracts, staff training, multi-branch daily operations, website), to be built one at a time; next: the engine changes listed there, then «مدیریت سامانه و دسترسی‌ها».
 - Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026), plus guardians, absence SMS and homework (ADR 0027–0030).
 - School (`School` module, [ADR 0031](decisions/0031-school-structure.md), [ADR 0032](decisions/0032-scores-and-report-cards.md)): parts A and B done. Possible next steps: year-final scores («نوبت» formulas, resits), rankings, activity notebook; admission setting a grade.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
@@ -20,6 +20,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-02 — Designed the tutorial's next six scenarios with missions, actors, sample data, done checks, a coverage matrix and the engine gaps each one hits: [tutorial-scenarios.md](tutorial-scenarios.md). Nothing built yet.
 - 2026-11-02 — Tutorial: «انجام خودکار همه‌ی گام‌ها» on the scenario card (also after «شروع دوباره») and in the run header while missions are left. It does the remaining missions of «آموزشگاه زبان» with the scenario's sample data through the same services as the screens, in tutorial mode, so the data lands in the database and «شروع دوباره» deletes it ([ADR 0040](decisions/0040-step-by-step-tutorial.md)). Each mission is all or nothing; it stops at the first failure with the mission's name and the reason. The session it schedules starts 10 minutes later, so it fails in the last minutes before midnight. «شروع دوباره» now goes back to the page in the primary tenant (the branch it was on may be gone). 2 new tests; the 16 Tutorial tests pass; Pint passes. Not clicked in a browser.
 - 2026-11-02 — Removed the edit button from the class detail page header; editing remains available in the classes list. Module-provided header actions are retained. All 6 ClassAdmin tests (45 assertions) and Pint pass. Tutorial checked: no mission uses the removed button, so no mission changes needed. Not checked in a browser.
 - 2026-11-02 — Polished the class page’s main tab bar: information/members/schedule/sessions icons, clearer primary-colored active tab, rounded bordered surface, improved spacing and visible keyboard focus, with light/dark variants. Styling is scoped to the class tab component and retains Filament’s overflow handling. All 21 class admin/member/schedule tests (115 assertions), Pint and Vite build pass. No tutorial mission change needed (presentation only); authenticated browser visual verification remains pending.

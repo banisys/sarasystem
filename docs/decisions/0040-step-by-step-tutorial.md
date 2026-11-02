@@ -27,4 +27,4 @@ When an installation is handed over, the person taking it over has to learn how 
 - Files uploaded in the tutorial (media) stay on disk after a reset: in the language-institute scenario, the applicant's résumé and degree.
 - Everything made while the mode is on counts as tutorial data, including real work done by mistake. The bar shows the mode on every page, and it can be paused.
 - Admin lists (users, tenants, access map) do show tutorial rows; only the public site hides them.
-- More scenarios (school, company) reuse the engine; each needs a test that walks its missions.
+- More scenarios (school, company) reuse the engine; each needs a test that walks its missions. Their designs, with the engine changes they need, are in [tutorial-scenarios.md](../tutorial-scenarios.md).
