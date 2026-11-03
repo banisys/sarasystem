@@ -112,6 +112,7 @@ class SessionCalendarTest extends TestCase
         Livewire::test(SessionsRelationManager::class, $this->owner())
             ->assertSee('آبان 1405')
             ->assertSee('ریاضی')
+            ->assertSee($this->classroom->mode->getLabel())
             ->call('showSessions', 'year', '2027-01-15')
             ->assertSet('sessionsView', 'year')
             ->assertSee('سال 1405')
@@ -125,9 +126,10 @@ class SessionCalendarTest extends TestCase
             ->call('showSessions', 'week', 'not-a-date')
             ->assertSet('sessionsDate', null)
             ->call('showSessions', 'list')
-            ->assertCanSeeTableRecords(ClassSession::query()->get())
-            ->call('showSessions', 'anything')
-            ->assertSet('sessionsView', 'month');
+            ->assertSet('sessionsView', 'month')
+            ->assertDontSee('فهرست')
+            ->set('sessionsView', 'list')
+            ->assertSee('آبان 1405');
     }
 
     public function test_a_session_opens_its_details_and_actions_in_a_modal(): void
@@ -141,7 +143,7 @@ class SessionCalendarTest extends TestCase
             ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $elsewhere->id]))
             ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $theirs->id]))
             ->mountAction(TestAction::make('sessionDetails')->arguments(['session' => $session->id]))
-            ->assertMountedActionModalSee(['برنامه‌ریزی‌شده', 'حضور و غیاب', 'سایر']);
+            ->assertMountedActionModalSee(['برنامه‌ریزی‌شده', 'حضور و غیاب', 'سایر', 'نحوه‌ی برگزاری', $this->classroom->mode->getLabel()]);
 
         Livewire::test(SessionsRelationManager::class, $this->owner())
             ->callAction([TestAction::make('sessionDetails')->arguments(['session' => $session->id]), TestAction::make('cancelSession')], data: ['reason' => 'اردو'])

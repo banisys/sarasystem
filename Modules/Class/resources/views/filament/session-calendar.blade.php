@@ -20,7 +20,6 @@
 
 <div class="fi-section session-calendar rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
     <div class="flex flex-wrap items-center gap-3 border-b border-gray-200 p-4 dark:border-white/10">
-        @if ($calendar)
             <div class="flex items-center gap-1">
                 <x-filament::icon-button icon="heroicon-m-chevron-right" color="gray" label="قبلی"
                     wire:click="showSessions('{{ $current }}', '{{ $calendar['previous'] }}')" />
@@ -30,6 +29,15 @@
                     wire:click="showSessions('{{ $current }}', '{{ $calendar['next'] }}')" />
             </div>
             <h3 class="text-base font-semibold text-gray-950 dark:text-white">{{ $calendar['label'] }}</h3>
+            <span @class([
+                'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
+                'bg-gray-50 text-gray-700 ring-gray-300 dark:bg-white/5 dark:text-gray-200 dark:ring-white/20' => $calendar['mode']['value'] === 'in_person',
+                'bg-info-50 text-info-700 ring-info-300 dark:bg-info-500/10 dark:text-info-300 dark:ring-info-500/30' => $calendar['mode']['value'] === 'online',
+                'bg-warning-50 text-warning-700 ring-warning-300 dark:bg-warning-500/10 dark:text-warning-300 dark:ring-warning-500/30' => $calendar['mode']['value'] === 'blended',
+            ]) title="نحوه‌ی برگزاری کلاس">
+                @include('class::filament.session-calendar-mode', ['mode' => $calendar['mode']['value']])
+                {{ $calendar['mode']['label'] }}
+            </span>
             <div class="w-48">{{ $getChildSchema() }}</div>
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div class="flex items-center gap-1">
@@ -39,41 +47,21 @@
                         wire:click="showSessions('{{ $current }}', '{{ $calendar['next_session'] }}')">جلسه‌ی بعدی</x-filament::button>
                 </div>
             @endif
-        @else
-            <h3 class="text-base font-semibold text-gray-950 dark:text-white">همه‌ی جلسه‌ها</h3>
-        @endif
+    </div>
 
-        <div class="ms-auto flex flex-wrap items-center gap-2">
-            <div class="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-white/5" role="group" aria-label="نمایش">
+        <div class="flex flex-wrap items-center gap-2 px-4 pt-3">
+            <div class="inline-flex rounded-lg bg-gray-100 p-1 dark:bg-white/5" role="group" aria-label="نمایش">
                 @foreach ($views as $view => $viewLabel)
                     <button type="button" wire:click="showSessions('{{ $view }}')" aria-pressed="{{ $current === $view ? 'true' : 'false' }}"
                         @class([
-                            'rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                            'rounded-md px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
                             'bg-white text-primary-700 shadow-sm dark:bg-gray-800 dark:text-primary-300' => $current === $view,
                             'text-gray-600 hover:text-gray-950 dark:text-gray-400 dark:hover:text-white' => $current !== $view,
                         ])>{{ $viewLabel }}</button>
                 @endforeach
             </div>
 
-            @if ($calendar)
-                {{ $this->addSessionAction }}
-            @endif
-        </div>
-    </div>
-
-    @if ($calendar)
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 pt-3 text-xs text-gray-600 dark:text-gray-400">
-            @foreach ($tones as $tone => $toneLabel)
-                <span class="inline-flex items-center gap-1.5">
-                    <span class="size-2.5 rounded-full {{ $dotClasses[$tone] }}"></span>
-                    {{ $toneLabel }}
-                    <span class="font-semibold text-gray-950 dark:text-white">{{ $calendar['totals'][$tone] }}</span>
-                </span>
-            @endforeach
-            <span class="inline-flex items-center gap-1.5">
-                <span class="size-2.5 rounded-sm bg-gray-200 dark:bg-white/15"></span>
-                تعطیل
-            </span>
+            <div class="ms-auto">{{ $this->addSessionAction }}</div>
         </div>
 
         <div class="p-4" wire:loading.class="opacity-60" wire:target="showSessions">
@@ -125,7 +113,7 @@
                                         title="{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
                                         class="absolute inset-x-1 z-10 flex min-h-7 flex-col overflow-hidden rounded-md border-s-4 px-2 py-1 text-start text-xs shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}"
                                         style="top: {{ $session['top'] }}%; height: {{ $session['height'] }}%">
-                                        @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day'])
+                                        @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'mode' => $calendar['mode']['value']])
                                     </button>
                                 @endforeach
                             </div>
@@ -219,6 +207,7 @@
                                     <button type="button" wire:click="mountAction('sessionDetails', { session: {{ $session['id'] }} })"
                                         title="{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
                                         class="flex items-center gap-1 truncate rounded border-s-4 px-1.5 py-0.5 text-start text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}">
+                                        @include('class::filament.session-calendar-mode', ['mode' => $calendar['mode']['value']])
                                         <span class="shrink-0 font-semibold tabular-nums">{{ \Illuminate\Support\Str::before($session['time'], '–') }}</span>
                                         <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['title'] }}</span>
                                     </button>
@@ -284,7 +273,21 @@
             @endif
         </div>
 
-        {{-- The table renders the action modals; without it, the calendar does. --}}
+        {{-- The colours' legend, with the period's count of each. --}}
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-200 px-4 py-3 text-xs text-gray-600 dark:border-white/10 dark:text-gray-400">
+            @foreach ($tones as $tone => $toneLabel)
+                <span class="inline-flex items-center gap-1.5">
+                    <span class="size-2.5 rounded-full {{ $dotClasses[$tone] }}"></span>
+                    {{ $toneLabel }}
+                    <span class="font-semibold text-gray-950 dark:text-white">{{ $calendar['totals'][$tone] }}</span>
+                </span>
+            @endforeach
+            <span class="inline-flex items-center gap-1.5">
+                <span class="size-2.5 rounded-sm bg-gray-200 dark:bg-white/15"></span>
+                تعطیل
+            </span>
+        </div>
+
+        {{-- The table isn't shown, so the calendar renders the action modals. --}}
         <x-filament-actions::modals />
-    @endif
 </div>

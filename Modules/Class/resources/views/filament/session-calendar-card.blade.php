@@ -1,4 +1,4 @@
-{{-- A session on the day / week timeline; $roomy adds the teacher and place. --}}
+{{-- A session on the day / week timeline; $roomy adds the teacher and place; $mode is the class's ClassMode value. --}}
 <span class="flex items-center gap-1 font-semibold">
     <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['title'] }}</span>
     @if ($session['tone'] === 'live')
@@ -7,6 +7,7 @@
 </span>
 <span class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 opacity-80">
     <span class="tabular-nums">{{ $session['time'] }}</span>
+    @include('class::filament.session-calendar-mode', ['mode' => $mode])
     @if ($session['kind'])
         <span class="rounded bg-white/70 px-1 text-[10px] font-medium dark:bg-black/30">{{ $session['kind'] }}</span>
     @endif

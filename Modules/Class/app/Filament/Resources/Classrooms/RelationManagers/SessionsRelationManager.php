@@ -12,9 +12,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Size;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,8 +31,9 @@ use Modules\Class\Services\SessionPlanner;
 
 /**
  * The «جلسه‌ها» tab of a class (ADR 0023): its sessions on a day, week,
- * month or year calendar, or as a list (ADR 0047), with make-up and extra
- * sessions added by hand.
+ * month or year calendar (ADR 0047), with make-up and extra sessions added
+ * by hand. The table below is not shown; it keeps the row actions the
+ * details modal reuses (the tenant's list is «کلاس‌ها → جلسه‌ها»).
  */
 class SessionsRelationManager extends RelationManager
 {
@@ -62,7 +63,7 @@ class SessionsRelationManager extends RelationManager
     }
 
     /**
-     * «روزانه», «هفتگی», «ماهانه», «سالانه» or «فهرست» (the table).
+     * «روزانه», «هفتگی», «ماهانه» or «سالانه».
      */
     #[Url(as: 'sessions')]
     public string $sessionsView = 'month';
@@ -74,16 +75,16 @@ class SessionsRelationManager extends RelationManager
     public ?string $sessionsDate = null;
 
     /**
-     * The calendar of the tab (ADR 0047), or the list.
+     * The calendar of the tab (ADR 0047).
      */
     public function content(Schema $schema): Schema
     {
         return $schema->components([
             View::make('class::filament.session-calendar')
                 ->viewData(fn (SessionCalendar $calendar): array => [
-                    'calendar' => $this->isShowingList() ? null : $calendar->forClassroom($this->classroom(), $this->sessionsView, $this->calendarDate()),
-                    'views' => ['day' => 'روزانه', 'week' => 'هفتگی', 'month' => 'ماهانه', 'year' => 'سالانه', 'list' => 'فهرست'],
-                    'current' => $this->isShowingList() ? 'list' : $this->sessionsView,
+                    'calendar' => $calendar->forClassroom($this->classroom(), $this->currentView(), $this->calendarDate()),
+                    'views' => ['day' => 'روزانه', 'week' => 'هفتگی', 'month' => 'ماهانه', 'year' => 'سالانه'],
+                    'current' => $this->currentView(),
                     'tones' => SessionCalendar::toneLabels(),
                 ])
                 ->schema([
@@ -94,16 +95,14 @@ class SessionsRelationManager extends RelationManager
                         ->placeholder('برو به تاریخ')
                         ->prefixIcon(Heroicon::OutlinedCalendarDays)
                         ->closeOnDateSelection()
-                        ->live()
-                        ->visible(fn (): bool => ! $this->isShowingList()),
+                        ->live(),
                 ]),
-            EmbeddedTable::make()->visible(fn (): bool => $this->isShowingList()),
         ]);
     }
 
     public function showSessions(string $view, ?string $date = null): void
     {
-        $this->sessionsView = in_array($view, [...SessionCalendar::VIEWS, 'list'], true) ? $view : 'month';
+        $this->sessionsView = in_array($view, SessionCalendar::VIEWS, true) ? $view : 'month';
 
         if ($date !== null) {
             $this->sessionsDate = $this->parseDate($date)?->toDateString();
@@ -125,6 +124,7 @@ class SessionsRelationManager extends RelationManager
         return Action::make('addSession')
             ->label('جلسه‌ی جبرانی / فوق‌العاده')
             ->icon(Heroicon::OutlinedPlus)
+            ->size(Size::Small)
             ->visible(fn (): bool => auth()->user()?->can('update', $this->classroom()) ?? false)
             ->modalWidth('2xl')
             ->fillForm(fn (array $arguments): array => ['kind' => SessionKind::MakeUp->value, 'date' => $this->parseDate($arguments['date'] ?? null)?->max(today())->toDateString()])
@@ -161,9 +161,9 @@ class SessionsRelationManager extends RelationManager
             ->recordActions([SessionActions::recordActions()]);
     }
 
-    private function isShowingList(): bool
+    private function currentView(): string
     {
-        return $this->sessionsView === 'list';
+        return in_array($this->sessionsView, SessionCalendar::VIEWS, true) ? $this->sessionsView : 'month';
     }
 
     private function calendarDate(): CarbonImmutable

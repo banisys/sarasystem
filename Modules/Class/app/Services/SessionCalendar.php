@@ -99,6 +99,8 @@ class SessionCalendar
             'today' => today()->toDateString(),
             'weekdays' => array_map(fn (Weekday $day): string => $day->getLabel(), Weekday::cases()),
             'totals' => $this->totals($sessions),
+            // Where the class meets; the same for all its sessions.
+            'mode' => ['value' => $classroom->mode->value, 'label' => $classroom->mode->getLabel()],
             // The nearest days with a session outside the period, to jump to.
             'previous_session' => $classroom->sessions()->where('starts_at', '<', $period['first']->startOfDay())->max('starts_at'),
             'next_session' => $classroom->sessions()->where('starts_at', '>', $period['last']->endOfDay())->min('starts_at'),

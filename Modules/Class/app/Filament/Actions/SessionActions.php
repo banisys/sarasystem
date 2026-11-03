@@ -28,6 +28,7 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 use Modules\Class\Enums\AttendanceStatus;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\HomeworkSubmission;
@@ -167,6 +168,16 @@ class SessionActions
                         ->label('نوع')
                         ->badge()
                         ->color('gray'),
+                    TextEntry::make('mode')
+                        ->label('نحوه‌ی برگزاری')
+                        ->state(fn (ClassSession $record): ?ClassMode => $record->classroom?->mode)
+                        ->badge()
+                        ->icon(fn (?ClassMode $state): ?string => match ($state) {
+                            ClassMode::InPerson => 'heroicon-m-building-office-2',
+                            ClassMode::Online => 'heroicon-m-video-camera',
+                            ClassMode::Blended => 'heroicon-m-square-2-stack',
+                            null => null,
+                        }),
                     TextEntry::make('starts_at')
                         ->label('زمان')
                         ->state(fn (ClassSession $record): string => self::when($record))
