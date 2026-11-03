@@ -65,6 +65,19 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
+     * Taught by the user: as the substitute, or as the teacher when there is
+     * no substitute (actualTeacherId()).
+     *
+     * @param  Builder<ClassSession>  $query
+     */
+    public function scopeTaughtBy(Builder $query, User $user): void
+    {
+        $query->where(fn (Builder $query) => $query
+            ->where('substitute_teacher_id', $user->getKey())
+            ->orWhere(fn (Builder $query) => $query->whereNull('substitute_teacher_id')->where('teacher_id', $user->getKey())));
+    }
+
+    /**
      * @param  Builder<ClassSession>  $query
      */
     public function scopeUpcoming(Builder $query): void

@@ -12,19 +12,17 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Size;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Livewire\Attributes\Url;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
+use Modules\Class\Filament\Concerns\ShowsSessionCalendar;
 use Modules\Class\Filament\Resources\ClassSessions\Tables\ClassSessionsTable;
 use Modules\Class\Models\Classroom;
-use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Subject;
 use Modules\Class\Services\SessionCalendar;
 use Modules\Class\Services\SessionPlanner;
@@ -37,6 +35,8 @@ use Modules\Class\Services\SessionPlanner;
  */
 class SessionsRelationManager extends RelationManager
 {
+    use ShowsSessionCalendar;
+
     protected static string $relationship = 'sessions';
 
     protected static ?string $title = 'جلسه‌ها';
@@ -46,11 +46,6 @@ class SessionsRelationManager extends RelationManager
     protected static ?string $modelLabel = 'جلسه';
 
     protected static ?string $pluralModelLabel = 'جلسه‌ها';
-
-    /**
-     * @var array<int, ClassSession|null>
-     */
-    private array $sessionCache = [];
 
     public function isReadOnly(): bool
     {
@@ -63,60 +58,11 @@ class SessionsRelationManager extends RelationManager
     }
 
     /**
-     * «روزانه», «هفتگی», «ماهانه» or «سالانه».
-     */
-    #[Url(as: 'sessions')]
-    public string $sessionsView = 'month';
-
-    /**
-     * A day in the calendar's period (Y-m-d); empty is today.
-     */
-    #[Url(as: 'on')]
-    public ?string $sessionsDate = null;
-
-    /**
      * The calendar of the tab (ADR 0047).
      */
     public function content(Schema $schema): Schema
     {
-        return $schema->components([
-            View::make('class::filament.session-calendar')
-                ->viewData(fn (SessionCalendar $calendar): array => [
-                    'calendar' => $calendar->forClassroom($this->classroom(), $this->currentView(), $this->calendarDate()),
-                    'views' => ['day' => 'روزانه', 'week' => 'هفتگی', 'month' => 'ماهانه', 'year' => 'سالانه'],
-                    'current' => $this->currentView(),
-                    'tones' => SessionCalendar::toneLabels(),
-                ])
-                ->schema([
-                    // «برو به تاریخ»: picks the calendar's date directly.
-                    DatePicker::make('sessionsDate')
-                        ->hiddenLabel()
-                        ->jalali()
-                        ->placeholder('برو به تاریخ')
-                        ->prefixIcon(Heroicon::OutlinedCalendarDays)
-                        ->closeOnDateSelection()
-                        ->live(),
-                ]),
-        ]);
-    }
-
-    public function showSessions(string $view, ?string $date = null): void
-    {
-        $this->sessionsView = in_array($view, SessionCalendar::VIEWS, true) ? $view : 'month';
-
-        if ($date !== null) {
-            $this->sessionsDate = $this->parseDate($date)?->toDateString();
-        }
-    }
-
-    /**
-     * Arguments: `session` (id), one of this class's sessions.
-     */
-    public function sessionDetailsAction(): Action
-    {
-        return SessionActions::details()
-            ->record(fn (array $arguments): ?ClassSession => $this->session($arguments['session'] ?? null))
-            ->visible(fn (?ClassSession $record): bool => $record !== null);
+        return $schema->components([$this->sessionCalendarComponent()]);
     }
 
     public function addSessionAction(): Action
@@ -161,41 +107,19 @@ class SessionsRelationManager extends RelationManager
             ->recordActions([SessionActions::recordActions()]);
     }
 
-    private function currentView(): string
+    protected function calendarSessions(): Builder
     {
-        return in_array($this->sessionsView, SessionCalendar::VIEWS, true) ? $this->sessionsView : 'month';
+        return $this->classroom()->sessions()->getQuery();
     }
 
-    private function calendarDate(): CarbonImmutable
+    protected function calendarData(SessionCalendar $calendar, string $view, CarbonImmutable $date): array
     {
-        return $this->parseDate($this->sessionsDate) ?? today()->toImmutable();
+        return $calendar->forClassroom($this->classroom(), $view, $date);
     }
 
-    private function parseDate(?string $date): ?CarbonImmutable
+    protected function canAddSessions(): bool
     {
-        // The date picker may send a time after the date.
-        $date = is_string($date) ? substr($date, 0, 10) : null;
-
-        if ($date === null || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return null;
-        }
-
-        return rescue(fn () => CarbonImmutable::createFromFormat('!Y-m-d', $date), report: false) ?: null;
-    }
-
-    /**
-     * Remembered for the request: the modal's entries and buttons each ask
-     * for the record.
-     */
-    private function session(mixed $id): ?ClassSession
-    {
-        if (! is_numeric($id)) {
-            return null;
-        }
-
-        return $this->sessionCache[(int) $id] ??= $this->classroom()->sessions()
-            ->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])
-            ->find((int) $id);
+        return true;
     }
 
     private function classroom(): Classroom

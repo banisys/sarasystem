@@ -336,6 +336,7 @@ class BranchOperations extends Scenario
                     ->steps([
                         'در «Conversation B2» زبانه‌ی «جلسه‌ها»، روی جلسه‌ی امروز در تقویم بزنید؛ در پنجره‌ی جزئیات «سایر ← مدرس جایگزین» را بزنید و «رضا توکلی» را انتخاب کنید.',
                         'جایگزین باید عضو همین '.$tenant.' باشد و در آن ساعت جای دیگری درس نداشته باشد.',
+                        'اختیاری: در «کارکنان ← کارمندان» با «جلسه‌های تدریس» در ردیف «رضا توکلی»، این جلسه را در تقویم تدریس او ببینید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
                     ->perform(fn (TutorialRun $run): mixed => self::branch($run, 1)->execute(fn () => app(SessionPlanner::class)->setSubstitute(self::sessions($run)->first(), self::substitute($run)->getKey())))

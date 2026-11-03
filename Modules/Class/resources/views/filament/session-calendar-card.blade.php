@@ -1,4 +1,4 @@
-{{-- A session on the day / week timeline; $roomy adds the teacher and place; $mode is the class's ClassMode value. --}}
+{{-- A session on the day / week timeline; $roomy adds the place; $showsClassroom puts the class where the teacher is (a teacher's calendar). --}}
 <span class="flex items-center gap-1 font-semibold">
     <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['title'] }}</span>
     @if ($session['tone'] === 'live')
@@ -7,7 +7,7 @@
 </span>
 <span class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 opacity-80">
     <span class="tabular-nums">{{ $session['time'] }}</span>
-    @include('class::filament.session-calendar-mode', ['mode' => $mode])
+    @include('class::filament.session-calendar-mode', ['mode' => $session['mode']])
     @if ($session['kind'])
         <span class="rounded bg-white/70 px-1 text-[10px] font-medium dark:bg-black/30">{{ $session['kind'] }}</span>
     @endif
@@ -21,7 +21,11 @@
         <x-filament::icon icon="heroicon-m-book-open" class="size-3.5" title="تکلیف دارد" />
     @endif
 </span>
-@if ($roomy || $session['teacher'])
+@if ($showsClassroom)
+    <span class="truncate opacity-80">
+        {{ $session['classroom'] }}{{ $session['is_substitute'] ? ' (جایگزین)' : '' }}{{ $roomy && $session['location'] ? ' · '.$session['location'] : '' }}
+    </span>
+@elseif ($roomy || $session['teacher'])
     <span class="truncate opacity-80">
         {{ $session['teacher'] }}{{ $session['is_substitute'] ? ' (جایگزین)' : '' }}{{ $roomy && $session['location'] ? ' · '.$session['location'] : '' }}
     </span>

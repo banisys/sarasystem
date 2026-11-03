@@ -3,10 +3,15 @@
 namespace Modules\Class\Providers;
 
 use App\Authorization\DefaultRoles;
+use App\Filament\Support\StaffRecordActions;
 use App\Guardians\Guardians;
 use App\Models\Tenant;
 use App\Models\User;
 use App\UserPanel\UserPanel;
+use Filament\Actions\Action;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Class\Services\MyClasses;
 use Modules\Class\Services\PlanForecast;
@@ -52,6 +57,16 @@ class ClassServiceProvider extends ModuleServiceProvider
             DefaultRoles::EDUCATION_OFFICER => [...DefaultRoles::manage('Classroom'), ...DefaultRoles::manage('ClassSession'), ...DefaultRoles::manage('Holiday')],
         ]);
         app(DefaultRoles::class)->installing(fn () => app(DefaultClassRoles::class)->install());
+
+        // «جلسه‌های تدریس» on the employees list and page (ADR 0048).
+        StaffRecordActions::register('teacher-sessions', fn (): array => [
+            Action::make('teacherSessions')
+                ->label('جلسه‌های تدریس')
+                ->icon(Heroicon::OutlinedCalendarDays)
+                ->color('gray')
+                ->url(fn (Model $record): ?string => $record->user ? TeacherSessions::getUrl(['user' => $record->user]) : null)
+                ->visible(fn (Model $record): bool => $record->user !== null && TeacherSessions::canAccess()),
+        ]);
 
         // «کلاس‌های من» for members and teachers of classes (ADR 0026), and
         // «کلاس‌های …» of each ward in classes for their guardians (ADR 0027).

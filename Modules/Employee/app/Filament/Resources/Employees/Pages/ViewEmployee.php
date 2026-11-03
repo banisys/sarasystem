@@ -2,6 +2,7 @@
 
 namespace Modules\Employee\Filament\Resources\Employees\Pages;
 
+use App\Filament\Support\StaffRecordActions;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use Modules\Employee\Filament\Resources\Employees\EmployeeResource;
@@ -35,6 +36,7 @@ class ViewEmployee extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ...StaffRecordActions::make(),
             EditAction::make(),
         ];
     }

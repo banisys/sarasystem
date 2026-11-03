@@ -1,4 +1,4 @@
-{{-- A class's sessions on a calendar (SessionsRelationManager, ADR 0047). A session opens its details modal; a day opens the day view. --}}
+{{-- Sessions on a calendar (ShowsSessionCalendar): a class's (ADR 0047) or a teacher's, with each session's class (ADR 0048). A session opens its details modal; a day opens the day view. --}}
 @php
     $toneClasses = [
         'scheduled' => 'border-info-500 bg-info-50 text-info-950 hover:bg-info-100 dark:bg-info-500/15 dark:text-info-100 dark:hover:bg-info-500/25',
@@ -29,6 +29,7 @@
                     wire:click="showSessions('{{ $current }}', '{{ $calendar['next'] }}')" />
             </div>
             <h3 class="text-base font-semibold text-gray-950 dark:text-white">{{ $calendar['label'] }}</h3>
+            @if ($calendar['mode'])
             <span @class([
                 'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
                 'bg-gray-50 text-gray-700 ring-gray-300 dark:bg-white/5 dark:text-gray-200 dark:ring-white/20' => $calendar['mode']['value'] === 'in_person',
@@ -38,6 +39,7 @@
                 @include('class::filament.session-calendar-mode', ['mode' => $calendar['mode']['value']])
                 {{ $calendar['mode']['label'] }}
             </span>
+            @endif
             <div class="w-48">{{ $getChildSchema() }}</div>
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div class="flex items-center gap-1">
@@ -61,10 +63,12 @@
                 @endforeach
             </div>
 
-            <div class="ms-auto">{{ $this->addSessionAction }}</div>
+            @if ($canAddSessions)
+                <div class="ms-auto">{{ $this->addSessionAction }}</div>
+            @endif
         </div>
 
-        <div class="px-4 pb-4 pt-6" wire:loading.class="opacity-60" wire:target="showSessions">
+        <div class="px-4 pb-4 pt-10" wire:loading.class="opacity-60" wire:target="showSessions">
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div @class(['grid gap-4', 'lg:grid-cols-[minmax(0,1fr)_16rem]' => $calendar['view'] === 'day'])>
                 {{-- A timeline: hours down, a column per day. --}}
@@ -112,7 +116,7 @@
                                         title="{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
                                         class="absolute inset-x-1 z-10 flex min-h-7 flex-col overflow-hidden rounded-md border-s-4 px-2 py-1 text-start text-xs shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}"
                                         style="top: {{ $session['top'] }}%; height: {{ $session['height'] }}%">
-                                        @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'mode' => $calendar['mode']['value']])
+                                        @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'showsClassroom' => $calendar['shows_classroom']])
                                     </button>
                                 @endforeach
                             </div>
@@ -204,11 +208,11 @@
                                 </div>
                                 @foreach (array_slice($day['sessions'], 0, 3) as $session)
                                     <button type="button" wire:click="mountAction('sessionDetails', { session: {{ $session['id'] }} })"
-                                        title="{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
+                                        title="{{ $calendar['shows_classroom'] ? $session['classroom'].' · ' : '' }}{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
                                         class="flex items-center gap-1 truncate rounded border-s-4 px-1.5 py-0.5 text-start text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}">
-                                        @include('class::filament.session-calendar-mode', ['mode' => $calendar['mode']['value']])
+                                        @include('class::filament.session-calendar-mode', ['mode' => $session['mode']])
                                         <span class="shrink-0 font-semibold tabular-nums">{{ \Illuminate\Support\Str::before($session['time'], '–') }}</span>
-                                        <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['title'] }}</span>
+                                        <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $calendar['shows_classroom'] ? $session['classroom'] : $session['title'] }}</span>
                                     </button>
                                 @endforeach
                                 @if (count($day['sessions']) > 3)
@@ -285,8 +289,17 @@
                 <span class="size-2.5 rounded-sm bg-gray-200 dark:bg-white/15"></span>
                 تعطیل
             </span>
+            <span class="ms-auto inline-flex items-center gap-1.5" title="جمع زمان جلسه‌های برگزارشده و همه‌ی جلسه‌های لغونشده‌ی این بازه">
+                <x-filament::icon icon="heroicon-m-clock" class="size-4" />
+                ساعت برگزارشده
+                <span class="font-semibold tabular-nums text-gray-950 dark:text-white">{{ $calendar['durations']['held'] }}</span>
+                از
+                <span class="font-semibold tabular-nums text-gray-950 dark:text-white">{{ $calendar['durations']['planned'] }}</span>
+            </span>
         </div>
 
-        {{-- The table isn't shown, so the calendar renders the action modals. --}}
-        <x-filament-actions::modals />
+        @if ($rendersModals)
+            {{-- A relation manager's table isn't shown, so the calendar renders the action modals. --}}
+            <x-filament-actions::modals />
+        @endif
 </div>

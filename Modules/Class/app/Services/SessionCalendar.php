@@ -3,8 +3,10 @@
 namespace Modules\Class\Services;
 
 use App\Models\Tenant;
+use App\Models\User;
 use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
@@ -15,8 +17,9 @@ use Modules\Class\Models\Holiday;
 
 /**
  * Calendar periods (a day, a Saturday-to-Friday week, a Jalali month or
- * year) and a class's sessions laid out in them, for the class page's
- * «جلسه‌ها» tab (ADR 0047). «کلاس‌های من» uses the same periods (ADR 0026).
+ * year) and sessions laid out in them: a class's, for the class page's
+ * «جلسه‌ها» tab (ADR 0047), or a teacher's, for their calendar from the
+ * employees list (ADR 0048). «کلاس‌های من» uses the same periods (ADR 0026).
  */
 class SessionCalendar
 {
@@ -66,28 +69,56 @@ class SessionCalendar
     }
 
     /**
-     * The class's sessions in the view around the date. Day and week give
-     * a timeline (hours and each session's place on it), month gives a grid
-     * of days, year twelve small months with each day's sessions counted
-     * by tone.
+     * The class's sessions in the view around the date (see sessions()).
      *
      * @return array<string, mixed>
      */
     public function forClassroom(Classroom $classroom, string $view, CarbonImmutable $date): array
     {
+        return [
+            ...$this->sessions($classroom->sessions()->getQuery(), Tenant::query()->findOrFail($classroom->tenant_id), $view, $date),
+            // Where the class meets; the same for all its sessions.
+            'mode' => ['value' => $classroom->mode->value, 'label' => $classroom->mode->getLabel()],
+            'shows_classroom' => false,
+        ];
+    }
+
+    /**
+     * The sessions the user teaches in the current tenant (ADR 0048), each
+     * with its class.
+     *
+     * @return array<string, mixed>
+     */
+    public function forTeacher(User $teacher, string $view, CarbonImmutable $date): array
+    {
+        return [
+            ...$this->sessions(ClassSession::query()->taughtBy($teacher), Tenant::current(), $view, $date),
+            'mode' => null,
+            'shows_classroom' => true,
+        ];
+    }
+
+    /**
+     * The sessions of the query in the view around the date. Day and week
+     * give a timeline (hours and each session's place on it), month gives
+     * a grid of days, year twelve small months with each day's sessions
+     * counted by tone. The holidays are the tenant's.
+     *
+     * @param  Builder<ClassSession>  $query
+     * @return array<string, mixed>
+     */
+    private function sessions(Builder $query, Tenant $tenant, string $view, CarbonImmutable $date): array
+    {
         $view = in_array($view, self::VIEWS, true) ? $view : 'month';
         $period = self::period($view, $date);
 
-        $sessions = $classroom->sessions()
+        $sessions = (clone $query)
             ->whereBetween('starts_at', [$period['first']->startOfDay(), $period['last']->endOfDay()])
-            ->with(['subject', 'teacher', 'substituteTeacher'])
+            ->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])
             ->withCount('attendances')
             ->orderBy('starts_at')
             ->get();
-        $holidays = Holiday::applyingIn(Tenant::query()->findOrFail($classroom->tenant_id))
-            ->whereDate('starts_on', '<=', $period['last'])
-            ->whereDate('ends_on', '>=', $period['first'])
-            ->get();
+        $holidays = $this->holidays($tenant, $period['first'], $period['last']);
         $byDay = $sessions->groupBy(fn (ClassSession $session): string => $session->starts_at->toDateString());
 
         $calendar = [
@@ -99,11 +130,10 @@ class SessionCalendar
             'today' => today()->toDateString(),
             'weekdays' => array_map(fn (Weekday $day): string => $day->getLabel(), Weekday::cases()),
             'totals' => $this->totals($sessions),
-            // Where the class meets; the same for all its sessions.
-            'mode' => ['value' => $classroom->mode->value, 'label' => $classroom->mode->getLabel()],
+            'durations' => $this->durations($sessions),
             // The nearest days with a session outside the period, to jump to.
-            'previous_session' => $classroom->sessions()->where('starts_at', '<', $period['first']->startOfDay())->max('starts_at'),
-            'next_session' => $classroom->sessions()->where('starts_at', '>', $period['last']->endOfDay())->min('starts_at'),
+            'previous_session' => (clone $query)->where('starts_at', '<', $period['first']->startOfDay())->max('starts_at'),
+            'next_session' => (clone $query)->where('starts_at', '>', $period['last']->endOfDay())->min('starts_at'),
         ];
         $calendar['previous_session'] = $calendar['previous_session'] ? CarbonImmutable::parse($calendar['previous_session'])->toDateString() : null;
         $calendar['next_session'] = $calendar['next_session'] ? CarbonImmutable::parse($calendar['next_session'])->toDateString() : null;
@@ -121,7 +151,7 @@ class SessionCalendar
         [$fromHour, $toHour] = $this->hours($sessions);
 
         if ($view === 'day') {
-            $calendar['mini_month'] = $this->miniMonth($classroom, $date);
+            $calendar['mini_month'] = $this->miniMonth($query, $tenant, $date);
         }
 
         return [...$calendar, 'days' => array_map(fn (array $day): array => [
@@ -177,6 +207,8 @@ class SessionCalendar
             // A session ending after midnight is drawn to the end of its day.
             'end_minute' => $session->ends_at->isSameDay($session->starts_at) ? $session->ends_at->hour * 60 + $session->ends_at->minute : 24 * 60,
             'title' => $session->subject?->title ?? 'جلسه',
+            'classroom' => $session->classroom?->title,
+            'mode' => $session->classroom?->mode->value,
             'teacher' => $teacher?->name,
             'is_substitute' => $session->substituteTeacher !== null,
             'location' => $session->location,
@@ -200,6 +232,34 @@ class SessionCalendar
         $counts = $sessions->countBy(fn (ClassSession $session): string => self::tone($session));
 
         return array_map(fn (string $tone): int => $counts[$tone] ?? 0, array_combine(array_keys(self::toneLabels()), array_keys(self::toneLabels())));
+    }
+
+    /**
+     * The period's hours: held, and planned (all but the cancelled), as H:MM.
+     *
+     * @param  Collection<int, ClassSession>  $sessions
+     * @return array{held: string, planned: string}
+     */
+    private function durations(Collection $sessions): array
+    {
+        $minutes = fn (Collection $sessions): int => (int) $sessions->sum(fn (ClassSession $session): float => $session->starts_at->diffInMinutes($session->ends_at));
+        $format = fn (int $minutes): string => intdiv($minutes, 60).':'.sprintf('%02d', $minutes % 60);
+
+        return [
+            'held' => $format($minutes($sessions->where('status', SessionStatus::Held))),
+            'planned' => $format($minutes($sessions->where('status', '!=', SessionStatus::Cancelled))),
+        ];
+    }
+
+    /**
+     * @return Collection<int, Holiday>
+     */
+    private function holidays(Tenant $tenant, CarbonImmutable $first, CarbonImmutable $last): Collection
+    {
+        return Holiday::applyingIn($tenant)
+            ->whereDate('starts_on', '<=', $last)
+            ->whereDate('ends_on', '>=', $first)
+            ->get();
     }
 
     /**
@@ -244,20 +304,18 @@ class SessionCalendar
      * The Jalali month of the day view's date, to pick another day from,
      * with the months before and after it.
      *
+     * @param  Builder<ClassSession>  $query
      * @return array<string, mixed>
      */
-    private function miniMonth(Classroom $classroom, CarbonImmutable $date): array
+    private function miniMonth(Builder $query, Tenant $tenant, CarbonImmutable $date): array
     {
         $period = self::period('month', $date);
         [$year, $month] = CalendarUtils::toJalali($date->year, $date->month, $date->day);
-        $byDay = $classroom->sessions()
+        $byDay = (clone $query)
             ->whereBetween('starts_at', [$period['first']->startOfDay(), $period['last']->endOfDay()])
             ->get()
             ->groupBy(fn (ClassSession $session): string => $session->starts_at->toDateString());
-        $holidays = Holiday::applyingIn(Tenant::query()->findOrFail($classroom->tenant_id))
-            ->whereDate('starts_on', '<=', $period['last'])
-            ->whereDate('ends_on', '>=', $period['first'])
-            ->get();
+        $holidays = $this->holidays($tenant, $period['first'], $period['last']);
 
         return [
             ...$this->month($year, $month, $byDay, $holidays),

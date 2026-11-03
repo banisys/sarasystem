@@ -2,6 +2,7 @@
 
 namespace Modules\Employee\Filament\Resources\Employees\Tables;
 
+use App\Filament\Support\StaffRecordActions;
 use App\Filament\Support\TextFilter;
 use App\Support\Identifiers;
 use Filament\Actions\EditAction;
@@ -76,6 +77,8 @@ class EmployeesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                // From other modules, e.g. the sessions they teach (ADR 0048).
+                ...StaffRecordActions::make(),
             ]);
     }
 }

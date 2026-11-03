@@ -7,13 +7,15 @@ use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ListClassSessions;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Tables\ClassSessionsTable;
 use Modules\Class\Models\ClassSession;
 use UnitEnum;
 
 /**
  * Sessions of every class of the current tenant (ADR 0023), from today on
- * by default; the same row actions as a class's «جلسه‌ها» tab.
+ * by default; the same row actions as a class's «جلسه‌ها» tab. A teacher's
+ * sessions on a calendar: TeacherSessions (ADR 0048).
  */
 class ClassSessionResource extends Resource
 {
@@ -48,6 +50,7 @@ class ClassSessionResource extends Resource
     {
         return [
             'index' => ListClassSessions::route('/'),
+            'teacher' => TeacherSessions::route('/teachers/{user}'),
         ];
     }
 }
