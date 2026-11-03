@@ -45,13 +45,18 @@ class SampleBatchesTable
             ])
             ->recordActions([
                 Action::make('classroom')
-                    ->label('مشاهده‌ی کلاس')
+                    ->label(fn (SampleBatch $record): string => (int) ($record->options['classes'] ?? 1) > 1 ? 'مشاهده‌ی کلاس‌ها' : 'مشاهده‌ی کلاس')
                     ->icon(Heroicon::OutlinedEye)
                     ->url(function (SampleBatch $record, SampleBatches $batches): ?string {
-                        $classroom = $batches->classroom($record);
+                        $classrooms = $batches->classrooms($record);
                         $tenant = $batches->tenant($record);
 
-                        return $classroom && $tenant ? ClassroomResource::getUrl('view', ['record' => $classroom], panel: 'admin', tenant: $tenant) : null;
+                        return match (true) {
+                            $classrooms->isEmpty() || $tenant === null => null,
+                            $classrooms->count() === 1 => ClassroomResource::getUrl('view', ['record' => $classrooms->first()], panel: 'admin', tenant: $tenant),
+                            // The classes list, filtered to the batch's titles.
+                            default => ClassroomResource::getUrl('index', ['tableFilters' => ['title' => ['value' => $record->title]]], panel: 'admin', tenant: $tenant),
+                        };
                     }),
                 Action::make('summary')
                     ->label('آنچه ساخته شد')

@@ -3,6 +3,7 @@
 namespace Modules\Tutorial\Tests\Feature;
 
 use App\Authorization\DefaultRoles;
+use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Guardianship;
 use App\Models\Tenant;
 use App\Models\User;
@@ -10,16 +11,20 @@ use BezhanSalleh\FilamentShield\Support\Utils;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia;
 use Livewire\Livewire;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
+use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\HomeworkSubmission;
+use Modules\Class\Models\Subject;
 use Modules\Class\Models\Term;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Employee\Models\Employee;
@@ -112,6 +117,63 @@ class SampleDataTest extends TestCase
         $this->assertSame(0, ClassSession::withoutTenantScope()->count());
         $this->assertSame($before, ['users' => User::query()->count(), 'roles' => DB::table('model_has_roles')->count()]);
         $this->assertModelExists($this->owner);
+    }
+
+    public function test_several_classes_share_one_teacher_at_different_times(): void
+    {
+        $this->generate([
+            'classes' => 3, 'shared_staff' => true, 'subjects' => 2, 'start_time' => '08:00', 'cancelled_sessions' => 0,
+            'members' => [$this->roles['learner']->id => 4, $this->roles['teacher']->id => 1],
+        ]);
+
+        $batch = SampleBatch::query()->sole();
+        $classrooms = $batch->made(Classroom::class)->orderBy('id')->get();
+        $this->assertSame(["{$batch->title} الف", "{$batch->title} ب", "{$batch->title} ج"], $classrooms->pluck('title')->all());
+        $this->assertSame(["{$batch->code}-1", "{$batch->code}-2", "{$batch->code}-3"], $classrooms->pluck('code')->all());
+
+        $teacherIds = ClassMember::withoutTenantScope()->where('class_role_id', $this->roles['teacher']->id)->pluck('user_id');
+        $this->assertCount(3, $teacherIds);
+        $this->assertCount(1, $teacherIds->unique());
+        $this->assertSame(12, ClassMember::withoutTenantScope()->where('class_role_id', $this->roles['learner']->id)->distinct()->count('user_id'));
+        // One term, two subjects with their plans, for all three classes.
+        $this->assertSame(1, $batch->made(Term::class)->count());
+        $this->assertSame(2, $batch->made(Subject::class)->count());
+        $this->assertSame(6, $batch->made(ClassSchedule::class)->count());
+
+        $sessions = $batch->made(ClassSession::class)->where('teacher_id', $teacherIds->first())->orderBy('starts_at')->get();
+        $sessions->each(function (ClassSession $session, int $index) use ($sessions): void {
+            $next = $sessions->get($index + 1);
+            $this->assertTrue($next === null || $next->starts_at->greaterThanOrEqualTo($session->ends_at), 'The shared teacher never teaches two sessions at once.');
+        });
+
+        $this->actingAs($this->owner)
+            ->get(ClassroomResource::getUrl('index', ['tableFilters' => ['title' => ['value' => $batch->title]]], panel: 'admin', tenant: $this->branch))
+            ->assertOk()
+            ->assertSee("{$batch->title} ب");
+
+        // A new session for the teacher: `auth.session` remembers the last user.
+        $this->flushSession();
+        $this->actingAs(User::query()->find($teacherIds->first()))
+            ->withSession([ResolveCurrentTenant::SESSION_KEY => $this->branch->id])
+            ->get(route('my-classes.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('classes', 3));
+    }
+
+    public function test_several_classes_without_shared_staff_get_their_own_teachers(): void
+    {
+        $this->generate([
+            'classes' => 2, 'shared_staff' => false,
+            'members' => [$this->roles['learner']->id => 2, $this->roles['teacher']->id => 1],
+        ]);
+
+        $this->assertSame(2, ClassMember::withoutTenantScope()->where('class_role_id', $this->roles['teacher']->id)->distinct()->count('user_id'));
+    }
+
+    public function test_classes_that_would_meet_past_midnight_are_refused(): void
+    {
+        $this->generate(['classes' => 5, 'subjects' => 5, 'start_time' => '08:00', 'duration' => 60, 'members' => [$this->roles['learner']->id => 1]], expectSuccess: false);
+
+        $this->assertSame(0, SampleBatch::query()->count());
     }
 
     public function test_a_failure_makes_nothing(): void

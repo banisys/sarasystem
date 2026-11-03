@@ -42,12 +42,15 @@ use Modules\Tutorial\Support\SampleTexts;
 use Nwidart\Modules\Facades\Module;
 
 /**
- * «ساخت داده‌ی نمونه» (ADR 0046): one class with everything around it, so
- * a client sees the system full of life: accounts with their roles (and
- * learner / employee rows and guardians when those modules are on), the
- * class and its sub-classes, members, subjects, teaching plans, a weekly
- * timetable, past sessions with attendance, content, homework, hand-ins
- * and grades, and a cancelled session with its make-up.
+ * «ساخت داده‌ی نمونه» (ADR 0046): one or more classes with everything
+ * around them, so a client sees the system full of life: accounts with
+ * their roles (and learner / employee rows and guardians when those
+ * modules are on), the classes and their sub-classes, members, subjects,
+ * teaching plans, weekly timetables, past sessions with attendance,
+ * content, homework, hand-ins and grades, and a cancelled session with its
+ * make-up. Several classes share the subjects and plans, and may share
+ * their staff (one teacher in every class); each class then meets at its
+ * own time of the day, so a shared teacher has no clash.
  *
  * Members, schedules, cancellations and make-ups go through the class
  * services, so the class rules hold. The history of past sessions is
@@ -60,6 +63,12 @@ class ClassSampleGenerator
 {
     /** Minutes between the day's sessions of two subjects. */
     private const int BREAK_MINUTES = 15;
+
+    /** At most this many classes in one batch. */
+    public const int MAX_CLASSES = 5;
+
+    /** Suffixes of the classes' titles when there are several. */
+    private const array CLASS_LETTERS = ['الف', 'ب', 'ج', 'د', 'ه'];
 
     /** Weekdays used for 1…6 sessions a week, Saturday first. */
     private const array WEEKDAY_ORDER = [6, 1, 3, 0, 2, 4];
@@ -89,6 +98,9 @@ class ClassSampleGenerator
             'grade_id' => null,
             'weeks_past' => 4,
             'weeks_ahead' => 8,
+            'classes' => 1,
+            // Staff (teachers, supporters, …) made once and put in every class.
+            'shared_staff' => true,
             'sub_classes' => 0,
             // Class role id => how many people.
             'members' => [],
@@ -142,9 +154,10 @@ class ClassSampleGenerator
             throw new ClassException('دست‌کم برای یک نقش کلاس تعداد بگذارید.');
         }
 
-        $lastEnd = $this->slotStart($options, max(1, (int) $options['subjects']) - 1)->addMinutes((int) $options['duration']);
+        $options['classes'] = max(1, min(self::MAX_CLASSES, (int) $options['classes']));
+        $lastEnd = $this->slotStart($options, $options['classes'] * self::lessonCount($options) - 1)->addMinutes((int) $options['duration']);
         if (! $lastEnd->isSameDay(today())) {
-            throw new ClassException('جلسه‌های یک روز از نیمه‌شب می‌گذرند؛ ساعت شروع، مدت یا تعداد درس‌ها را کم کنید.');
+            throw new ClassException('جلسه‌های یک روز از نیمه‌شب می‌گذرند؛ ساعت شروع، مدت، تعداد درس‌ها یا تعداد کلاس‌ها را کم کنید.');
         }
 
         // Rows of a sample batch never belong to a tutorial run as well.
@@ -166,51 +179,71 @@ class ClassSampleGenerator
     {
         $from = today()->toImmutable()->subWeeks((int) $options['weeks_past']);
         $to = today()->toImmutable()->addWeeks(max(1, (int) $options['weeks_ahead']));
-        $mode = $options['mode'] instanceof ClassMode ? $options['mode'] : ClassMode::from($options['mode']);
 
         $term = filled($options['term_id'])
             ? Term::definedTerms()->findOrFail($options['term_id'])
             : Term::withoutTenantScope()->create(['tenant_id' => $primary->getKey(), 'title' => 'دوره‌ی نمونه ('.$batch->code.')', 'starts_on' => $from, 'ends_on' => $to, 'is_active' => true]);
+        $lessons = $this->addLessons($batch, $primary, $options);
+        $sharedStaff = [];
 
-        $classroom = Classroom::withoutTenantScope()->create([
+        for ($number = 0; $number < $options['classes']; $number++) {
+            $classroom = $this->addClassroom($batch, $tenant, $term, $options, $number, $from, $to);
+
+            if (filled($options['grade_id']) && self::enabled('School')) {
+                app(Enrollments::class)->setClassroomGrade($classroom, (int) $options['grade_id'], null);
+            }
+
+            $people = $this->addMembers($classroom, $tenant, $options, $owner, $from, $sharedStaff);
+            $this->addSubClasses($classroom, $people, (int) $options['sub_classes'], $from);
+
+            $schedules = $this->addSchedules($classroom, $lessons, $options, $people['teachers'], $number * count($lessons), $from, $to);
+
+            foreach ($schedules as $schedule) {
+                $this->addHistory($classroom, $schedule, $tenant, $options, $people['attendees'], $owner, $from);
+            }
+
+            $this->cancelWithMakeUp($classroom, (int) $options['cancelled_sessions']);
+        }
+    }
+
+    /**
+     * The nth class: the batch's title and code, with a letter and a
+     * number when there are several.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    private function addClassroom(SampleBatch $batch, Tenant $tenant, Term $term, array $options, int $number, CarbonImmutable $from, CarbonImmutable $to): Classroom
+    {
+        $mode = $options['mode'] instanceof ClassMode ? $options['mode'] : ClassMode::from($options['mode']);
+        $several = $options['classes'] > 1;
+        $code = $several ? $batch->code.'-'.($number + 1) : $batch->code;
+
+        return Classroom::withoutTenantScope()->create([
             'tenant_id' => $tenant->getKey(),
             'term_id' => $term->getKey(),
-            'title' => $batch->title,
-            'code' => $batch->code,
+            'title' => $several ? $batch->title.' '.self::CLASS_LETTERS[$number] : $batch->title,
+            'code' => $code,
             'description' => 'داده‌ی نمونه ('.$batch->code.') برای آشنایی با سامانه؛ با حذف این دسته در «داده‌ی نمونه» پاک می‌شود.',
             'mode' => $mode,
-            'location' => $mode->meetsInPerson() ? 'اتاق '.$batch->code : null,
-            'meeting_url' => $mode === ClassMode::InPerson ? null : 'https://meet.example.com/'.Str::lower($batch->code),
+            'location' => $mode->meetsInPerson() ? 'اتاق '.$code : null,
+            'meeting_url' => $mode === ClassMode::InPerson ? null : 'https://meet.example.com/'.Str::lower($code),
             'capacity' => filled($options['capacity']) ? (int) $options['capacity'] : null,
             'starts_on' => $from,
             'ends_on' => $to,
             'is_active' => true,
         ]);
-
-        if (filled($options['grade_id']) && self::enabled('School')) {
-            app(Enrollments::class)->setClassroomGrade($classroom, (int) $options['grade_id'], null);
-        }
-
-        $people = $this->addMembers($classroom, $tenant, $options, $owner, $from);
-        $this->addSubClasses($classroom, $people, (int) $options['sub_classes'], $from);
-
-        $teacherIds = $people['teachers'];
-        $schedules = $this->addSchedules($classroom, $batch, $primary, $options, $teacherIds, $from, $to);
-
-        foreach ($schedules as $schedule) {
-            $this->addHistory($classroom, $schedule, $tenant, $options, $people['attendees'], $owner, $from);
-        }
-
-        $this->cancelWithMakeUp($classroom, (int) $options['cancelled_sessions']);
     }
 
     /**
-     * Accounts for each class role, added to the class.
+     * Accounts for each class role, added to the class. Attendees are
+     * new for each class; with shared staff, the staff made for the first
+     * class are put in the next ones too.
      *
      * @param  array<string, mixed>  $options
+     * @param  array<int, list<int>>  $sharedStaff  class role id => user ids, filled by the first class
      * @return array{attendees: list<int>, attendeeRole: ?ClassRole, teachers: list<int>, staff: array<int, list<int>>}
      */
-    private function addMembers(Classroom $classroom, Tenant $tenant, array $options, User $owner, CarbonImmutable $joinedOn): array
+    private function addMembers(Classroom $classroom, Tenant $tenant, array $options, User $owner, CarbonImmutable $joinedOn, array &$sharedStaff): array
     {
         $people = ['attendees' => [], 'attendeeRole' => null, 'teachers' => [], 'staff' => []];
         $roles = ClassRole::definedRoles()->get()->keyBy('id');
@@ -223,10 +256,11 @@ class ClassSampleGenerator
                 continue;
             }
 
+            $reuse = ! $role->is_attendee && $options['shared_staff'] && isset($sharedStaff[$role->getKey()]);
             $systemRole = $this->systemRoleFor($role);
-            $userIds = [];
+            $userIds = $reuse ? $sharedStaff[$role->getKey()] : [];
 
-            for ($i = 0; $i < $count; $i++) {
+            for ($i = 0; $i < ($reuse ? 0 : $count); $i++) {
                 [$first, $last] = SampleTexts::person();
                 $user = $this->makeUser("{$first} {$last}", $tenant, $systemRole, $options['password']);
                 $userIds[] = $user->getKey();
@@ -249,6 +283,7 @@ class ClassSampleGenerator
                 $people['attendeeRole'] ??= $role;
             } else {
                 $people['staff'][$role->getKey()] = $userIds;
+                $sharedStaff[$role->getKey()] ??= $userIds;
             }
         }
 
@@ -349,25 +384,44 @@ class ClassSampleGenerator
     }
 
     /**
-     * A weekly schedule per subject (one without a subject when none is
-     * asked for), each in its own time of the day, with a teaching plan.
+     * The subjects (none when none is asked for) and their teaching
+     * plans, shared by the batch's classes.
      *
      * @param  array<string, mixed>  $options
-     * @param  list<int>  $teacherIds
-     * @return list<ClassSchedule>
+     * @return list<array{subject: ?Subject, plan: ?TeachingPlan}>
      */
-    private function addSchedules(Classroom $classroom, SampleBatch $batch, Tenant $primary, array $options, array $teacherIds, CarbonImmutable $from, CarbonImmutable $to): array
+    private function addLessons(SampleBatch $batch, Tenant $primary, array $options): array
     {
         $subjectCount = min((int) $options['subjects'], count(SampleTexts::SUBJECTS));
-        $weekdays = array_slice(self::WEEKDAY_ORDER, 0, max(1, min(6, (int) $options['sessions_per_week'])));
-        $schedules = [];
+        $lessons = [];
 
-        for ($i = 0; $i < max(1, $subjectCount); $i++) {
+        for ($i = 0; $i < self::lessonCount($options); $i++) {
             $subject = $subjectCount > 0
                 ? Subject::withoutTenantScope()->create(['tenant_id' => $primary->getKey(), 'title' => SampleTexts::SUBJECTS[$i].' ('.$batch->code.')', 'is_active' => true, 'sort' => 0])
                 : null;
             $plan = $options['teaching_plan'] ? $this->addPlan($primary, $subject, $batch, max(1, (int) $options['topics'])) : null;
-            $start = $this->slotStart($options, $i);
+            $lessons[] = ['subject' => $subject, 'plan' => $plan];
+        }
+
+        return $lessons;
+    }
+
+    /**
+     * A weekly schedule per lesson, each in its own time of the day from
+     * the given slot on.
+     *
+     * @param  list<array{subject: ?Subject, plan: ?TeachingPlan}>  $lessons
+     * @param  array<string, mixed>  $options
+     * @param  list<int>  $teacherIds
+     * @return list<ClassSchedule>
+     */
+    private function addSchedules(Classroom $classroom, array $lessons, array $options, array $teacherIds, int $firstSlot, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $weekdays = array_slice(self::WEEKDAY_ORDER, 0, max(1, min(6, (int) $options['sessions_per_week'])));
+        $schedules = [];
+
+        foreach ($lessons as $i => $lesson) {
+            $start = $this->slotStart($options, $firstSlot + $i);
 
             $schedules[] = $this->planner->saveSchedule(null, $classroom, [
                 'frequency' => Frequency::Weekly,
@@ -377,9 +431,9 @@ class ClassSampleGenerator
                 'ends_on' => $to->toDateString(),
                 'start_time' => $start->format('H:i'),
                 'end_time' => $start->addMinutes((int) $options['duration'])->format('H:i'),
-                'subject_id' => $subject?->getKey(),
+                'subject_id' => $lesson['subject']?->getKey(),
                 'teacher_id' => $teacherIds === [] ? null : $teacherIds[$i % count($teacherIds)],
-                'teaching_plan_id' => $plan?->getKey(),
+                'teaching_plan_id' => $lesson['plan']?->getKey(),
             ]);
         }
 
@@ -566,6 +620,16 @@ class ClassSampleGenerator
     {
         return today()->toImmutable()->setTimeFromTimeString((string) $options['start_time'])
             ->addMinutes($index * ((int) $options['duration'] + self::BREAK_MINUTES));
+    }
+
+    /**
+     * Schedules per class: one per subject, or one without a subject.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    private static function lessonCount(array $options): int
+    {
+        return max(1, min((int) $options['subjects'], count(SampleTexts::SUBJECTS)));
     }
 
     private static function chance(int $percent): bool

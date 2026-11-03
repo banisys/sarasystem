@@ -87,6 +87,18 @@ class ClassSampleForm
                         ->minValue(1)
                         ->maxValue(26)
                         ->placeholder('8'),
+                    TextInput::make('classes')
+                        ->label('تعداد کلاس')
+                        ->helperText('هر کلاس فراگیران خودش را دارد و در ساعت دیگری از روز برگزار می‌شود.')
+                        ->integer()
+                        ->minValue(1)
+                        ->maxValue(ClassSampleGenerator::MAX_CLASSES)
+                        ->placeholder('1')
+                        ->live(onBlur: true),
+                    Toggle::make('shared_staff')
+                        ->label('مدرس و کادر مشترک')
+                        ->helperText('همان مدرس و پشتیبان در همه‌ی کلاس‌ها؛ «کلاس‌های من» مدرس پر می‌شود.')
+                        ->visible(fn (Get $get): bool => (int) $get('classes') > 1),
                     TextInput::make('sub_classes')
                         ->label('زیرکلاس')
                         ->helperText('فراگیران بین زیرکلاس‌ها پخش می‌شوند.')
@@ -96,7 +108,7 @@ class ClassSampleForm
                         ->placeholder('0'),
                 ]))),
             Section::make('اعضا')
-                ->description('برای هر نفر یک حساب تازه با نقش لازم در '.config('sarasystem.tenant_label').' ساخته می‌شود (بدون موبایل، پس پیامکی برایشان نمی‌رود).')
+                ->description('برای هر نفر یک حساب تازه با نقش لازم در '.config('sarasystem.tenant_label').' ساخته می‌شود (بدون موبایل، پس پیامکی برایشان نمی‌رود). تعدادها برای هر کلاس است.')
                 ->columns(3)
                 ->schema([
                     ...ClassRole::definedRoles()->get()->map(fn (ClassRole $role): TextInput => TextInput::make('members.'.$role->getKey())
@@ -139,6 +151,7 @@ class ClassSampleForm
                         ->placeholder('2'),
                     TimePicker::make('start_time')
                         ->label('ساعت شروع')
+                        ->helperText('جلسه‌های درس‌ها و کلاس‌ها پشت سر هم از این ساعت، با ۱۵ دقیقه فاصله؛ برای چند کلاس زودتر شروع کنید.')
                         ->seconds(false)
                         ->placeholder('16:00'),
                     TextInput::make('duration')

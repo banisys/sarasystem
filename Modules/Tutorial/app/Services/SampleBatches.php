@@ -5,6 +5,7 @@ namespace Modules\Tutorial\Services;
 use App\Models\Guardianship;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
@@ -90,11 +91,13 @@ class SampleBatches
     }
 
     /**
-     * The batch's (top-level) class, if it is still there.
+     * The batch's top-level classes that are still there.
+     *
+     * @return Collection<int, Classroom>
      */
-    public function classroom(SampleBatch $batch): ?Classroom
+    public function classrooms(SampleBatch $batch): Collection
     {
-        return $batch->made(Classroom::class)->whereNull('parent_id')->first();
+        return $batch->made(Classroom::class)->whereNull('parent_id')->orderBy('id')->get();
     }
 
     /**
