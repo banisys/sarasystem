@@ -21,6 +21,7 @@ use Modules\Tutorial\Services\TutorialMode;
 use Modules\Tutorial\Services\TutorialProgress;
 use Modules\Tutorial\Services\TutorialReset;
 use RuntimeException;
+use UnitEnum;
 
 /**
  * «آموزش گام‌به‌گام» (ADR 0040): pick a scenario, follow its missions in
@@ -29,11 +30,16 @@ use RuntimeException;
  */
 class StepByStepTutorial extends Page implements IndependentOfTenant
 {
+    /** The menu group of the tutorial and the sample data (ADR 0046). */
+    public const string NAVIGATION_GROUP = 'آموزش سامانه';
+
     protected string $view = 'tutorial::filament.step-by-step-tutorial';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
-    protected static ?int $navigationSort = 99;
+    protected static string|UnitEnum|null $navigationGroup = self::NAVIGATION_GROUP;
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $title = 'آموزش گام‌به‌گام';
 

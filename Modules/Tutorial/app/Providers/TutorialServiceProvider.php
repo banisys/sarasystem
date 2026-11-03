@@ -17,6 +17,7 @@ use Modules\Tutorial\Scenarios\LanguageInstitute;
 use Modules\Tutorial\Scenarios\Scenarios;
 use Modules\Tutorial\Scenarios\School;
 use Modules\Tutorial\Scenarios\SystemAdministration;
+use Modules\Tutorial\Services\SampleRecorder;
 use Modules\Tutorial\Services\TutorialGuide;
 use Modules\Tutorial\Services\TutorialMode;
 use Modules\Tutorial\Services\TutorialRecorder;
@@ -50,6 +51,7 @@ class TutorialServiceProvider extends ModuleServiceProvider
 
         $this->app->singleton(Scenarios::class);
         $this->app->scoped(TutorialMode::class);
+        $this->app->scoped(SampleRecorder::class);
     }
 
     public function boot(): void
@@ -62,8 +64,12 @@ class TutorialServiceProvider extends ModuleServiceProvider
         app(Scenarios::class)->register(HumanResources::class);
         app(Scenarios::class)->register(BranchOperations::class);
 
-        // Every row made in tutorial mode belongs to the run (ADR 0040).
-        Event::listen('eloquent.created: *', fn (string $event, array $models) => app(TutorialRecorder::class)->created($models[0]));
+        // Every row made in tutorial mode belongs to the run (ADR 0040), and
+        // every row a sample-data batch makes to the batch (ADR 0046).
+        Event::listen('eloquent.created: *', function (string $event, array $models): void {
+            app(TutorialRecorder::class)->created($models[0]);
+            app(SampleRecorder::class)->created($models[0]);
+        });
 
         // The public site doesn't show visitors what others made in a tutorial.
         app(HiddenRecords::class)->hideUsing(function (string $model): array {

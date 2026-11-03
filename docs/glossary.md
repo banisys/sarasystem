@@ -124,6 +124,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Mission | مأموریت / گام | One task of a scenario, with steps, who does it, a link, maybe an account to sign in with, and a check that ticks it. |
 | Tutorial run | | A person's way through a scenario: missions done and the rows made. One per person. |
 | Tutorial mode | حالت آموزش | While on (session), every row made belongs to the run; «شروع دوباره» deletes them. |
+| Sample-data batch | دسته‌ی داده‌ی نمونه | One run of «ساخت داده‌ی نمونه»: a class with everything around it, with a code (`SMP-0001`); «حذف داده‌ها» deletes every row it made ([ADR 0046](decisions/0046-sample-class-data.md)). |
 
 ## School (`School` module, [ADR 0031](decisions/0031-school-structure.md))
 | Term | Persian | Meaning |
