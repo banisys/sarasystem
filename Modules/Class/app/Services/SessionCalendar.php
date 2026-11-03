@@ -216,7 +216,6 @@ class SessionCalendar
                 'date' => $day->toDateString(),
                 'day_number' => (int) self::jalali($day, 'j'),
                 'label' => self::jalali($day, 'l j F'),
-                'weekday' => Weekday::from($day->dayOfWeek)->getLabel(),
                 'is_today' => $day->isToday(),
                 'is_friday' => $day->dayOfWeek === Weekday::Friday->value,
                 'holiday' => $this->holidayOn($day, $holidays),

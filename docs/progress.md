@@ -20,6 +20,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-03 — Session calendar: more space above the calendar under the view tabs; the day / week column headers no longer repeat the weekday in small text above «شنبه ۹ آبان» (ADR 0047). Not checked in a browser.
 - 2026-11-03 — Session calendar layout: the colours' legend moved below the calendar; the view tabs are larger and on the right, «جلسه‌ی جبرانی / فوق‌العاده» on the left of the same row (ADR 0047). Not checked in a browser.
 - 2026-11-03 — Class «جلسه‌ها» tab: removed the «فهرست» view (the tenant's «کلاس‌ها → جلسه‌ها» stays the list); the view tabs and a smaller «جلسه‌ی جبرانی / فوق‌العاده» moved to the legend row under the navigation (ADR 0047). Not checked in a browser.
 - 2026-11-03 — The class page (`/cpadmin/{tenant}/classes/{id}`) is full width (`ViewClassroom::$maxContentWidth = Width::Full`), so the session calendar has room (ADR 0047). Not checked in a browser.

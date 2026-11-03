@@ -64,7 +64,7 @@
             <div class="ms-auto">{{ $this->addSessionAction }}</div>
         </div>
 
-        <div class="p-4" wire:loading.class="opacity-60" wire:target="showSessions">
+        <div class="px-4 pb-4 pt-6" wire:loading.class="opacity-60" wire:target="showSessions">
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div @class(['grid gap-4', 'lg:grid-cols-[minmax(0,1fr)_16rem]' => $calendar['view'] === 'day'])>
                 {{-- A timeline: hours down, a column per day. --}}
@@ -78,7 +78,6 @@
                                     'flex flex-col items-center gap-0.5 rounded-t-lg border-b border-gray-200 px-1 py-2 text-center dark:border-white/10',
                                     'bg-primary-50 dark:bg-primary-500/10' => $day['is_today'],
                                 ])>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $day['weekday'] }}</span>
                                 <span @class([
                                     'text-sm font-semibold',
                                     'text-primary-700 dark:text-primary-300' => $day['is_today'],
