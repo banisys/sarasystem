@@ -1,0 +1,48 @@
+.system-map-trunk {
+    width: 1px;
+    height: 1.5rem;
+    margin-inline: auto;
+    background: var(--color-gray-300);
+}
+
+.system-map-branch::before {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 1.5rem;
+    margin-inline: auto;
+    background: var(--color-gray-300);
+}
+
+.system-map-arrow {
+    position: relative;
+    min-width: 2rem;
+    border-top: 1px solid currentColor;
+}
+
+.system-map-arrow::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: -4px;
+    width: 7px;
+    height: 7px;
+    border-left: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    transform: rotate(45deg);
+}
+
+.dark .system-map-trunk,
+.dark .system-map-branch::before {
+    background: var(--color-gray-600);
+}
+
+@media (min-width: 1024px) {
+    .system-map-branches {
+        border-top: 1px solid var(--color-gray-300);
+    }
+
+    .dark .system-map-branches {
+        border-color: var(--color-gray-600);
+    }
+}

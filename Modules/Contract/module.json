@@ -7,5 +7,14 @@
     "providers": [
         "Modules\\Contract\\Providers\\ContractServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "قراردادها",
+        "group": "operations",
+        "surfaces": [
+            "admin",
+            "user"
+        ],
+        "connections": []
+    }
 }

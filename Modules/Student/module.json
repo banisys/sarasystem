@@ -7,5 +7,27 @@
     "providers": [
         "Modules\\Student\\Providers\\StudentServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": ":learners",
+        "group": "education",
+        "surfaces": [
+            "admin",
+            "public"
+        ],
+        "connections": [
+            {
+                "target": "core",
+                "label": "پیش‌ثبت‌نام و پذیرش در کارتابل"
+            },
+            {
+                "target": "Class",
+                "label": "عضویت :learner در کلاس"
+            },
+            {
+                "target": "Contract",
+                "label": "طرف قرارداد آموزشی"
+            }
+        ]
+    }
 }

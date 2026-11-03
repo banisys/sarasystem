@@ -7,5 +7,14 @@
     "providers": [
         "Modules\\Tutorial\\Providers\\TutorialServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "آموزش گام‌به‌گام",
+        "group": "experience",
+        "surfaces": [
+            "admin",
+            "user"
+        ],
+        "connections": []
+    }
 }

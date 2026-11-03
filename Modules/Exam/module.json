@@ -7,5 +7,14 @@
     "providers": [
         "Modules\\Exam\\Providers\\ExamServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "آزمون‌ها",
+        "group": "education",
+        "surfaces": [
+            "admin",
+            "user"
+        ],
+        "connections": []
+    }
 }

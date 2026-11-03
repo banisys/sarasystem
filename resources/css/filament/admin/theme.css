@@ -1,6 +1,7 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 /* Frosted-glass dark mode; delete this line to turn it off. */
 @import './glass.css';
+@import './system-map.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';

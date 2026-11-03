@@ -7,5 +7,14 @@
     "providers": [
         "Modules\\Site\\Providers\\SiteServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "وب‌سایت",
+        "group": "experience",
+        "surfaces": [
+            "admin",
+            "public"
+        ],
+        "connections": []
+    }
 }

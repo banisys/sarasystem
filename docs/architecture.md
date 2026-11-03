@@ -93,6 +93,9 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - **User-panel layout:** [AppLayout.vue](../resources/js/Layouts/AppLayout.vue) (app name, current tenant, switch link, admin-panel link if `auth.canAccessAdmin`, logout). Shared Inertia props: `appName`, `auth.{user,impersonator,canAccessAdmin}`, `tenant.{current,available,label}`, `navigation` (module links in the header), `flash.status`.
 - `config/inertia.php` is published only to point page tests at `resources/js/Pages` (Inertia 3 defaults to `js/pages`).
 
+### System map ([ADR 0045](decisions/0045-live-system-map.md))
+The super-admin page «نقشهٔ سامانه» is a live, tenant-independent overview of interfaces, core, modules and business connections. It discovers registered, authorized panel destinations and reads descriptive `sitemap` metadata from each module manifest. Reloading regenerates it; disabled modules keep a card but no active links/connections. See [maintenance and regeneration](system-map.md).
+
 ## Directory map
 Laravel 13 skeleton plus the stack setup (2026-10-23). It will be updated as modules are added.
 ```

@@ -7,5 +7,27 @@
     "providers": [
         "Modules\\Employee\\Providers\\EmployeeServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "کارکنان",
+        "group": "operations",
+        "surfaces": [
+            "admin",
+            "public"
+        ],
+        "connections": [
+            {
+                "target": "core",
+                "label": "درخواست همکاری و استخدام در کارتابل"
+            },
+            {
+                "target": "Class",
+                "label": "مدرس و اعضای آموزشی کلاس"
+            },
+            {
+                "target": "Contract",
+                "label": "طرف قرارداد همکاری"
+            }
+        ]
+    }
 }

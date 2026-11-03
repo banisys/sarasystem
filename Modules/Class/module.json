@@ -7,5 +7,19 @@
     "providers": [
         "Modules\\Class\\Providers\\ClassServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "کلاس‌ها",
+        "group": "education",
+        "surfaces": [
+            "admin",
+            "user"
+        ],
+        "connections": [
+            {
+                "target": "School",
+                "label": "حضور، تکلیف و سوابق کلاس برای کارنامه"
+            }
+        ]
+    }
 }

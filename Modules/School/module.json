@@ -11,5 +11,19 @@
     "providers": [
         "Modules\\School\\Providers\\SchoolServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "مدرسه",
+        "group": "education",
+        "surfaces": [
+            "admin",
+            "user"
+        ],
+        "connections": [
+            {
+                "target": "Student",
+                "label": "پروندهٔ تحصیلی و ارتقای پایه"
+            }
+        ]
+    }
 }

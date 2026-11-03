@@ -7,5 +7,22 @@
     "providers": [
         "Modules\\Document\\Providers\\DocumentServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "sitemap": {
+        "label": "مدارک",
+        "group": "operations",
+        "surfaces": [
+            "admin"
+        ],
+        "connections": [
+            {
+                "target": "Student",
+                "label": "مدارک پذیرش و پرونده"
+            },
+            {
+                "target": "Employee",
+                "label": "مدارک استخدام و پرونده"
+            }
+        ]
+    }
 }
