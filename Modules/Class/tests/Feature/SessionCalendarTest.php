@@ -91,6 +91,14 @@ class SessionCalendarTest extends TestCase
         $this->assertSame('تعطیلی شعبه', collect($month['days'])->firstWhere('date', '2026-10-31')['holiday']);
         $this->assertSame(2, array_sum($month['totals']));
 
+        // An empty day: its month to pick from, and the nearest sessions around it.
+        $day = $calendar->forClassroom($this->classroom, 'day', CarbonImmutable::parse('2026-11-10'));
+        $this->assertSame(['2026-10-31', '2026-11-25'], [$day['previous_session'], $day['next_session']]);
+        $this->assertSame('2026-10-23', $day['mini_month']['date']);
+        $this->assertSame(['2026-09-23', '2026-11-22'], [$day['mini_month']['previous'], $day['mini_month']['next']]);
+        $this->assertSame(1, collect($day['mini_month']['days'])->firstWhere('date', '2026-10-28')['tones']['held']);
+        $this->assertNull($calendar->forClassroom($this->classroom, 'week', CarbonImmutable::parse('2026-11-25'))['next_session']);
+
         $year = $calendar->forClassroom($this->classroom, 'year', CarbonImmutable::parse('2026-10-29'));
         $this->assertSame([0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0], array_column($year['months'], 'count'));
     }
@@ -110,8 +118,12 @@ class SessionCalendarTest extends TestCase
             ->assertSee('اسفند')
             ->call('showSessions', 'day', '2026-10-30')
             ->assertSee('ریاضی')
+            ->assertSee('جلسه‌ی بعدی')
+            ->set('sessionsDate', '2026-12-01 00:00:00')
+            ->assertSee('آذر 1405')
+            ->assertSee('جلسه‌ای در این روز نیست')
             ->call('showSessions', 'week', 'not-a-date')
-            ->assertSet('sessionsDate', '')
+            ->assertSet('sessionsDate', null)
             ->call('showSessions', 'list')
             ->assertCanSeeTableRecords(ClassSession::query()->get())
             ->call('showSessions', 'anything')

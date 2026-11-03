@@ -99,7 +99,12 @@ class SessionCalendar
             'today' => today()->toDateString(),
             'weekdays' => array_map(fn (Weekday $day): string => $day->getLabel(), Weekday::cases()),
             'totals' => $this->totals($sessions),
+            // The nearest days with a session outside the period, to jump to.
+            'previous_session' => $classroom->sessions()->where('starts_at', '<', $period['first']->startOfDay())->max('starts_at'),
+            'next_session' => $classroom->sessions()->where('starts_at', '>', $period['last']->endOfDay())->min('starts_at'),
         ];
+        $calendar['previous_session'] = $calendar['previous_session'] ? CarbonImmutable::parse($calendar['previous_session'])->toDateString() : null;
+        $calendar['next_session'] = $calendar['next_session'] ? CarbonImmutable::parse($calendar['next_session'])->toDateString() : null;
 
         if ($view === 'year') {
             return [...$calendar, 'months' => $this->months($period['first'], $byDay, $holidays)];
@@ -112,6 +117,10 @@ class SessionCalendar
         }
 
         [$fromHour, $toHour] = $this->hours($sessions);
+
+        if ($view === 'day') {
+            $calendar['mini_month'] = $this->miniMonth($classroom, $date);
+        }
 
         return [...$calendar, 'days' => array_map(fn (array $day): array => [
             ...$day,
@@ -226,37 +235,69 @@ class SessionCalendar
     private function months(CarbonImmutable $first, Collection $byDay, Collection $holidays): array
     {
         [$year] = CalendarUtils::toJalali($first->year, $first->month, $first->day);
-        $months = [];
 
-        foreach (range(1, 12) as $month) {
-            $start = self::gregorian($year, $month, 1);
-            $days = [];
+        return array_map(fn (int $month): array => $this->month($year, $month, $byDay, $holidays), range(1, 12));
+    }
 
-            for ($day = 1; $day <= CalendarUtils::jalaliMonthLength($year, $month); $day++) {
-                $date = $start->addDays($day - 1);
-                $sessions = $byDay[$date->toDateString()] ?? collect();
+    /**
+     * The Jalali month of the day view's date, to pick another day from,
+     * with the months before and after it.
+     *
+     * @return array<string, mixed>
+     */
+    private function miniMonth(Classroom $classroom, CarbonImmutable $date): array
+    {
+        $period = self::period('month', $date);
+        [$year, $month] = CalendarUtils::toJalali($date->year, $date->month, $date->day);
+        $byDay = $classroom->sessions()
+            ->whereBetween('starts_at', [$period['first']->startOfDay(), $period['last']->endOfDay()])
+            ->get()
+            ->groupBy(fn (ClassSession $session): string => $session->starts_at->toDateString());
+        $holidays = Holiday::applyingIn(Tenant::query()->findOrFail($classroom->tenant_id))
+            ->whereDate('starts_on', '<=', $period['last'])
+            ->whereDate('ends_on', '>=', $period['first'])
+            ->get();
 
-                $days[] = [
-                    'date' => $date->toDateString(),
-                    'day_number' => $day,
-                    'is_today' => $date->isToday(),
-                    'is_friday' => $date->dayOfWeek === Weekday::Friday->value,
-                    'holiday' => $this->holidayOn($date, $holidays),
-                    'count' => $sessions->count(),
-                    'tones' => $sessions->countBy(fn (ClassSession $session): string => self::tone($session))->all(),
-                ];
-            }
+        return [
+            ...$this->month($year, $month, $byDay, $holidays),
+            'label' => $period['label'],
+            'previous' => $period['previous']->toDateString(),
+            'next' => $period['next']->toDateString(),
+        ];
+    }
 
-            $months[] = [
-                'date' => $start->toDateString(),
-                'label' => self::jalali($start, 'F'),
-                'leading_blanks' => Weekday::from($start->dayOfWeek)->position(),
-                'count' => array_sum(array_column($days, 'count')),
-                'days' => $days,
+    /**
+     * @param  Collection<string, Collection<int, ClassSession>>  $byDay
+     * @param  Collection<int, Holiday>  $holidays
+     * @return array<string, mixed>
+     */
+    private function month(int $year, int $month, Collection $byDay, Collection $holidays): array
+    {
+        $start = self::gregorian($year, $month, 1);
+        $days = [];
+
+        for ($day = 1; $day <= CalendarUtils::jalaliMonthLength($year, $month); $day++) {
+            $date = $start->addDays($day - 1);
+            $sessions = $byDay[$date->toDateString()] ?? collect();
+
+            $days[] = [
+                'date' => $date->toDateString(),
+                'day_number' => $day,
+                'is_today' => $date->isToday(),
+                'is_friday' => $date->dayOfWeek === Weekday::Friday->value,
+                'holiday' => $this->holidayOn($date, $holidays),
+                'count' => $sessions->count(),
+                'tones' => $sessions->countBy(fn (ClassSession $session): string => self::tone($session))->all(),
             ];
         }
 
-        return $months;
+        return [
+            'date' => $start->toDateString(),
+            'label' => self::jalali($start, 'F'),
+            'leading_blanks' => Weekday::from($start->dayOfWeek)->position(),
+            'count' => array_sum(array_column($days, 'count')),
+            'days' => $days,
+        ];
     }
 
     /**

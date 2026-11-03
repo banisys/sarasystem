@@ -71,7 +71,7 @@ class SessionsRelationManager extends RelationManager
      * A day in the calendar's period (Y-m-d); empty is today.
      */
     #[Url(as: 'on')]
-    public string $sessionsDate = '';
+    public ?string $sessionsDate = null;
 
     /**
      * The calendar of the tab (ADR 0047), or the list.
@@ -85,6 +85,17 @@ class SessionsRelationManager extends RelationManager
                     'views' => ['day' => 'روزانه', 'week' => 'هفتگی', 'month' => 'ماهانه', 'year' => 'سالانه', 'list' => 'فهرست'],
                     'current' => $this->isShowingList() ? 'list' : $this->sessionsView,
                     'tones' => SessionCalendar::toneLabels(),
+                ])
+                ->schema([
+                    // «برو به تاریخ»: picks the calendar's date directly.
+                    DatePicker::make('sessionsDate')
+                        ->hiddenLabel()
+                        ->jalali()
+                        ->placeholder('برو به تاریخ')
+                        ->prefixIcon(Heroicon::OutlinedCalendarDays)
+                        ->closeOnDateSelection()
+                        ->live()
+                        ->visible(fn (): bool => ! $this->isShowingList()),
                 ]),
             EmbeddedTable::make()->visible(fn (): bool => $this->isShowingList()),
         ]);
@@ -95,7 +106,7 @@ class SessionsRelationManager extends RelationManager
         $this->sessionsView = in_array($view, [...SessionCalendar::VIEWS, 'list'], true) ? $view : 'month';
 
         if ($date !== null) {
-            $this->sessionsDate = $this->parseDate($date)?->toDateString() ?? '';
+            $this->sessionsDate = $this->parseDate($date)?->toDateString();
         }
     }
 
@@ -162,7 +173,10 @@ class SessionsRelationManager extends RelationManager
 
     private function parseDate(?string $date): ?CarbonImmutable
     {
-        if (! is_string($date) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+        // The date picker may send a time after the date.
+        $date = is_string($date) ? substr($date, 0, 10) : null;
+
+        if ($date === null || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
             return null;
         }
 

@@ -30,6 +30,15 @@
                     wire:click="showSessions('{{ $current }}', '{{ $calendar['next'] }}')" />
             </div>
             <h3 class="text-base font-semibold text-gray-950 dark:text-white">{{ $calendar['label'] }}</h3>
+            <div class="w-48">{{ $getChildSchema() }}</div>
+            @if (in_array($calendar['view'], ['day', 'week'], true))
+                <div class="flex items-center gap-1">
+                    <x-filament::button size="xs" color="gray" icon="heroicon-m-chevron-double-right" :disabled="! $calendar['previous_session']"
+                        wire:click="showSessions('{{ $current }}', '{{ $calendar['previous_session'] }}')">جلسه‌ی قبلی</x-filament::button>
+                    <x-filament::button size="xs" color="gray" icon="heroicon-m-chevron-double-left" icon-position="after" :disabled="! $calendar['next_session']"
+                        wire:click="showSessions('{{ $current }}', '{{ $calendar['next_session'] }}')">جلسه‌ی بعدی</x-filament::button>
+                </div>
+            @endif
         @else
             <h3 class="text-base font-semibold text-gray-950 dark:text-white">همه‌ی جلسه‌ها</h3>
         @endif
@@ -69,6 +78,7 @@
 
         <div class="p-4" wire:loading.class="opacity-60" wire:target="showSessions">
             @if (in_array($calendar['view'], ['day', 'week'], true))
+                <div @class(['grid gap-4', 'lg:grid-cols-[minmax(0,1fr)_16rem]' => $calendar['view'] === 'day'])>
                 {{-- A timeline: hours down, a column per day. --}}
                 <div class="overflow-x-auto">
                     <div @class(['grid', 'min-w-[56rem]' => $calendar['view'] === 'week'])
@@ -123,9 +133,59 @@
                     </div>
                 </div>
 
+                @if ($calendar['view'] === 'day')
+                    {{-- The day's month, to pick another day in one click. --}}
+                    @php
+                        $mini = $calendar['mini_month'];
+                        $selected = $calendar['days'][0]['date'];
+                    @endphp
+                    <aside class="order-first rounded-lg border border-gray-200 p-3 lg:order-none dark:border-white/10">
+                        <div class="mb-2 flex items-center justify-between">
+                            <x-filament::icon-button icon="heroicon-m-chevron-right" color="gray" size="sm" label="ماه قبل"
+                                wire:click="showSessions('day', '{{ $mini['previous'] }}')" />
+                            <button type="button" wire:click="showSessions('month', '{{ $mini['date'] }}')"
+                                class="text-sm font-semibold text-gray-950 hover:text-primary-600 dark:text-white dark:hover:text-primary-400">{{ $mini['label'] }}</button>
+                            <x-filament::icon-button icon="heroicon-m-chevron-left" color="gray" size="sm" label="ماه بعد"
+                                wire:click="showSessions('day', '{{ $mini['next'] }}')" />
+                        </div>
+                        <div class="grid grid-cols-7 gap-0.5 text-center text-xs">
+                            @foreach ($calendar['weekdays'] as $weekday)
+                                <span class="pb-1 text-gray-400 dark:text-gray-500">{{ mb_substr($weekday, 0, 1) }}</span>
+                            @endforeach
+                            @for ($blank = 0; $blank < $mini['leading_blanks']; $blank++)
+                                <span></span>
+                            @endfor
+                            @foreach ($mini['days'] as $day)
+                                @php
+                                    $tone = collect($tonePriority)->first(fn (string $tone): bool => isset($day['tones'][$tone]));
+                                @endphp
+                                <button type="button" wire:click="showSessions('day', '{{ $day['date'] }}')"
+                                    title="{{ $day['count'] ? $day['count'].' جلسه' : '' }}{{ $day['holiday'] ? ' · '.$day['holiday'] : '' }}"
+                                    aria-current="{{ $day['date'] === $selected ? 'date' : 'false' }}"
+                                    @class([
+                                        'relative flex aspect-square flex-col items-center justify-center rounded-md tabular-nums transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:bg-white/10',
+                                        'bg-primary-600 font-semibold text-white hover:bg-primary-700 dark:hover:bg-primary-500' => $day['date'] === $selected,
+                                        'bg-gray-100 dark:bg-white/10' => $day['holiday'] && $day['date'] !== $selected,
+                                        'ring-1 ring-primary-500' => $day['is_today'] && $day['date'] !== $selected,
+                                        'text-danger-600 dark:text-danger-400' => ($day['is_friday'] || $day['holiday']) && $day['date'] !== $selected,
+                                        'text-gray-700 dark:text-gray-200' => ! $day['is_friday'] && ! $day['holiday'] && $day['date'] !== $selected,
+                                    ])>
+                                    {{ $day['day_number'] }}
+                                    @if ($tone)
+                                        <span class="absolute bottom-0.5 size-1.5 rounded-full {{ $dotClasses[$tone] }}"></span>
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
+                        <x-filament::button size="xs" color="gray" outlined class="mt-3 w-full"
+                            wire:click="showSessions('day', '{{ $calendar['today'] }}')">امروز</x-filament::button>
+                    </aside>
+                @endif
+                </div>
+
                 @if ($calendar['view'] === 'day' && $calendar['days'][0]['sessions'] === [])
                     <p class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                        {{ $calendar['days'][0]['holiday'] ? 'تعطیل: '.$calendar['days'][0]['holiday'].'؛ ' : '' }}جلسه‌ای در این روز نیست.
+                        {{ $calendar['days'][0]['holiday'] ? 'تعطیل: '.$calendar['days'][0]['holiday'].'؛ ' : '' }}جلسه‌ای در این روز نیست{{ $calendar['next_session'] ? '؛ با «جلسه‌ی بعدی» به نزدیک‌ترین جلسه بروید' : '' }}.
                     </p>
                 @endif
             @elseif ($calendar['view'] === 'month')
