@@ -198,7 +198,7 @@ class ClassSchedulesTest extends TestCase
 
         $first = ClassSession::query()->orderBy('starts_at')->first();
         Livewire::test(SessionsRelationManager::class, $owner)
-            ->callAction(TestAction::make('cancel')->table($first), data: ['reason' => 'جلسه‌ی اولیا'])
+            ->callAction(TestAction::make('cancelSession')->table($first), data: ['reason' => 'جلسه‌ی اولیا'])
             ->assertHasNoActionErrors()
             ->callAction(TestAction::make('addSession')->table(), data: [
                 'kind' => SessionKind::MakeUp->value, 'date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00',

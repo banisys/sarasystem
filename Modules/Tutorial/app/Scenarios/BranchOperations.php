@@ -273,7 +273,7 @@ class BranchOperations extends Scenario
                     ->actor($officer, $asOfficer)
                     ->steps([
                         'در «Conversation B2» زبانه‌ی «برنامه» و «افزودن برنامه»: تکرار «هفتگی»، سه روز در هفته (امروز، دو روز بعد و چهار روز بعد)، از امروز تا چهار هفته‌ی بعد.',
-                        'ساعت از ده دقیقه‌ی بعد به مدت یک ساعت، مدرس «بهاره امینی»؛ ذخیره کنید و «جلسه‌ها» را ببینید.',
+                        'ساعت از ده دقیقه‌ی بعد به مدت یک ساعت، مدرس «بهاره امینی»؛ ذخیره کنید و جلسه‌ها را در تقویم «جلسه‌ها» (نمای «هفتگی» یا «ماهانه») ببینید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
                     ->perform(function (TutorialRun $run): void {
@@ -334,7 +334,7 @@ class BranchOperations extends Scenario
                 Mission::make('substitute', 'مدرس جایگزین')
                     ->actor($officer, $asOfficer)
                     ->steps([
-                        'در «Conversation B2» زبانه‌ی «جلسه‌ها»، روی جلسه‌ی امروز «مدرس جایگزین» را بزنید و «رضا توکلی» را انتخاب کنید.',
+                        'در «Conversation B2» زبانه‌ی «جلسه‌ها»، روی جلسه‌ی امروز در تقویم بزنید؛ در پنجره‌ی جزئیات «سایر ← مدرس جایگزین» را بزنید و «رضا توکلی» را انتخاب کنید.',
                         'جایگزین باید عضو همین '.$tenant.' باشد و در آن ساعت جای دیگری درس نداشته باشد.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
@@ -358,8 +358,8 @@ class BranchOperations extends Scenario
                 Mission::make('move', 'جابه‌جایی جلسه')
                     ->actor($officer, $asOfficer)
                     ->steps([
-                        'با حساب «مینا جعفری»، جلسه‌ی دوم Conversation B2 را «جابه‌جایی» کنید: پنج روز بعد، همان ساعت، در «اتاق ۳».',
-                        'زمان اصلی جلسه در فهرست می‌ماند؛ ساختن دوباره‌ی برنامه جلسه‌ی جابه‌جاشده را تغییر نمی‌دهد.',
+                        'با حساب «مینا جعفری»، جلسه‌ی دوم Conversation B2 را در تقویم باز کنید و با «سایر ← جابه‌جایی» آن را پنج روز بعد، همان ساعت، به «اتاق ۳» ببرید.',
+                        'زمان اصلی جلسه در جزئیات آن می‌ماند و در تقویم نشانه‌ی جابه‌جایی دارد؛ ساختن دوباره‌ی برنامه جلسه‌ی جابه‌جاشده را تغییر نمی‌دهد.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
                     ->perform(fn (TutorialRun $run): mixed => self::branch($run, 1)->execute(function () use ($run): void {
@@ -370,8 +370,8 @@ class BranchOperations extends Scenario
                 Mission::make('cancel', 'لغو و جلسه‌ی جبرانی')
                     ->actor($officer, $asOfficer)
                     ->steps([
-                        'روی جلسه‌ی سوم «لغو جلسه» را بزنید و دلیل «بیماری مدرس» را بنویسید.',
-                        'با «جلسه‌ی جبرانی / فوق‌العاده» یک جلسه‌ی جبرانی سه روز بعد، همان ساعت، با «بهاره امینی» بسازید.',
+                        'جلسه‌ی سوم را در تقویم باز کنید، «سایر ← لغو جلسه» را بزنید و دلیل «بیماری مدرس» را بنویسید؛ در تقویم قرمز می‌شود.',
+                        'با «جلسه‌ی جبرانی / فوق‌العاده» بالای تقویم یک جلسه‌ی جبرانی سه روز بعد، همان ساعت، با «بهاره امینی» بسازید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
                     ->perform(fn (TutorialRun $run): mixed => self::branch($run, 1)->execute(function () use ($run): void {

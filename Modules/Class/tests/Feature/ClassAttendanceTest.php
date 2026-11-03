@@ -163,7 +163,7 @@ class ClassAttendanceTest extends TestCase
         $this->actingInPanel($this->teacher, $this->west);
         $tab = Livewire::test(SessionsRelationManager::class, $owner)
             ->assertActionVisible(TestAction::make('attendance')->table($this->session))
-            ->assertActionHidden(TestAction::make('cancel')->table($this->session))
+            ->assertActionHidden(TestAction::make('cancelSession')->table($this->session))
             ->mountAction(TestAction::make('attendance')->table($this->session));
 
         // Filled with the attendees, everyone «حاضر»; one is marked absent.

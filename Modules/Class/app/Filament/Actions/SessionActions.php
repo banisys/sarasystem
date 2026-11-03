@@ -18,7 +18,9 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
@@ -34,6 +36,7 @@ use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\HomeworkBook;
 use Modules\Class\Services\PlanForecast;
+use Modules\Class\Services\SessionCalendar;
 use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionPlanner;
 
@@ -121,6 +124,7 @@ class SessionActions
     public static function recordActions(): ActionGroup
     {
         return ActionGroup::make([
+            self::details(),
             self::attendance(),
             self::content(),
             self::grading(),
@@ -128,15 +132,111 @@ class SessionActions
             self::substitute(),
             self::cancel(),
             self::restore(),
-            Action::make('deleteSession')
-                ->label('حذف')
-                ->icon(Heroicon::OutlinedTrash)
-                ->color('danger')
-                ->requiresConfirmation()
-                ->modalDescription('فقط جلسه‌ی جبرانی یا فوق‌العاده‌ای که هنوز شروع نشده حذف می‌شود.')
-                ->visible(fn (ClassSession $record): bool => self::canChange($record) && $record->schedule_id === null && ! $record->hasStarted())
-                ->action(fn (ClassSession $record) => $record->delete()),
+            self::delete(),
         ]);
+    }
+
+    /**
+     * Everything about one session in a modal (ADR 0047), with the row
+     * actions as its buttons: the attendance, content and homework ones
+     * first, the rest under «سایر». Opened from a row or from the class's
+     * session calendar.
+     */
+    public static function details(): Action
+    {
+        return Action::make('sessionDetails')
+            ->label('جزئیات')
+            ->icon(Heroicon::OutlinedEye)
+            ->color('gray')
+            ->modalHeading(fn (ClassSession $record): string => ($record->subject?->title ?? 'جلسه').' · '.self::when($record))
+            ->modalDescription(fn (ClassSession $record): ?string => $record->classroom?->title)
+            ->modalWidth('3xl')
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('بستن')
+            ->schema([
+                Grid::make(['default' => 1, 'sm' => 2, 'lg' => 3])->schema([
+                    TextEntry::make('status')
+                        ->label('وضعیت')
+                        ->badge()
+                        ->helperText(fn (ClassSession $record): ?string => match (SessionCalendar::tone($record)) {
+                            'pending' => 'زمان جلسه گذشته و حضور و غیاب یا مطالب آن ثبت نشده است.',
+                            'live' => 'هم‌اکنون در حال برگزاری است.',
+                            default => $record->cancel_reason !== null ? 'دلیل لغو: '.$record->cancel_reason : null,
+                        }),
+                    TextEntry::make('kind')
+                        ->label('نوع')
+                        ->badge()
+                        ->color('gray'),
+                    TextEntry::make('starts_at')
+                        ->label('زمان')
+                        ->state(fn (ClassSession $record): string => self::when($record))
+                        ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null),
+                    TextEntry::make('subject.title')
+                        ->label('درس')
+                        ->placeholder('—'),
+                    TextEntry::make('teacher')
+                        ->label('مدرس')
+                        ->state(fn (ClassSession $record): ?string => $record->substituteTeacher
+                            ? $record->substituteTeacher->name.' (جایگزین'.($record->teacher ? ' '.$record->teacher->name : '').')'
+                            : $record->teacher?->name)
+                        ->placeholder('—'),
+                    TextEntry::make('location')
+                        ->label('مکان')
+                        ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
+                        ->placeholder('—'),
+                    TextEntry::make('meeting_url')
+                        ->label('لینک جلسه')
+                        ->state(fn (ClassSession $record): ?string => $record->classroom?->mode->meetsOnline() ? $record->classroom->meeting_url : null)
+                        ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true)
+                        ->visible(fn (ClassSession $record): bool => (bool) $record->classroom?->mode->meetsOnline() && filled($record->classroom->meeting_url))
+                        ->columnSpan(['sm' => 2]),
+                    TextEntry::make('attendance')
+                        ->label('حضور و غیاب')
+                        ->state(fn (ClassSession $record): ?string => self::attendanceLine($record))
+                        ->placeholder('ثبت نشده')
+                        ->columnSpanFull(),
+                    TextEntry::make('content')
+                        ->label(fn (ClassSession $record): string => $record->hasContent() ? 'مطالب' : 'مطالب (برنامه)')
+                        ->state(fn (ClassSession $record): ?string => self::contentLine($record))
+                        ->placeholder('ثبت نشده')
+                        ->columnSpanFull(),
+                    TextEntry::make('homework')
+                        ->label('تکلیف')
+                        ->helperText(fn (ClassSession $record): ?string => implode(' · ', array_filter([
+                            $record->homework_due_on ? 'مهلت: '.CalendarUtils::strftime('l Y/m/d', $record->homework_due_on->toMutable()) : null,
+                            'تحویل '.$record->homeworkSubmissions()->count().' · نمره '.$record->homeworkSubmissions()->whereNotNull('graded_at')->count(),
+                        ])))
+                        ->visible(fn (ClassSession $record): bool => $record->homework !== null)
+                        ->columnSpanFull(),
+                    TextEntry::make('materials')
+                        ->label('فایل‌ها')
+                        ->state(fn (ClassSession $record): HtmlString => new HtmlString(collect($record->materialLinks())
+                            ->map(fn (array $file): string => '<a href="'.e($file['url']).'" target="_blank" rel="noopener" class="text-primary-600 underline">'.e($file['name']).'</a>')
+                            ->join(' · ')))
+                        ->visible(fn (ClassSession $record): bool => $record->hasMedia(ClassSession::MATERIALS_COLLECTION))
+                        ->columnSpanFull(),
+                    TextEntry::make('note')
+                        ->label('توضیح')
+                        ->visible(fn (ClassSession $record): bool => filled($record->note))
+                        ->columnSpanFull(),
+                ]),
+            ])
+            ->extraModalFooterActions([
+                self::attendance(),
+                self::content(),
+                self::grading(),
+                ActionGroup::make([
+                    self::move(),
+                    self::substitute(),
+                    self::cancel(),
+                    self::restore(),
+                    self::delete()->cancelParentActions(),
+                ])
+                    ->label('سایر')
+                    ->icon(Heroicon::OutlinedEllipsisHorizontal)
+                    ->color('gray')
+                    ->button(),
+            ]);
     }
 
     /**
@@ -214,6 +314,34 @@ class SessionActions
 
                 self::attempt(fn () => $register->record($record, $rows, $user), 'حضور و غیاب ثبت شد.');
             });
+    }
+
+    /**
+     * Only a make-up or extra session that hasn't started.
+     */
+    private static function delete(): Action
+    {
+        return Action::make('deleteSession')
+            ->label('حذف')
+            ->icon(Heroicon::OutlinedTrash)
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalDescription('فقط جلسه‌ی جبرانی یا فوق‌العاده‌ای که هنوز شروع نشده حذف می‌شود.')
+            ->visible(fn (ClassSession $record): bool => self::canChange($record) && $record->schedule_id === null && ! $record->hasStarted())
+            ->action(fn (ClassSession $record) => $record->delete());
+    }
+
+    /**
+     * E.g. «حاضر 12 · تأخیر 1 · غایب 2»; null before attendance is taken.
+     */
+    private static function attendanceLine(ClassSession $session): ?string
+    {
+        $counts = $session->attendances()->toBase()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+
+        return $counts->isEmpty() ? null : collect(AttendanceStatus::cases())
+            ->filter(fn (AttendanceStatus $status): bool => isset($counts[$status->value]))
+            ->map(fn (AttendanceStatus $status): string => $status->getLabel().' '.$counts[$status->value])
+            ->join(' · ');
     }
 
     /**
@@ -418,7 +546,7 @@ class SessionActions
 
     private static function cancel(): Action
     {
-        return Action::make('cancel')
+        return Action::make('cancelSession')
             ->label('لغو جلسه')
             ->icon(Heroicon::OutlinedXCircle)
             ->color('danger')

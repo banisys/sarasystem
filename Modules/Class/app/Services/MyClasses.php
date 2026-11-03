@@ -4,7 +4,6 @@ namespace Modules\Class\Services;
 
 use App\Models\Tenant;
 use App\Models\User;
-use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\Weekday;
@@ -71,11 +70,8 @@ class MyClasses
      */
     public function calendar(User $user, Tenant $tenant, string $view, CarbonImmutable $date): array
     {
-        [$first, $last, $previous, $next, $label] = match ($view) {
-            'day' => [$date, $date, $date->subDay(), $date->addDay(), self::jalali($date, 'l Y/m/d')],
-            'month' => $this->month($date),
-            default => $this->week($date),
-        };
+        ['first' => $first, 'last' => $last, 'previous' => $previous, 'next' => $next, 'label' => $label] = SessionCalendar::period($view, $date);
+        $label = $view === 'day' ? self::jalali($date, 'l Y/m/d') : $label;
 
         $sessions = $this->sessions($user)
             ->whereBetween('starts_at', [$first->startOfDay(), $last->endOfDay()])
@@ -148,41 +144,8 @@ class MyClasses
         return rtrim(rtrim(number_format((float) $score, 2, '.', ''), '0'), '.');
     }
 
-    /**
-     * @return array{CarbonImmutable, CarbonImmutable, CarbonImmutable, CarbonImmutable, string}
-     */
-    private function week(CarbonImmutable $date): array
-    {
-        $first = $date->subDays(Weekday::from($date->dayOfWeek)->position());
-        $last = $first->addDays(6);
-
-        return [$first, $last, $first->subWeek(), $first->addWeek(), self::jalali($first, 'j F').' تا '.self::jalali($last, 'j F Y')];
-    }
-
-    /**
-     * The Jalali month of the date.
-     *
-     * @return array{CarbonImmutable, CarbonImmutable, CarbonImmutable, CarbonImmutable, string}
-     */
-    private function month(CarbonImmutable $date): array
-    {
-        [$year, $month] = CalendarUtils::toJalali($date->year, $date->month, $date->day);
-        $first = self::gregorian($year, $month, 1);
-        $last = self::gregorian($year, $month, CalendarUtils::jalaliMonthLength($year, $month));
-        [$previousYear, $previousMonth] = $month === 1 ? [$year - 1, 12] : [$year, $month - 1];
-
-        return [$first, $last, self::gregorian($previousYear, $previousMonth, 1), $last->addDay(), self::jalali($first, 'F Y')];
-    }
-
-    private static function gregorian(int $year, int $month, int $day): CarbonImmutable
-    {
-        [$gy, $gm, $gd] = CalendarUtils::toGregorian($year, $month, $day);
-
-        return CarbonImmutable::create($gy, $gm, $gd)->startOfDay();
-    }
-
     public static function jalali(CarbonImmutable $date, string $format): string
     {
-        return CalendarUtils::strftime($format, $date->toMutable());
+        return SessionCalendar::jalali($date, $format);
     }
 }

@@ -61,7 +61,7 @@ The user wants:
 - **Admin:**
   - On the class page:
     - tab «برنامه»: add / edit / delete schedules, with a one-line summary per schedule;
-    - tab «جلسه‌ها»: the class's sessions with row actions («جابه‌جایی»، «مدرس جایگزین»، «لغو جلسه»، «برگرداندن جلسه»، «حذف» for hand-made ones not started yet) and «جلسه‌ی جبرانی / فوق‌العاده».
+    - tab «جلسه‌ها» (a day / week / month / year calendar since [ADR 0047](0047-class-session-calendar.md), the list as «فهرست»): the class's sessions with row actions («جابه‌جایی»، «مدرس جایگزین»، «لغو جلسه»، «برگرداندن جلسه»، «حذف» for hand-made ones not started yet) and «جلسه‌ی جبرانی / فوق‌العاده».
   - Menu:
     - «کلاس‌ها → جلسه‌ها»: every session of the tenant, from today by default, filterable by dates, class, teacher, subject, status and kind;
     - «کلاس‌ها → درس‌ها»: primary tenant only.
