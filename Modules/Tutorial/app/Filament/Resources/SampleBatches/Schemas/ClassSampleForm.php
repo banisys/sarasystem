@@ -55,7 +55,7 @@ class ClassSampleForm
                     Select::make('mode')
                         ->label('نوع برگزاری')
                         ->options(ClassMode::class)
-                        ->placeholder('حضوری'),
+                        ->selectablePlaceholder(false),
                     Select::make('term_id')
                         ->label('دوره‌ی آموزشی')
                         ->options(fn (): array => Term::options())
