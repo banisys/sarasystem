@@ -1,7 +1,7 @@
 {
     "name": "Campus",
     "alias": "campus",
-    "description": "نمای سه‌بعدی: ساختمان هر شعبه و نمای سه‌بعدی جلسه‌ها",
+    "description": "نمای سه‌بعدی: نقشه‌ی واحدها، ساختمان هر واحد و نمای جلسه‌ها",
     "keywords": [],
     "priority": 0,
     "providers": [

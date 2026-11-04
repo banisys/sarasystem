@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
                     // Their own entries so three.js loads only when a 3D view is opened (ADR 0049).
                     'Modules/Class/resources/js/session-scene.js',
                     'Modules/Campus/resources/js/building-scene.js',
+                    'Modules/Campus/resources/js/organization-scene.js',
                 ],
                 refresh: true,
             }),
