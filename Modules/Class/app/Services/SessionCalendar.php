@@ -6,11 +6,14 @@ use App\Models\Tenant;
 use App\Models\User;
 use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
+use Modules\Class\Models\Attendance;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
@@ -18,8 +21,8 @@ use Modules\Class\Models\Holiday;
 /**
  * Calendar periods (a day, a Saturday-to-Friday week, a Jalali month or
  * year) and sessions laid out in them: a class's, for the class page's
- * «جلسه‌ها» tab (ADR 0047), or a teacher's, for their calendar from the
- * employees list (ADR 0048). «کلاس‌های من» uses the same periods (ADR 0026).
+ * «جلسه‌ها» tab (ADR 0047), or a teacher's or a learner's, for their
+ * calendar from the employees / learners list (ADR 0048). «کلاس‌های من» uses the same periods (ADR 0026).
  */
 class SessionCalendar
 {
@@ -31,6 +34,11 @@ class SessionCalendar
     private const FIRST_HOUR = 8;
 
     private const LAST_HOUR = 18;
+
+    /**
+     * @var (Closure(ClassSession): array<string, mixed>)|null
+     */
+    private ?Closure $extra = null;
 
     /**
      * The period of the view around the date and the dates of the periods
@@ -80,6 +88,8 @@ class SessionCalendar
             // Where the class meets; the same for all its sessions.
             'mode' => ['value' => $classroom->mode->value, 'label' => $classroom->mode->getLabel()],
             'shows_classroom' => false,
+            'shows_teacher' => true,
+            'attendance' => null,
         ];
     }
 
@@ -95,6 +105,37 @@ class SessionCalendar
             ...$this->sessions(ClassSession::query()->taughtBy($teacher), Tenant::current(), $view, $date),
             'mode' => null,
             'shows_classroom' => true,
+            'shows_teacher' => false,
+            'attendance' => null,
+        ];
+    }
+
+    /**
+     * The sessions of the user's classes as a learner in the current tenant
+     * (ADR 0048), each with its class, teacher and the learner's own
+     * attendance, and the period's attendance counted by status.
+     *
+     * @return array<string, mixed>
+     */
+    public function forLearner(User $learner, string $view, CarbonImmutable $date): array
+    {
+        $query = ClassSession::query()->attendedBy($learner)
+            ->with(['attendances' => fn ($attendance) => $attendance->where('user_id', $learner->getKey())]);
+        $period = self::period(in_array($view, self::VIEWS, true) ? $view : 'month', $date);
+        $counts = Attendance::query()
+            ->where('user_id', $learner->getKey())
+            ->whereHas('session', fn (Builder $session) => $session->whereBetween('starts_at', [$period['first']->startOfDay(), $period['last']->endOfDay()]))
+            ->get()
+            ->countBy(fn (Attendance $attendance): string => $attendance->status->value);
+
+        return [
+            ...$this->sessions($query, Tenant::current(), $view, $date, fn (ClassSession $session): array => [
+                'attendance' => $session->attendances->first()?->status,
+            ]),
+            'mode' => null,
+            'shows_classroom' => true,
+            'shows_teacher' => true,
+            'attendance' => collect(AttendanceStatus::cases())->mapWithKeys(fn (AttendanceStatus $status): array => [$status->getLabel() => $counts[$status->value] ?? 0])->all(),
         ];
     }
 
@@ -102,12 +143,14 @@ class SessionCalendar
      * The sessions of the query in the view around the date. Day and week
      * give a timeline (hours and each session's place on it), month gives
      * a grid of days, year twelve small months with each day's sessions
-     * counted by tone. The holidays are the tenant's.
+     * counted by tone. The holidays are the tenant's; $extra adds to each
+     * session's card.
      *
      * @param  Builder<ClassSession>  $query
+     * @param  (Closure(ClassSession): array<string, mixed>)|null  $extra
      * @return array<string, mixed>
      */
-    private function sessions(Builder $query, Tenant $tenant, string $view, CarbonImmutable $date): array
+    private function sessions(Builder $query, Tenant $tenant, string $view, CarbonImmutable $date, ?Closure $extra = null): array
     {
         $view = in_array($view, self::VIEWS, true) ? $view : 'month';
         $period = self::period($view, $date);
@@ -120,6 +163,7 @@ class SessionCalendar
             ->get();
         $holidays = $this->holidays($tenant, $period['first'], $period['last']);
         $byDay = $sessions->groupBy(fn (ClassSession $session): string => $session->starts_at->toDateString());
+        $this->extra = $extra;
 
         $calendar = [
             'view' => $view,
@@ -201,6 +245,7 @@ class SessionCalendar
         $teacher = $session->substituteTeacher ?? $session->teacher;
 
         return [
+            ...($this->extra ? ($this->extra)($session) : []),
             'id' => $session->getKey(),
             'time' => $session->starts_at->format('H:i').'–'.$session->ends_at->format('H:i'),
             'start_minute' => $session->starts_at->hour * 60 + $session->starts_at->minute,

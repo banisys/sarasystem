@@ -3,7 +3,7 @@
 namespace Modules\Class\Providers;
 
 use App\Authorization\DefaultRoles;
-use App\Filament\Support\StaffRecordActions;
+use App\Filament\Support\PersonRecordActions;
 use App\Guardians\Guardians;
 use App\Models\Tenant;
 use App\Models\User;
@@ -11,6 +11,7 @@ use App\UserPanel\UserPanel;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\LearnerSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Class\Services\MyClasses;
@@ -58,15 +59,18 @@ class ClassServiceProvider extends ModuleServiceProvider
         ]);
         app(DefaultRoles::class)->installing(fn () => app(DefaultClassRoles::class)->install());
 
-        // «جلسه‌های تدریس» on the employees list and page (ADR 0048).
-        StaffRecordActions::register('teacher-sessions', fn (): array => [
-            Action::make('teacherSessions')
-                ->label('جلسه‌های تدریس')
-                ->icon(Heroicon::OutlinedCalendarDays)
-                ->color('gray')
-                ->url(fn (Model $record): ?string => $record->user ? TeacherSessions::getUrl(['user' => $record->user]) : null)
-                ->visible(fn (Model $record): bool => $record->user !== null && TeacherSessions::canAccess()),
-        ]);
+        // «جلسه‌های تدریس» on the employees list and «جلسه‌های کلاس» on the
+        // learners list, and on their pages (ADR 0048).
+        foreach ([PersonRecordActions::STAFF => TeacherSessions::class, PersonRecordActions::LEARNER => LearnerSessions::class] as $kind => $page) {
+            PersonRecordActions::register($kind, 'sessions', fn (): array => [
+                Action::make($kind === PersonRecordActions::STAFF ? 'teacherSessions' : 'learnerSessions')
+                    ->label($kind === PersonRecordActions::STAFF ? 'جلسه‌های تدریس' : 'جلسه‌های کلاس')
+                    ->icon(Heroicon::OutlinedCalendarDays)
+                    ->color('gray')
+                    ->url(fn (Model $record): ?string => $record->user ? $page::getUrl(['user' => $record->user]) : null)
+                    ->visible(fn (Model $record): bool => $record->user !== null && $page::canAccess()),
+            ]);
+        }
 
         // «کلاس‌های من» for members and teachers of classes (ADR 0026), and
         // «کلاس‌های …» of each ward in classes for their guardians (ADR 0027).

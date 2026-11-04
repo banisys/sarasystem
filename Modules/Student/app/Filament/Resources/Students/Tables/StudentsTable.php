@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Filament\Resources\Students\Tables;
 
+use App\Filament\Support\PersonRecordActions;
 use App\Filament\Support\TextFilter;
 use App\Support\Identifiers;
 use Filament\Actions\EditAction;
@@ -67,6 +68,8 @@ class StudentsTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                // From other modules, e.g. the sessions of their classes (ADR 0048).
+                ...PersonRecordActions::for(PersonRecordActions::LEARNER),
             ]);
     }
 }

@@ -394,6 +394,7 @@ class BranchOperations extends Scenario
                     ->steps([
                         '«پویا کریمی» از کلاس می‌رود: در «اعضا» ردیف او را ویرایش کنید و «تاریخ خروج» را امروز بگذارید.',
                         'او در فهرست با تاریخ خروج می‌ماند و از جلسه‌های بعد در حضور و غیاب نیست.',
+                        "اختیاری: در فهرست {$learner}ان با «جلسه‌های کلاس» در ردیف «پویا کریمی»، جلسه‌های او را با حضور و غیابش در تقویم ببینید؛ جلسه‌های بعد از خروج در آن نیست.",
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
                     ->perform(fn (TutorialRun $run): mixed => self::branch($run, 1)->execute(function () use ($run): void {

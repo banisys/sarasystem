@@ -78,6 +78,24 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
+     * On the user's list as a learner: their class role there is an attendee
+     * role and they were in the class on the day, or their attendance was
+     * taken (as AttendanceRegister::attendees()).
+     *
+     * @param  Builder<ClassSession>  $query
+     */
+    public function scopeAttendedBy(Builder $query, User $user): void
+    {
+        $query->where(fn (Builder $query) => $query
+            ->whereHas('classroom.members', fn (Builder $member) => $member
+                ->where('user_id', $user->getKey())
+                ->attendees()
+                ->whereRaw('(class_members.joined_on is null or class_members.joined_on <= cast(class_sessions.starts_at as date))')
+                ->whereRaw('(class_members.left_on is null or class_members.left_on >= cast(class_sessions.starts_at as date))'))
+            ->orWhereHas('attendances', fn (Builder $attendance) => $attendance->where('user_id', $user->getKey())));
+    }
+
+    /**
      * @param  Builder<ClassSession>  $query
      */
     public function scopeUpcoming(Builder $query): void

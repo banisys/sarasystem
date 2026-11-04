@@ -8,22 +8,30 @@ use Carbon\CarbonImmutable;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\LearnerSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
+use Modules\Class\Models\Attendance;
+use Modules\Class\Models\ClassMember;
+use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Services\SessionCalendar;
 use Modules\Employee\Filament\Resources\Employees\Pages\ListEmployees;
 use Modules\Employee\Models\Employee;
+use Modules\Student\Filament\Resources\Students\Pages\ListStudents;
+use Modules\Student\Models\Student;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
 /**
- * A teacher's sessions on a calendar, from the employees list (ADR 0048).
+ * A teacher's or a learner's sessions on a calendar, from the employees or
+ * learners list (ADR 0048).
  * Now is Thursday 2026-10-29 (1405/08/07) 12:00.
  */
-class TeacherSessionsTest extends TestCase
+class PersonSessionsTest extends TestCase
 {
     use InteractsWithTenants, RefreshDatabase;
 
@@ -116,6 +124,52 @@ class TeacherSessionsTest extends TestCase
         $this->actingInPanel($this->admin(), $this->west);
         Livewire::test(ListEmployees::class)
             ->assertActionHasUrl(TestAction::make('teacherSessions')->table($employee), ClassSessionResource::getUrl('teacher', ['user' => $this->teacher], tenant: $this->west));
+    }
+
+    public function test_a_learners_calendar_has_their_classes_sessions_while_they_were_in_them(): void
+    {
+        $learner = User::factory()->create(['name' => 'سارا رضایی']);
+        ClassMember::factory()->create(['classroom_id' => $this->classroom->id, 'user_id' => $learner->id, 'class_role_id' => ClassRole::factory()->attendee()->create()->id, 'joined_on' => '2026-10-26', 'left_on' => '2026-10-29']);
+        $other = Classroom::factory()->for($this->west)->create(['title' => 'کارگاه']);
+        ClassMember::factory()->create(['classroom_id' => $other->id, 'user_id' => $learner->id, 'class_role_id' => ClassRole::factory()->create()->id]);
+        $this->classSession('2026-10-25 10:00');
+        $absent = $this->classSession('2026-10-27 10:00', status: SessionStatus::Held);
+        Attendance::factory()->create(['session_id' => $absent->id, 'user_id' => $learner->id, 'status' => AttendanceStatus::Absent]);
+        $this->classSession('2026-10-30 10:00');
+        ClassSession::factory()->create(['classroom_id' => $other->id, 'starts_at' => '2026-10-28 10:00', 'ends_at' => '2026-10-28 11:00']);
+        $recorded = ClassSession::factory()->create(['classroom_id' => $other->id, 'starts_at' => '2026-10-29 08:00', 'ends_at' => '2026-10-29 09:00', 'status' => SessionStatus::Held]);
+        Attendance::factory()->create(['session_id' => $recorded->id, 'user_id' => $learner->id, 'status' => AttendanceStatus::Present]);
+
+        $week = app(SessionCalendar::class)->forLearner($learner, 'week', CarbonImmutable::parse('2026-10-29'));
+
+        $this->assertSame(['2026-10-27', '2026-10-29'], collect($week['days'])->filter(fn (array $day): bool => $day['sessions'] !== [])->pluck('date')->values()->all());
+        $this->assertSame(AttendanceStatus::Absent, $week['days'][3]['sessions'][0]['attendance']);
+        $this->assertSame('مریم احمدی', $week['days'][3]['sessions'][0]['teacher']);
+        $this->assertSame(1, $week['attendance']['غایب']);
+        $this->assertSame(1, $week['attendance']['حاضر']);
+
+        $this->makeStaff($learner, $this->west);
+        $this->actingInPanel($this->admin(), $this->west);
+        $this->get(ClassSessionResource::getUrl('learner', ['user' => $learner], tenant: $this->west))
+            ->assertOk()
+            ->assertSee('جلسه‌های کلاس سارا رضایی');
+        Livewire::test(LearnerSessions::class, ['user' => $learner->id])
+            ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $this->classSession('2026-10-25 12:00')->id]))
+            ->mountAction(TestAction::make('sessionDetails')->arguments(['session' => $absent->id]))
+            ->assertMountedActionModalSee('زبان مقدماتی الف');
+    }
+
+    public function test_the_learners_list_links_to_the_calendar(): void
+    {
+        if (! class_exists(Student::class)) {
+            $this->markTestSkipped('The Student module is off.');
+        }
+
+        $student = Student::factory()->for($this->west)->for($this->teacher)->create();
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(ListStudents::class)
+            ->assertActionHasUrl(TestAction::make('learnerSessions')->table($student), ClassSessionResource::getUrl('learner', ['user' => $this->teacher], tenant: $this->west));
     }
 
     private function classSession(string $startsAt, SessionStatus $status = SessionStatus::Scheduled, ?User $teacher = null, ?User $substitute = null): ClassSession

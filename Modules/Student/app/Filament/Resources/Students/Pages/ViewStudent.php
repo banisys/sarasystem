@@ -2,6 +2,7 @@
 
 namespace Modules\Student\Filament\Resources\Students\Pages;
 
+use App\Filament\Support\PersonRecordActions;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use Modules\Student\Filament\Resources\Students\StudentResource;
@@ -35,6 +36,7 @@ class ViewStudent extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ...PersonRecordActions::for(PersonRecordActions::LEARNER),
             EditAction::make(),
         ];
     }

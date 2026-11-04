@@ -1,4 +1,4 @@
-{{-- A session on the day / week timeline; $roomy adds the place; $showsClassroom puts the class where the teacher is (a teacher's calendar). --}}
+{{-- A session on the day / week timeline; $roomy adds the place; $showsClassroom / $showsTeacher its class and teacher; a learner's calendar adds their attendance. --}}
 <span class="flex items-center gap-1 font-semibold">
     <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['title'] }}</span>
     @if ($session['tone'] === 'live')
@@ -21,15 +21,20 @@
         <x-filament::icon icon="heroicon-m-book-open" class="size-3.5" title="تکلیف دارد" />
     @endif
 </span>
-@if ($showsClassroom)
-    <span class="truncate opacity-80">
-        {{ $session['classroom'] }}{{ $session['is_substitute'] ? ' (جایگزین)' : '' }}{{ $roomy && $session['location'] ? ' · '.$session['location'] : '' }}
-    </span>
-@elseif ($roomy || $session['teacher'])
-    <span class="truncate opacity-80">
-        {{ $session['teacher'] }}{{ $session['is_substitute'] ? ' (جایگزین)' : '' }}{{ $roomy && $session['location'] ? ' · '.$session['location'] : '' }}
-    </span>
+@php
+    $line = array_filter([
+        $showsClassroom ? $session['classroom'] : null,
+        $showsTeacher && $session['teacher'] ? $session['teacher'].($session['is_substitute'] ? ' (جایگزین)' : '') : null,
+        ! $showsTeacher && $session['is_substitute'] ? '(جایگزین)' : null,
+        $roomy ? $session['location'] : null,
+    ]);
+@endphp
+@if ($line !== [])
+    <span class="truncate opacity-80">{{ implode(' · ', $line) }}</span>
 @endif
+@isset($session['attendance'])
+    <span class="font-semibold">{{ $session['attendance']->getLabel() }}</span>
+@endisset
 @if ($roomy && $session['cancel_reason'])
     <span class="truncate opacity-80">دلیل لغو: {{ $session['cancel_reason'] }}</span>
 @endif

@@ -116,7 +116,7 @@
                                         title="{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
                                         class="absolute inset-x-1 z-10 flex min-h-7 flex-col overflow-hidden rounded-md border-s-4 px-2 py-1 text-start text-xs shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}"
                                         style="top: {{ $session['top'] }}%; height: {{ $session['height'] }}%">
-                                        @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'showsClassroom' => $calendar['shows_classroom']])
+                                        @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'showsClassroom' => $calendar['shows_classroom'], 'showsTeacher' => $calendar['shows_teacher']])
                                     </button>
                                 @endforeach
                             </div>
@@ -289,6 +289,14 @@
                 <span class="size-2.5 rounded-sm bg-gray-200 dark:bg-white/15"></span>
                 تعطیل
             </span>
+            @if ($calendar['attendance'])
+                <span class="inline-flex items-center gap-1.5">
+                    <x-filament::icon icon="heroicon-m-clipboard-document-check" class="size-4" />
+                    @foreach ($calendar['attendance'] as $status => $count)
+                        <span>{{ $status }} <span class="font-semibold text-gray-950 dark:text-white">{{ $count }}</span></span>
+                    @endforeach
+                </span>
+            @endif
             <span class="ms-auto inline-flex items-center gap-1.5" title="جمع زمان جلسه‌های برگزارشده و همه‌ی جلسه‌های لغونشده‌ی این بازه">
                 <x-filament::icon icon="heroicon-m-clock" class="size-4" />
                 ساعت برگزارشده
