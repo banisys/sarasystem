@@ -98,7 +98,7 @@ class SessionSceneTest extends TestCase
 
         $this->actingInPanel($this->admin(), $this->west);
         Livewire::test(ViewClassSession::class, ['record' => $session->id])
-            ->assertSee(['نمای سه‌بعدی', 'فراگیر همین کلاس'])
+            ->assertSee(['نمای سه‌بعدی', 'فراگیر همین کلاس', 'از بالا', 'چرخش خودکار', 'نام همه', 'دیوارها'])
             ->assertDontSee('فراگیر کلاس دیگر');
     }
 

@@ -216,7 +216,7 @@ class SessionActions
                     ->placeholder('ثبت نشده')
                     ->columnSpanFull(),
                 View::make('class::filament.session-scene')
-                    ->viewData(fn (ClassSession $record, SessionScene $scene): array => ['scene' => $scene->for($record)])
+                    ->viewData(fn (ClassSession $record, SessionScene $scene): array => ['scene' => $scene->for($record), 'title' => ($record->subject?->title ?? 'جلسه').' · '.self::when($record)])
                     ->visible(fn (ClassSession $record, SessionScene $scene): bool => ($user = auth()->user()) instanceof User && $scene->canSee($user, $record))
                     ->columnSpanFull(),
                 TextEntry::make('content')
