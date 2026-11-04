@@ -5,14 +5,13 @@ namespace Modules\Class\Tests\Feature;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionStatus;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
+use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewClassSession;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
@@ -89,7 +88,7 @@ class SessionSceneTest extends TestCase
         $this->assertSame([], $scene['seats']);
     }
 
-    public function test_the_details_modal_offers_the_view_with_this_session_only(): void
+    public function test_the_sessions_page_offers_the_view_with_this_session_only(): void
     {
         $session = $this->classSession();
         $this->attendee('فراگیر همین کلاس');
@@ -98,10 +97,9 @@ class SessionSceneTest extends TestCase
         ClassMember::factory()->create(['classroom_id' => $otherClass->id, 'class_role_id' => $this->attendeeRole->id, 'user_id' => User::factory()->create(['name' => 'فراگیر کلاس دیگر'])->id]);
 
         $this->actingInPanel($this->admin(), $this->west);
-        Livewire::test(SessionsRelationManager::class, $this->owner())
-            ->mountAction(TestAction::make('sessionDetails')->arguments(['session' => $session->id]))
-            ->assertMountedActionModalSee(['نمای سه‌بعدی', 'فراگیر همین کلاس'])
-            ->assertMountedActionModalDontSee('فراگیر کلاس دیگر');
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertSee(['نمای سه‌بعدی', 'فراگیر همین کلاس'])
+            ->assertDontSee('فراگیر کلاس دیگر');
     }
 
     public function test_another_tenants_session_opens_no_view(): void
@@ -113,8 +111,7 @@ class SessionSceneTest extends TestCase
         });
 
         $this->actingInPanel($this->admin(), $this->west);
-        Livewire::test(SessionsRelationManager::class, $this->owner())
-            ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $theirs->id]));
+        $this->get(ClassSessionResource::getUrl('view', ['record' => $theirs->id], tenant: $this->west))->assertNotFound();
     }
 
     public function test_the_view_is_only_for_who_may_see_the_class_or_take_its_attendance(): void
@@ -180,13 +177,5 @@ class SessionSceneTest extends TestCase
         $admin->makeSuperAdmin(Tenant::primary());
 
         return $admin;
-    }
-
-    /**
-     * @return array{ownerRecord: Classroom, pageClass: class-string}
-     */
-    private function owner(): array
-    {
-        return ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class];
     }
 }

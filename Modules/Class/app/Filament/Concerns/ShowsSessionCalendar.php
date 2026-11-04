@@ -3,21 +3,18 @@
 namespace Modules\Class\Filament\Concerns;
 
 use Carbon\CarbonImmutable;
-use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\View;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
-use Modules\Class\Filament\Actions\SessionActions;
-use Modules\Class\Models\ClassSession;
+use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Services\SessionCalendar;
 
 /**
  * A session calendar on a Livewire component (ADR 0047): the view and date
- * in the URL, the calendar's schema component and the details modal of
- * a session. Used by a class's «جلسه‌ها» tab and a teacher's calendar
+ * in the URL and the calendar's schema component; a session links to its
+ * page (ADR 0050). Used by a class's «جلسه‌ها» tab and a person's calendar
  * (ADR 0048).
  */
 trait ShowsSessionCalendar
@@ -33,18 +30,6 @@ trait ShowsSessionCalendar
      */
     #[Url(as: 'on')]
     public ?string $sessionsDate = null;
-
-    /**
-     * @var array<int, ClassSession|null>
-     */
-    private array $sessionCache = [];
-
-    /**
-     * The sessions the calendar shows; the details modal opens only these.
-     *
-     * @return Builder<ClassSession>
-     */
-    abstract protected function calendarSessions(): Builder;
 
     /**
      * @return array<string, mixed>
@@ -68,6 +53,7 @@ trait ShowsSessionCalendar
                 'current' => $this->currentView(),
                 'tones' => SessionCalendar::toneLabels(),
                 'canAddSessions' => $this->canAddSessions(),
+                'sessionUrl' => fn (int $session): string => ClassSessionResource::getUrl('view', ['record' => $session]),
                 // A page renders the action modals itself; a relation manager without its table doesn't.
                 'rendersModals' => ! $this instanceof Page,
             ])
@@ -92,16 +78,6 @@ trait ShowsSessionCalendar
         }
     }
 
-    /**
-     * Arguments: `session` (id), one of the calendar's sessions.
-     */
-    public function sessionDetailsAction(): Action
-    {
-        return SessionActions::details()
-            ->record(fn (array $arguments): ?ClassSession => $this->session($arguments['session'] ?? null))
-            ->visible(fn (?ClassSession $record): bool => $record !== null);
-    }
-
     protected function currentView(): string
     {
         return in_array($this->sessionsView, SessionCalendar::VIEWS, true) ? $this->sessionsView : 'month';
@@ -122,20 +98,5 @@ trait ShowsSessionCalendar
         }
 
         return rescue(fn () => CarbonImmutable::createFromFormat('!Y-m-d', $date), report: false) ?: null;
-    }
-
-    /**
-     * Remembered for the request: the modal's entries and buttons each ask
-     * for the record.
-     */
-    private function session(mixed $id): ?ClassSession
-    {
-        if (! is_numeric($id)) {
-            return null;
-        }
-
-        return $this->sessionCache[(int) $id] ??= $this->calendarSessions()
-            ->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])
-            ->find((int) $id);
     }
 }

@@ -95,9 +95,8 @@ class PersonSessionsTest extends TestCase
             ->assertSee('آبان 1405')
             ->assertSee('ساعت برگزارشده')
             ->assertDontSee('جلسه‌ی جبرانی / فوق‌العاده')
-            ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $notMine->id]))
-            ->mountAction(TestAction::make('sessionDetails')->arguments(['session' => $mine->id]))
-            ->assertMountedActionModalSee(['برنامه‌ریزی‌شده', 'زبان مقدماتی الف']);
+            ->assertSeeHtml(ClassSessionResource::getUrl('view', ['record' => $mine]))
+            ->assertDontSeeHtml(ClassSessionResource::getUrl('view', ['record' => $notMine]));
     }
 
     public function test_the_page_needs_the_sessions_permission_and_a_person_of_the_tenant(): void
@@ -154,9 +153,8 @@ class PersonSessionsTest extends TestCase
             ->assertOk()
             ->assertSee('جلسه‌های کلاس سارا رضایی');
         Livewire::test(LearnerSessions::class, ['user' => $learner->id])
-            ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $this->classSession('2026-10-25 12:00')->id]))
-            ->mountAction(TestAction::make('sessionDetails')->arguments(['session' => $absent->id]))
-            ->assertMountedActionModalSee('زبان مقدماتی الف');
+            ->assertDontSeeHtml(ClassSessionResource::getUrl('view', ['record' => $this->classSession('2026-10-25 12:00')]))
+            ->assertSeeHtml(ClassSessionResource::getUrl('view', ['record' => $absent]));
     }
 
     public function test_the_learners_list_links_to_the_calendar(): void

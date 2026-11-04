@@ -18,14 +18,14 @@ Where it lives:
 ## Decision
 **A, in the Class module.** If the next phases go ahead, the viewer moves to its own module (ADR 0041) when it has a second use.
 
-- «نمای کلاس» in `SessionActions::details()` has a button «نمای سه‌بعدی»; [session-scene.js](../../Modules/Class/resources/js/session-scene.js) is its own Vite entry, imported only when the button is pressed. `preserveEntrySignatures: 'exports-only'` in `vite.config.js` keeps the entry's export; without it the build drops the whole file.
+- «نمای کلاس» on the session's details (a modal then, its page since [ADR 0050](0050-session-page-in-new-tab.md)) has a button «نمای سه‌بعدی»; [session-scene.js](../../Modules/Class/resources/js/session-scene.js) is its own Vite entry, imported only when the button is pressed. `preserveEntrySignatures: 'exports-only'` in `vite.config.js` keeps the entry's export; without it the build drops the whole file.
 - [SessionScene](../../Modules/Class/app/Services/SessionScene.php) gives one seat per person on the session's attendance list, with their status: present and late are coloured figures, absent an empty chair with a red marker, excused a grey empty chair, unrecorded a pale figure. An online class gets a dark room with a screen and no windows; a blended class looks in person.
 - **Seats are symbolic:** in the list's order, since seats aren't recorded. The view says so.
 - **Who sees it:** those who may view the class or take its attendance (`canSee`), not everyone who may list its sessions, because it names people with their attendance. Not in the user panel, so learners and guardians don't see it. A cancelled session has none.
 - **Names are HTML over the canvas**, so the browser handles Persian shaping, right-to-left text and the panel's font.
-- **Cost:** a frame is drawn only when the camera or the size changes; repeated furniture and figures are `InstancedMesh`; no real-time shadows; pixel ratio at most 1.5. Pressing «بستن نمای سه‌بعدی», closing the modal or leaving the page disposes the scene and gives the WebGL context back (Alpine's `destroy()`).
+- **Cost:** a frame is drawn only when the camera or the size changes; repeated furniture and figures are `InstancedMesh`; no real-time shadows; pixel ratio at most 1.5. Pressing «بستن نمای سه‌بعدی» or leaving the page disposes the scene and gives the WebGL context back (Alpine's `destroy()`).
 - **Without WebGL** (or if the script can't load) the same people show as a list, which is always there for screen readers.
-- Attendance is still taken in the existing form; the view only shows it. Without a wheel zoom, so the wheel keeps scrolling the modal; the camera is fitted to the room.
+- Attendance is still taken in the existing form; the view only shows it. Without a wheel zoom, so the wheel keeps scrolling the page; the camera is fitted to the room.
 
 ## Measured (2026-11-04, headless Chrome, software rendering)
 | What | Result |
@@ -39,8 +39,8 @@ Where it lives:
 No frame time on real graphics hardware was measured; the test machine rendered in software.
 
 ## Consequences
-- Pages other than this modal load nothing new; the admin panel's own files don't change apart from a few theme classes.
+- Other screens load nothing new; the admin panel's own files don't change apart from a few theme classes.
 - No model files, so the look is simple and stays that way unless we accept heavier assets.
 - A member joining or leaving moves the seats after them, since seats follow the list.
 - Every future view needs the same care: its own entry, a fallback, a check of who may see it.
-- On touch screens, dragging on the view turns the camera and doesn't scroll the modal (`touch-action: none` from OrbitControls).
+- On touch screens, dragging on the view turns the camera and doesn't scroll the page (`touch-action: none` from OrbitControls).

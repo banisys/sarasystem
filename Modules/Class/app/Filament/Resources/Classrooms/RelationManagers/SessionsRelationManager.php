@@ -30,8 +30,8 @@ use Modules\Class\Services\SessionPlanner;
 /**
  * The «جلسه‌ها» tab of a class (ADR 0023): its sessions on a day, week,
  * month or year calendar (ADR 0047), with make-up and extra sessions added
- * by hand. The table below is not shown; it keeps the row actions the
- * details modal reuses (the tenant's list is «کلاس‌ها → جلسه‌ها»).
+ * by hand. A session opens its page (ADR 0050). The table below is not
+ * shown; the tenant's list is «کلاس‌ها → جلسه‌ها».
  */
 class SessionsRelationManager extends RelationManager
 {
@@ -105,11 +105,6 @@ class SessionsRelationManager extends RelationManager
             ->filters(ClassSessionsTable::filters(withClass: false))
             ->headerActions([$this->addSessionAction()])
             ->recordActions([SessionActions::recordActions()]);
-    }
-
-    protected function calendarSessions(): Builder
-    {
-        return $this->classroom()->sessions()->getQuery();
     }
 
     protected function calendarData(SessionCalendar $calendar, string $view, CarbonImmutable $date): array

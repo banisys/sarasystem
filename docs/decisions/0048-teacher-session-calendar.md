@@ -1,7 +1,7 @@
 # 0048 — A teacher's or a learner's sessions on a calendar, from the employees / learners list
 
 - **Date:** 2026-11-03
-- **Status:** accepted
+- **Status:** accepted; sessions now open a page instead of the details modal ([ADR 0050](0050-session-page-in-new-tab.md))
 
 ## Context
 The user asked for an action on «کارکنان → کارمندان» that opens a page like the class page's «جلسه‌ها» calendar (ADR 0047), but with the chosen employee's sessions, and then the same on the learners list. The employees list belongs to the Employee module, the learners list to Student, and the sessions to Class. Each module must keep working when the others are off (ADR 0041).

@@ -20,6 +20,7 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
+use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
@@ -31,6 +32,8 @@ use Illuminate\Support\HtmlString;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionStatus;
+use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
+use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\PlanTopic;
@@ -140,10 +143,7 @@ class SessionActions
     }
 
     /**
-     * Everything about one session in a modal (ADR 0047), with the row
-     * actions as its buttons: the attendance, content and homework ones
-     * first, the rest under «سایر». Opened from a row or from the class's
-     * session calendar.
+     * Opens the session's page in a new tab (ADR 0050).
      */
     public static function details(): Action
     {
@@ -151,109 +151,126 @@ class SessionActions
             ->label('جزئیات')
             ->icon(Heroicon::OutlinedEye)
             ->color('gray')
-            ->modalHeading(fn (ClassSession $record): string => ($record->subject?->title ?? 'جلسه').' · '.self::when($record))
-            ->modalDescription(fn (ClassSession $record): ?string => $record->classroom?->title)
-            ->modalWidth('3xl')
-            ->modalSubmitAction(false)
-            ->modalCancelActionLabel('بستن')
-            ->schema([
-                Grid::make(['default' => 1, 'sm' => 2, 'lg' => 3])->schema([
-                    TextEntry::make('status')
-                        ->label('وضعیت')
-                        ->badge()
-                        ->helperText(fn (ClassSession $record): ?string => match (SessionCalendar::tone($record)) {
-                            'pending' => 'زمان جلسه گذشته و حضور و غیاب یا مطالب آن ثبت نشده است.',
-                            'live' => 'هم‌اکنون در حال برگزاری است.',
-                            default => $record->cancel_reason !== null ? 'دلیل لغو: '.$record->cancel_reason : null,
-                        }),
-                    TextEntry::make('kind')
-                        ->label('نوع')
-                        ->badge()
-                        ->color('gray'),
-                    TextEntry::make('mode')
-                        ->label('نحوه‌ی برگزاری')
-                        ->state(fn (ClassSession $record): ?ClassMode => $record->classroom?->mode)
-                        ->badge()
-                        ->icon(fn (?ClassMode $state): ?string => match ($state) {
-                            ClassMode::InPerson => 'heroicon-m-building-office-2',
-                            ClassMode::Online => 'heroicon-m-video-camera',
-                            ClassMode::Blended => 'heroicon-m-square-2-stack',
-                            null => null,
-                        }),
-                    TextEntry::make('starts_at')
-                        ->label('زمان')
-                        ->state(fn (ClassSession $record): string => self::when($record))
-                        ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null),
-                    TextEntry::make('subject.title')
-                        ->label('درس')
-                        ->placeholder('—'),
-                    TextEntry::make('teacher')
-                        ->label('مدرس')
-                        ->state(fn (ClassSession $record): ?string => $record->substituteTeacher
-                            ? $record->substituteTeacher->name.' (جایگزین'.($record->teacher ? ' '.$record->teacher->name : '').')'
-                            : $record->teacher?->name)
-                        ->placeholder('—'),
-                    TextEntry::make('location')
-                        ->label('مکان')
-                        ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
-                        ->placeholder('—'),
-                    TextEntry::make('meeting_url')
-                        ->label('لینک جلسه')
-                        ->state(fn (ClassSession $record): ?string => $record->classroom?->mode->meetsOnline() ? $record->classroom->meeting_url : null)
-                        ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true)
-                        ->visible(fn (ClassSession $record): bool => (bool) $record->classroom?->mode->meetsOnline() && filled($record->classroom->meeting_url))
-                        ->columnSpan(['sm' => 2]),
-                    TextEntry::make('attendance')
-                        ->label('حضور و غیاب')
-                        ->state(fn (ClassSession $record): ?string => self::attendanceLine($record))
-                        ->placeholder('ثبت نشده')
-                        ->columnSpanFull(),
-                    View::make('class::filament.session-scene')
-                        ->viewData(fn (ClassSession $record, SessionScene $scene): array => ['scene' => $scene->for($record)])
-                        ->visible(fn (ClassSession $record, SessionScene $scene): bool => ($user = auth()->user()) instanceof User && $scene->canSee($user, $record))
-                        ->columnSpanFull(),
-                    TextEntry::make('content')
-                        ->label(fn (ClassSession $record): string => $record->hasContent() ? 'مطالب' : 'مطالب (برنامه)')
-                        ->state(fn (ClassSession $record): ?string => self::contentLine($record))
-                        ->placeholder('ثبت نشده')
-                        ->columnSpanFull(),
-                    TextEntry::make('homework')
-                        ->label('تکلیف')
-                        ->helperText(fn (ClassSession $record): ?string => implode(' · ', array_filter([
-                            $record->homework_due_on ? 'مهلت: '.CalendarUtils::strftime('l Y/m/d', $record->homework_due_on->toMutable()) : null,
-                            'تحویل '.$record->homeworkSubmissions()->count().' · نمره '.$record->homeworkSubmissions()->whereNotNull('graded_at')->count(),
-                        ])))
-                        ->visible(fn (ClassSession $record): bool => $record->homework !== null)
-                        ->columnSpanFull(),
-                    TextEntry::make('materials')
-                        ->label('فایل‌ها')
-                        ->state(fn (ClassSession $record): HtmlString => new HtmlString(collect($record->materialLinks())
-                            ->map(fn (array $file): string => '<a href="'.e($file['url']).'" target="_blank" rel="noopener" class="text-primary-600 underline">'.e($file['name']).'</a>')
-                            ->join(' · ')))
-                        ->visible(fn (ClassSession $record): bool => $record->hasMedia(ClassSession::MATERIALS_COLLECTION))
-                        ->columnSpanFull(),
-                    TextEntry::make('note')
-                        ->label('توضیح')
-                        ->visible(fn (ClassSession $record): bool => filled($record->note))
-                        ->columnSpanFull(),
-                ]),
+            ->url(fn (ClassSession $record): string => ClassSessionResource::getUrl('view', ['record' => $record]))
+            ->openUrlInNewTab();
+    }
+
+    /**
+     * The session's page: status (and why it is amber or cancelled), time,
+     * people, place, attendance, content, homework and files.
+     *
+     * @return list<Grid>
+     */
+    public static function detailsEntries(): array
+    {
+        return [
+            Grid::make(['default' => 1, 'sm' => 2, 'lg' => 3])->schema([
+                TextEntry::make('status')
+                    ->label('وضعیت')
+                    ->badge()
+                    ->helperText(fn (ClassSession $record): ?string => match (SessionCalendar::tone($record)) {
+                        'pending' => 'زمان جلسه گذشته و حضور و غیاب یا مطالب آن ثبت نشده است.',
+                        'live' => 'هم‌اکنون در حال برگزاری است.',
+                        default => $record->cancel_reason !== null ? 'دلیل لغو: '.$record->cancel_reason : null,
+                    }),
+                TextEntry::make('kind')
+                    ->label('نوع')
+                    ->badge()
+                    ->color('gray'),
+                TextEntry::make('mode')
+                    ->label('نحوه‌ی برگزاری')
+                    ->state(fn (ClassSession $record): ?ClassMode => $record->classroom?->mode)
+                    ->badge()
+                    ->icon(fn (?ClassMode $state): ?string => match ($state) {
+                        ClassMode::InPerson => 'heroicon-m-building-office-2',
+                        ClassMode::Online => 'heroicon-m-video-camera',
+                        ClassMode::Blended => 'heroicon-m-square-2-stack',
+                        null => null,
+                    }),
+                TextEntry::make('starts_at')
+                    ->label('زمان')
+                    ->state(fn (ClassSession $record): string => self::when($record))
+                    ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null),
+                TextEntry::make('subject.title')
+                    ->label('درس')
+                    ->placeholder('—'),
+                TextEntry::make('teacher')
+                    ->label('مدرس')
+                    ->state(fn (ClassSession $record): ?string => $record->substituteTeacher
+                        ? $record->substituteTeacher->name.' (جایگزین'.($record->teacher ? ' '.$record->teacher->name : '').')'
+                        : $record->teacher?->name)
+                    ->placeholder('—'),
+                TextEntry::make('location')
+                    ->label('مکان')
+                    ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
+                    ->placeholder('—'),
+                TextEntry::make('meeting_url')
+                    ->label('لینک جلسه')
+                    ->state(fn (ClassSession $record): ?string => $record->classroom?->mode->meetsOnline() ? $record->classroom->meeting_url : null)
+                    ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true)
+                    ->visible(fn (ClassSession $record): bool => (bool) $record->classroom?->mode->meetsOnline() && filled($record->classroom->meeting_url))
+                    ->columnSpan(['sm' => 2]),
+                TextEntry::make('attendance')
+                    ->label('حضور و غیاب')
+                    ->state(fn (ClassSession $record): ?string => self::attendanceLine($record))
+                    ->placeholder('ثبت نشده')
+                    ->columnSpanFull(),
+                View::make('class::filament.session-scene')
+                    ->viewData(fn (ClassSession $record, SessionScene $scene): array => ['scene' => $scene->for($record)])
+                    ->visible(fn (ClassSession $record, SessionScene $scene): bool => ($user = auth()->user()) instanceof User && $scene->canSee($user, $record))
+                    ->columnSpanFull(),
+                TextEntry::make('content')
+                    ->label(fn (ClassSession $record): string => $record->hasContent() ? 'مطالب' : 'مطالب (برنامه)')
+                    ->state(fn (ClassSession $record): ?string => self::contentLine($record))
+                    ->placeholder('ثبت نشده')
+                    ->columnSpanFull(),
+                TextEntry::make('homework')
+                    ->label('تکلیف')
+                    ->helperText(fn (ClassSession $record): ?string => implode(' · ', array_filter([
+                        $record->homework_due_on ? 'مهلت: '.CalendarUtils::strftime('l Y/m/d', $record->homework_due_on->toMutable()) : null,
+                        'تحویل '.$record->homeworkSubmissions()->count().' · نمره '.$record->homeworkSubmissions()->whereNotNull('graded_at')->count(),
+                    ])))
+                    ->visible(fn (ClassSession $record): bool => $record->homework !== null)
+                    ->columnSpanFull(),
+                TextEntry::make('materials')
+                    ->label('فایل‌ها')
+                    ->state(fn (ClassSession $record): HtmlString => new HtmlString(collect($record->materialLinks())
+                        ->map(fn (array $file): string => '<a href="'.e($file['url']).'" target="_blank" rel="noopener" class="text-primary-600 underline">'.e($file['name']).'</a>')
+                        ->join(' · ')))
+                    ->visible(fn (ClassSession $record): bool => $record->hasMedia(ClassSession::MATERIALS_COLLECTION))
+                    ->columnSpanFull(),
+                TextEntry::make('note')
+                    ->label('توضیح')
+                    ->visible(fn (ClassSession $record): bool => filled($record->note))
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /**
+     * The session's page's buttons: the attendance, content and homework
+     * ones first, the rest under «سایر». Deleting the session leaves for its class.
+     *
+     * @return list<Action|ActionGroup>
+     */
+    public static function pageActions(): array
+    {
+        return [
+            self::attendance(),
+            self::content(),
+            self::grading(),
+            ActionGroup::make([
+                self::move(),
+                self::substitute(),
+                self::cancel(),
+                self::restore(),
+                self::delete()->after(fn (ClassSession $record, Page $livewire) => $livewire->redirect(ClassroomResource::getUrl('view', ['record' => $record->classroom_id]))),
             ])
-            ->extraModalFooterActions([
-                self::attendance(),
-                self::content(),
-                self::grading(),
-                ActionGroup::make([
-                    self::move(),
-                    self::substitute(),
-                    self::cancel(),
-                    self::restore(),
-                    self::delete()->cancelParentActions(),
-                ])
-                    ->label('سایر')
-                    ->icon(Heroicon::OutlinedEllipsisHorizontal)
-                    ->color('gray')
-                    ->button(),
-            ]);
+                ->label('سایر')
+                ->icon(Heroicon::OutlinedEllipsisHorizontal)
+                ->color('gray')
+                ->button(),
+        ];
     }
 
     /**

@@ -5,12 +5,12 @@ namespace Modules\Class\Tests\Feature;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
+use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
@@ -132,25 +132,21 @@ class SessionCalendarTest extends TestCase
             ->assertSee('آبان 1405');
     }
 
-    public function test_a_session_opens_its_details_and_actions_in_a_modal(): void
+    public function test_a_session_links_to_its_page_in_a_new_tab_and_marks_itself_opened(): void
     {
         $session = $this->classSession('2026-10-30 10:00');
-        $elsewhere = $this->west->execute(fn () => ClassSession::factory()->create(['classroom_id' => Classroom::factory()->for($this->west)->create()->id]));
-        $theirs = Tenant::factory()->create()->execute(fn () => ClassSession::factory()->create(['classroom_id' => Classroom::factory()->for(Tenant::current())->create()->id]));
+        $elsewhere = ClassSession::factory()->create(['classroom_id' => Classroom::factory()->for($this->west)->create()->id, 'starts_at' => '2026-10-30 12:00', 'ends_at' => '2026-10-30 13:00']);
 
         $this->actingInPanel($this->admin(), $this->west);
-        Livewire::test(SessionsRelationManager::class, $this->owner())
-            ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $elsewhere->id]))
-            ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $theirs->id]))
-            ->mountAction(TestAction::make('sessionDetails')->arguments(['session' => $session->id]))
-            ->assertMountedActionModalSee(['برنامه‌ریزی‌شده', 'حضور و غیاب', 'سایر', 'نحوه‌ی برگزاری', $this->classroom->mode->getLabel()]);
+        $calendar = Livewire::test(SessionsRelationManager::class, $this->owner());
 
-        Livewire::test(SessionsRelationManager::class, $this->owner())
-            ->callAction([TestAction::make('sessionDetails')->arguments(['session' => $session->id]), TestAction::make('cancelSession')], data: ['reason' => 'اردو'])
-            ->assertHasNoActionErrors();
-
-        $this->assertSame(SessionStatus::Cancelled, $session->fresh()->status);
-        $this->assertSame('اردو', $session->fresh()->cancel_reason);
+        foreach (['month', 'week', 'day'] as $view) {
+            $calendar->call('showSessions', $view, '2026-10-30')
+                ->assertSeeHtml('href="'.ClassSessionResource::getUrl('view', ['record' => $session]).'" target="_blank"')
+                ->assertSeeHtml('x-on:click="openedSession = '.$session->id.'"')
+                ->assertSeeHtml('border-dashed!')
+                ->assertDontSeeHtml(ClassSessionResource::getUrl('view', ['record' => $elsewhere]));
+        }
     }
 
     private function classSession(string $startsAt, SessionStatus $status = SessionStatus::Scheduled, ?Subject $subject = null): ClassSession

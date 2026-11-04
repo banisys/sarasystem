@@ -1,7 +1,7 @@
 # 0047 — Class sessions on a calendar
 
 - **Date:** 2026-11-03
-- **Status:** accepted
+- **Status:** accepted; the details modal is replaced by a page ([ADR 0050](0050-session-page-in-new-tab.md))
 
 ## Context
 The class page's «جلسه‌ها» tab was a table. A class has dozens to hundreds of sessions a year, and the people running it ask "what happens this week?", "which past sessions were never recorded?", "how does the term look?". A list sorted by time answers these poorly. The user asked for the sessions on a calendar with four views (day, week, month, year), each session opening its details in a modal, and colours by status.

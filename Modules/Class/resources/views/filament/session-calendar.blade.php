@@ -1,4 +1,4 @@
-{{-- Sessions on a calendar (ShowsSessionCalendar): a class's (ADR 0047) or a teacher's, with each session's class (ADR 0048). A session opens its details modal; a day opens the day view. --}}
+{{-- Sessions on a calendar (ShowsSessionCalendar): a class's (ADR 0047) or a teacher's, with each session's class (ADR 0048). A session opens its page in a new tab and keeps a dashed border as the one last opened (ADR 0050); a day opens the day view. --}}
 @php
     $toneClasses = [
         'scheduled' => 'border-info-500 bg-info-50 text-info-950 hover:bg-info-100 dark:bg-info-500/15 dark:text-info-100 dark:hover:bg-info-500/25',
@@ -14,11 +14,12 @@
         'held' => 'bg-success-500',
         'cancelled' => 'bg-danger-400',
     ];
+    $openedClasses = 'border-2! border-dashed! border-gray-900! dark:border-white!';
     // Which tone colours a day of the year view when it has several.
     $tonePriority = ['live', 'pending', 'scheduled', 'held', 'cancelled'];
 @endphp
 
-<div class="fi-section session-calendar rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+<div x-data="{ openedSession: null }" class="fi-section session-calendar rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
     <div class="flex flex-wrap items-center gap-3 border-b border-gray-200 p-4 dark:border-white/10">
             <div class="flex items-center gap-1">
                 <x-filament::icon-button icon="heroicon-m-chevron-right" color="gray" label="قبلی"
@@ -112,12 +113,14 @@
                                 @endforeach
 
                                 @foreach ($day['sessions'] as $session)
-                                    <button type="button" wire:click="mountAction('sessionDetails', { session: {{ $session['id'] }} })"
+                                    <a href="{{ $sessionUrl($session['id']) }}" target="_blank" rel="noopener"
+                                        x-on:click="openedSession = {{ $session['id'] }}"
+                                        x-bind:class="openedSession === {{ $session['id'] }} && '{{ $openedClasses }}'"
                                         title="{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
                                         class="absolute inset-x-1 z-10 flex min-h-7 flex-col overflow-hidden rounded-md border-s-4 px-2 py-1 text-start text-xs shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}"
                                         style="top: {{ $session['top'] }}%; height: {{ $session['height'] }}%">
                                         @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'showsClassroom' => $calendar['shows_classroom'], 'showsTeacher' => $calendar['shows_teacher']])
-                                    </button>
+                                    </a>
                                 @endforeach
                             </div>
                         @endforeach
@@ -207,13 +210,15 @@
                                     @endif
                                 </div>
                                 @foreach (array_slice($day['sessions'], 0, 3) as $session)
-                                    <button type="button" wire:click="mountAction('sessionDetails', { session: {{ $session['id'] }} })"
+                                    <a href="{{ $sessionUrl($session['id']) }}" target="_blank" rel="noopener"
+                                        x-on:click="openedSession = {{ $session['id'] }}"
+                                        x-bind:class="openedSession === {{ $session['id'] }} && '{{ $openedClasses }}'"
                                         title="{{ $calendar['shows_classroom'] ? $session['classroom'].' · ' : '' }}{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
                                         class="flex items-center gap-1 truncate rounded border-s-4 px-1.5 py-0.5 text-start text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}">
                                         @include('class::filament.session-calendar-mode', ['mode' => $session['mode']])
                                         <span class="shrink-0 font-semibold tabular-nums">{{ \Illuminate\Support\Str::before($session['time'], '–') }}</span>
                                         <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $calendar['shows_classroom'] ? $session['classroom'] : $session['title'] }}</span>
-                                    </button>
+                                    </a>
                                 @endforeach
                                 @if (count($day['sessions']) > 3)
                                     <button type="button" wire:click="showSessions('day', '{{ $day['date'] }}')"

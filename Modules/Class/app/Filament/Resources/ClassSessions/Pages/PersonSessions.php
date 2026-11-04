@@ -7,13 +7,15 @@ use App\Models\User;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Locked;
 use Modules\Class\Filament\Concerns\ShowsSessionCalendar;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
+use Modules\Class\Models\ClassSession;
 
 /**
  * One person's sessions in the current tenant on a calendar (ADR 0048): the
- * same views, colours and details modal as a class's «جلسه‌ها» tab. Opened
+ * same views and colours as a class's «جلسه‌ها» tab. Opened
  * from the employees list (TeacherSessions) or the learners list
  * (LearnerSessions).
  */
@@ -27,6 +29,13 @@ abstract class PersonSessions extends Page
 
     #[Locked]
     public User $person;
+
+    /**
+     * The person's sessions in the current tenant.
+     *
+     * @return Builder<ClassSession>
+     */
+    abstract protected function calendarSessions(): Builder;
 
     /**
      * «جلسه‌های تدریس», «جلسه‌های کلاس».
