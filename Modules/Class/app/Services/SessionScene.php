@@ -7,6 +7,7 @@ use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassSession;
+use Nwidart\Modules\Facades\Module;
 
 /**
  * What the 3D view of a session shows (ADR 0049): a seat per person on the
@@ -36,11 +37,13 @@ class SessionScene
     /**
      * It names people and their attendance: for those who may see the class
      * or take its attendance, not everyone who sees its sessions. A cancelled
-     * session has no attendance to show.
+     * session has no attendance to show. The 3D views are the Campus module's
+     * feature (ADR 0051).
      */
     public function canSee(User $user, ClassSession $session): bool
     {
-        return $session->status !== SessionStatus::Cancelled
+        return (Module::find('Campus')?->isEnabled() ?? false)
+            && $session->status !== SessionStatus::Cancelled
             && $session->classroom !== null
             && ($user->can('view', $session->classroom) || $this->access->isStaffOf($user, $session, 'takes_attendance'));
     }

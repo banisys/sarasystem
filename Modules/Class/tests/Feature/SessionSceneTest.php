@@ -18,6 +18,7 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Services\SessionScene;
+use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -37,6 +38,10 @@ class SessionSceneTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        if (! Module::find('Campus')?->isEnabled()) {
+            $this->markTestSkipped('The 3D views are the Campus module\'s.');
+        }
 
         $this->travelTo(CarbonImmutable::parse('2026-10-29 12:00'));
 

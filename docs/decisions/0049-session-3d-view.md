@@ -16,7 +16,7 @@ Where it lives:
 - **A new `Campus` module with a core hook** — sold separately and shared with later views / a hook with one user, built before the prototype has shown its worth.
 
 ## Decision
-**A, in the Class module.** If the next phases go ahead, the viewer moves to its own module (ADR 0041) when it has a second use.
+**A, in the Class module.** With a second use, the shared part moved to the core and the switch to the Campus module ([ADR 0051](0051-campus-building.md)); this view's room and data stay in Class.
 
 - «نمای کلاس» on the session's page ([ADR 0050](0050-session-page-in-new-tab.md)) has a button «نمای سه‌بعدی» that opens the view in a full-page modal; [session-scene.js](../../Modules/Class/resources/js/session-scene.js) is its own Vite entry, imported only when the button is pressed. `preserveEntrySignatures: 'exports-only'` in `vite.config.js` keeps the entry's export; without it the build drops the whole file.
 - **Full control:** dragging turns the camera all the way round, down to just above the floor; the wheel or two fingers zoom toward the pointer; a right-drag, two fingers or the arrow keys pan, held around the room so it can't be lost. Buttons: ready-made views («سه‌رخ», «از بالا», «از جلو», «از عقب»), closer / farther, «چرخش خودکار», «نام همه» (a name over every seat), «دیوارها». A wall between the camera and the room hides itself, so every angle sees in.

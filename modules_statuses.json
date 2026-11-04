@@ -7,5 +7,6 @@
     "Contract": true,
     "Class": true,
     "School": true,
-    "Tutorial": true
+    "Tutorial": true,
+    "Campus": true
 }

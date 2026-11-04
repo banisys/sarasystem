@@ -3,6 +3,8 @@
 namespace Modules\Class\Providers;
 
 use App\Authorization\DefaultRoles;
+use App\Campus\BuildingRooms;
+use App\Campus\RoomSource;
 use App\Filament\Support\PersonRecordActions;
 use App\Guardians\Guardians;
 use App\Models\Tenant;
@@ -13,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\LearnerSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
+use Modules\Class\Services\ClassroomRooms;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Class\Services\MyClasses;
 use Modules\Class\Services\PlanForecast;
@@ -74,6 +77,8 @@ class ClassServiceProvider extends ModuleServiceProvider
 
         // «کلاس‌های من» for members and teachers of classes (ADR 0026), and
         // «کلاس‌های …» of each ward in classes for their guardians (ADR 0027).
+        BuildingRooms::register('classes', fn (): RoomSource => app(ClassroomRooms::class));
+
         UserPanel::navigationUsing('classes', function (User $user, Tenant $tenant): array {
             $myClasses = app(MyClasses::class);
             $wards = app(Guardians::class)->wardsIn($user, $tenant)->filter(fn (User $ward): bool => $myClasses->hasAny($ward));

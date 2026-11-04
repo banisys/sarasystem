@@ -1,0 +1,24 @@
+{
+    "name": "Campus",
+    "alias": "campus",
+    "description": "نمای سه‌بعدی: ساختمان هر شعبه و نمای سه‌بعدی جلسه‌ها",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Campus\\Providers\\CampusServiceProvider"
+    ],
+    "files": [],
+    "sitemap": {
+        "label": "نمای سه‌بعدی",
+        "group": "experience",
+        "surfaces": [
+            "admin"
+        ],
+        "connections": [
+            {
+                "target": "Class",
+                "label": "اتاق‌های ساختمان از کلاس‌ها ساخته می‌شوند"
+            }
+        ]
+    }
+}
