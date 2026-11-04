@@ -1,6 +1,8 @@
 import { Group, Vector3 } from 'three';
 import { createStage } from '@/scene/stage.js';
-import { addBlock, BLOCK_DEPTH, blockSize, BoxBatch, LOOKS, plantTrees, VIEWS } from './blocks.js';
+import { addBlock, BLOCK_DEPTH, blockSize, BoxBatch, LOOKS, plantTrees, recolor, VIEWS } from './blocks.js';
+
+export { keepLive } from './blocks.js';
 
 /**
  * A tenant's building (ADR 0051): a block with a window per room, generated
@@ -41,10 +43,11 @@ export function mountBuildingScene(element, tooltip, data, onSelect) {
         cursor += block.width + BLOCK_GAP;
     }
 
-    world.add(boxes.toMesh(), glass.toMesh(true));
+    const windows = glass.toMesh(true);
+    world.add(boxes.toMesh(), windows);
     plantTrees(world, groundWidth, groundDepth);
 
-    return createStage(element, tooltip, {
+    const stage = createStage(element, tooltip, {
         world,
         targets,
         radius: Math.max(Math.hypot(groundWidth, groundDepth) / 2, height),
@@ -53,4 +56,29 @@ export function mountBuildingScene(element, tooltip, data, onSelect) {
         views: VIEWS,
         onSelect,
     });
+
+    return {
+        ...stage,
+        /**
+         * The same rooms in a new state, in place. False when the rooms
+         * changed: the building has to be built again.
+         */
+        update(fresh) {
+            const rooms = new Map(fresh.rooms.map((room) => [room.id, room]));
+            const isSame = fresh.rooms.length === targets.length
+                && targets.every(({ data: room }) => rooms.get(room.id)?.title === room.title && rooms.get(room.id)?.online === room.online);
+
+            if (!isSame) {
+                return false;
+            }
+
+            targets.forEach((target) => {
+                target.data = rooms.get(target.data.id);
+            });
+            recolor(windows, targets.map((target) => fresh.states[target.data.state].color));
+            stage.requestRender();
+
+            return true;
+        },
+    };
 }

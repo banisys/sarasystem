@@ -1,6 +1,8 @@
 import { Group, Vector3 } from 'three';
 import { createStage } from '@/scene/stage.js';
-import { addBlock, BLOCK_DEPTH, blockSize, BoxBatch, LOOKS, plantTrees, VIEWS } from './blocks.js';
+import { addBlock, BLOCK_DEPTH, blockSize, BoxBatch, LOOKS, plantTrees, recolor, VIEWS } from './blocks.js';
+
+export { keepLive } from './blocks.js';
 
 /**
  * The organization as a town (ADR 0052): a building per tenant the user may see,
@@ -48,12 +50,13 @@ export function mountOrganizationScene(element, tooltip, data, onSelect) {
     }
 
     world.add(boxes.toMesh());
-    if (glass.boxes.length > 0) {
-        world.add(glass.toMesh(true));
+    const windows = glass.boxes.length > 0 ? glass.toMesh(true) : null;
+    if (windows) {
+        world.add(windows);
     }
     plantTrees(world, groundWidth, groundDepth);
 
-    return createStage(element, tooltip, {
+    const stage = createStage(element, tooltip, {
         world,
         targets,
         radius: Math.max(Math.hypot(groundWidth, groundDepth) / 2, height),
@@ -62,4 +65,32 @@ export function mountOrganizationScene(element, tooltip, data, onSelect) {
         views: VIEWS,
         onSelect,
     });
+
+    return {
+        ...stage,
+        /**
+         * The same tenants and rooms in a new state, in place. False when they
+         * changed: the town has to be built again.
+         */
+        update(fresh) {
+            const isSame = fresh.sites.length === targets.length
+                && targets.every(({ data: site }, index) => fresh.sites[index].id === site.id
+                    && fresh.sites[index].name === site.name
+                    && fresh.sites[index].rooms.length === site.rooms.length);
+
+            if (!isSame) {
+                return false;
+            }
+
+            targets.forEach((target, index) => {
+                target.data = fresh.sites[index];
+            });
+            if (windows) {
+                recolor(windows, fresh.sites.flatMap((site) => site.rooms.map((room) => fresh.states[room.state].color)));
+            }
+            stage.requestRender();
+
+            return true;
+        },
+    };
 }

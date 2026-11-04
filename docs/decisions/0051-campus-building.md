@@ -15,7 +15,7 @@ After the session's 3D view (ADR 0049), the next step of the 3D idea is to see a
 ## Decision
 **A `Campus` module; a building generated from the classes.**
 - Page `Building` («کلاس‌ها ← ساختمان سه‌بعدی», per tenant). One window per running top-level class (active, not ended); sub-classes share their class's room. Only this page loads the script.
-- Windows: yellow when a session is on now, blue when one is still to come today, dark otherwise; cancelled sessions don't count. Worked out when the page opens, and it says the time.
+- Windows: yellow when a session is on now, blue when one is still to come today, dark otherwise; cancelled sessions don't count. Worked out on the server; the page keeps itself current ([ADR 0053](0053-live-3d-windows.md)) and says the time.
 - Classes that meet only online are in a second, glassy block; blended ones are in the main block.
 - Clicking a window opens a card: mode, people, the session now or the next one today, links to the class and session in a new tab, when the user may open them.
 - Core hook [BuildingRooms](../../app/Campus/BuildingRooms.php) / `RoomSource`; [ClassroomRooms](../../Modules/Class/app/Services/ClassroomRooms.php) is Class's source. Seeing the building needs the right to list classes (`ViewAny:Classroom`) in the tenant. With Class off there is no source and the page is off.
@@ -26,4 +26,4 @@ After the session's 3D view (ADR 0049), the next step of the 3D idea is to see a
 - No migration, nothing to enter; a new class appears by itself.
 - It must not be read as a floor plan: the order of windows follows the titles, and a new class moves the others. The page says it is symbolic.
 - A client can have classes without 3D.
-- Live updates, a back side and the organization map (phase 3) are left for later; the map can add sources to the same module.
+- A back side is left for later.

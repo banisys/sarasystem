@@ -10,6 +10,7 @@ use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Livewire\Attributes\Renderless;
 use UnitEnum;
 
 /**
@@ -68,21 +69,31 @@ class Building extends Page
     }
 
     /**
+     * The windows' state now, for the page to update itself (ADR 0053).
+     *
      * @return array<string, mixed>
      */
-    protected function getViewData(): array
+    #[Renderless]
+    public function liveData(): array
     {
         /** @var User $user */
         $user = auth()->user();
         $rooms = BuildingRooms::for($user);
         $counts = collect($rooms)->countBy('state');
-        $states = self::states();
 
         return [
             'rooms' => $rooms,
+            'states' => self::states(),
             'time' => now()->format('H:i'),
-            'scene' => ['rooms' => $rooms, 'states' => $states],
-            'legend' => collect($states)->map(fn (array $state, string $key): array => [...$state, 'count' => $counts[$key] ?? 0])->all(),
+            'legend' => collect(self::states())->map(fn (array $state, string $key): array => [...$state, 'count' => $counts[$key] ?? 0])->all(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getViewData(): array
+    {
+        return ['scene' => $this->liveData(), 'liveSeconds' => config('campus.live_seconds')];
     }
 }

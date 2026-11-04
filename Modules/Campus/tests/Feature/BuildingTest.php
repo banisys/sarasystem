@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Modules\Campus\Filament\Pages\Building;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionStatus;
@@ -15,6 +16,7 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Nwidart\Modules\Facades\Module;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -108,6 +110,58 @@ class BuildingTest extends TestCase
     {
         $this->actingInPanel($this->admin(), $this->west);
         $this->get(Building::getUrl(tenant: $this->west))->assertOk()->assertSee('هنوز کلاس فعالی');
+    }
+
+    public function test_the_live_data_follows_the_clock(): void
+    {
+        $classroom = $this->classroom('کلاس');
+        $this->classSession($classroom, '2026-10-29 13:00', '2026-10-29 14:00');
+
+        $this->actingInPanel($this->admin(), $this->west);
+        $page = Livewire::test(Building::class);
+
+        $this->assertSame(BuildingRooms::TODAY, $page->instance()->liveData()['rooms'][0]['state']);
+        $this->assertSame(1, $page->instance()->liveData()['legend'][BuildingRooms::TODAY]['count']);
+
+        $this->travelTo(CarbonImmutable::parse('2026-10-29 13:10'));
+        $live = $page->instance()->liveData();
+        $this->assertSame(BuildingRooms::LIVE, $live['rooms'][0]['state']);
+        $this->assertSame('13:10', $live['time']);
+        $this->assertSame(1, $live['legend'][BuildingRooms::LIVE]['count']);
+
+        $this->travelTo(CarbonImmutable::parse('2026-10-29 14:10'));
+        $this->assertSame(BuildingRooms::IDLE, $page->instance()->liveData()['rooms'][0]['state']);
+    }
+
+    public function test_a_live_request_needs_the_right_still_and_doesnt_render(): void
+    {
+        $this->classroom('کلاس');
+        $this->roleWithPermissions('class_lister', ['ViewAny:Classroom']);
+        $lister = User::factory()->create();
+        $this->makeStaff($lister, $this->west);
+        $this->grantRole($lister, $this->west, 'class_lister');
+        $this->actingInPanel($lister, $this->west);
+
+        $page = Livewire::test(Building::class);
+        $html = $page->call('liveData')->assertOk()->effects['html'] ?? null;
+        $this->assertNull($html);
+
+        $lister->unsetRelation('roles')->removeRole('class_lister');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $page->call('liveData')->assertForbidden();
+    }
+
+    public function test_the_page_is_told_how_often_to_update(): void
+    {
+        $this->classroom('کلاس');
+        config(['campus.live_seconds' => 45]);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        $this->get(Building::getUrl(tenant: $this->west))->assertOk()->assertSee('keepLive(45', false)->assertSee('خودکار به‌روز می‌شود');
+
+        config(['campus.live_seconds' => 0]);
+        $this->get(Building::getUrl(tenant: $this->west))->assertOk()->assertDontSee('خودکار به‌روز می‌شود');
     }
 
     /**

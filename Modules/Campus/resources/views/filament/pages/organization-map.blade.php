@@ -6,17 +6,44 @@
             selected: null,
             autoRotate: false,
             names: true,
+            time: @js($scene['time']),
+            totals: @js($scene['totals']),
+            siteCount: @js(count($scene['sites'])),
+            stale: false,
+            live: null,
+            remount: null,
             async init() {
                 try {
-                    const { mountOrganizationScene } = await import(@js(\Illuminate\Support\Facades\Vite::asset('Modules/Campus/resources/js/organization-scene.js')));
+                    const { mountOrganizationScene, keepLive } = await import(@js(\Illuminate\Support\Facades\Vite::asset('Modules/Campus/resources/js/organization-scene.js')));
 
                     this.state = 'open';
                     await this.$nextTick();
-                    this.scene = mountOrganizationScene(this.$refs.stage, this.$refs.tooltip, JSON.parse(this.$refs.stage.dataset.scene), (site) => { this.selected = site; });
+                    this.remount = (data) => mountOrganizationScene(this.$refs.stage, this.$refs.tooltip, data, (site) => { this.selected = site; });
+                    this.scene = this.remount(JSON.parse(this.$refs.stage.dataset.scene));
                     this.scene.setNames(true);
+                    this.live = keepLive(@js($liveSeconds), () => this.$wire.liveData(), (data) => this.apply(data), () => { this.stale = true; });
                 } catch (error) {
                     console.error(error);
                     this.state = 'failed';
+                }
+            },
+            apply(data) {
+                this.stale = false;
+                this.time = data.time;
+                this.totals = data.totals;
+                this.siteCount = data.sites.length;
+
+                if (! this.scene.update(data)) {
+                    this.scene.dispose();
+                    this.scene = this.remount(data);
+                    this.scene.setNames(this.names);
+                    this.scene.setAutoRotate(this.autoRotate);
+                }
+
+                if (this.selected) {
+                    const site = data.sites.find((candidate) => candidate.id === this.selected.id);
+
+                    site ? this.selected = site : this.closeCard();
                 }
             },
             closeCard() {
@@ -24,6 +51,7 @@
                 this.scene?.clearSelection();
             },
             destroy() {
+                this.live?.stop();
                 this.scene?.dispose();
             },
         }"
@@ -63,8 +91,8 @@
             @include('campus::filament.partials.scene-toolbar')
 
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
-                <span>{{ count($sites) }} {{ config('sarasystem.tenant_label') }} · {{ $totals['rooms'] }} کلاس · {{ $totals['people'] }} نفر · {{ $totals['live'] }} در حال برگزاری</span>
-                @foreach ($legend as $status)
+                <span><span x-text="siteCount">{{ count($scene['sites']) }}</span> {{ config('sarasystem.tenant_label') }} · <span x-text="totals.rooms">{{ $scene['totals']['rooms'] }}</span> کلاس · <span x-text="totals.people">{{ $scene['totals']['people'] }}</span> نفر · <span x-text="totals.live">{{ $scene['totals']['live'] }}</span> در حال برگزاری</span>
+                @foreach ($scene['states'] as $status)
                     <span class="inline-flex items-center gap-1.5">
                         <span class="size-2.5 rounded-sm" style="background-color: {{ $status['color'] }}"></span>
                         {{ $status['label'] }}
@@ -74,7 +102,8 @@
                     <span class="size-2.5 rounded-sm bg-[#a855f7]"></span>
                     سقف بنفش: {{ config('sarasystem.tenant_label') }} اصلی
                 </span>
-                <span class="text-gray-400 dark:text-gray-500">وضعیت ساعت {{ $time }}. چیدمان نمادین است و جای واقعی را نشان نمی‌دهد. کلیک روی ساختمان: جزئیات</span>
+                @include('campus::filament.partials.live-status')
+                <span class="text-gray-400 dark:text-gray-500">چیدمان نمادین است و جای واقعی را نشان نمی‌دهد. کلیک روی ساختمان: جزئیات</span>
             </div>
         </div>
 
@@ -84,7 +113,7 @@
 
         {{-- The same tenants for screen readers and where the 3D view can't open. --}}
         <ul x-cloak x-bind:class="state === 'failed' ? 'grid grid-cols-1 gap-1 text-sm sm:grid-cols-2' : 'sr-only'">
-            @foreach ($sites as $site)
+            @foreach ($scene['sites'] as $site)
                 <li>
                     <a href="{{ $site['url'] }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $site['name'] }}</a>
                     · {{ count($site['rooms']) }} کلاس · {{ $site['people'] }} نفر · {{ $site['live'] }} در حال برگزاری

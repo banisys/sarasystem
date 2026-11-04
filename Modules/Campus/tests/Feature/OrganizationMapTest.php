@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Modules\Campus\Filament\Pages\Building;
 use Modules\Campus\Filament\Pages\OrganizationMap;
 use Modules\Campus\Services\OrganizationSites;
@@ -109,6 +110,24 @@ class OrganizationMapTest extends TestCase
 
         $this->assertSame($this->east->getKey(), Tenant::current()->getKey());
         $this->assertSame($this->east->getKey(), getPermissionsTeamId());
+    }
+
+    public function test_the_live_data_has_only_the_users_tenants_and_no_class_names(): void
+    {
+        $this->roleWithPermissions('class_lister', ['ViewAny:Classroom']);
+        $person = User::factory()->create();
+        $this->makeStaff($person, $this->west);
+        $this->grantRole($person, $this->west, 'class_lister');
+        $this->actingInPanel($person, $this->west);
+
+        $live = Livewire::test(OrganizationMap::class)->instance()->liveData();
+
+        $this->assertSame(['الف غرب'], array_column($live['sites'], 'name'));
+        $this->assertSame(['rooms' => 1, 'live' => 1, 'people' => 0], $live['totals']);
+        $this->assertStringNotContainsString('کلاس محرمانه غرب', json_encode($live, JSON_UNESCAPED_UNICODE));
+
+        $this->travelTo(CarbonImmutable::parse('2026-10-29 13:10'));
+        $this->assertSame(0, Livewire::test(OrganizationMap::class)->instance()->liveData()['totals']['live']);
     }
 
     private function classroomIn(Tenant $tenant, string $title, bool $live = false): void

@@ -63,6 +63,63 @@ export class BoxBatch {
 }
 
 /**
+ * New colours for the windows, in the order they were added.
+ */
+export function recolor(mesh, colors) {
+    const color = new Color();
+
+    colors.forEach((value, index) => mesh.setColorAt(index, color.set(value)));
+    mesh.instanceColor.needsUpdate = true;
+}
+
+/**
+ * Fetches fresh data every so many seconds while the tab is showing, and at once
+ * when it shows again (ADR 0053). One request at a time. No seconds, no fetching.
+ */
+export function keepLive(seconds, load, apply, failed) {
+    let busy = false;
+    let stopped = false;
+
+    const now = async () => {
+        if (busy || stopped || document.hidden) {
+            return;
+        }
+
+        busy = true;
+
+        try {
+            const data = await load();
+
+            if (!stopped) {
+                apply(data);
+            }
+        } catch {
+            if (!stopped) {
+                failed();
+            }
+        } finally {
+            busy = false;
+        }
+    };
+
+    if (!seconds) {
+        return { now, stop() {} };
+    }
+
+    const timer = setInterval(now, seconds * 1000);
+    document.addEventListener('visibilitychange', now);
+
+    return {
+        now,
+        stop() {
+            stopped = true;
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', now);
+        },
+    };
+}
+
+/**
  * How big a block with so many rooms is.
  */
 export function blockSize(roomCount) {

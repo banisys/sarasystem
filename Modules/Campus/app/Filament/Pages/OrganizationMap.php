@@ -8,6 +8,7 @@ use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Livewire\Attributes\Renderless;
 use Modules\Campus\Services\OrganizationSites;
 use UnitEnum;
 
@@ -45,9 +46,12 @@ class OrganizationMap extends Page implements IndependentOfTenant
     }
 
     /**
+     * The windows' state now, for the page to update itself (ADR 0053).
+     *
      * @return array<string, mixed>
      */
-    protected function getViewData(): array
+    #[Renderless]
+    public function liveData(): array
     {
         /** @var User $user */
         $user = auth()->user();
@@ -55,14 +59,21 @@ class OrganizationMap extends Page implements IndependentOfTenant
 
         return [
             'sites' => $sites,
+            'states' => Building::states(),
             'time' => now()->format('H:i'),
-            'scene' => ['sites' => $sites, 'states' => Building::states()],
-            'legend' => Building::states(),
             'totals' => [
                 'rooms' => collect($sites)->sum(fn (array $site): int => count($site['rooms'])),
                 'live' => collect($sites)->sum('live'),
                 'people' => collect($sites)->sum('people'),
             ],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getViewData(): array
+    {
+        return ['scene' => $this->liveData(), 'liveSeconds' => config('campus.live_seconds')];
     }
 }
