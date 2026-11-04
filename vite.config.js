@@ -10,7 +10,13 @@ export default defineConfig(({ mode }) => {
     return {
         plugins: [
             laravel({
-                input: ['resources/css/app.css', 'resources/js/app.js', 'resources/css/filament/admin/theme.css'],
+                input: [
+                    'resources/css/app.css',
+                    'resources/js/app.js',
+                    'resources/css/filament/admin/theme.css',
+                    // Its own entry so three.js loads only when the 3D view is opened (ADR 0049).
+                    'Modules/Class/resources/js/session-scene.js',
+                ],
                 refresh: true,
             }),
             vue({
@@ -28,6 +34,12 @@ export default defineConfig(({ mode }) => {
                 // `@/Layouts/AppLayout.vue` from anywhere, including module pages.
                 '@': path.resolve('resources/js'),
                 'ziggy-js': path.resolve('vendor/tightenco/ziggy'),
+            },
+        },
+        // Keeps the exports of entries imported at run time (session-scene.js).
+        build: {
+            rollupOptions: {
+                preserveEntrySignatures: 'exports-only',
             },
         },
         // The dev server runs inside the Docker container; the browser reaches it

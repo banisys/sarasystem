@@ -1,0 +1,192 @@
+<?php
+
+namespace Modules\Class\Tests\Feature;
+
+use App\Models\Tenant;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+use Filament\Actions\Testing\TestAction;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Modules\Class\Enums\AttendanceStatus;
+use Modules\Class\Enums\ClassMode;
+use Modules\Class\Enums\SessionStatus;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
+use Modules\Class\Models\Attendance;
+use Modules\Class\Models\ClassMember;
+use Modules\Class\Models\ClassRole;
+use Modules\Class\Models\Classroom;
+use Modules\Class\Models\ClassSession;
+use Modules\Class\Services\SessionScene;
+use Tests\Concerns\InteractsWithTenants;
+use Tests\TestCase;
+
+/**
+ * The 3D view of a session in its details modal (ADR 0049).
+ */
+class SessionSceneTest extends TestCase
+{
+    use InteractsWithTenants, RefreshDatabase;
+
+    private Tenant $west;
+
+    private Classroom $classroom;
+
+    private ClassRole $attendeeRole;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(CarbonImmutable::parse('2026-10-29 12:00'));
+
+        $primary = Tenant::factory()->create();
+        $primary->makePrimary();
+        $this->west = Tenant::factory()->create();
+        $this->west->makeCurrent();
+        $this->classroom = Classroom::factory()->for($this->west)->create(['mode' => ClassMode::InPerson]);
+        $this->attendeeRole = ClassRole::factory()->create(['is_attendee' => true]);
+    }
+
+    public function test_each_attendee_has_a_seat_with_their_status(): void
+    {
+        $session = $this->classSession();
+        $present = $this->attendee('الف حاضر');
+        $late = $this->attendee('ب دیرآمده');
+        $absent = $this->attendee('ت غایب');
+        $this->attendee('ث ثبت‌نشده');
+        $this->record($session, $present, AttendanceStatus::Present);
+        $this->record($session, $late, AttendanceStatus::Late, lateMinutes: 10);
+        $this->record($session, $absent, AttendanceStatus::Absent);
+
+        $scene = app(SessionScene::class)->for($session->fresh(['classroom', 'teacher', 'substituteTeacher']));
+
+        $this->assertSame([
+            ['name' => 'الف حاضر', 'status' => 'present', 'label' => 'حاضر'],
+            ['name' => 'ب دیرآمده', 'status' => 'late', 'label' => 'تأخیر 10 دقیقه'],
+            ['name' => 'ت غایب', 'status' => 'absent', 'label' => 'غایب'],
+            ['name' => 'ث ثبت‌نشده', 'status' => 'unrecorded', 'label' => 'ثبت‌نشده'],
+        ], $scene['seats']);
+        $this->assertFalse($scene['virtual']);
+        $this->assertSame(['present', 'late', 'absent', 'unrecorded'], array_keys($scene['statuses']));
+        $this->assertSame(1, $scene['statuses']['absent']['count']);
+        $this->assertFalse($scene['statuses']['absent']['seated']);
+        $this->assertTrue($scene['statuses']['absent']['marker']);
+    }
+
+    public function test_a_substitute_teaches_and_an_online_class_is_virtual(): void
+    {
+        $online = Classroom::factory()->for($this->west)->create(['mode' => ClassMode::Online]);
+        $teacher = User::factory()->create();
+        $substitute = User::factory()->create(['name' => 'مدرس جایگزین']);
+        $session = ClassSession::factory()->create(['classroom_id' => $online->id, 'teacher_id' => $teacher->id, 'substitute_teacher_id' => $substitute->id]);
+
+        $scene = app(SessionScene::class)->for($session);
+
+        $this->assertTrue($scene['virtual']);
+        $this->assertSame('مدرس جایگزین', $scene['teacher']);
+        $this->assertSame([], $scene['seats']);
+    }
+
+    public function test_the_details_modal_offers_the_view_with_this_session_only(): void
+    {
+        $session = $this->classSession();
+        $this->attendee('فراگیر همین کلاس');
+
+        $otherClass = Classroom::factory()->for($this->west)->create();
+        ClassMember::factory()->create(['classroom_id' => $otherClass->id, 'class_role_id' => $this->attendeeRole->id, 'user_id' => User::factory()->create(['name' => 'فراگیر کلاس دیگر'])->id]);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(SessionsRelationManager::class, $this->owner())
+            ->mountAction(TestAction::make('sessionDetails')->arguments(['session' => $session->id]))
+            ->assertMountedActionModalSee(['نمای سه‌بعدی', 'فراگیر همین کلاس'])
+            ->assertMountedActionModalDontSee('فراگیر کلاس دیگر');
+    }
+
+    public function test_another_tenants_session_opens_no_view(): void
+    {
+        $theirs = Tenant::factory()->create()->execute(function (): ClassSession {
+            $classroom = Classroom::factory()->for(Tenant::current())->create();
+
+            return ClassSession::factory()->create(['classroom_id' => $classroom->id]);
+        });
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(SessionsRelationManager::class, $this->owner())
+            ->assertActionHidden(TestAction::make('sessionDetails')->arguments(['session' => $theirs->id]));
+    }
+
+    public function test_the_view_is_only_for_who_may_see_the_class_or_take_its_attendance(): void
+    {
+        $session = $this->classSession();
+        $scene = app(SessionScene::class);
+
+        $this->assertTrue($scene->canSee($this->admin(), $session));
+
+        $this->roleWithPermissions('sessions_viewer', ['ViewAny:ClassSession', 'View:ClassSession']);
+        $sessionsOnly = User::factory()->create();
+        $this->grantRole($sessionsOnly, $this->west, 'sessions_viewer');
+        $this->assertFalse($scene->canSee($sessionsOnly, $session));
+
+        $this->roleWithPermissions('class_viewer', ['View:Classroom']);
+        $classViewer = User::factory()->create();
+        $this->grantRole($classViewer, $this->west, 'class_viewer');
+        $this->assertTrue($scene->canSee($classViewer, $session));
+
+        $teacher = User::factory()->create();
+        $session->update(['teacher_id' => $teacher->id]);
+        $this->assertTrue($scene->canSee($teacher, $session->fresh()));
+
+        // Fellow learners never see each other's attendance.
+        $learner = $this->attendee('همکلاسی');
+        $this->assertFalse($scene->canSee($learner, $session->fresh()));
+    }
+
+    public function test_a_cancelled_session_has_no_view(): void
+    {
+        $session = $this->classSession(SessionStatus::Cancelled);
+        $this->attendee('فراگیر');
+
+        $this->assertFalse(app(SessionScene::class)->canSee($this->admin(), $session));
+    }
+
+    private function attendee(string $name): User
+    {
+        $user = User::factory()->create(['name' => $name]);
+        ClassMember::factory()->create(['classroom_id' => $this->classroom->id, 'class_role_id' => $this->attendeeRole->id, 'user_id' => $user->id, 'joined_on' => null, 'left_on' => null]);
+
+        return $user;
+    }
+
+    private function record(ClassSession $session, User $user, AttendanceStatus $status, ?int $lateMinutes = null): void
+    {
+        Attendance::factory()->create(['session_id' => $session->id, 'classroom_id' => $session->classroom_id, 'tenant_id' => $session->tenant_id, 'user_id' => $user->id, 'status' => $status, 'late_minutes' => $lateMinutes]);
+    }
+
+    private function classSession(SessionStatus $status = SessionStatus::Scheduled): ClassSession
+    {
+        return ClassSession::factory()->create([
+            'classroom_id' => $this->classroom->id,
+            'starts_at' => '2026-10-29 10:00',
+            'ends_at' => '2026-10-29 11:30',
+            'status' => $status,
+        ]);
+    }
+
+    private function admin(): User
+    {
+        $admin = User::factory()->create();
+        $admin->makeSuperAdmin(Tenant::primary());
+
+        return $admin;
+    }
+
+    /**
+     * @return array{ownerRecord: Classroom, pageClass: class-string}
+     */
+    private function owner(): array
+    {
+        return ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class];
+    }
+}

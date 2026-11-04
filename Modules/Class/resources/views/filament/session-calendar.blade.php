@@ -250,7 +250,7 @@
                                         <button type="button" wire:click="showSessions('day', '{{ $day['date'] }}')"
                                             title="{{ collect($day['tones'])->map(fn (int $count, string $tone): string => $tones[$tone].' '.$count)->join('، ') }}{{ $day['holiday'] ? ' · '.$day['holiday'] : '' }}"
                                             @class([
-                                                'relative grid aspect-square place-items-center rounded font-semibold tabular-nums text-white transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                                                'relative grid aspect-square place-items-center rounded text-sm font-semibold tabular-nums text-white transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
                                                 $dotClasses[$tone],
                                                 'ring-2 ring-gray-950 ring-offset-1 dark:ring-white dark:ring-offset-gray-900' => $day['is_today'],
                                             ])>
@@ -261,7 +261,7 @@
                                         </button>
                                     @else
                                         <span title="{{ $day['holiday'] }}" @class([
-                                            'grid aspect-square place-items-center rounded tabular-nums',
+                                            'grid aspect-square place-items-center rounded text-sm tabular-nums',
                                             'bg-gray-200 dark:bg-white/15' => $day['holiday'],
                                             'text-danger-500 dark:text-danger-400' => $day['is_friday'] || $day['holiday'],
                                             'text-gray-600 dark:text-gray-300' => ! $day['is_friday'] && ! $day['holiday'],

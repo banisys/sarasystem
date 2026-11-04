@@ -23,6 +23,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\View;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,6 +41,7 @@ use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionCalendar;
 use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionPlanner;
+use Modules\Class\Services\SessionScene;
 
 /**
  * Columns and row actions of session lists: a class's «جلسه‌ها» tab and
@@ -205,6 +207,10 @@ class SessionActions
                         ->label('حضور و غیاب')
                         ->state(fn (ClassSession $record): ?string => self::attendanceLine($record))
                         ->placeholder('ثبت نشده')
+                        ->columnSpanFull(),
+                    View::make('class::filament.session-scene')
+                        ->viewData(fn (ClassSession $record, SessionScene $scene): array => ['scene' => $scene->for($record)])
+                        ->visible(fn (ClassSession $record, SessionScene $scene): bool => ($user = auth()->user()) instanceof User && $scene->canSee($user, $record))
                         ->columnSpanFull(),
                     TextEntry::make('content')
                         ->label(fn (ClassSession $record): string => $record->hasContent() ? 'مطالب' : 'مطالب (برنامه)')
