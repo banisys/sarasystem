@@ -81,4 +81,4 @@ Some clients pay per feature, so an installation must work with any module disab
 ## Git
 - Default branch: `main`. _(TODO: branch naming for features.)_
 - Commit messages: [Conventional Commits](https://www.conventionalcommits.org/) in English, e.g. `feat(school): add classroom resource`, `docs: record tenancy ADR`, `chore: add docker compose`.
-- Agents never commit on their own. At a sensible commit point, propose the message and commit only after the user approves.
+- Agents commit finished and verified work on `main` without asking, keep unrelated work in separate commits, and tell the user what they committed. They don't push unless asked.
