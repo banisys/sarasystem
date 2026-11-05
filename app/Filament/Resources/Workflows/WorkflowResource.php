@@ -11,6 +11,8 @@ use App\Filament\Resources\Workflows\Tables\WorkflowsTable;
 use App\Filament\Support\IndependentOfTenant;
 use App\Models\Workflow;
 use BackedEnum;
+use Closure;
+use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -41,6 +43,30 @@ class WorkflowResource extends Resource implements IndependentOfTenant
     protected static ?string $modelLabel = 'فرایند';
 
     protected static ?string $pluralModelLabel = 'فرایندها';
+
+    /**
+     * @var array<string, Closure(): iterable<Action>>
+     */
+    protected static array $viewPageActionFactories = [];
+
+    /**
+     * Let a module add buttons to the header of a workflow's page, e.g. its 3D
+     * view (ADR 0064). Registering a name again replaces it.
+     *
+     * @param  Closure(): iterable<Action>  $callback
+     */
+    public static function addViewPageActionsUsing(string $name, Closure $callback): void
+    {
+        static::$viewPageActionFactories[$name] = $callback;
+    }
+
+    /**
+     * @return list<Action>
+     */
+    public static function moduleViewPageActions(): array
+    {
+        return collect(static::$viewPageActionFactories)->flatMap(fn (Closure $callback): iterable => $callback())->values()->all();
+    }
 
     public static function form(Schema $schema): Schema
     {

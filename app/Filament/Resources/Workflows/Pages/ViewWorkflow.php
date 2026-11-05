@@ -26,6 +26,7 @@ class ViewWorkflow extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ...WorkflowResource::moduleViewPageActions(),
             EditAction::make(),
         ];
     }

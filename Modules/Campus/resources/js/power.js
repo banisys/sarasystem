@@ -47,8 +47,8 @@ export function powerColor(node) {
 /**
  * Beams between two points, recoloured when something is picked.
  */
-export function makeBeams(beams) {
-    const mesh = new InstancedMesh(new CylinderGeometry(0.07, 0.07, 1, 6), new MeshLambertMaterial({ color: '#ffffff' }), Math.max(1, beams.length));
+export function makeBeams(beams, radius = 0.07) {
+    const mesh = new InstancedMesh(new CylinderGeometry(radius, radius, 1, 6), new MeshLambertMaterial({ color: '#ffffff' }), Math.max(1, beams.length));
     const up = new Vector3(0, 1, 0);
     const matrix = new Matrix4();
     const direction = new Vector3();

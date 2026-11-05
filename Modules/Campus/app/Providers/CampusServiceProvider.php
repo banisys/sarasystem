@@ -5,10 +5,12 @@ namespace Modules\Campus\Providers;
 use App\Campus\StaffPeople;
 use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Tenants\TenantResource;
+use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Filament\Support\PersonListActions;
 use App\Filament\Support\PersonRecordActions;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Workflow;
 use Filament\Actions\Action;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -18,6 +20,7 @@ use Modules\Campus\Filament\Pages\Building;
 use Modules\Campus\Filament\Pages\OrganizationMap;
 use Modules\Campus\Services\RoleHierarchy;
 use Modules\Campus\Services\StaffHierarchy;
+use Modules\Campus\Services\WorkflowScene;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class CampusServiceProvider extends ModuleServiceProvider
@@ -67,6 +70,20 @@ class CampusServiceProvider extends ModuleServiceProvider
                     'forPeople' => false,
                     'namesOn' => true,
                     'note' => 'فقط نقش‌هایی که در پنل مدیریت مجوز دارند نشان داده می‌شوند. جایگاه از خود مجوزها به دست می‌آید: نقشی بالاتر است که همه‌ی مجوزهای نقش پایین‌تر را داشته باشد و بیشتر هم داشته باشد. دو نقش در یک طبقه لزوماً هم‌تراز نیستند. کلیک روی ستون: جزئیات و بالادست و زیردست',
+                ])),
+        ]);
+
+        WorkflowResource::addViewPageActionsUsing('workflow-scene', fn (): array => [
+            Action::make('workflowScene')
+                ->label('نمای سه‌بعدی')
+                ->icon(Heroicon::OutlinedCube)
+                ->color('gray')
+                ->modalHeading(fn (Workflow $record): string => "نمای سه‌بعدی فرایند «{$record->name}»")
+                ->modalWidth(Width::Screen)
+                ->modalSubmitAction(false)
+                ->modalCancelAction(false)
+                ->modalContent(fn (Workflow $record): View => view('campus::filament.modals.workflow-scene', [
+                    'scene' => app(WorkflowScene::class)->scene($record),
                 ])),
         ]);
 

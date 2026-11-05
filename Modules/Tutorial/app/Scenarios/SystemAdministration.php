@@ -181,6 +181,7 @@ class SystemAdministration extends Scenario
                     "مرحله‌ی «بررسی در شعبه»: {$tenant} «شعبه شرق»، مسئول «نقش»، نقش «{$manager}».",
                     'مرحله‌ی «تأیید نهایی»: '.$tenant.' «'.(Tenant::primary()?->name ?? 'ستاد').'»، مسئول «شخص»، شخص: خودتان؛ در «کارهای مجاز در این مرحله» «برگشت» و «رد» را بزنید.',
                     'ذخیره کنید و با «نمایش فرایند» نمودارش را ببینید.',
+                    ...(self::enabled('Campus') ? ['اختیاری: در صفحه‌ی «نمایش فرایند» دکمه‌ی «نمای سه‌بعدی» را بزنید: هر مرحله یک پله است و هر '.config('sarasystem.tenant_label').' خط خودش را دارد؛ «پخش مسیر» یک پرونده را مرحله‌به‌مرحله از مسیر می‌گذراند.'] : []),
                 ])
                 ->url(fn (): string => WorkflowResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                 ->fill(fn (): array => ['name' => 'جذب کارشناس پشتیبانی', 'subject_type' => (new JobApplication)->getMorphClass()])

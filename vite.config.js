@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
                     'Modules/Campus/resources/js/organization-scene.js',
                     'Modules/Campus/resources/js/role-scene.js',
                     'Modules/Campus/resources/js/staff-scene.js',
+                    'Modules/Campus/resources/js/workflow-scene.js',
                 ],
                 refresh: true,
             }),
