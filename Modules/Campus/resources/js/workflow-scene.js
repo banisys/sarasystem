@@ -31,8 +31,8 @@ const MAX_RISE = 1.4;
 const MAX_TOTAL_RISE = 14;
 const MAX_FOLDERS = 12;
 const ARC_SEGMENTS = 14;
-const FLOW_RADIUS = 0.07;
-const ARC_RADIUS = 0.045;
+const FLOW_RADIUS = 0.045;
+const ARC_RADIUS = 0.03;
 const MOVE_MS = 900;
 const STOP_MS = 2600;
 
@@ -56,7 +56,7 @@ const WORKFLOW_VIEWS = { ...VIEWS, corner: new Vector3(0.28, 0.5, 1).normalize()
  * Arrow heads, recoloured with the beams they end.
  */
 function makeHeads(heads) {
-    const mesh = new InstancedMesh(new ConeGeometry(0.26, 0.7, 10), new MeshLambertMaterial({ color: '#ffffff' }), Math.max(1, heads.length));
+    const mesh = new InstancedMesh(new ConeGeometry(0.13, 0.4, 10), new MeshLambertMaterial({ color: '#ffffff' }), Math.max(1, heads.length));
     const up = new Vector3(0, 1, 0);
     const matrix = new Matrix4();
     const rotation = new Quaternion();
