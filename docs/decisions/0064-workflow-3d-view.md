@@ -20,6 +20,8 @@ The user asked for a button on a workflow's page («نمایش فرایند», `
 - «پخش مسیر» moves a case along the approvals, stopping at each step with a caption. It only plays on the screen and changes no data. Frames are drawn only while it moves (ADR 0049); with reduced motion the case jumps from stop to stop.
 - It shows nothing new: anyone who can open the page already sees the same steps, assignees and open-case counts in the flowchart, so it has no permission of its own. The data is built only when the modal opens, and three.js loads then too.
 
+- People look like people ([person-figure.js](../../resources/js/scene/person-figure.js)): the user found stacked boxes unsuitable and asked for one figure everywhere, so the session's room and both pyramids use it too. It is in core beside `stage.js`, since a session's view is in the Class module and modules don't depend on each other (ADR 0041). Colour carries meaning in those views (status, power), so only the clothes take a colour; skin and hair stay. Learners in a session sit at their desks; the teacher stands. In the staff pyramid a stronger person is scaled as a whole, so also wider.
+
 ## Consequences
 - The view follows the workflow's definition by itself; the designer needs no 3D settings.
 - It shows the definition and the current open cases, not one case's history; that stays in the case's flowchart (ADR 0043).

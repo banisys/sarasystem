@@ -1,6 +1,5 @@
 import {
     BoxGeometry,
-    CapsuleGeometry,
     Color,
     CylinderGeometry,
     Group,
@@ -8,9 +7,9 @@ import {
     Matrix4,
     Mesh,
     MeshLambertMaterial,
-    SphereGeometry,
     Vector3,
 } from 'three';
+import { makePeople } from '@/scene/person-figure.js';
 import { createStage } from '@/scene/stage.js';
 
 /**
@@ -26,7 +25,6 @@ const COLORS = {
     virtual: { floor: '#1e293b', wall: '#0f172a', board: '#38bdf8', trim: '#334155', window: '#38bdf8' },
     desk: '#c9a26d',
     chair: '#78716c',
-    head: '#f3d6b6',
     teacher: '#6366f1',
 };
 
@@ -136,11 +134,8 @@ function buildRoom(data) {
     if (data.teacher) {
         const teacherX = 0;
         const teacherZ = -depth / 2 + 1;
-        const body = add(new Mesh(new CapsuleGeometry(0.24, 0.75, 3, 8), new MeshLambertMaterial({ color: COLORS.teacher })));
-        body.position.set(teacherX, 0.62, teacherZ);
-        const head = add(new Mesh(new SphereGeometry(0.2, 10, 8), new MeshLambertMaterial({ color: COLORS.head })));
-        head.position.set(teacherX, 1.32, teacherZ);
-        targets.push({ position: new Vector3(teacherX, 1.6, teacherZ), text: `${data.teacher} · مدرس` });
+        add(makePeople([{ x: teacherX, z: teacherZ, scale: 0.92, color: COLORS.teacher }]));
+        targets.push({ position: new Vector3(teacherX, 1.75, teacherZ), text: `${data.teacher} · مدرس` });
     }
 
     const positions = seats.map((seat, index) => {
@@ -178,8 +173,10 @@ function buildRoom(data) {
     instanced(new BoxGeometry(1.05, 0.7, 0.45), positions, ({ x, z }) => [x, 0.35, z - 0.4], () => '#d6bb8f');
     instanced(new BoxGeometry(0.5, 0.45, 0.5), positions, ({ x, z }) => [x, 0.225, z + 0.15], chairColor);
     instanced(new BoxGeometry(0.5, 0.5, 0.07), positions, ({ x, z }) => [x, 0.7, z + 0.4], chairColor);
-    instanced(new CapsuleGeometry(0.22, 0.45, 3, 8), seated, ({ x, z }) => [x, 0.8, z + 0.13], ({ look }) => look.color);
-    instanced(new SphereGeometry(0.18, 10, 8), seated, ({ x, z }) => [x, 1.3, z + 0.13], () => COLORS.head);
+    // Facing the board, on the chair, their clothes in the colour of their status.
+    if (seated.length > 0) {
+        add(makePeople(seated.map(({ x, z, look }) => ({ x, z: z + 0.15, scale: 0.92, turn: Math.PI, color: look.color })), 'seated'));
+    }
     instanced(new CylinderGeometry(0.22, 0.22, 0.06, 12), positions.filter(({ look }) => look.marker), ({ x, z }) => [x, 0.79, z - 0.4], ({ look }) => look.color);
 
     for (const { x, z, seat, look } of positions) {

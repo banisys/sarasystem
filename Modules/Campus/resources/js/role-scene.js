@@ -1,4 +1,5 @@
 import { Group, Vector3 } from 'three';
+import { makePeople } from '@/scene/person-figure.js';
 import { createStage } from '@/scene/stage.js';
 import { BoxBatch, recolor, VIEWS } from './blocks.js';
 import { makeBeams, POWER_COLORS, powerColor, strength } from './power.js';
@@ -17,6 +18,7 @@ const MIN_COLUMN = 0.35;
 const MAX_COLUMN = 5.5;
 const FLOOR_GAP = 3.2;
 const MAX_PEOPLE = 10;
+const PERSON_SCALE = 0.5;
 
 const COLORS = { ...POWER_COLORS, person: '#334155', peer: '#10b981' };
 
@@ -62,6 +64,7 @@ export function mountRoleScene(element, tooltip, data, onSelect) {
     const plates = new BoxBatch();
     const columns = new BoxBatch();
     const details = new BoxBatch();
+    const people = [];
     const places = new Map();
     const targets = [];
 
@@ -92,13 +95,16 @@ export function mountRoleScene(element, tooltip, data, onSelect) {
                 }
             }
 
-            const people = Math.min(MAX_PEOPLE, role.holders);
+            const holders = Math.min(MAX_PEOPLE, role.holders);
 
-            for (let person = 0; person < people; person++) {
-                const personX = x + (person - (people - 1) / 2) * 0.36;
-
-                details.add(0.2, 0.42, 0.2, COLORS.person, personX, floor.y + 0.21, z + COLUMN_WIDTH / 2 + 0.55);
-                details.add(0.2, 0.2, 0.2, COLORS.person, personX, floor.y + 0.54, z + COLUMN_WIDTH / 2 + 0.55);
+            for (let person = 0; person < holders; person++) {
+                people.push({
+                    x: x + (person - (holders - 1) / 2) * 0.42,
+                    y: floor.y,
+                    z: z + COLUMN_WIDTH / 2 + 0.55,
+                    scale: PERSON_SCALE,
+                    color: COLORS.person,
+                });
             }
         });
     });
@@ -153,6 +159,9 @@ export function mountRoleScene(element, tooltip, data, onSelect) {
     world.add(columnMesh, beamMesh, plateMesh);
     if (details.boxes.length > 0) {
         world.add(details.toMesh());
+    }
+    if (people.length > 0) {
+        world.add(makePeople(people));
     }
 
     const highlight = (picked) => {

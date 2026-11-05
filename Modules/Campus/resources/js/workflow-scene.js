@@ -12,9 +12,9 @@ import {
     Quaternion,
     Vector3,
 } from 'three';
+import { makePeople } from '@/scene/person-figure.js';
 import { createStage } from '@/scene/stage.js';
 import { BoxBatch, recolor, VIEWS } from './blocks.js';
-import { makePeople } from './person-figure.js';
 import { makeBeams } from './power.js';
 
 /**

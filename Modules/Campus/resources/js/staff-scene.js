@@ -1,13 +1,5 @@
-import {
-    Color,
-    CylinderGeometry,
-    Group,
-    IcosahedronGeometry,
-    InstancedMesh,
-    Matrix4,
-    MeshLambertMaterial,
-    Vector3,
-} from 'three';
+import { Group, Vector3 } from 'three';
+import { makePeople, PERSON_HEIGHT } from '@/scene/person-figure.js';
 import { createStage } from '@/scene/stage.js';
 import { BoxBatch, recolor, VIEWS } from './blocks.js';
 import { makeBeams, POWER_COLORS, powerColor, strength } from './power.js';
@@ -134,21 +126,7 @@ export function mountStaffScene(element, tooltip, data, onSelect) {
         });
     });
 
-    const matrix = new Matrix4();
-    const color = new Color();
-    const bodies = new InstancedMesh(new CylinderGeometry(0.2, 0.32, 1, 12), new MeshLambertMaterial({ color: '#ffffff' }), figures.length);
-    const heads = new InstancedMesh(new IcosahedronGeometry(0.25, 1), new MeshLambertMaterial({ color: '#ffffff' }), figures.length);
-
-    figures.forEach(({ group, x, y, z, tall }, index) => {
-        const bodyHeight = tall - 0.5;
-
-        matrix.makeScale(1, bodyHeight, 1).setPosition(x, y + bodyHeight / 2, z);
-        bodies.setMatrixAt(index, matrix);
-        bodies.setColorAt(index, color.set(powerColor(group)));
-        matrix.makeTranslation(x, y + tall - 0.25, z);
-        heads.setMatrixAt(index, matrix);
-        heads.setColorAt(index, color.set(powerColor(group)));
-    });
+    const people = makePeople(figures.map(({ group, x, y, z, tall }) => ({ x, y, z, scale: tall / PERSON_HEIGHT, color: powerColor(group) })));
 
     const beams = [];
 
@@ -176,7 +154,7 @@ export function mountStaffScene(element, tooltip, data, onSelect) {
 
     const beamMesh = makeBeams(beams);
 
-    world.add(bodies, heads, beamMesh, plateMesh);
+    world.add(people, beamMesh, plateMesh);
     if (crowns.boxes.length > 0) {
         world.add(crowns.toMesh());
     }
@@ -196,8 +174,7 @@ export function mountStaffScene(element, tooltip, data, onSelect) {
             return isRelated ? powerColor(group) : POWER_COLORS.faded;
         });
 
-        recolor(bodies, colors);
-        recolor(heads, colors);
+        recolor(people.clothes, colors);
 
         if (beams.length > 0) {
             const upward = picked ? new Set([picked.id, ...picked.aboveIds]) : new Set();
