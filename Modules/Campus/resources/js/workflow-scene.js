@@ -387,7 +387,8 @@ export function mountWorkflowScene(element, tooltip, data, { onSelect, onPlay })
     // The path is long and low: on a wide screen it can fill the width, which a
     // ball around it wouldn't.
     const aspect = element.clientWidth / Math.max(1, element.clientHeight);
-    const radius = Math.max((Math.hypot(length, depth * 0.6) * 1.1) / Math.max(2, 1.9 * aspect), height * 0.6);
+    // Many lanes make it deep instead, and the near lane then needs the height.
+    const radius = Math.max((Math.hypot(length, depth * 0.6) * 1.1) / Math.max(2, 1.9 * aspect), (depth + height) / 1.8);
 
     const stage = createStage(element, tooltip, {
         world,
