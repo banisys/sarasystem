@@ -4,6 +4,7 @@ namespace Modules\Document\Filament\Resources\DocumentTypes\Pages;
 
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Enums\Width;
 use Modules\Document\Filament\Resources\DocumentTypes\DocumentTypeResource;
 use Modules\Document\Filament\Resources\DocumentTypes\Schemas\DocumentTypeForm;
 
@@ -15,6 +16,7 @@ class ListDocumentTypes extends ListRecords
     {
         return [
             CreateAction::make()
+                ->modalWidth(Width::TwoExtraLarge)
                 ->using(fn (array $data) => DocumentTypeForm::save(null, $data)),
         ];
     }
