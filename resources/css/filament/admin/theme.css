@@ -198,3 +198,8 @@ html.dark .fi-modal > .fi-modal-close-overlay {
 .fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-content {
     flex: 1;
 }
+
+/* A refused file in SpreadsheetImportAction: «نوع فایل نامعتبر» alone, without FilePond's list of MIME types (ADR 0063). */
+.fi-spreadsheet-upload .filepond--item[data-filepond-item-state*='invalid'] .filepond--file-status-sub {
+    display: none;
+}

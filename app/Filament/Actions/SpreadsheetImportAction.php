@@ -4,7 +4,11 @@ namespace App\Filament\Actions;
 
 use Closure;
 use Filament\Actions\ImportAction;
+use Filament\Actions\Imports\ImportColumn;
 use Filament\Forms\Components\FileUpload;
+use Filament\Schemas\Components\Fieldset;
+use Illuminate\Support\Str;
+use League\Csv\Reader;
 use League\Csv\Writer;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -14,9 +18,10 @@ use SplTempFileObject;
 use Throwable;
 
 /**
- * Filament's CSV import that also takes an Excel file (ADR 0063): the first
- * sheet of an .xlsx is turned into CSV as it is read, so column mapping, the
- * queue and the report of failed rows work as they do for a CSV file.
+ * Filament's import, for Excel files only (ADR 0063): the first sheet of an
+ * .xlsx is turned into CSV as it is read, so the queue and the report of failed
+ * rows stay Filament's. Columns are matched by their titles, without asking:
+ * a file lacking a required column is refused at upload.
  *
  * Formulas are not calculated: their text reaches the importer's validation.
  */
@@ -45,14 +50,20 @@ class SpreadsheetImportAction extends ImportAction
                 if ($component instanceof FileUpload) {
                     $component
                         ->acceptedFileTypes([
-                            ...$component->getAcceptedFileTypes() ?? [],
                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                             // How some systems detect an .xlsx; the extension rule and the reader still apply.
                             'application/zip',
                             'application/octet-stream',
                         ])
                         ->maxSize(self::MAX_FILE_KILOBYTES)
-                        ->placeholder('فایل را اینجا بکشید و رها کنید یا انتخاب کنید');
+                        // The theme hides FilePond's list of MIME types when a file is refused.
+                        ->extraAttributes(['class' => 'fi-spreadsheet-upload'])
+                        ->placeholder('فایل Excel را اینجا بکشید و رها کنید یا انتخاب کنید');
+                }
+
+                // Only out of sight: the parent's action reads the map from this state.
+                if ($component instanceof Fieldset) {
+                    $component->extraAttributes(['style' => 'display: none']);
                 }
             }
 
@@ -68,10 +79,22 @@ class SpreadsheetImportAction extends ImportAction
         $rules = array_values(array_filter(parent::getFileValidationRules(), fn (mixed $rule): bool => $rule !== 'extensions:csv,txt'));
 
         return [
-            'extensions:csv,txt,xlsx',
+            'extensions:xlsx',
             fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
-                if ($this->isSpreadsheet($value) && $this->spreadsheetAsCsv($value) === null) {
+                if (! $this->isSpreadsheet($value)) {
+                    return;
+                }
+
+                $csv = $this->spreadsheetAsCsv($value);
+
+                if ($csv === null) {
                     $fail('این فایل Excel خوانده نشد یا ردیف عنوان ستون‌ها را ندارد.');
+
+                    return;
+                }
+
+                if (($missing = $this->missingColumns($csv)) !== []) {
+                    $fail('این ستون‌ها در فایل نیست: «'.implode('»، «', $missing).'». از فایل نمونه استفاده کنید.');
                 }
             },
             ...$rules,
@@ -83,11 +106,7 @@ class SpreadsheetImportAction extends ImportAction
      */
     public function getUploadedFileStream(TemporaryUploadedFile $file)
     {
-        if (! $this->isSpreadsheet($file)) {
-            return parent::getUploadedFileStream($file);
-        }
-
-        $csv = $this->spreadsheetAsCsv($file);
+        $csv = $this->isSpreadsheet($file) ? $this->spreadsheetAsCsv($file) : null;
 
         if ($csv === null) {
             return false;
@@ -98,6 +117,22 @@ class SpreadsheetImportAction extends ImportAction
         rewind($stream);
 
         return $stream;
+    }
+
+    /**
+     * Labels of the importer's required columns that no title in the file matches.
+     *
+     * @return list<string>
+     */
+    private function missingColumns(string $csv): array
+    {
+        $titles = array_map(Str::lower(...), Reader::fromString($csv)->nth(0));
+
+        return collect($this->getImporter()::getColumns())
+            ->filter(fn (ImportColumn $column): bool => $column->isMappingRequired() && array_intersect($titles, $column->getGuesses()) === [])
+            ->map(fn (ImportColumn $column): string => (string) $column->getLabel())
+            ->values()
+            ->all();
     }
 
     private function isSpreadsheet(TemporaryUploadedFile $file): bool

@@ -27,7 +27,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 | Impersonation, SMS login, profile | ◐ | ● | ◐ | ◐ | ◐ | | |
 | Module manager «ماژول‌ها» | | ● | | | | | |
 | Workflows: designer, cartable, return / reject / edit / claim, «همه‌ی پرونده‌ها», flowchart | ◐ | ● | ◐ | ● | | | |
-| Quick employee entry, CSV import | ◐ | | | | ● | | |
+| Quick employee entry, Excel import | ◐ | | | | ● | | |
 | Hiring «همکاری با ما» (positions, form, workflow) | ● | | | ● | | | ◐ |
 | Customizable forms (built-in modes, added fields) | | | ● | ● | | ◐ | |
 | Preregistration, programs offered per tenant, admission | ● | | ● | | | ● | ◐ |
@@ -59,7 +59,7 @@ The engine's rules ([ADR 0040](decisions/0040-step-by-step-tutorial.md)) shape w
 - **Each scenario gets a test** that walks its missions in order (like `test_missions_open_one_after_another_as_the_rows_appear`) and one that runs `autoComplete` and then `reset`.
 - **Modules:** a scenario lists the modules it can't do without in `Scenario::requiredModules()` (the page doesn't offer it while one is off), and its optional missions check `Scenario::enabled()` (ADR 0041).
 - **Engine gaps, by the scenario that hits them:**
-  - *Queued work is not recorded* (5: the CSV import, 3/6: absence SMS jobs). For imports, record the import's rows by the `imports` row made in the run, or run the import synchronously in tutorial mode.
+  - *Queued work is not recorded* (5: the Excel import, 3/6: absence SMS jobs). For imports, record the import's rows by the `imports` row made in the run, or run the import synchronously in tutorial mode.
   - *Time windows* (1, 3, 5, 6: attendance opens 15 minutes before a session; teachers' content and score deadlines). Sessions are scheduled a few minutes ahead; score periods are given dates around today.
   - *SMS codes* (2, 4: signing a contract, signing in with a code). With the `log` driver the step tells where to read the code (`storage/logs/sms.log`). A tutorial-only helper that shows the last code sent to a tutorial account would be friendlier.
   - *Scheduled tasks* (4: contract reminders). Not taught as waiting; the mission shows the list filter «پایان نزدیک» instead.
@@ -218,7 +218,7 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 **Modules:** Employee, Class, Exam.
 **Actors:** خودتان, «مدیر آموزش» (training manager), «مدرس دوره», «کارمند (فراگیر)».
 
-**Sample data:** departments «واحد فروش», «واحد فناوری»; course «آشنایی با امنیت اطلاعات»; trainer «کاوه رحیمی»; trainees from a CSV of 5 employees.
+**Sample data:** departments «واحد فروش», «واحد فناوری»; course «آشنایی با امنیت اطلاعات»; trainer «کاوه رحیمی»; trainees from an Excel file of 5 employees.
 
 | # | Mission | Actor | Where | Done when |
 |---|---|---|---|---|

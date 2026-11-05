@@ -22,7 +22,7 @@ class ListEmployees extends ListRecords
 
     /**
      * Quick entry without the hiring workflow (ADR 0038): one by one, or
-     * many from an Excel or CSV file (ADR 0063), into the current tenant.
+     * many from an Excel file (ADR 0063), into the current tenant.
      */
     protected function getHeaderActions(): array
     {
@@ -41,7 +41,7 @@ class ListEmployees extends ListRecords
                         ->action(fn (): StreamedResponse => EmployeeImportTemplate::download(auth()->user(), Tenant::current())),
                 ])
                 ->modalDescription(fn (SpreadsheetImportAction $action): HtmlString => new HtmlString(
-                    e('فایل نمونه را دریافت کنید، اطلاعات کارمندان را مطابق ردیف‌های نمونه در آن بنویسید و نقش هر نفر را از فهرست انتخاب کنید، سپس همان فایل را اینجا بارگذاری کنید (فایل CSV هم پذیرفته می‌شود). هر ردیف یک کارمند این '.config('sarasystem.tenant_label').' می‌شود؛ کسی که با همان کد ملی حساب دارد، همان حساب را نگه می‌دارد.')
+                    e('فایل نمونه‌ی Excel را دریافت کنید، اطلاعات کارمندان را به‌جای ردیف‌های نمونه بنویسید و نقش هر نفر را از فهرست انتخاب کنید، سپس همان فایل را اینجا بارگذاری کنید. هر ردیف یک کارمند این '.config('sarasystem.tenant_label').' می‌شود؛ کسی که با همان کد ملی حساب دارد، همان حساب را نگه می‌دارد.')
                     .'<div class="mt-2">'.$action->getModalAction('downloadTemplate')->toHtml().'</div>'
                 ))
                 ->importer(EmployeeImporter::class)

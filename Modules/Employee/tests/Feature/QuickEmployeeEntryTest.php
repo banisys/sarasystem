@@ -10,9 +10,7 @@ use BezhanSalleh\FilamentShield\Support\Utils;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Actions\Testing\TestableImport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
-use Modules\Employee\Database\Factories\JobApplicationFactory;
 use Modules\Employee\Enums\EmploymentStatus;
 use Modules\Employee\Enums\EmploymentType;
 use Modules\Employee\Filament\Imports\EmployeeImporter;
@@ -259,7 +257,7 @@ class QuickEmployeeEntryTest extends TestCase
     {
         $this->actingInPanel($this->manager, $this->west);
 
-        $this->importer(['role_ids' => [$this->teacher->id]])
+        $this->importer()
             ->import($this->row([
                 'national_code' => '۰۰۱۳۵۴۲۴۱۹',
                 'employment_type' => 'پاره‌وقت',
@@ -282,18 +280,18 @@ class QuickEmployeeEntryTest extends TestCase
     {
         $this->actingInPanel($this->manager, $this->west);
 
-        $this->importer(['role_ids' => [$this->teacher->id]])->import($this->row())->assertImported();
+        $this->importer()->import($this->row())->assertImported();
 
         $employee = Employee::withoutTenantScope()->sole();
         $this->assertSame(EmploymentType::FullTime, $employee->employment_type);
         $this->assertSame(today()->toDateString(), $employee->hired_at->toDateString());
     }
 
-    public function test_a_rows_own_roles_replace_the_chosen_ones(): void
+    public function test_a_row_can_name_several_roles(): void
     {
         $this->actingInPanel($this->manager, $this->west);
 
-        $this->importer(['role_ids' => [$this->teacher->id]])
+        $this->importer()
             ->import($this->row(['roles' => 'خدمتگزار، teacher']))
             ->assertImported();
 
@@ -307,7 +305,7 @@ class QuickEmployeeEntryTest extends TestCase
     {
         Employee::factory()->for($this->north)->create(['personnel_code' => '1024']);
         $this->actingInPanel($this->manager, $this->west);
-        $importer = $this->importer(['role_ids' => [$this->teacher->id]]);
+        $importer = $this->importer();
 
         $importer->import($this->row(['roles' => 'principal']))->assertHasRowFailure('نقش «principal» پیدا نشد یا اجازه‌ی دادنش را ندارید.');
         $importer->import($this->row(['personnel_code' => '1024']))->assertHasRowFailure('این کد پرسنلی قبلاً به کارمند دیگری داده شده است.');
@@ -316,7 +314,8 @@ class QuickEmployeeEntryTest extends TestCase
         $this->assertTrue($importer->import($this->row(['employment_type' => 'نیمه‌وقت']))->errors()->has('employment_type'));
         $this->assertTrue($importer->import($this->row(['job_title' => '']))->errors()->has('job_title'));
 
-        $this->importer()->import($this->row())->assertHasRowFailure('نقشی برای این ردیف مشخص نیست.');
+        $this->assertTrue($importer->import($this->row(['roles' => '']))->errors()->has('roles'));
+        $importer->import($this->row(['roles' => '،']))->assertHasRowFailure('نقشی برای این ردیف مشخص نیست.');
 
         $this->assertSame(1, Employee::withoutTenantScope()->count());
         $this->assertSame(0, User::query()->where('national_code', '0013542419')->count());
@@ -326,7 +325,7 @@ class QuickEmployeeEntryTest extends TestCase
     {
         $existing = User::factory()->create(['name' => 'علی رضایی', 'national_code' => '0013542419']);
         $this->actingInPanel($this->manager, $this->west);
-        $importer = $this->importer(['role_ids' => [$this->teacher->id]]);
+        $importer = $this->importer();
 
         $importer->import($this->row(['name' => 'نام دیگر']))->assertImported();
         $importer->import($this->row())->assertHasRowFailure('علی رضایی از قبل کارمند غرب است.');
@@ -339,48 +338,11 @@ class QuickEmployeeEntryTest extends TestCase
     {
         $this->actingInPanel($this->manager, $this->west);
 
-        $this->importer(['role_ids' => [$this->teacher->id], 'tenant_id' => $this->north->id])
+        $this->importer(['tenant_id' => $this->north->id])
             ->import($this->row())
             ->assertHasRowFailure('اجازه‌ی ثبت کارمند در این شعبه را ندارید.');
 
         $this->assertSame(0, Employee::withoutTenantScope()->count());
-    }
-
-    public function test_a_csv_file_is_imported_from_the_list(): void
-    {
-        $this->actingInPanel($this->manager, $this->west);
-        $second = JobApplicationFactory::nationalCode();
-        $csv = "\u{FEFF}نام و نام خانوادگی,کد ملی,موبایل,سمت,نقش‌ها\n"
-            ."زهرا احمدی,0013542419,09121112233,معلم ریاضی,\n"
-            ."رضا کریمی,{$second},09121112244,سرایدار,خدمتگزار\n"
-            ."بدون کد,123,09121112255,معلم,\n";
-
-        Livewire::test(ListEmployees::class)
-            ->mountAction('importEmployees')
-            ->fillForm(['file' => UploadedFile::fake()->createWithContent('employees.csv', $csv)])
-            ->assertSchemaStateSet(['columnMap' => [
-                'name' => 'نام و نام خانوادگی',
-                'national_code' => 'کد ملی',
-                'mobile' => 'موبایل',
-                'job_title' => 'سمت',
-                'personnel_code' => null,
-                'employment_type' => null,
-                'hired_at' => null,
-                'roles' => 'نقش‌ها',
-            ]])
-            ->fillForm(['role_ids' => [$this->teacher->id]])
-            ->callMountedAction()
-            ->assertHasNoFormErrors();
-
-        $import = Import::query()->sole();
-        $this->assertSame([3, 2], [$import->total_rows, $import->successful_rows]);
-        $this->assertSame(1, $import->failedRows()->count());
-
-        $employees = Employee::withoutTenantScope()->with('user')->get()->keyBy('user.national_code');
-        $this->assertEqualsCanonicalizing(['0013542419', $second], $employees->keys()->map(fn ($code): string => (string) $code)->all());
-        $this->assertSame([$this->teacher->id], $employees['0013542419']->user->roleIdsIn($this->west));
-        $this->assertSame([$this->janitor->id], $employees[$second]->user->roleIdsIn($this->west));
-        $this->assertSame($this->west->id, $employees[$second]->tenant_id);
     }
 
     /**
@@ -416,7 +378,7 @@ class QuickEmployeeEntryTest extends TestCase
             'personnel_code' => '',
             'employment_type' => '',
             'hired_at' => '',
-            'roles' => '',
+            'roles' => 'معلم',
             ...$overrides,
         ];
     }

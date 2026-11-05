@@ -14,13 +14,16 @@ The user asked for a file in «ورود کارمندان از فایل» that a 
 For writing the file, PhpSpreadsheet is used directly: OpenSpout has no data validation, and PhpSpreadsheet is already installed.
 
 ## Decision
-- Core [SpreadsheetImportAction](../../app/Filament/Actions/SpreadsheetImportAction.php) overrides `getUploadedFileStream()` and the file rules: `.xlsx` is accepted next to CSV, up to 5 MB. An unreadable file is refused at upload. Formulas are not calculated: their text reaches validation and that row fails. Columns without a title and empty rows are dropped.
+- The modal asks for the Excel file and nothing else, at the user's request: no CSV, no column mapping, no roles or panel access chosen for the whole file. This replaces those parts of [ADR 0038](0038-quick-employee-entry.md).
+- Core [SpreadsheetImportAction](../../app/Filament/Actions/SpreadsheetImportAction.php) overrides `getUploadedFileStream()` and the file rules: only `.xlsx`, up to 5 MB. Columns are matched by title; Filament's mapping fields stay in the form but out of sight, because its action reads the map from them. An unreadable file, or one without a required column, is refused at upload. Formulas are not calculated: their text reaches validation and that row fails. Columns without a title and empty rows are dropped.
 - [EmployeeImportTemplate](../../Modules/Employee/app/Support/EmployeeImportTemplate.php) builds the file from `EmployeeImporter::getColumns()`, so the headers match the mapping guesses. Sheets: «کارمندان», «راهنما» and a hidden `lists`. Cells are text, so leading zeros stay.
-- «نقش‌ها» lists `EmployeeRoles::options()` for the downloader in the current tenant, the same roles the import will accept from them. «نوع همکاری» is a list too, since it has fixed values.
+- «نقش‌ها» is required in every row and lists `EmployeeRoles::options()` for the downloader in the current tenant, the same roles the import will accept from them. «نوع همکاری» is a list too, since it has fixed values.
 - The lists warn rather than block, so someone can still type several roles separated by «،»; the import checks every value and reports the row.
 - Sample rows use fixed national codes (`EmployeeImporter::SAMPLE_NATIONAL_CODES`). A row with one of them fails with a reason, so a forgotten sample doesn't become an account. A real person with one of these codes can't be imported from a file; quick entry still works for them.
 
 ## Consequences
+- Files with other column titles can't be imported: the client starts from the template.
+- A file can't give panel access; it is given later on the user's page or through «ثبت سریع کارمند».
 - Other importers can use `SpreadsheetImportAction` as it is; each writes its own template.
 - `phpoffice/phpspreadsheet` is reached only through `pxlrbt/filament-excel`; removing that package would break this, so it should become a direct dependency once approved.
 - The role list is a snapshot of the download: a role added later isn't in an old file (typing it still works), and a file passed to a colleague with fewer rights may have rows refused.

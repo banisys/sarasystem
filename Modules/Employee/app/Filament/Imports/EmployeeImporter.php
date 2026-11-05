@@ -13,8 +13,6 @@ use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Toggle;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Number;
 use Modules\Employee\Enums\EmploymentType;
@@ -24,11 +22,11 @@ use Modules\Employee\Services\RegisterEmployee;
 use Modules\Employee\Support\EmployeeRoles;
 
 /**
- * Employees of one tenant from a CSV or Excel file (ADR 0038, ADR 0063), one RegisterEmployee
- * call per row, on the queue. The tenant comes from the action's options;
- * the importing user must be allowed to create employees there. Roles are
- * the ones chosen in the import modal, unless a row names its own (labels
- * separated by «،» or «,»). Failed rows come back as a CSV with the reason.
+ * Employees of one tenant from an Excel file (ADR 0038, ADR 0063), one
+ * RegisterEmployee call per row, on the queue. The tenant comes from the
+ * action's options; the importing user must be allowed to create employees
+ * there. Each row names its roles (labels separated by «،» or «,»). Failed
+ * rows come back as a CSV with the reason.
  */
 class EmployeeImporter extends Importer
 {
@@ -60,20 +58,8 @@ class EmployeeImporter extends Importer
             static::column('hired_at', 'تاریخ شروع به کار', '1404/07/01')
                 ->rules(['nullable', new JalaliDate]),
             static::column('roles', 'نقش‌ها', 'معلم')
-                ->helperText('خالی: نقش‌های انتخاب‌شده در پایین. چند نقش را با «،» جدا کنید.'),
-        ];
-    }
-
-    public static function getOptionsFormComponents(): array
-    {
-        return [
-            CheckboxList::make('role_ids')
-                ->label('نقش‌ها در این '.config('sarasystem.tenant_label'))
-                ->helperText('برای ردیف‌هایی که ستون «نقش‌ها» را خالی گذاشته‌اند.')
-                ->options(fn (): array => EmployeeRoles::options(auth()->user(), Tenant::current()))
-                ->columns(3),
-            Toggle::make('panel_access')
-                ->label('دسترسی به پنل مدیریت برای همه'),
+                ->requiredMapping()
+                ->rules(['required', 'string']),
         ];
     }
 
@@ -111,12 +97,9 @@ class EmployeeImporter extends Importer
             throw new RowImportFailedException('این ردیف نمونه‌ی فایل است؛ آن را پاک کنید یا با اطلاعات کارمند جایگزین کنید.');
         }
 
-        $roleIds = filled($this->data['roles'] ?? null)
-            ? $this->rowRoleIds($actor, $tenant, (string) $this->data['roles'])
-            : array_map('intval', $this->options['role_ids'] ?? []);
-        $panelAccess = (bool) ($this->options['panel_access'] ?? false);
+        $roleIds = $this->rowRoleIds($actor, $tenant, (string) $this->data['roles']);
 
-        if ($roleIds === [] && ! $panelAccess) {
+        if ($roleIds === []) {
             throw new RowImportFailedException('نقشی برای این ردیف مشخص نیست.');
         }
 
@@ -136,7 +119,6 @@ class EmployeeImporter extends Importer
                     'hired_at' => JalaliDate::toDate($this->data['hired_at'] ?? null) ?? today(),
                 ],
                 roleIds: $roleIds,
-                panelAccess: $panelAccess,
             );
         } catch (EmployeeException $exception) {
             throw new RowImportFailedException($exception->getMessage());

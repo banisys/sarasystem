@@ -10,6 +10,7 @@ use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
+use Modules\Employee\Filament\Imports\EmployeeImporter;
 use Modules\Employee\Filament\Resources\Employees\Pages\ListEmployees;
 use Modules\Employee\Models\Employee;
 use Modules\Employee\Support\EmployeeImportTemplate;
@@ -159,6 +160,60 @@ class EmployeeImportTemplateTest extends TestCase
         $import = Import::query()->sole();
         $this->assertSame([2, 1], [$import->total_rows, $import->successful_rows]);
         $this->assertSame('=1+1', $import->failedRows()->first()->data['موبایل']);
+    }
+
+    public function test_the_modal_asks_only_for_the_file(): void
+    {
+        $this->assertSame([], EmployeeImporter::getOptionsFormComponents());
+    }
+
+    public function test_a_csv_file_is_refused(): void
+    {
+        $this->actingInPanel($this->manager, $this->west);
+
+        Livewire::test(ListEmployees::class)
+            ->mountAction('importEmployees')
+            ->fillForm(['file' => UploadedFile::fake()->createWithContent('employees.csv', "نام و نام خانوادگی,کد ملی,موبایل,سمت,نقش‌ها\nزهرا,0013542419,09121112233,معلم,معلم\n")])
+            ->callMountedAction()
+            ->assertHasFormErrors(['file']);
+
+        $this->assertSame(0, Import::query()->count());
+    }
+
+    public function test_a_file_without_a_required_column_is_refused_at_upload(): void
+    {
+        $this->actingInPanel($this->manager, $this->west);
+
+        $spreadsheet = EmployeeImportTemplate::spreadsheet($this->manager, $this->west);
+        $spreadsheet->getSheet(0)->setCellValue('H1', 'ستون دیگر');
+
+        Livewire::test(ListEmployees::class)
+            ->mountAction('importEmployees')
+            ->fillForm(['file' => $this->upload($spreadsheet)])
+            ->callMountedAction()
+            ->assertHasFormErrors(['file']);
+
+        $this->assertSame(0, Import::query()->count());
+    }
+
+    public function test_a_row_without_a_role_fails_with_a_reason(): void
+    {
+        $this->actingInPanel($this->manager, $this->west);
+
+        $spreadsheet = EmployeeImportTemplate::spreadsheet($this->manager, $this->west);
+        $sheet = $spreadsheet->getSheet(0);
+        $this->fillRow($sheet, 2, 'مریم نوری', '0013542419', '');
+        $sheet->removeRow(3);
+
+        Livewire::test(ListEmployees::class)
+            ->mountAction('importEmployees')
+            ->fillForm(['file' => $this->upload($spreadsheet)])
+            ->callMountedAction()
+            ->assertHasNoFormErrors();
+
+        $import = Import::query()->sole();
+        $this->assertSame([1, 0], [$import->total_rows, $import->successful_rows]);
+        $this->assertSame(0, Employee::withoutTenantScope()->count());
     }
 
     public function test_a_broken_excel_file_is_refused_at_upload(): void
