@@ -45,6 +45,11 @@ class TenantResource extends Resource implements IndependentOfTenant
     protected static array $recordActionFactories = [];
 
     /**
+     * @var array<string, Closure(): iterable<Action>>
+     */
+    protected static array $headerActionFactories = [];
+
+    /**
      * Let a module add row actions to the tenants list, e.g. choosing the
      * tenant's site menu (ADR 0012). The core never depends on a module.
      * Registering a name again replaces it (the app boots once per test).
@@ -54,6 +59,25 @@ class TenantResource extends Resource implements IndependentOfTenant
     public static function addRecordActionsUsing(string $name, Closure $callback): void
     {
         static::$recordActionFactories[$name] = $callback;
+    }
+
+    /**
+     * Let a module add buttons to the tenants list's header, e.g. the map of
+     * tenants (ADR 0056). Registering a name again replaces it.
+     *
+     * @param  Closure(): iterable<Action>  $callback
+     */
+    public static function addHeaderActionsUsing(string $name, Closure $callback): void
+    {
+        static::$headerActionFactories[$name] = $callback;
+    }
+
+    /**
+     * @return list<Action>
+     */
+    public static function moduleHeaderActions(): array
+    {
+        return collect(static::$headerActionFactories)->flatMap(fn (Closure $callback): iterable => $callback())->values()->all();
     }
 
     public static function getModelLabel(): string

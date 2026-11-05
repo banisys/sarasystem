@@ -13,6 +13,7 @@ class ManageTenants extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
+            ...TenantResource::moduleHeaderActions(),
             CreateAction::make(),
         ];
     }

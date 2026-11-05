@@ -1,7 +1,7 @@
 # 0052 — A map of the organization's tenants
 
 - **Date:** 2026-11-04
-- **Status:** accepted; the town's look (streets, façades, floors) in [ADR 0055](0055-urban-look.md)
+- **Status:** accepted; the town's look (streets, façades, floors) in [ADR 0055](0055-urban-look.md); how it is opened in [ADR 0056](0056-organization-map-entry.md)
 
 ## Context
 The last step of the 3D idea: seeing all the organization's tenants at once, each as a building, and entering one. Tenants have no recorded location. Permissions are per tenant, so a map across tenants must not leak one tenant's data to someone with a role only in another.

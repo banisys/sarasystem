@@ -10,7 +10,6 @@ use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Renderless;
 use Modules\Campus\Services\OrganizationSites;
-use UnitEnum;
 
 /**
  * All the tenants a user sees as a town of 3D buildings (ADR 0052). It spans
@@ -22,9 +21,8 @@ class OrganizationMap extends Page implements IndependentOfTenant
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMap;
 
-    protected static string|UnitEnum|null $navigationGroup = 'کلاس‌ها';
-
-    protected static ?int $navigationSort = 91;
+    /** Opened from the tenants list and the building page (ADR 0056). */
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $slug = 'organization-map';
 

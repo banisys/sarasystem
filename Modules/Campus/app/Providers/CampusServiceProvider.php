@@ -2,7 +2,11 @@
 
 namespace Modules\Campus\Providers;
 
+use App\Filament\Resources\Tenants\TenantResource;
+use Filament\Actions\Action;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Console\Scheduling\Schedule;
+use Modules\Campus\Filament\Pages\OrganizationMap;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class CampusServiceProvider extends ModuleServiceProvider
@@ -33,6 +37,20 @@ class CampusServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        TenantResource::addHeaderActionsUsing('organization-map', fn (): array => [
+            Action::make('organizationMap')
+                ->label(OrganizationMap::getNavigationLabel())
+                ->icon(Heroicon::OutlinedMap)
+                ->color('gray')
+                ->url(fn (): string => OrganizationMap::getUrl())
+                ->visible(fn (): bool => OrganizationMap::canAccess()),
+        ]);
+    }
 
     /**
      * Define module schedules.

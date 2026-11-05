@@ -3,6 +3,7 @@
 namespace Modules\Campus\Tests\Feature;
 
 use App\Campus\BuildingRooms;
+use App\Filament\Resources\Tenants\TenantResource;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -86,6 +87,22 @@ class OrganizationMapTest extends TestCase
             ->assertOk()
             ->assertSee('الف غرب')
             ->assertDontSee('ب شرق');
+    }
+
+    public function test_it_is_opened_from_the_tenants_list_and_not_the_menu(): void
+    {
+        $admin = User::factory()->create();
+        $admin->makeSuperAdmin($this->primary);
+        $this->actingInPanel($admin, $this->west);
+
+        $this->assertFalse(OrganizationMap::shouldRegisterNavigation());
+        $this->get(TenantResource::getUrl(tenant: $this->west))
+            ->assertOk()
+            ->assertSee(OrganizationMap::getUrl(tenant: $this->west), false);
+        // The way in for those who can't open the tenants list.
+        $this->get(Building::getUrl(tenant: $this->west))
+            ->assertOk()
+            ->assertSee(OrganizationMap::getUrl(tenant: $this->west), false);
     }
 
     public function test_someone_who_may_not_list_classes_anywhere_cant_open_it(): void
