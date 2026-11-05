@@ -3,9 +3,12 @@
 namespace Modules\Class\Filament\Resources\Classrooms\Tables;
 
 use App\Filament\Support\TextFilter;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -13,6 +16,8 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\ClassMode;
+use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
+use Modules\Class\Filament\Resources\Classrooms\Schemas\ClassroomInfolist;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\Term;
@@ -72,7 +77,23 @@ class ClassroomsTable
                 ...ClassroomExtensions::components('filters'),
             ])
             ->recordActions([
-                ViewAction::make(),
+                ViewAction::make()
+                    ->label('اطلاعات')
+                    ->icon(Heroicon::OutlinedInformationCircle)
+                    ->modalWidth('4xl')
+                    ->schema(fn (Schema $schema): Schema => ClassroomInfolist::configure($schema)),
+                Action::make('members')
+                    ->label('اعضا')
+                    ->icon(Heroicon::OutlinedUsers)
+                    ->url(fn (Classroom $record): string => ClassroomResource::getUrl('members', ['record' => $record])),
+                Action::make('schedules')
+                    ->label('برنامه')
+                    ->icon(Heroicon::OutlinedCalendarDays)
+                    ->url(fn (Classroom $record): string => ClassroomResource::getUrl('schedules', ['record' => $record])),
+                Action::make('sessions')
+                    ->label('جلسه‌ها')
+                    ->icon(Heroicon::OutlinedClock)
+                    ->url(fn (Classroom $record): string => ClassroomResource::getUrl('sessions', ['record' => $record])),
                 ...ClassroomExtensions::components('actions'),
                 EditAction::make()
                     ->modalWidth('3xl'),

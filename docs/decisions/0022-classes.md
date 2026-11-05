@@ -50,7 +50,7 @@ Later steps get their own ADRs.
   - Attendees fit the capacity.
   - A sub-class's attendees are current attendees of its parent.
 - **Admin group «کلاس‌ها»:**
-  - «کلاس‌ها»: every tenant. Created and edited in a modal from the classes list; the class detail page has no edit button in its header. The class page starts with «اطلاعات»: grouped sections for class details, delivery/dates and notes, with muted labels and emphasized values in responsive fact cards (including module-provided entries). The main tabs use related icons and a clearly colored active state, with scoped light/dark styling and Filament’s narrow-screen overflow handling. It has the tab «اعضا» plus tabs other modules add through `ModelRelationManagers`, so `School` can add its own without Class depending on it.
+  - «کلاس‌ها»: every tenant. Created and edited in a modal from the classes list; the class detail page has no edit button in its header. (Replaced by ADR 0061: no tabs, row actions instead.) The class page started with «اطلاعات»: grouped sections for class details, delivery/dates and notes, with muted labels and emphasized values in responsive fact cards (including module-provided entries). The main tabs use related icons and a clearly colored active state, with scoped light/dark styling and Filament’s narrow-screen overflow handling. It has the tab «اعضا» plus tabs other modules add through `ModelRelationManagers`, so `School` can add its own without Class depending on it.
   - «دوره‌های آموزشی» and «نقش‌های کلاس»: primary tenant only.
   - «تعطیلات»: every tenant. The organization's holidays are listed but can't be edited outside the primary tenant.
 - **Permissions:** managing members needs `Update:Classroom`; there is no separate permission.

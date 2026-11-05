@@ -53,7 +53,7 @@ class SampleBatchesTable
 
                         return match (true) {
                             $classrooms->isEmpty() || $tenant === null => null,
-                            $classrooms->count() === 1 => ClassroomResource::getUrl('view', ['record' => $classrooms->first()], panel: 'admin', tenant: $tenant),
+                            $classrooms->count() === 1 => ClassroomResource::getUrl('members', ['record' => $classrooms->first()], panel: 'admin', tenant: $tenant),
                             // The classes list, filtered to the batch's titles.
                             default => ClassroomResource::getUrl('index', ['tableFilters' => ['title' => ['value' => $record->title]]], panel: 'admin', tenant: $tenant),
                         };

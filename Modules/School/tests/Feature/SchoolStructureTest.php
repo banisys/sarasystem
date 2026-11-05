@@ -151,7 +151,7 @@ class SchoolStructureTest extends TestCase
         app(Enrollments::class)->setClassroomGrade($classroom, $this->tenth->id, $this->math->id);
         $this->assertSame([$this->tenth->id, $this->math->id], [$record->fresh()->grade_id, $record->fresh()->major_id]);
 
-        $this->get(ClassroomResource::getUrl('view', ['record' => $classroom], tenant: $this->west))->assertOk()->assertSee('دهم - ریاضی و فیزیک');
+        $this->get(ClassroomResource::getUrl('index', tenant: $this->west))->assertOk()->assertSee('دهم - ریاضی و فیزیک');
     }
 
     public function test_promotion_makes_next_years_records_one_grade_up(): void

@@ -46,7 +46,7 @@ class ViewClassSession extends ViewRecord
         $classroom = $this->session()->classroom;
 
         return $classroom !== null && ClassroomResource::canView($classroom)
-            ? [ClassroomResource::getUrl('view', ['record' => $classroom]) => $classroom->title, 'جلسه']
+            ? [ClassroomResource::getUrl('sessions', ['record' => $classroom]) => $classroom->title, 'جلسه']
             : ['جلسه'];
     }
 

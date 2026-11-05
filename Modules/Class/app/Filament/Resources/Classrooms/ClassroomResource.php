@@ -2,17 +2,15 @@
 
 namespace Modules\Class\Filament\Resources\Classrooms;
 
-use App\Filament\Support\ModelRelationManagers;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassMembers;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ListClassrooms;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\MembersRelationManager;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\Schemas\ClassroomForm;
 use Modules\Class\Filament\Resources\Classrooms\Schemas\ClassroomInfolist;
 use Modules\Class\Filament\Resources\Classrooms\Tables\ClassroomsTable;
@@ -21,8 +19,8 @@ use UnitEnum;
 
 /**
  * Classes of the current tenant (ADR 0022); created and edited in a modal.
- * A class's page has its members, schedules and sessions, and the tabs
- * other modules add (ModelRelationManagers).
+ * Its details open in a modal; its members, schedules and sessions are
+ * pages of their own, reached by row actions of the list.
  */
 class ClassroomResource extends Resource
 {
@@ -60,21 +58,13 @@ class ClassroomResource extends Resource
         return ClassroomsTable::configure($table);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            MembersRelationManager::class,
-            SchedulesRelationManager::class,
-            SessionsRelationManager::class,
-            ...ModelRelationManagers::for(Classroom::class),
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
             'index' => ListClassrooms::route('/'),
-            'view' => ViewClassroom::route('/{record}'),
+            'members' => ClassMembers::route('/{record}/members'),
+            'schedules' => ClassSchedules::route('/{record}/schedules'),
+            'sessions' => ClassSessions::route('/{record}/sessions'),
         ];
     }
 }

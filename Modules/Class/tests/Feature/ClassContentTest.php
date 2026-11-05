@@ -13,7 +13,7 @@ use Livewire\Livewire;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\TeachingPlans\Pages\ListTeachingPlans;
 use Modules\Class\Filament\Resources\TeachingPlans\TeachingPlanResource;
@@ -150,7 +150,7 @@ class ClassContentTest extends TestCase
         Storage::disk('local')->put('class-materials/handout.pdf', '%PDF-1.4 handout');
 
         $this->actingInPanel($this->teacher, $this->west);
-        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class])
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->mountAction(TestAction::make('content')->table($session))
             ->assertSchemaStateSet(['covered_topic_ids' => [$this->topics[0]->id]])
             ->setActionData(['covered_topic_ids' => [], 'summary' => 'بخش اول', 'files' => [UploadedFile::fake()->create('handout.pdf', 100, 'application/pdf')]])

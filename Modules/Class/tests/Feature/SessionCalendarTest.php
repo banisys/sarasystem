@@ -8,7 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\SessionStatus;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\Classroom;
@@ -175,6 +175,6 @@ class SessionCalendarTest extends TestCase
      */
     private function owner(): array
     {
-        return ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class];
+        return ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class];
     }
 }

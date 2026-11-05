@@ -12,7 +12,7 @@ use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
@@ -182,7 +182,7 @@ class ClassSchedulesTest extends TestCase
         $this->roleWithPermissions('class_viewer', ['ViewAny:Classroom', 'View:Classroom']);
         $this->makeStaff($viewer, $this->west);
         $this->grantRole($viewer, $this->west, 'class_viewer');
-        $owner = ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class];
+        $owner = ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class];
 
         $this->actingInPanel($viewer, $this->west);
         Livewire::test(SchedulesRelationManager::class, $owner)->assertActionHidden(TestAction::make('addSchedule')->table());

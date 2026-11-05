@@ -350,7 +350,7 @@ class School extends Scenario
                     ->doneWhen(fn (TutorialRun $run): bool => self::classroom($run) !== null),
                 Mission::make('members', 'اعضای کلاس')
                     ->steps([
-                        'کلاس «هفتم الف» را باز کنید و در زبانه‌ی «اعضا»، «امیر حسینی» را با نقش «'.$learner.'» و «نرگس مرادی» را با نقش «مدرس» اضافه کنید.',
+                        'برای کلاس «هفتم الف» از منوی ردیف «اعضا» را باز کنید و «امیر حسینی» را با نقش «'.$learner.'» و «نرگس مرادی» را با نقش «مدرس» اضافه کنید.',
                         'با پیوستن به کلاسِ پایه‌دار، «پرونده‌ی تحصیلی» دانش‌آموز برای این سال پر می‌شود (منوی «مدرسه → پرونده‌های تحصیلی»).',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classroomUrl($run))
@@ -386,7 +386,7 @@ class School extends Scenario
                     ->doneWhen(fn (TutorialRun $run): bool => self::plan($run) !== null),
                 Mission::make('schedule', 'برنامه‌ی هفتگی')
                     ->steps([
-                        $tenant.' را «دبیرستان نمونه» کنید؛ در کلاس «هفتم الف» زبانه‌ی «برنامه» و «افزودن برنامه» را بزنید.',
+                        $tenant.' را «دبیرستان نمونه» کنید؛ برای کلاس «هفتم الف» از منوی ردیف «برنامه» ← «افزودن برنامه» را بزنید.',
                         'درس «ریاضی»، مدرس «نرگس مرادی»، طرح درس «ریاضی هفتم»، تکرار «هفتگی» در روز امروز، از امروز تا چهار هفته‌ی بعد، از ده دقیقه‌ی بعد به مدت یک ساعت.',
                         'در تقویم «جلسه‌ها» ببینید جلسه‌ی هفته‌ی بعد (تعطیل، خاکستری) ساخته نشده؛ با زدن روی هر جلسه سرفصلِ پیش‌بینی‌شده‌اش را می‌بینید.',
                     ])
@@ -715,7 +715,7 @@ class School extends Scenario
     {
         $classroom = self::classroom($run);
 
-        return $classroom ? ClassroomResource::getUrl('view', ['record' => $classroom], panel: 'admin', tenant: self::school($run)) : null;
+        return $classroom ? ClassroomResource::getUrl('members', ['record' => $classroom], panel: 'admin', tenant: self::school($run)) : null;
     }
 
     private static function enrollment(TutorialRun $run): ?Enrollment

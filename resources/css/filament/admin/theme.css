@@ -117,34 +117,6 @@ body > .fi-dropdown-panel.fi-dropdown-list[style*='min-width: 12rem'] {
     text-align: start;
 }
 
-/* The class page's main tabs only; nested forms and other resources retain
-   their existing navigation. Filament still handles narrow-screen overflow. */
-.classroom-tabs > .fi-tabs,
-html.dark .classroom-tabs > .fi-tabs {
-    @apply mx-0 rounded-2xl border border-gray-200 bg-gray-50 p-2 shadow-sm ring-0 dark:border-white/10 dark:bg-gray-900/70;
-}
-
-.classroom-tabs > .fi-tabs .fi-sc-tabs-tablist {
-    @apply gap-2;
-}
-
-.classroom-tabs > .fi-tabs .fi-tabs-item {
-    @apply min-h-11 gap-2.5 rounded-xl px-4 py-2.5 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-inset motion-reduce:transition-none;
-}
-
-.classroom-tabs > .fi-tabs .fi-tabs-item:not(.fi-active) {
-    @apply hover:bg-white dark:hover:bg-white/10;
-}
-
-.classroom-tabs > .fi-tabs .fi-tabs-item.fi-active {
-    @apply bg-primary-600 shadow-sm ring-1 ring-primary-600 dark:bg-primary-500/20 dark:ring-primary-400/40;
-}
-
-.classroom-tabs > .fi-tabs .fi-tabs-item.fi-active .fi-tabs-item-label,
-.classroom-tabs > .fi-tabs .fi-tabs-item.fi-active > .fi-icon {
-    @apply text-white dark:text-primary-200;
-}
-
 /* The layer behind an open modal is solid: the page does not show through. */
 .fi-modal > .fi-modal-close-overlay,
 html.dark .fi-modal > .fi-modal-close-overlay {

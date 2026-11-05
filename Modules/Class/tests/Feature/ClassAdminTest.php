@@ -99,8 +99,31 @@ class ClassAdminTest extends TestCase
             ->assertCanSeeTableRecords([$mine])
             ->assertCanNotSeeTableRecords([$theirs]);
 
-        $this->get(ClassroomResource::getUrl('view', ['record' => $mine], tenant: $this->west))->assertOk();
-        $this->get(ClassroomResource::getUrl('view', ['record' => $theirs], tenant: $this->west))->assertNotFound();
+        $this->get(ClassroomResource::getUrl('sessions', ['record' => $mine], tenant: $this->west))->assertOk();
+        $this->get(ClassroomResource::getUrl('sessions', ['record' => $theirs], tenant: $this->west))->assertNotFound();
+    }
+
+    public function test_each_part_of_a_class_is_a_row_action_and_a_page_without_tabs(): void
+    {
+        $mine = Classroom::factory()->for($this->west)->create(['title' => 'کلاس غرب']);
+        $theirs = Classroom::factory()->for($this->primary)->create(['title' => 'کلاس ستاد']);
+
+        $this->actingInPanel($this->manager, $this->west);
+        Livewire::test(ListClassrooms::class)
+            ->assertTableActionExists('members')
+            ->assertTableActionExists('schedules')
+            ->assertTableActionExists('sessions')
+            ->mountTableAction('view', $mine)
+            ->assertHasNoErrors()
+            ->assertSet('mountedActions.0.name', 'view');
+
+        foreach (['members' => 'اعضا', 'schedules' => 'برنامه', 'sessions' => 'جلسه‌ها'] as $page => $title) {
+            $this->get(ClassroomResource::getUrl($page, ['record' => $mine], tenant: $this->west))
+                ->assertOk()
+                ->assertSee($title.' — کلاس غرب')
+                ->assertDontSee('مشخصات کلاس');
+            $this->get(ClassroomResource::getUrl($page, ['record' => $theirs], tenant: $this->west))->assertNotFound();
+        }
     }
 
     public function test_a_tenant_sees_the_organizations_holidays_but_edits_its_own_only(): void

@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionStatus;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\MembersRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Models\Attendance;
@@ -158,7 +158,7 @@ class ClassAttendanceTest extends TestCase
         $this->makeStaff($this->teacher, $this->west);
         $this->roleWithPermissions('class_viewer', ['ViewAny:Classroom', 'View:Classroom']);
         $this->grantRole($this->teacher, $this->west, 'class_viewer');
-        $owner = ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class];
+        $owner = ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class];
 
         $this->actingInPanel($this->teacher, $this->west);
         $tab = Livewire::test(SessionsRelationManager::class, $owner)

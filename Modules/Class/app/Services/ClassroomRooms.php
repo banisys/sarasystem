@@ -71,7 +71,7 @@ class ClassroomRooms implements RoomSource
                 },
                 'people' => (int) ($people[$classroom->getKey()] ?? 0),
                 'capacity' => $classroom->capacity,
-                'url' => $canOpen ? ClassroomResource::getUrl('view', ['record' => $classroom]) : null,
+                'url' => $canOpen ? ClassroomResource::getUrl('sessions', ['record' => $classroom]) : null,
                 'live' => $live === null ? null : [
                     'subject' => $live->subject?->title,
                     'teacher' => ($live->substituteTeacher ?? $live->teacher)?->name,

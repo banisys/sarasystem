@@ -8,7 +8,7 @@ use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassMembers as ClassMembersPage;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\MembersRelationManager;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
@@ -128,11 +128,11 @@ class ClassMembersTest extends TestCase
         }
 
         $this->actingInPanel($viewer, $this->west);
-        Livewire::test(MembersRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class])
+        Livewire::test(MembersRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassMembersPage::class])
             ->assertActionHidden(TestAction::make('addMembers')->table());
 
         $this->actingInPanel($editor, $this->west);
-        Livewire::test(MembersRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class])
+        Livewire::test(MembersRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassMembersPage::class])
             ->callAction(TestAction::make('addMembers')->table(), data: ['class_role_id' => $this->learner->id, 'user_ids' => [$student->id], 'joined_on' => '2026-10-01'])
             ->assertHasNoActionErrors()
             ->assertCanSeeTableRecords(ClassMember::query()->get());
@@ -151,11 +151,11 @@ class ClassMembersTest extends TestCase
         $theirs = ClassMember::factory()->create(['classroom_id' => $other->id, 'class_role_id' => $this->learner->id]);
 
         $this->actingInPanel($admin, $this->west);
-        Livewire::test(MembersRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class])
+        Livewire::test(MembersRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassMembersPage::class])
             ->assertCanSeeTableRecords([$mine])
             ->assertCanNotSeeTableRecords([$theirs]);
 
-        $this->get(ClassroomResource::getUrl('view', ['record' => $this->classroom], tenant: $this->west))->assertOk();
+        $this->get(ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west))->assertOk();
     }
 
     private function person(string $role): User

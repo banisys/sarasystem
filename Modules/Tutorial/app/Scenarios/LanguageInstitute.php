@@ -263,7 +263,7 @@ class LanguageInstitute extends Scenario
                     ->doneWhen(fn (TutorialRun $run): bool => self::classroom($run) !== null),
                 Mission::make('members', 'افزودن اعضای کلاس')
                     ->steps([
-                        'کلاس «English A1» را باز کنید و به زبانه‌ی «اعضا» بروید.',
+                        'در «کلاس‌ها ← کلاس‌ها» برای کلاس «English A1» از منوی ردیف «اعضا» را بزنید.',
                         "با «افزودن عضو»، «علی رضایی» را با نقش «{$learner}» و «سارا احمدی» را با نقش «مدرس» اضافه کنید.",
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classroomUrl($run))
@@ -289,9 +289,9 @@ class LanguageInstitute extends Scenario
                     }),
                 Mission::make('schedule', 'برنامه‌ی کلاس')
                     ->steps([
-                        'در زبانه‌ی «برنامه» دکمه‌ی «افزودن برنامه» را بزنید.',
+                        'از منوی ردیف کلاس «برنامه» را باز کنید و «افزودن برنامه» را بزنید.',
                         'تکرار «یک بار»، تاریخ امروز، از ده دقیقه‌ی بعد به مدت یک ساعت، با مدرس «سارا احمدی».',
-                        'ذخیره کنید و جلسه را در تقویم زبانه‌ی «جلسه‌ها» ببینید؛ با زدن روی آن، صفحه‌ی جزئیاتش در تب تازه باز می‌شود و دور جلسه در تقویم خط‌چین می‌شود.',
+                        'ذخیره کنید و جلسه را در تقویم صفحه‌ی «جلسه‌ها» (از منوی ردیف کلاس) ببینید؛ با زدن روی آن، صفحه‌ی جزئیاتش در تب تازه باز می‌شود و دور جلسه در تقویم خط‌چین می‌شود.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classroomUrl($run))
                     ->perform(function (TutorialRun $run): void {
@@ -666,6 +666,6 @@ class LanguageInstitute extends Scenario
     {
         $classroom = self::classroom($run);
 
-        return $classroom ? ClassroomResource::getUrl('view', ['record' => $classroom], panel: 'admin', tenant: self::branch($run)) : null;
+        return $classroom ? ClassroomResource::getUrl('members', ['record' => $classroom], panel: 'admin', tenant: self::branch($run)) : null;
     }
 }

@@ -14,7 +14,7 @@ use Livewire\Livewire;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\Weekday;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ListClassrooms;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -154,15 +154,15 @@ class ScoresAndReportCardsTest extends TestCase
         $admin->makeSuperAdmin($this->primary);
 
         $this->actingInPanel($admin, $this->west);
-        $page = Livewire::test(ViewClassroom::class, ['record' => $this->classroom->getRouteKey()])
-            ->mountAction('scoreBook')
-            ->setActionData(['period_id' => $this->aban->id, 'subject_id' => $this->persian->id]);
+        $page = Livewire::test(ListClassrooms::class)
+            ->mountTableAction('scoreBook', $this->classroom)
+            ->setTableActionData(['period_id' => $this->aban->id, 'subject_id' => $this->persian->id]);
 
         $rows = $page->instance()->mountedActions[0]['data']['rows'];
         $this->assertSame(['امیر محمدی', 'سارا جعفری'], array_column($rows, 'name'));
-        $page->setActionData(['rows' => array_map(fn (array $row): array => [...$row, 'level' => DescriptiveLevel::VeryGood->value], $rows)])
-            ->callMountedAction()
-            ->assertHasNoActionErrors();
+        $page->setTableActionData(['rows' => array_map(fn (array $row): array => [...$row, 'level' => DescriptiveLevel::VeryGood->value], $rows)])
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
 
         $this->assertSame([DescriptiveLevel::VeryGood, DescriptiveLevel::VeryGood], Score::query()->orderBy('id')->get()->pluck('level')->all());
         $this->assertNull(Score::query()->first()->score);

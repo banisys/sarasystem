@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
 use Livewire\Livewire;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -162,7 +162,7 @@ class HomeworkTest extends TestCase
         $admin->makeSuperAdmin($this->west);
 
         $this->actingInPanel($admin, $this->west);
-        $tab = Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ViewClassroom::class])
+        $tab = Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->assertTableColumnStateSet('homework_submissions_count', 'تحویل 1', $this->session)
             ->mountAction(TestAction::make('grading')->table($this->session));
 

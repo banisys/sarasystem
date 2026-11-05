@@ -272,7 +272,7 @@ class BranchOperations extends Scenario
                 Mission::make('weekly', 'برنامه‌ی هفتگی')
                     ->actor($officer, $asOfficer)
                     ->steps([
-                        'در «Conversation B2» زبانه‌ی «برنامه» و «افزودن برنامه»: تکرار «هفتگی»، سه روز در هفته (امروز، دو روز بعد و چهار روز بعد)، از امروز تا چهار هفته‌ی بعد.',
+                        'در «Conversation B2» از منوی ردیف کلاس «برنامه» ← «افزودن برنامه»: تکرار «هفتگی»، سه روز در هفته (امروز، دو روز بعد و چهار روز بعد)، از امروز تا چهار هفته‌ی بعد.',
                         'ساعت از ده دقیقه‌ی بعد به مدت یک ساعت، مدرس «بهاره امینی»؛ ذخیره کنید و جلسه‌ها را در تقویم «جلسه‌ها» (نمای «هفتگی» یا «ماهانه») ببینید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
@@ -334,7 +334,7 @@ class BranchOperations extends Scenario
                 Mission::make('substitute', 'مدرس جایگزین')
                     ->actor($officer, $asOfficer)
                     ->steps([
-                        'در «Conversation B2» زبانه‌ی «جلسه‌ها»، روی جلسه‌ی امروز در تقویم بزنید؛ در صفحه‌ی جلسه که در تب تازه باز می‌شود «سایر ← مدرس جایگزین» را بزنید و «رضا توکلی» را انتخاب کنید.',
+                        'در «Conversation B2» از منوی ردیف کلاس «جلسه‌ها» را باز کنید و روی جلسه‌ی امروز در تقویم بزنید؛ در صفحه‌ی جلسه که در تب تازه باز می‌شود «سایر ← مدرس جایگزین» را بزنید و «رضا توکلی» را انتخاب کنید.',
                         'جایگزین باید عضو همین '.$tenant.' باشد و در آن ساعت جای دیگری درس نداشته باشد.',
                         'اختیاری: در «کارکنان ← کارمندان» با «جلسه‌های تدریس» در ردیف «رضا توکلی»، این جلسه را در تقویم تدریس او ببینید.',
                     ])
@@ -598,7 +598,7 @@ class BranchOperations extends Scenario
     {
         $classroom = self::conversationClass($run);
 
-        return $classroom ? ClassroomResource::getUrl('view', ['record' => $classroom], panel: 'admin', tenant: self::branch($run, 1)) : null;
+        return $classroom ? ClassroomResource::getUrl('members', ['record' => $classroom], panel: 'admin', tenant: self::branch($run, 1)) : null;
     }
 
     private static function subClass(TutorialRun $run): ?Classroom

@@ -264,7 +264,7 @@ class SessionActions
                 self::substitute(),
                 self::cancel(),
                 self::restore(),
-                self::delete()->after(fn (ClassSession $record, Page $livewire) => $livewire->redirect(ClassroomResource::getUrl('view', ['record' => $record->classroom_id]))),
+                self::delete()->after(fn (ClassSession $record, Page $livewire) => $livewire->redirect(ClassroomResource::getUrl('sessions', ['record' => $record->classroom_id]))),
             ])
                 ->label('سایر')
                 ->icon(Heroicon::OutlinedEllipsisHorizontal)

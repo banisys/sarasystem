@@ -52,7 +52,7 @@ class SessionPageTest extends TestCase
         $this->get(ClassSessionResource::getUrl('view', ['record' => $session], tenant: $this->west))
             ->assertOk()
             ->assertSee(['زبان مقدماتی الف', 'برنامه‌ریزی‌شده', 'نحوه‌ی برگزاری', 'سایر', 'حضور و غیاب'])
-            ->assertSee(ClassroomResource::getUrl('view', ['record' => $this->classroom], tenant: $this->west));
+            ->assertSee(ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west));
     }
 
     public function test_another_tenants_session_is_not_found(): void
@@ -131,7 +131,7 @@ class SessionPageTest extends TestCase
         $this->actingInPanel($this->admin(), $this->west);
         Livewire::test(ViewClassSession::class, ['record' => $session->id])
             ->callAction(TestAction::make('deleteSession'))
-            ->assertRedirect(ClassroomResource::getUrl('view', ['record' => $this->classroom], tenant: $this->west));
+            ->assertRedirect(ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west));
 
         $this->assertNull(ClassSession::query()->find($session->id));
     }
