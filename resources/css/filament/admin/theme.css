@@ -145,7 +145,27 @@ html.dark .classroom-tabs > .fi-tabs {
     @apply text-white dark:text-primary-200;
 }
 
-/* The button beside a modal's × and the state it turns on (ADR 0060). */
+/* The button beside a modal's × and the state it turns on (ADR 0060). The
+   enlarged modal fills the content area: the top bar and the sidebar stay
+   visible and usable. Below the lg breakpoint the sidebar is a drawer, so the
+   modal goes under it. */
+@media (min-width: 64rem) {
+    .fi-layout:has(.fi-main-sidebar.fi-sidebar-open) {
+        --modal-fullscreen-start: var(--sidebar-width);
+    }
+
+    .fi-layout:has(.fi-main-sidebar:not(.fi-sidebar-open)) {
+        --modal-fullscreen-start: var(--collapsed-sidebar-width);
+    }
+}
+
+@media (max-width: 63.999rem) {
+    .fi-modal.fi-modal-fullscreen > .fi-modal-close-overlay,
+    .fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn {
+        z-index: 20;
+    }
+}
+
 .fi-modal .fi-modal-window .fi-modal-fullscreen-btn {
     position: absolute;
     top: 1rem;
@@ -165,16 +185,27 @@ html.dark .classroom-tabs > .fi-tabs {
     margin-inline-start: 4.5rem;
 }
 
+.fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn {
+    display: block;
+}
+
 .fi-modal.fi-modal-fullscreen:not(.fi-modal-slide-over) > .fi-modal-window-ctn {
     padding: 0;
 }
 
+.fi-modal.fi-modal-fullscreen > .fi-modal-close-overlay,
+.fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn {
+    top: var(--topbar-height);
+    inset-inline-start: var(--modal-fullscreen-start, 0);
+    min-height: 0;
+}
+
 .fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn > .fi-modal-window {
-    position: fixed;
+    position: absolute;
     inset: 0;
     width: 100%;
     max-width: none;
-    height: 100dvh;
+    height: 100%;
     max-height: none;
     margin: 0;
     overflow-y: auto;
