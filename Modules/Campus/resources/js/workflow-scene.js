@@ -14,6 +14,7 @@ import {
 } from 'three';
 import { createStage } from '@/scene/stage.js';
 import { BoxBatch, recolor, VIEWS } from './blocks.js';
+import { makePeople } from './person-figure.js';
 import { makeBeams } from './power.js';
 
 /**
@@ -44,7 +45,6 @@ const COLORS = {
     return: '#f59e0b',
     edit: '#2563eb',
     note: '#7c3aed',
-    person: '#334155',
     folder: '#fcd34d',
     token: '#f97316',
     faded: '#e5e7eb',
@@ -121,6 +121,7 @@ export function mountWorkflowScene(element, tooltip, data, { onSelect, onPlay })
     const platforms = new BoxBatch();
     const details = new BoxBatch();
     const chutes = new BoxBatch();
+    const people = [];
     const targets = [];
 
     ground.add(length + 2, 0.2, depth + 2, COLORS.ground, 0, -0.1, 0);
@@ -155,16 +156,15 @@ export function mountWorkflowScene(element, tooltip, data, { onSelect, onPlay })
         platforms.add(PLATFORM, 0.3, PLATFORM, color, at.x, at.y - 0.15, at.z);
 
         // Whoever decides: one figure for a person, a group for a role's holders.
-        const figures = step.isPerson ? [[0, 1.5]] : [[-1, 1.15], [0, 1.4], [1, 1.15]];
+        const figures = step.isPerson ? [[0, 1.25, 0]] : [[-1.05, 1.05, 0.3], [0, 1.2, 0], [1.05, 1.05, -0.3]];
 
-        figures.forEach(([dx, scale]) => {
-            details.add(0.5 * scale, 0.8 * scale, 0.36 * scale, COLORS.person, at.x + dx, at.y + 0.4 * scale, at.z - 0.9);
-            details.add(0.4 * scale, 0.4 * scale, 0.4 * scale, COLORS.person, at.x + dx, at.y + 1.03 * scale, at.z - 0.9);
+        figures.forEach(([dx, scale, turn]) => {
+            people.push({ x: at.x + dx, y: at.y, z: at.z - 0.9, scale, turn });
         });
 
-        // A file per open case.
+        // A file per open case, beside the people so that a tall pile hides nobody.
         for (let folder = 0; folder < Math.min(MAX_FOLDERS, step.openCases); folder++) {
-            details.add(0.95, 0.12, 0.7, COLORS.folder, at.x, at.y + 0.08 + folder * 0.15, at.z + 0.9);
+            details.add(0.85, 0.12, 0.65, COLORS.folder, at.x + PLATFORM / 2 - 0.55, at.y + 0.08 + folder * 0.15, at.z + 0.25);
         }
 
         if (step.edits) {
@@ -186,7 +186,7 @@ export function mountWorkflowScene(element, tooltip, data, { onSelect, onPlay })
         }
 
         targets.push({
-            position: at.clone().add(new Vector3(0, 2.2, -0.9)),
+            position: at.clone().add(new Vector3(0, 2.35, -0.9)),
             text: `${step.number}. ${step.name}`,
             data: step,
         });
@@ -243,7 +243,7 @@ export function mountWorkflowScene(element, tooltip, data, { onSelect, onPlay })
 
     const platformMesh = platforms.toMesh();
 
-    world.add(ground.toMesh(), lanesMesh, platformMesh, details.toMesh(), flowMesh, headMesh, restingArcs);
+    world.add(ground.toMesh(), lanesMesh, platformMesh, details.toMesh(), makePeople(people), flowMesh, headMesh, restingArcs);
     if (chutes.boxes.length > 0) {
         world.add(chutes.toMesh());
     }
