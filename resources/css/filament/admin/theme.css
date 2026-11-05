@@ -145,6 +145,12 @@ html.dark .classroom-tabs > .fi-tabs {
     @apply text-white dark:text-primary-200;
 }
 
+/* The layer behind an open modal is solid: the page does not show through. */
+.fi-modal > .fi-modal-close-overlay,
+html.dark .fi-modal > .fi-modal-close-overlay {
+    background-color: var(--gray-950);
+}
+
 /* The button beside a modal's × and the state it turns on (ADR 0060). The
    enlarged modal fills the content area: the top bar and the sidebar stay
    visible and usable. Below the lg breakpoint the sidebar is a drawer, so the

@@ -20,6 +20,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-05 — The layer behind an open admin modal is solid instead of translucent. Vite build passes; checked in headless Chrome, light and dark, normal and enlarged.
 - 2026-11-05 — An enlarged admin modal fills only the content area: the top bar and the sidebar stay visible and usable (ADR 0060). `Width::Screen` modals (the 3D views) still cover the whole page. ModalDefaultsTest, Pint and Vite build pass. Checked in headless Chrome: open and collapsed sidebar, a validation error, a real click on a sidebar link (the modal goes, the page scrolls again), the dark theme, and 500 px wide with the drawer over the modal. The sidebar was collapsed through its store, not its button.
 - 2026-11-05 — Confirmation modals («آیا مطمئن هستید؟», `requiresConfirmation()`) stay small and have no full-screen button, whatever the user chose (ADR 0060). Tests and Pint pass; checked in headless Chrome.
 - 2026-11-05 — Modal full-screen button uses Ubuntu-style window icons: a square to enlarge, two overlapping squares to bring back. ModalDefaultsTest and Pint pass; checked in headless Chrome.
