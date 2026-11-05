@@ -1,4 +1,4 @@
-{{-- Filament's modal with a full-screen button beside the × (ADR 0060). ModalFullscreenTest fails when Filament changes the original: copy it again and repeat the three changes (x-data and x-init, x-bind:class, @include). --}}
+{{-- Filament's modal with a full-screen button beside the × (ADR 0060). ModalDefaultsTest fails when Filament changes the original: copy it again and repeat the three changes (x-init, x-bind:class, @include). --}}
 @props([
     'alert' => false,
     'alignment' => null,
@@ -150,12 +150,12 @@
     id="{{ $id }}"
     role="{{ $alert ? 'alertdialog' : 'dialog' }}"
     tabindex="-1"
-    x-data="Object.assign(filamentModal({
+    x-data="filamentModal({
                 id: @js($id),
                 isScrollLocked: @js(! $isClickThrough),
                 shouldRestoreFocus: @js($restoresFocus && (! $isClickThrough)),
-            }), { isFullscreen: false })"
-    x-init="$watch('isOpen', (isOpen) => { if (isOpen) isFullscreen = false })"
+            })"
+    x-init="$watch('isOpen', (isOpen) => { if (isOpen) requestAnimationFrame(() => requestAnimationFrame(() => $el.querySelector('.fi-modal-window').focus({ preventScroll: true }))) })"
     @if ($id)
         data-fi-modal-id="{{ $id }}"
         x-on:{{ $closeEventName }}.window="if (($event.detail.id === @js($id)) && isOpen) close()"
@@ -168,7 +168,9 @@
     @endif
     x-bind:class="{
         'fi-modal-open': isOpen,
-        'fi-modal-fullscreen': isFullscreen,
+        @if ($closeButton && ($heading || $header) && ($width !== Width::Screen))
+            'fi-modal-fullscreen': $store.adminModal.isFullscreen,
+        @endif
     }"
     x-cloak
     x-show="isOpen"

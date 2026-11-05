@@ -5,16 +5,16 @@
     use Filament\Support\View\ComponentAttributeBag;
     use Filament\Support\View\Components\IconButtonComponent;
 
-    $enterIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedArrowsPointingOut, attributes: new ComponentAttributeBag(['x-show' => '! isFullscreen']), size: IconSize::Large);
-    $exitIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedArrowsPointingIn, attributes: new ComponentAttributeBag(['x-cloak' => true, 'x-show' => 'isFullscreen']), size: IconSize::Large);
+    $enterIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedArrowsPointingOut, attributes: new ComponentAttributeBag(['x-show' => '! $store.adminModal.isFullscreen']), size: IconSize::Large);
+    $exitIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedArrowsPointingIn, attributes: new ComponentAttributeBag(['x-cloak' => true, 'x-show' => '$store.adminModal.isFullscreen']), size: IconSize::Large);
 @endphp
 
 <button
     type="button"
-    x-on:click="isFullscreen = ! isFullscreen"
-    x-bind:aria-label="isFullscreen ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه'"
-    x-bind:aria-pressed="isFullscreen"
-    x-bind:title="isFullscreen ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه'"
+    x-on:click="$store.adminModal.toggle()"
+    x-bind:aria-label="$store.adminModal.isFullscreen ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه'"
+    x-bind:aria-pressed="$store.adminModal.isFullscreen"
+    x-bind:title="$store.adminModal.isFullscreen ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه'"
     @if ($closeByEscaping)
         tabindex="-1"
     @endif

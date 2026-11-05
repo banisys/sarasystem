@@ -38,8 +38,8 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
   - Delete is a row action in the list only; edit pages have no delete button ([ADR 0006](decisions/0006-panel-table-behavior.md)).
   - Numeric inputs are LTR with thousands separators.
   - Searchable selects preload and show 10 options.
-  - Modals close only with the × button in their header, not by clicking outside or pressing Escape (a modal can opt back in with `->closeModalByClickingAway()` / `->closeModalByEscaping()`).
-  - Modals have a full-screen button beside the × ([ADR 0060](decisions/0060-modal-fullscreen-button.md), an override of Filament's modal view).
+  - Modals close with the × button in their header or by clicking outside, not by pressing Escape (a modal can opt back in with `->closeModalByEscaping()`).
+  - Modals have a full-screen button beside the ×, and the choice applies to all of the user's modals ([ADR 0060](decisions/0060-modal-fullscreen-button.md), an override of Filament's modal view).
 - **Panel tenancy:** URLs are `/cpadmin/{tenant-slug}/…` and Filament shows a tenant switcher. See [Tenancy](#tenancy).
 - Registered plugins: Shield (roles & permissions UI) and ApexCharts. The other Filament packages are used per component and need no panel registration:
   - Jalali: `->jalali()` on DatePicker/DateTimePicker, `->jalaliDate()` on TextColumn/TextEntry

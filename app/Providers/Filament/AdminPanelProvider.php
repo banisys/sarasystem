@@ -95,6 +95,8 @@ class AdminPanelProvider extends PanelProvider
             // "Back to my account" bar while impersonating a user (ADR 0008).
             ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.impersonation-banner'))
             ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.disable-native-validation'))
+            // Each user's full-screen choice for all modals (ADR 0060).
+            ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.modal-size-preference'))
             // Collapsible table filters stay open across reloads when left open.
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.persist-filters-open'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.tenant-menu-same-page'))
@@ -186,13 +188,15 @@ class AdminPanelProvider extends PanelProvider
                     : null;
             }, 'desc'));
 
-        // Modals (actions, slide-overs, confirmations) close only with the ×
-        // button in their header: not by clicking outside or pressing Escape,
-        // so a half-filled form is not lost by a stray click. A modal can opt
-        // back in with ->closeModalByClickingAway() / ->closeModalByEscaping().
+        // Modals (actions, slide-overs, confirmations) close with the × button
+        // or by clicking outside, not by pressing Escape. A modal can opt back
+        // in with ->closeModalByEscaping().
         ModalComponent::closeButton();
-        ModalComponent::closedByClickingAway(false);
         ModalComponent::closedByEscaping(false);
+
+        // The modal view focuses its window itself, without scrolling: the
+        // focus trap's own focus would scroll a tall modal's header out of view.
+        ModalComponent::autofocus(false);
 
         // Every column can be hidden from the column manager; a column that
         // must stay visible opts out with ->toggleable(false).
