@@ -5,8 +5,8 @@
     use Filament\Support\View\ComponentAttributeBag;
     use Filament\Support\View\Components\IconButtonComponent;
 
-    $enterIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedArrowsPointingOut, attributes: new ComponentAttributeBag(['x-show' => '! $store.adminModal.isFullscreen']), size: IconSize::Large);
-    $exitIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedArrowsPointingIn, attributes: new ComponentAttributeBag(['x-cloak' => true, 'x-show' => '$store.adminModal.isFullscreen']), size: IconSize::Large);
+    $enterIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedStop, attributes: new ComponentAttributeBag(['x-show' => '! $store.adminModal.isFullscreen']), size: IconSize::Large);
+    $exitIcon = \Filament\Support\generate_icon_html(Heroicon::OutlinedSquare2Stack, attributes: new ComponentAttributeBag(['x-cloak' => true, 'x-show' => '$store.adminModal.isFullscreen']), size: IconSize::Large);
 @endphp
 
 <button
