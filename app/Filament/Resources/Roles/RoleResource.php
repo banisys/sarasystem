@@ -15,6 +15,8 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use BezhanSalleh\FilamentShield\Support\Utils;
 use BezhanSalleh\FilamentShield\Traits\HasShieldFormComponents;
 use BezhanSalleh\PluginEssentials\Concerns\Resource as Essentials;
+use Closure;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -43,6 +45,30 @@ class RoleResource extends Resource implements IndependentOfTenant
     use HasShieldFormComponents;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    /**
+     * @var array<string, Closure(): iterable<Action>>
+     */
+    protected static array $headerActionFactories = [];
+
+    /**
+     * Let a module add buttons to the roles list's header, e.g. the pyramid of
+     * roles (ADR 0057). Registering a name again replaces it.
+     *
+     * @param  Closure(): iterable<Action>  $callback
+     */
+    public static function addHeaderActionsUsing(string $name, Closure $callback): void
+    {
+        static::$headerActionFactories[$name] = $callback;
+    }
+
+    /**
+     * @return list<Action>
+     */
+    public static function moduleHeaderActions(): array
+    {
+        return collect(static::$headerActionFactories)->flatMap(fn (Closure $callback): iterable => $callback())->values()->all();
+    }
 
     #[Override]
     public static function form(Schema $schema): Schema

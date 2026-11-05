@@ -187,3 +187,9 @@ html.dark .fi-ta-header-heading {
     padding-top: 5rem;
     padding-bottom: 1.5rem;
 }
+
+/* A full-screen modal covers the top bar too. The content area is below the bar
+   in the stacking order, so it is lifted only while such a modal is open. */
+body > div.fi-layout > div.fi-main-ctn:has(.fi-modal.fi-width-screen.fi-modal-open) {
+    z-index: 50;
+}

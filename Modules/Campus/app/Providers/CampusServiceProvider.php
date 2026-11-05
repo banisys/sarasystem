@@ -2,13 +2,17 @@
 
 namespace Modules\Campus\Providers;
 
+use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Tenants\TenantResource;
 use App\Models\Tenant;
 use Filament\Actions\Action;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\View\View;
 use Modules\Campus\Filament\Pages\Building;
 use Modules\Campus\Filament\Pages\OrganizationMap;
+use Modules\Campus\Services\RoleHierarchy;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class CampusServiceProvider extends ModuleServiceProvider
@@ -43,6 +47,18 @@ class CampusServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        RoleResource::addHeaderActionsUsing('role-pyramid', fn (): array => [
+            Action::make('rolePyramid')
+                ->label('هرم قدرت نقش‌ها')
+                ->icon(Heroicon::OutlinedCube)
+                ->color('gray')
+                ->modalHeading('هرم قدرت نقش‌ها')
+                ->modalWidth(Width::Screen)
+                ->modalSubmitAction(false)
+                ->modalCancelAction(false)
+                ->modalContent(fn (): View => view('campus::filament.modals.role-pyramid', ['scene' => app(RoleHierarchy::class)->scene()])),
+        ]);
 
         TenantResource::addRecordActionsUsing('building', fn (): array => [
             Action::make('building')
