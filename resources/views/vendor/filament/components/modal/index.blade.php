@@ -168,7 +168,7 @@
     @endif
     x-bind:class="{
         'fi-modal-open': isOpen,
-        @if ($closeButton && ($heading || $header) && ($width !== Width::Screen))
+        @if ($closeButton && ($heading || $header) && ($width !== Width::Screen) && (! $alert))
             'fi-modal-fullscreen': $store.adminModal.isFullscreen,
         @endif
     }"
@@ -274,7 +274,7 @@
                             class="fi-modal-close-btn"
                         />
 
-                        @if ($width !== Width::Screen)
+                        @if (($width !== Width::Screen) && (! $alert))
                             @include('filament.admin.modal-fullscreen-button')
                         @endif
                     @endif

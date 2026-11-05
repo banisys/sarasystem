@@ -40,7 +40,7 @@ class ModalDefaultsTest extends TestCase
 
     public function test_a_modal_already_full_screen_or_without_a_close_button_has_no_full_screen_button(): void
     {
-        foreach (['width="screen"', ':close-button="false"'] as $attribute) {
+        foreach (['width="screen"', ':close-button="false"', ':alert="true"'] as $attribute) {
             $html = Blade::render('<x-filament::modal id="sample" heading="عنوان" '.$attribute.'>متن</x-filament::modal>');
 
             $this->assertStringNotContainsString('fi-modal-fullscreen', $html);
