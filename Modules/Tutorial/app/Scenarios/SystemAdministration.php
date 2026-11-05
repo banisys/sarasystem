@@ -73,17 +73,17 @@ class SystemAdministration extends Scenario
                 Mission::make('tenants', "ساخت دو {$tenant}")
                     ->steps([
                         'ابتدا «نقشهٔ سامانه» را باز کنید؛ بخش‌ها، ارتباط‌های کاری و امکانات فعال را ببینید. با باز کردن کارت هر بخش، به صفحه‌های آن می‌رسید؛ «بازسازی نقشه» آخرین وضعیت را نشان می‌دهد.',
-                        "از منوی «{$tenants}» دکمه‌ی «ایجاد» را بزنید و «شعبه شرق» با نشانی «east» بسازید.",
-                        'دوباره «ایجاد» را بزنید و «شعبه غرب» با نشانی «west» بسازید.',
+                        "از منوی «{$tenants}» دکمه‌ی «ایجاد» را بزنید و «شعبه شرق» با نشانی «east» بسازید. در «رنگ اصلی» یک رنگ، مثلاً صورتی، انتخاب کنید؛ سایت این {$tenant} به همین رنگ دیده می‌شود.",
+                        'دوباره «ایجاد» را بزنید و «شعبه غرب» با نشانی «west» و رنگ دیگری، مثلاً آبی، بسازید.',
                         "هر {$tenant} صفحه‌ی اصلی خودش را در سایت دارد (/east و /west)؛ {$tenant} اصلی (ستاره در فهرست) صفحه‌ی اصلی سایت (/) است.",
                     ])
                     ->url(fn (): string => TenantResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                     ->fill(fn (TutorialRun $run): array => $run->made(Tenant::class)->exists()
-                        ? ['name' => 'شعبه غرب', 'slug' => 'west']
-                        : ['name' => 'شعبه شرق', 'slug' => 'east'])
+                        ? ['name' => 'شعبه غرب', 'slug' => 'west', 'primary_color' => '#2563eb']
+                        : ['name' => 'شعبه شرق', 'slug' => 'east', 'primary_color' => '#ec4899'])
                     ->perform(function (): void {
-                        Tenant::query()->create(['name' => 'شعبه شرق', 'slug' => 'east', 'is_active' => true]);
-                        Tenant::query()->create(['name' => 'شعبه غرب', 'slug' => 'west', 'is_active' => true]);
+                        Tenant::query()->create(['name' => 'شعبه شرق', 'slug' => 'east', 'is_active' => true, 'primary_color' => '#ec4899']);
+                        Tenant::query()->create(['name' => 'شعبه غرب', 'slug' => 'west', 'is_active' => true, 'primary_color' => '#2563eb']);
                     })
                     ->doneWhen(fn (TutorialRun $run): bool => self::west($run) !== null),
             ],

@@ -79,7 +79,7 @@ function changeMobile() {
 
 onBeforeUnmount(() => clearInterval(timer));
 
-const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-900';
+const linkButtonClass = 'text-sm font-medium text-brand-700 hover:text-brand-900';
 </script>
 
 <template>
@@ -103,7 +103,7 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                 v-else-if="!codeSent"
                 type="button"
                 :disabled="sendCodeForm.processing || !mobile"
-                class="mt-1 rounded-lg border border-violet-600 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60"
+                class="mt-1 rounded-lg border border-brand-600 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-60"
                 @click="sendCode"
             >
                 ارسال کد تأیید
@@ -114,7 +114,7 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
             {{ sendCodeForm.errors.mobile || verifyForm.errors.mobile || error }}
         </p>
 
-        <div v-if="codeSent && !verifiedMobile" class="mt-3 rounded-lg bg-violet-50 p-3">
+        <div v-if="codeSent && !verifiedMobile" class="mt-3 rounded-lg bg-brand-50 p-3">
             <label for="code" :class="labelClass">کد پیامک‌شده به {{ mobile }}</label>
             <div class="flex flex-wrap items-start gap-2">
                 <input
@@ -131,7 +131,7 @@ const linkButtonClass = 'text-sm font-medium text-violet-700 hover:text-violet-9
                 <button
                     type="button"
                     :disabled="verifyForm.processing || !verifyForm.code"
-                    class="mt-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60"
+                    class="mt-1 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-brand-contrast hover:bg-brand-700 disabled:opacity-60"
                     @click="verifyCode"
                 >
                     تأیید

@@ -9,17 +9,23 @@ import TutorialBar from '@/Components/TutorialBar.vue';
 const page = usePage();
 const site = computed(() => page.props.site);
 const user = computed(() => page.props.auth.user);
+
+// The tenant's own colour (ADR 0062): resources/css/app.css works out the
+// brand-* shades from these under .site-brand; without one they stay violet.
+const brandStyle = computed(() =>
+    site.value.tenant.color ? { '--brand': site.value.tenant.color.primary, '--brand-contrast': site.value.tenant.color.contrast } : null,
+);
 </script>
 
 <template>
-    <div class="flex min-h-screen flex-col bg-gray-50">
+    <div class="flex min-h-screen flex-col bg-gray-50" :class="{ 'site-brand': brandStyle }" :style="brandStyle">
         <TutorialBar />
-        <header class="border-b border-gray-200 bg-white">
+        <header class="border-t-4 border-b border-t-brand-600 border-b-gray-200 bg-white">
             <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4">
                 <Link :href="site.tenant.url" class="text-lg font-bold text-gray-900">{{ site.tenant.name }}</Link>
                 <Link
                     :href="user ? route('dashboard') : route('login')"
-                    class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
+                    class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-brand-contrast hover:bg-brand-700"
                 >
                     {{ user ? 'ورود به داشبورد' : 'ورود' }}
                 </Link>
@@ -33,13 +39,13 @@ const user = computed(() => page.props.auth.user);
             <slot />
         </main>
 
-        <footer class="border-t border-gray-200 bg-white">
+        <footer class="border-t-4 border-t-brand-600 bg-white">
             <div class="mx-auto max-w-5xl px-4 py-6 text-sm text-gray-500">
                 <nav v-if="site.otherTenants.length" class="mb-4">
                     <p class="text-xs text-gray-400">سایر {{ page.props.tenant.label }}‌ها</p>
                     <ul class="mt-2 flex flex-wrap gap-2">
                         <li v-for="other in site.otherTenants" :key="other.url">
-                            <Link :href="other.url" class="inline-block rounded-full bg-gray-100 px-3 py-1 text-gray-700 hover:bg-violet-50 hover:text-violet-700">
+                            <Link :href="other.url" class="inline-block rounded-full bg-gray-100 px-3 py-1 text-gray-700 hover:bg-brand-50 hover:text-brand-700">
                                 {{ other.name }}
                             </Link>
                         </li>

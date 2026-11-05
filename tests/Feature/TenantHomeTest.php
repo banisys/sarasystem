@@ -39,6 +39,24 @@ class TenantHomeTest extends TestCase
                 ->where('site.tenant.url', url('/west')));
     }
 
+    public function test_each_tenants_site_gets_its_own_color(): void
+    {
+        Tenant::factory()->create()->makePrimary();
+        Tenant::factory()->create(['slug' => 'girls', 'primary_color' => '#ec4899']);
+        Tenant::factory()->create(['slug' => 'boys', 'primary_color' => '#2563eb']);
+        Tenant::factory()->create(['slug' => 'light', 'primary_color' => '#fde047']);
+        Tenant::factory()->create(['slug' => 'plain']);
+
+        $this->get('/girls')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('site.tenant.color', ['primary' => '#ec4899', 'contrast' => '#ffffff']));
+        $this->get('/boys')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('site.tenant.color', ['primary' => '#2563eb', 'contrast' => '#ffffff']));
+        $this->get('/light')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('site.tenant.color', ['primary' => '#fde047', 'contrast' => '#111827']));
+        $this->get('/plain')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('site.tenant.color', null));
+    }
+
     public function test_the_primary_tenants_slug_redirects_to_the_site_root(): void
     {
         Tenant::factory()->create(['slug' => 'head-office'])->makePrimary();

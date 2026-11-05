@@ -48,6 +48,34 @@ class TenantResourceTest extends TestCase
         $this->assertDatabaseHas('tenants', ['slug' => 'marzdaran-1', 'name' => 'شعبه مرزداران']);
     }
 
+    public function test_super_admin_gives_a_tenant_a_primary_color(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->callAction(CreateAction::class, ['name' => 'دخترانه', 'slug' => 'girls', 'is_active' => true, 'primary_color' => '#EC4899'])
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('tenants', ['slug' => 'girls', 'primary_color' => '#ec4899']);
+    }
+
+    public function test_primary_color_is_optional_and_must_be_a_six_digit_hex(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        Livewire::test(ManageTenants::class)
+            ->callAction(CreateAction::class, ['name' => 'x', 'slug' => 'bad-color', 'primary_color' => 'red;background:url(x)'])
+            ->assertHasFormErrors(['primary_color' => 'regex']);
+
+        Livewire::test(ManageTenants::class)
+            ->callAction(CreateAction::class, ['name' => 'x', 'slug' => 'no-color', 'is_active' => true, 'primary_color' => ''])
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('tenants', ['slug' => 'no-color', 'primary_color' => null]);
+    }
+
     public function test_slug_must_be_url_safe_and_unique(): void
     {
         $tenant = Tenant::factory()->create(['slug' => 'taken']);

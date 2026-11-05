@@ -59,11 +59,11 @@ function isSameDay(date, day) {
 }
 
 function dayClass(day, index) {
-    if (isSameDay(selected.value, day)) return 'bg-violet-600 font-bold text-white';
+    if (isSameDay(selected.value, day)) return 'bg-brand-600 font-bold text-brand-contrast';
 
     const color = index % 7 === 6 ? 'text-red-600' : 'text-gray-800';
 
-    return [color, 'hover:bg-violet-50', isSameDay(todayDate, day) ? 'ring-1 ring-violet-400' : ''];
+    return [color, 'hover:bg-brand-50', isSameDay(todayDate, day) ? 'ring-1 ring-brand-400' : ''];
 }
 
 function pick(day) {
@@ -89,8 +89,8 @@ onMounted(() => document.addEventListener('pointerdown', onOutsidePointer));
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePointer));
 
 const navButtonClass = 'rounded-lg px-2 py-1 text-lg leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent';
-const selectClass = 'rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-violet-500 focus:ring-violet-500';
-const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-violet-700 hover:bg-violet-50';
+const selectClass = 'rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-brand-500 focus:ring-brand-500';
+const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50';
 </script>
 
 <template>
@@ -109,7 +109,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-violet-
             />
             <button
                 type="button"
-                class="absolute inset-y-0 left-0 mt-1 flex items-center px-3 text-gray-400 hover:text-violet-600"
+                class="absolute inset-y-0 left-0 mt-1 flex items-center px-3 text-gray-400 hover:text-brand-600"
                 tabindex="-1"
                 aria-label="انتخاب از تقویم"
                 @click="isOpen ? close() : open()"

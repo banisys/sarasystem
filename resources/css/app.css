@@ -18,4 +18,35 @@
 @theme {
     --font-sans: Shabnam, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+
+    /* Accent of the public site (ADR 0062): violet until .site-brand gives it the tenant's colour. */
+    --color-brand-50: var(--color-violet-50);
+    --color-brand-100: var(--color-violet-100);
+    --color-brand-200: var(--color-violet-200);
+    --color-brand-300: var(--color-violet-300);
+    --color-brand-400: var(--color-violet-400);
+    --color-brand-500: var(--color-violet-500);
+    --color-brand-600: var(--color-violet-600);
+    --color-brand-700: var(--color-violet-700);
+    --color-brand-800: var(--color-violet-800);
+    --color-brand-900: var(--color-violet-900);
+    --color-brand-950: var(--color-violet-950);
+    --color-brand-contrast: #fff;
+}
+
+/* PublicLayout.vue sets --brand and --brand-contrast on this element from the
+   tenant's primary colour; 600 is the colour itself. */
+.site-brand {
+    --color-brand-50: color-mix(in oklab, var(--brand) 8%, white);
+    --color-brand-100: color-mix(in oklab, var(--brand) 16%, white);
+    --color-brand-200: color-mix(in oklab, var(--brand) 30%, white);
+    --color-brand-300: color-mix(in oklab, var(--brand) 48%, white);
+    --color-brand-400: color-mix(in oklab, var(--brand) 68%, white);
+    --color-brand-500: color-mix(in oklab, var(--brand) 86%, white);
+    --color-brand-600: var(--brand);
+    --color-brand-700: color-mix(in oklab, var(--brand) 85%, black);
+    --color-brand-800: color-mix(in oklab, var(--brand) 70%, black);
+    --color-brand-900: color-mix(in oklab, var(--brand) 55%, black);
+    --color-brand-950: color-mix(in oklab, var(--brand) 40%, black);
+    --color-brand-contrast: var(--brand-contrast);
 }

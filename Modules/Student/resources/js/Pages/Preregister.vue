@@ -120,7 +120,7 @@ function submit() {
     });
 }
 
-const inputClass = 'mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-violet-500 focus:ring-violet-500';
+const inputClass = 'mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-brand-500';
 const labelClass = 'block text-sm font-medium text-gray-700';
 const errorClass = 'mt-1 text-sm text-red-600';
 const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
@@ -295,7 +295,7 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                             <p v-if="!loginChoices.length" class="mt-1 text-sm text-gray-500">ابتدا موبایل {{ labels.learner }} یا یکی از والدین را وارد کنید.</p>
                             <div class="mt-2 flex flex-wrap gap-4">
                                 <label v-for="choice in loginChoices" :key="choice.value" class="flex items-center gap-2 text-sm text-gray-800">
-                                    <input v-model="form.login_mobile_from" type="radio" :value="choice.value" class="text-violet-600" />
+                                    <input v-model="form.login_mobile_from" type="radio" :value="choice.value" class="text-brand-600" />
                                     {{ choice.label }}
                                 </label>
                             </div>
@@ -405,7 +405,7 @@ const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm';
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="rounded-lg bg-violet-600 px-6 py-2.5 font-medium text-white hover:bg-violet-700 disabled:opacity-60"
+                        class="rounded-lg bg-brand-600 px-6 py-2.5 font-medium text-brand-contrast hover:bg-brand-700 disabled:opacity-60"
                     >
                         {{ form.processing ? 'در حال ارسال…' : 'ثبت پیش‌ثبت‌نام' }}
                     </button>

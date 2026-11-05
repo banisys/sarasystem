@@ -19,7 +19,7 @@ use Spatie\Multitenancy\Models\Tenant as BaseTenant;
  * Membership is not stored separately: a user belongs to a tenant when they
  * hold at least one role in it (Spatie permission teams, team = tenant).
  */
-#[Fillable(['name', 'slug', 'is_active'])]
+#[Fillable(['name', 'slug', 'is_active', 'primary_color'])]
 class Tenant extends BaseTenant
 {
     /** @var list<Closure(): iterable<string>> */
@@ -85,6 +85,26 @@ class Tenant extends BaseTenant
 
             $this->delete();
         });
+    }
+
+    /**
+     * The colour of text on the tenant's primary colour (ADR 0062): white while
+     * it stays readable (WCAG 3:1, as for buttons), otherwise near-black.
+     * Null when the tenant has no colour of its own.
+     */
+    public function primaryColorContrast(): ?string
+    {
+        if ($this->primary_color === null) {
+            return null;
+        }
+
+        $luminance = collect(sscanf($this->primary_color, '#%02x%02x%02x'))
+            ->map(fn (int $channel): float => $channel / 255 <= 0.04045
+                ? $channel / 255 / 12.92
+                : (($channel / 255 + 0.055) / 1.055) ** 2.4)
+            ->pipe(fn ($channels): float => 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2]);
+
+        return 1.05 / ($luminance + 0.05) >= 3 ? '#ffffff' : '#111827';
     }
 
     /**

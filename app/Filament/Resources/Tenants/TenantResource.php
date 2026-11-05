@@ -11,17 +11,20 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Str;
 
 /**
  * Installation-level list of tenants; super admin only (TenantPolicy).
@@ -109,6 +112,13 @@ class TenantResource extends Resource implements IndependentOfTenant
                     ->notIn(fn (): array => Tenant::reservedSlugs())
                     ->validationMessages(['not_in' => 'این شناسه برای بخش دیگری از سامانه رزرو است.'])
                     ->extraInputAttributes(['dir' => 'ltr']),
+                ColorPicker::make('primary_color')
+                    ->label('رنگ اصلی')
+                    ->helperText('رنگ سایت این مورد: دکمه‌ها، لینک‌ها و فرم‌ها. اگر خالی بماند، رنگ پیش‌فرض سامانه به کار می‌رود.')
+                    ->regex('/^#[0-9a-fA-F]{6}$/')
+                    ->extraInputAttributes(['dir' => 'ltr'])
+                    ->validationMessages(['regex' => 'رنگ را به شکل شش‌رقمی مانند ‎#ec4899 وارد کنید.'])
+                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Str::lower($state) : null),
                 Toggle::make('is_active')
                     ->label('فعال')
                     ->helperText(fn (?Tenant $record): string => $record?->is_primary
@@ -129,6 +139,8 @@ class TenantResource extends Resource implements IndependentOfTenant
                     ->sortable(),
                 TextColumn::make('slug')
                     ->label('شناسه در آدرس'),
+                ColorColumn::make('primary_color')
+                    ->label('رنگ'),
                 IconColumn::make('is_primary')
                     ->label('اصلی')
                     ->tooltip('صفحه‌ی خانه‌ی اصلی، آدرس اصلی سایت (/) است.')

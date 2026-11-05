@@ -27,7 +27,7 @@ defineProps({
                 :href="item.url"
                 :target="item.new_tab ? '_blank' : null"
                 :rel="item.new_tab ? 'noopener' : null"
-                class="block rounded-lg px-3 py-2 text-sm text-gray-700 transition hover:bg-violet-50 hover:text-violet-700"
+                class="block rounded-lg px-3 py-2 text-sm text-gray-700 transition hover:bg-brand-50 hover:text-brand-700"
             >
                 {{ item.title }}
             </a>

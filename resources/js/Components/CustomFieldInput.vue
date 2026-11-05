@@ -25,7 +25,7 @@ function toggleOption(option, checked) {
 <template>
     <div :class="{ 'sm:col-span-2': field.type === 'textarea' || field.type === 'multi_select' || field.type === 'checkbox' }">
         <label v-if="field.type === 'checkbox'" :for="id" class="flex items-center gap-2 text-sm text-gray-700">
-            <input :id="id" type="checkbox" :checked="!!model" class="rounded border-gray-300 text-violet-600 focus:ring-violet-500" @change="model = $event.target.checked" />
+            <input :id="id" type="checkbox" :checked="!!model" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500" @change="model = $event.target.checked" />
             {{ field.label }}
         </label>
         <template v-else>
@@ -43,7 +43,7 @@ function toggleOption(option, checked) {
                     <input
                         type="checkbox"
                         :checked="Array.isArray(model) && model.includes(option)"
-                        class="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        class="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                         @change="toggleOption(option, $event.target.checked)"
                     />
                     {{ option }}

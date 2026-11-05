@@ -74,12 +74,16 @@ class PublicSite
      *
      * Under "site", because the shared "tenant" prop is the logged-in user's tenant.
      *
-     * @return array{site: array{tenant: array{name: string, url: string}, navigation: list<array<string, mixed>>, otherTenants: list<array{name: string, url: string}>}}
+     * @return array{site: array{tenant: array{name: string, url: string, color: array{primary: string, contrast: string}|null}, navigation: list<array<string, mixed>>, otherTenants: list<array{name: string, url: string}>}}
      */
     public static function layoutProps(Tenant $tenant): array
     {
         return ['site' => [
-            'tenant' => ['name' => $tenant->name, 'url' => self::url($tenant)],
+            'tenant' => [
+                'name' => $tenant->name,
+                'url' => self::url($tenant),
+                'color' => $tenant->primary_color === null ? null : ['primary' => $tenant->primary_color, 'contrast' => $tenant->primaryColorContrast()],
+            ],
             'navigation' => collect(static::$navigationProviders)->flatMap(fn (Closure $callback): array => $callback($tenant))->values()->all(),
             'otherTenants' => app(HiddenRecords::class)->exclude(Tenant::query()->active()->whereKeyNot($tenant->getKey()))->orderByDesc('is_primary')->orderBy('name')->get()
                 ->map(fn (Tenant $other): array => ['name' => $other->name, 'url' => self::url($other)])
