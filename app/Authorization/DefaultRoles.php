@@ -143,6 +143,7 @@ class DefaultRoles
         setPermissionsTeamId(null);
 
         $made = [];
+        $rolesToGrant = [];
 
         foreach ($this->definitions() as $name => $label) {
             $role = Role::query()->whereNull('tenant_id')->where('name', $name)->where('guard_name', 'web')->first();
@@ -154,7 +155,14 @@ class DefaultRoles
                 continue;
             }
 
-            $role->givePermissionTo(array_map(fn (string $permission): Permission => Permission::findOrCreate($permission, 'web'), $this->permissionsFor($name)));
+            $rolesToGrant[$name] = $role;
+        }
+
+        $permissionNames = array_map($this->permissionsFor(...), array_keys($rolesToGrant));
+        $permissions = $this->findOrCreatePermissions(array_values(array_unique(array_merge(...$permissionNames))));
+
+        foreach ($rolesToGrant as $name => $role) {
+            $role->givePermissionTo(array_map(fn (string $permission): Permission => $permissions[$permission], $this->permissionsFor($name)));
         }
 
         setPermissionsTeamId($previousTeam);
@@ -165,6 +173,26 @@ class DefaultRoles
         }
 
         return $made;
+    }
+
+    /**
+     * Makes the missing permissions in one statement. Permission::findOrCreate()
+     * forgets the permission cache with each one it makes and reads it all back
+     * for the next, which took hundreds of queries per install (ADR 0059).
+     *
+     * @param  list<string>  $names
+     * @return array<string, Permission> by name
+     */
+    private function findOrCreatePermissions(array $names): array
+    {
+        $now = now();
+
+        Permission::query()->insertOrIgnore(array_map(
+            fn (string $name): array => ['name' => $name, 'guard_name' => 'web', 'created_at' => $now, 'updated_at' => $now],
+            $names,
+        ));
+
+        return Permission::query()->where('guard_name', 'web')->whereIn('name', $names)->get()->keyBy('name')->all();
     }
 
     /**

@@ -61,6 +61,8 @@ services:
 
     pgsql:
         image: 'postgres:18-alpine'
+        # Parallel test processes together hold more table locks than the default 64 allows.
+        command: ['postgres', '-c', 'max_locks_per_transaction=256']
         ports:
             - '${FORWARD_DB_PORT:-5432}:5432'
         environment:

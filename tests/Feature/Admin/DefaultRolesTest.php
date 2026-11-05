@@ -7,6 +7,9 @@ use App\Models\Role;
 use App\Models\Tenant;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class DefaultRolesTest extends TestCase
@@ -60,6 +63,30 @@ class DefaultRolesTest extends TestCase
         $this->artisan('roles:install-defaults --add-missing-permissions')->assertSuccessful();
         $this->assertSame('پذیرش', $registrar->fresh()->label);
         $this->assertTrue($registrar->fresh()->hasPermissionTo('Delete:Student'));
+    }
+
+    public function test_install_uses_permissions_that_exist_and_makes_the_missing_ones(): void
+    {
+        $existing = Permission::create(['name' => 'Delete:Student', 'guard_name' => 'web']);
+        app(PermissionRegistrar::class)->getPermissions();
+
+        app(DefaultRoles::class)->install();
+
+        $this->assertSame(1, Permission::query()->where('name', 'Delete:Student')->count());
+        $this->assertTrue(Role::findByName('registrar')->permissions->contains($existing));
+        $this->assertTrue(Role::findByName('registrar')->hasPermissionTo('Create:Student'), 'A permission just made must be in the permission cache.');
+        $this->assertNotNull(Permission::query()->where('name', 'Create:Student')->value('created_at'));
+    }
+
+    public function test_install_does_not_run_a_query_per_permission(): void
+    {
+        $permissions = count(app(DefaultRoles::class)->permissionsFor(DefaultRoles::ORG_ADMIN));
+        $this->assertGreaterThan(100, $permissions);
+
+        DB::enableQueryLog();
+        app(DefaultRoles::class)->install();
+
+        $this->assertLessThan($permissions, count(DB::getQueryLog()));
     }
 
     public function test_default_roles_are_system_roles(): void

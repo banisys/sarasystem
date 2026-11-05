@@ -223,7 +223,7 @@ _(TODO: e.g. online classes (legacy: Adobe Connect), SMS, payment gateway.)_
 | `laravel.test` | `sail-8.5/app` (PHP 8.5, node, composer, pdo_pgsql) | `APP_PORT` 8000, `VITE_PORT` 5174 | Image is reused from `../LMS` (built locally) |
 | `scheduler` | `sail-8.5/app` | — | Runs `php artisan schedule:work` (scheduled tasks); restarts unless stopped |
 | `queue` | `sail-8.5/app` | — | Runs `php artisan queue:work --tries=3` (queued jobs on the `database` queue, e.g. absence SMS); restarts unless stopped. Restart it (`docker compose restart queue`) after changing job code |
-| `pgsql` | `postgres:18-alpine` | `FORWARD_DB_PORT` 5432 | DB `sarasystem`, user `sail` by default; data in volume `sail-pgsql` |
+| `pgsql` | `postgres:18-alpine` | `FORWARD_DB_PORT` 5432 | DB `sarasystem`, user `sail` by default; data in volume `sail-pgsql`; `max_locks_per_transaction=256` for parallel tests ([ADR 0059](decisions/0059-running-tests.md)) |
 | `adminer` | `adminer:latest` | `FORWARD_ADMINER_PORT` 8081 | DB web UI (phpMyAdmin is MySQL-only). Log in with system *PostgreSQL*, server `pgsql`, user/password from `.env` |
 
 `.env` (from `.env.example`) sets `DB_CONNECTION=pgsql` with `DB_HOST=pgsql`, `APP_LOCALE=fa`, `APP_FAKER_LOCALE=fa_IR` and the compose ports. The app timezone is `Asia/Tehran` (`config/app.php`), so dates and scheduled times are Tehran time.
