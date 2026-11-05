@@ -1,15 +1,7 @@
-import {
-    Color,
-    CylinderGeometry,
-    Group,
-    InstancedMesh,
-    Matrix4,
-    MeshLambertMaterial,
-    Quaternion,
-    Vector3,
-} from 'three';
+import { Group, Vector3 } from 'three';
 import { createStage } from '@/scene/stage.js';
 import { BoxBatch, recolor, VIEWS } from './blocks.js';
+import { makeBeams, POWER_COLORS, powerColor, strength } from './power.js';
 
 /**
  * The roles as a pyramid of power (ADR 0057): a floor per level of the hierarchy,
@@ -26,41 +18,9 @@ const MAX_COLUMN = 5.5;
 const FLOOR_GAP = 3.2;
 const MAX_PEOPLE = 10;
 
-const COLORS = {
-    none: '#cbd5e1',
-    weak: '#bfdbfe',
-    strong: '#6d28d9',
-    super: '#f59e0b',
-    faded: '#e5e7eb',
-    person: '#334155',
-    plate: '#94a3b8',
-    beam: '#94a3b8',
-    peer: '#10b981',
-    up: '#f59e0b',
-    down: '#2563eb',
-};
+const COLORS = { ...POWER_COLORS, person: '#334155', peer: '#10b981' };
 
 const ROLE_VIEWS = { ...VIEWS, corner: new Vector3(0.5, 0.3, 1).normalize() };
-
-/**
- * 0 to 1, by the square root of the permissions: most roles have a small share of
- * all permissions, and would otherwise look alike beside the super admin.
- */
-function strength(role) {
-    return Math.sqrt(role.share / 100);
-}
-
-function columnColor(role) {
-    if (role.super) {
-        return COLORS.super;
-    }
-
-    if (role.permissions === 0) {
-        return COLORS.none;
-    }
-
-    return `#${new Color(COLORS.weak).lerp(new Color(COLORS.strong), strength(role)).getHexString()}`;
-}
 
 /**
  * Where everything goes: rows per floor, each floor at least as wide as the one
@@ -95,31 +55,6 @@ function columnHeight(role) {
     return MIN_COLUMN + strength(role) * (MAX_COLUMN - MIN_COLUMN);
 }
 
-/**
- * Beams between two points, recoloured when a role is picked.
- */
-function makeBeams(beams) {
-    const mesh = new InstancedMesh(new CylinderGeometry(0.07, 0.07, 1, 6), new MeshLambertMaterial({ color: '#ffffff' }), Math.max(1, beams.length));
-    const up = new Vector3(0, 1, 0);
-    const matrix = new Matrix4();
-    const direction = new Vector3();
-    const middle = new Vector3();
-    const rotation = new Quaternion();
-    const color = new Color();
-
-    mesh.count = beams.length;
-    beams.forEach((beam, index) => {
-        direction.subVectors(beam.to, beam.from);
-        middle.addVectors(beam.from, beam.to).multiplyScalar(0.5);
-        rotation.setFromUnitVectors(up, direction.clone().normalize());
-        matrix.compose(middle, rotation, new Vector3(1, direction.length(), 1));
-        mesh.setMatrixAt(index, matrix);
-        mesh.setColorAt(index, color.set(beam.color));
-    });
-
-    return mesh;
-}
-
 export function mountRoleScene(element, tooltip, data, onSelect) {
     const world = new Group();
     const roles = data.roles;
@@ -146,7 +81,7 @@ export function mountRoleScene(element, tooltip, data, onSelect) {
             places.set(role.id, { x, z, y: floor.y, tall });
             targets.push({
                 position: new Vector3(x, floor.y + tall + (role.super ? 1.1 : 0.3), z),
-                text: `${role.label} · ${role.permissions}`,
+                text: role.caption,
                 data: role,
             });
 
@@ -172,7 +107,7 @@ export function mountRoleScene(element, tooltip, data, onSelect) {
     roles.forEach((role) => {
         const { x, z, y, tall } = places.get(role.id);
 
-        columns.add(COLUMN_WIDTH, tall, COLUMN_WIDTH, columnColor(role), x, y + tall / 2, z);
+        columns.add(COLUMN_WIDTH, tall, COLUMN_WIDTH, powerColor(role), x, y + tall / 2, z);
     });
 
     const beams = [];
@@ -224,7 +159,7 @@ export function mountRoleScene(element, tooltip, data, onSelect) {
         recolor(columnMesh, roles.map((role) => {
             const related = !picked || role.id === picked.id || picked.aboveIds.includes(role.id) || picked.belowIds.includes(role.id) || picked.peerIds.includes(role.id);
 
-            return related ? columnColor(role) : COLORS.faded;
+            return related ? powerColor(role) : COLORS.faded;
         }));
 
         if (beams.length > 0) {

@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
                     'Modules/Campus/resources/js/building-scene.js',
                     'Modules/Campus/resources/js/organization-scene.js',
                     'Modules/Campus/resources/js/role-scene.js',
+                    'Modules/Campus/resources/js/staff-scene.js',
                 ],
                 refresh: true,
             }),

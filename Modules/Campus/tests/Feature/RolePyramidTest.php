@@ -48,12 +48,13 @@ class RolePyramidTest extends TestCase
 
         $roles = $this->rolesByName();
 
-        $this->assertSame(0, $roles['nobody']['level']);
-        $this->assertSame(1, $roles['reader']['level']);
-        $this->assertSame(2, $roles['officer']['level']);
-        $this->assertSame(2, $roles['twin']['level']);
-        $this->assertSame(3, $roles['manager']['level']);
-        $this->assertSame(4, $roles[Role::SUPER_ADMIN]['level']);
+        // Without permissions it gives nothing in the admin panel, so it isn't shown or counted.
+        $this->assertArrayNotHasKey('nobody', $roles);
+        $this->assertSame(0, $roles['reader']['level']);
+        $this->assertSame(1, $roles['officer']['level']);
+        $this->assertSame(1, $roles['twin']['level']);
+        $this->assertSame(2, $roles['manager']['level']);
+        $this->assertSame(3, $roles[Role::SUPER_ADMIN]['level']);
 
         // Only the nearest are joined; the rest follow through them.
         $this->assertSame([$roles['manager']['id']], $roles['officer']['parents']);

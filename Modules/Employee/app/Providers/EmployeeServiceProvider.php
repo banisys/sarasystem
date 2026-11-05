@@ -3,6 +3,7 @@
 namespace Modules\Employee\Providers;
 
 use App\Authorization\DefaultRoles;
+use App\Campus\StaffPeople;
 use App\Contract\ContractParties;
 use App\CustomFields\CustomForms;
 use App\Documents\DocumentHolders;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Modules\Employee\ContractParties\EmployeeContractParty;
 use Modules\Employee\Documents\EmployeeDocumentHolder;
 use Modules\Employee\Forms\JobApplicationForm;
+use Modules\Employee\Services\EmployeePeople;
 use Modules\Employee\Workflow\JobApplicationSubject;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -41,6 +43,8 @@ class EmployeeServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        StaffPeople::register('employees', fn (): EmployeePeople => new EmployeePeople);
 
         // The screens' permissions for the default roles (ADR 0039).
         app(DefaultRoles::class)->grant([

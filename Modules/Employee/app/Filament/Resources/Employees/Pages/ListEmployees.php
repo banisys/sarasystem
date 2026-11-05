@@ -2,6 +2,8 @@
 
 namespace Modules\Employee\Filament\Resources\Employees\Pages;
 
+use App\Filament\Support\PersonListActions;
+use App\Filament\Support\PersonRecordActions;
 use App\Models\Tenant;
 use Filament\Actions\ImportAction;
 use Filament\Resources\Pages\ListRecords;
@@ -21,6 +23,7 @@ class ListEmployees extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            ...PersonListActions::for(PersonRecordActions::STAFF),
             ImportAction::make('importEmployees')
                 ->label('ورود از فایل')
                 ->icon(Heroicon::OutlinedArrowUpTray)

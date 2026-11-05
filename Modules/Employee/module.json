@@ -17,6 +17,10 @@
         ],
         "connections": [
             {
+                "target": "Campus",
+                "label": "هرم قدرت کارکنان"
+            },
+            {
                 "target": "core",
                 "label": "درخواست همکاری و استخدام در کارتابل"
             },

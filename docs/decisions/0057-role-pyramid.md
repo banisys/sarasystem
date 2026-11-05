@@ -15,7 +15,8 @@ The user asked for a 3D model of the roles on the roles list, in a modal, showin
 **Worked out from the subset rule**, in [RoleHierarchy](../../Modules/Campus/app/Services/RoleHierarchy.php), in the Campus module so that one switch controls all 3D (ADR 0051).
 - A role is above another when it has all its permissions and more. Its level is its longest chain below. Equal sets are peers. The super admin holds no permission rows but passes every check (ADR 0007), so it counts as having all of them and is above everything, even a role granted all.
 - [role-scene.js](../../Modules/Campus/resources/js/role-scene.js): a floor per level, each wider than the one above; column height and colour by the square root of the share of permissions, since a linear scale makes most roles look alike beside the super admin; up to 10 little people for holders, each person counted once across tenants.
-- Beams join a role to its nearest above only. Roles with no permissions get none, because everything is above them; the card still lists them.
+- Only roles that work in the admin panel are shown: the super admin and roles with at least one permission. Roles with none (learner, guardian, `panel_user`, which only opens the panel's door) are left out, and don't count as levels. A role alone doesn't let its holder in: they also need `panel_user` in that tenant, so a holder counted may lack it.
+- Beams join a role to its nearest above only.
 - Clicking a role marks its chains up and down and fades unrelated ones.
 - The modal is full screen (`Width::Screen`); the admin theme lifts the content area above the top bar while such a modal is open, otherwise the bar hides its heading and close button.
 - The roles list is for super admins only (ADR 0003), so counts across tenants leak nothing. The data is built only when the modal opens, and three.js loads then too.
