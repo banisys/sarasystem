@@ -103,7 +103,7 @@
                     سقف بنفش: {{ config('sarasystem.tenant_label') }} اصلی
                 </span>
                 @include('campus::filament.partials.live-status')
-                <span class="text-gray-400 dark:text-gray-500">چیدمان نمادین است و جای واقعی را نشان نمی‌دهد. کلیک روی ساختمان: جزئیات</span>
+                <span class="text-gray-400 dark:text-gray-500">چیدمان نمادین است و جای واقعی را نشان نمی‌دهد. پنجره‌های کرکره‌دار کلاسی ندارند. کلیک روی ساختمان: جزئیات</span>
             </div>
         </div>
 

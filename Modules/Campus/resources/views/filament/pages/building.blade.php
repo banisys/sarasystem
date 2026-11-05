@@ -119,7 +119,7 @@
                         </span>
                     @endforeach
                     @include('campus::filament.partials.live-status')
-                    <span class="text-gray-400 dark:text-gray-500">ساختمان نمادین است. کلیک روی پنجره: جزئیات کلاس</span>
+                    <span class="text-gray-400 dark:text-gray-500">ساختمان نمادین است: هر کلاس یک اتاق است و کلاس آنلاین صفحه‌نمایش دارد. رنگ اتاق: وضعیت کلاس. جاهای کرکره‌دار کلاسی ندارند. کلیک روی اتاق: جزئیات کلاس</span>
                 </div>
             </div>
 

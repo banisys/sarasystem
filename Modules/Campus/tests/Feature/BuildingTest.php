@@ -83,6 +83,8 @@ class BuildingTest extends TestCase
             ->assertOk()
             ->assertSee('ساختمان '.$this->west->name)
             ->assertSee('کلاس این واحد')
+            ->assertSee('هر کلاس یک اتاق است')
+            ->assertSee('جاهای کرکره‌دار کلاسی ندارند')
             ->assertDontSee('کلاس واحد دیگر');
     }
 

@@ -14,7 +14,7 @@ use Livewire\Attributes\Renderless;
 use UnitEnum;
 
 /**
- * The current tenant as a 3D building (ADR 0051): a window per room, lit when
+ * The current tenant as one 3D building (ADR 0054): a room per class, lit when
  * something is happening there now. Whoever may see the rooms may open it.
  */
 class Building extends Page
@@ -44,7 +44,7 @@ class Building extends Page
     }
 
     /**
-     * What a window's colour means.
+     * What a room's colour means.
      *
      * @return array<string, array{label: string, color: string}>
      */
@@ -69,7 +69,7 @@ class Building extends Page
     }
 
     /**
-     * The windows' state now, for the page to update itself (ADR 0053).
+     * The rooms' state now, for the page to update itself (ADR 0053).
      *
      * @return array<string, mixed>
      */

@@ -1,7 +1,7 @@
 # 0051 — A tenant's 3D building and the Campus module
 
 - **Date:** 2026-11-04
-- **Status:** accepted
+- **Status:** accepted; the building's shape (windows, a second block for online classes) replaced by [ADR 0054](0054-class-rooms-in-one-building.md)
 
 ## Context
 After the session's 3D view (ADR 0049), the next step of the 3D idea is to see a tenant as a building, with what happens in its classes now. No floors or rooms are recorded, classes have only a free-text place, and the 3D code now has a second use, so it needs a home. Clients pay per feature (ADR 0041).
