@@ -225,7 +225,7 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 | **A. سازمان و کارکنان** |||||
 | 1 | Two departments as tenants (the steps explain «شعبه» is renamed per installation: `tenant_label`) | you | «شعبه‌ها» | 2 tenants |
 | 2 | Training manager by quick entry in the head office, role «کارشناس آموزش», panel access | you | «کارمندان» | employee with the role |
-| 3 | Import 5 employees into «واحد فروش» from the example CSV, with default role «فراگیر» (download the example, fill it, upload; see a failed row and why) | you | «کارمندان» → «ورود از فایل» | 5 employees in the tenant (engine gap: queued) |
+| 3 | Import 5 employees into «واحد فروش» from the Excel template, with role «فراگیر» picked per row (download it, fill it, upload; see a failed row and why) | you | «کارمندان» → «ورود از فایل» | 5 employees in the tenant (engine gap: queued) |
 | 4 | Trainer «کاوه رحیمی» by quick entry, role «مدرس» | you | «کارمندان» | employee with `instructor` |
 | **B. دوره‌ی آموزشی** |||||
 | 5 | Term «دوره‌های آموزشی پاییز» (a training round) | training manager | «کلاس‌ها → دوره‌های آموزشی» | term |

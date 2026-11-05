@@ -21,4 +21,4 @@ When an organization starts using SaraSystem it already has many employees (a sc
 - The rest of an employee's file (documents, contracts, details) is completed later; nothing marks a file as incomplete yet.
 - The import runs on the queue (`queue` service locally; restart it after deploying code changes). Tables: `imports`, `failed_import_rows` (failed rows keep their data, including national codes and mobiles, until deleted) and the existing `job_batches`.
 - A mobile shared by several accounts can't be used to sign in; that person signs in with their national code (ADR 0004).
-- No XLSX upload yet; it can be added with `maatwebsite/excel` if CSV proves awkward for users.
+- XLSX upload and a template to download were added in [ADR 0063](0063-employee-excel-template.md).

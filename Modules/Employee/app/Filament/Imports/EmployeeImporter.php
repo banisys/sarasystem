@@ -24,7 +24,7 @@ use Modules\Employee\Services\RegisterEmployee;
 use Modules\Employee\Support\EmployeeRoles;
 
 /**
- * Employees of one tenant from a CSV file (ADR 0038), one RegisterEmployee
+ * Employees of one tenant from a CSV or Excel file (ADR 0038, ADR 0063), one RegisterEmployee
  * call per row, on the queue. The tenant comes from the action's options;
  * the importing user must be allowed to create employees there. Roles are
  * the ones chosen in the import modal, unless a row names its own (labels
@@ -32,6 +32,9 @@ use Modules\Employee\Support\EmployeeRoles;
  */
 class EmployeeImporter extends Importer
 {
+    /** National codes of the template's sample rows (EmployeeImportTemplate), refused if left in. */
+    public const SAMPLE_NATIONAL_CODES = ['0012345679', '0023456787'];
+
     protected static ?string $model = Employee::class;
 
     public static function getColumns(): array
@@ -102,6 +105,10 @@ class EmployeeImporter extends Importer
 
         if ($tenant === null || ! $tenant->execute(fn (): bool => $actor->unsetRelation('roles')->unsetRelation('permissions')->can('create', Employee::class))) {
             throw new RowImportFailedException('اجازه‌ی ثبت کارمند در این '.config('sarasystem.tenant_label').' را ندارید.');
+        }
+
+        if (in_array(Identifiers::toLatinDigits((string) $this->data['national_code']), self::SAMPLE_NATIONAL_CODES, true)) {
+            throw new RowImportFailedException('این ردیف نمونه‌ی فایل است؛ آن را پاک کنید یا با اطلاعات کارمند جایگزین کنید.');
         }
 
         $roleIds = filled($this->data['roles'] ?? null)
@@ -183,10 +190,18 @@ class EmployeeImporter extends Importer
         /** @var Collection<int, Role> $assignable */
         $assignable = EmployeeRoles::assignable($actor, $tenant);
 
-        return collect(preg_split('/[,،;]/u', Identifiers::toLatinDigits($value)))
+        $value = Identifiers::toLatinDigits($value);
+        $names = fn (Role $role): array => [$role->display_name, $role->name];
+
+        // A pick from the template's list, even if the role's label holds a comma.
+        if (($picked = $assignable->first(fn (Role $role): bool => in_array(trim($value), $names($role), true))) !== null) {
+            return [$picked->getKey()];
+        }
+
+        return collect(preg_split('/[,،;]/u', $value))
             ->map(fn (string $name): string => trim($name))
             ->filter()
-            ->map(fn (string $name): int => $assignable->first(fn (Role $role): bool => $role->display_name === $name || $role->name === $name)?->getKey()
+            ->map(fn (string $name): int => $assignable->first(fn (Role $role): bool => in_array($name, $names($role), true))?->getKey()
                 ?? throw new RowImportFailedException("نقش «{$name}» پیدا نشد یا اجازه‌ی دادنش را ندارید."))
             ->unique()
             ->values()
