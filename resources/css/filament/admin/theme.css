@@ -144,3 +144,48 @@ html.dark .classroom-tabs > .fi-tabs {
 .classroom-tabs > .fi-tabs .fi-tabs-item.fi-active > .fi-icon {
     @apply text-white dark:text-primary-200;
 }
+
+/* The button beside a modal's × and the state it turns on (ADR 0060). */
+.fi-modal .fi-modal-window .fi-modal-fullscreen-btn {
+    position: absolute;
+    top: 1rem;
+    inset-inline-end: 3.5rem;
+}
+
+.fi-modal.fi-modal-slide-over .fi-modal-window .fi-modal-fullscreen-btn {
+    top: 1.25rem;
+    inset-inline-end: 4rem;
+}
+
+.fi-modal .fi-modal-header:has(> .fi-modal-fullscreen-btn) .fi-modal-heading {
+    margin-inline-end: 4.5rem;
+}
+
+.fi-modal .fi-modal-window.fi-align-center:not(.fi-modal-window-has-icon) .fi-modal-header:has(> .fi-modal-fullscreen-btn) .fi-modal-heading {
+    margin-inline-start: 4.5rem;
+}
+
+.fi-modal.fi-modal-fullscreen:not(.fi-modal-slide-over) > .fi-modal-window-ctn {
+    padding: 0;
+}
+
+.fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn > .fi-modal-window {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    overflow-y: auto;
+    border-radius: 0;
+}
+
+.fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-header,
+.fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-footer {
+    border-radius: 0;
+}
+
+.fi-modal.fi-modal-fullscreen > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-content {
+    flex: 1;
+}
