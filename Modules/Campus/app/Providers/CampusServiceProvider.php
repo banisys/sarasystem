@@ -3,9 +3,11 @@
 namespace Modules\Campus\Providers;
 
 use App\Filament\Resources\Tenants\TenantResource;
+use App\Models\Tenant;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Console\Scheduling\Schedule;
+use Modules\Campus\Filament\Pages\Building;
 use Modules\Campus\Filament\Pages\OrganizationMap;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -41,6 +43,14 @@ class CampusServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        TenantResource::addRecordActionsUsing('building', fn (): array => [
+            Action::make('building')
+                ->label(Building::getNavigationLabel())
+                ->icon(Heroicon::OutlinedBuildingOffice2)
+                ->url(fn (Tenant $record): string => Building::getUrl(tenant: $record))
+                ->visible(fn (): bool => Building::canAccess()),
+        ]);
 
         TenantResource::addHeaderActionsUsing('organization-map', fn (): array => [
             Action::make('organizationMap')

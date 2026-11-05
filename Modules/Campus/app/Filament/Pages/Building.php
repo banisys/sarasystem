@@ -11,7 +11,6 @@ use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Renderless;
-use UnitEnum;
 
 /**
  * The current tenant as one 3D building (ADR 0054): a room per class, lit when
@@ -23,11 +22,10 @@ class Building extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    protected static string|UnitEnum|null $navigationGroup = 'کلاس‌ها';
+    /** Opened from a row of the tenants list and from the map (ADR 0056). */
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $navigationLabel = 'ساختمان سه‌بعدی';
-
-    protected static ?int $navigationSort = 90;
 
     protected static ?string $slug = 'building';
 

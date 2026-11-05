@@ -96,6 +96,9 @@ class OrganizationMapTest extends TestCase
         $this->actingInPanel($admin, $this->west);
 
         $this->assertFalse(OrganizationMap::shouldRegisterNavigation());
+        $this->assertFalse(Building::shouldRegisterNavigation());
+        // Each row opens that tenant's building, whichever tenant the list is in.
+        $this->get(TenantResource::getUrl(tenant: $this->west))->assertSee(Building::getUrl(tenant: $this->east), false);
         $this->get(TenantResource::getUrl(tenant: $this->west))
             ->assertOk()
             ->assertSee(OrganizationMap::getUrl(tenant: $this->west), false);
