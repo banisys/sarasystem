@@ -6,6 +6,7 @@ use App\Authorization\DefaultRoles;
 use App\Documents\ApplicantDocuments;
 use App\Documents\NoApplicantDocuments;
 use App\Guardians\Guardians;
+use App\Models\PageHelp;
 use App\Models\User;
 use App\PublicSite\HiddenRecords;
 use App\Sms\LogSmsSender;
@@ -57,7 +58,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         app(DefaultRoles::class)->grant([
-            DefaultRoles::ORG_ADMIN => DefaultRoles::manage('Workflow'),
+            DefaultRoles::ORG_ADMIN => [...DefaultRoles::manage('Workflow'), PageHelp::EDIT_PERMISSION],
             DefaultRoles::TENANT_MANAGER => [...DefaultRoles::manage('User'), ...DefaultRoles::view('WorkflowCase')],
             DefaultRoles::EDUCATION_OFFICER => DefaultRoles::view('User'),
             DefaultRoles::REGISTRAR => DefaultRoles::view('User'),

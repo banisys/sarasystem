@@ -27,6 +27,8 @@ _(TODO: formatter/linter, naming rules, file naming.)_
 ## Patterns we use
 - Admin forms use server-side validation and Persian field labels/messages. Keep native browser validation disabled (`novalidate`) through the panel defaults; custom raw HTML input forms in the panel must set it too. Do not remove server validation or enable browser bubbles on new forms ([ADR 0037](decisions/0037-admin-server-side-validation.md)).
 
+- Page help ([ADR 0065](decisions/0065-page-help.md)): to give a panel page help, `use HasPageHelp` on the page and implement `pageHelpKey()` (fixed, e.g. `contract.contract-types`) and `defaultPageHelp()` (plain text). Add a page's help when the user asks for it. Keep the text true to what the code does, and update it when the page's behaviour changes.
+
 - Create rows with Eloquent (`create()`, `save()`), not query-builder `insert()`, in code a web request runs. The step-by-step tutorial records rows through model events and deletes them on «شروع دوباره» ([ADR 0040](decisions/0040-step-by-step-tutorial.md)). Public-site lists of tenants or other records a tutorial could make go through `HiddenRecords::exclude()`.
 
 ## Keeping the tutorial up to date ([ADR 0040](decisions/0040-step-by-step-tutorial.md))
