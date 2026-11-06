@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
@@ -53,6 +54,20 @@ class SessionPageTest extends TestCase
             ->assertOk()
             ->assertSee(['زبان مقدماتی الف', 'برنامه‌ریزی‌شده', 'نحوه‌ی برگزاری', 'سایر', 'حضور و غیاب'])
             ->assertSee(ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west));
+    }
+
+    public function test_the_page_keeps_the_time_in_the_tab_title_and_counts_attendance_by_status(): void
+    {
+        $session = $this->classSession();
+        $session->update(['starts_at' => '2026-10-29 09:00', 'ends_at' => '2026-10-29 10:30']);
+        $student = User::factory()->create();
+        $session->attendances()->create(['classroom_id' => $this->classroom->id, 'user_id' => $student->id, 'status' => AttendanceStatus::Absent, 'recorded_at' => now()]);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertSee(['مشخصات جلسه', 'مطالب و تکلیف', 'غایب', '1 نفر'])
+            ->assertSee("\u{2066}09:00–10:30\u{2069}")
+            ->assertDontSee('تکلیف دارد');
     }
 
     public function test_another_tenants_session_is_not_found(): void

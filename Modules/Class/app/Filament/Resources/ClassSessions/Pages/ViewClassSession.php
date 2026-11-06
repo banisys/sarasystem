@@ -33,6 +33,15 @@ class ViewClassSession extends ViewRecord
         return ($this->session()->subject?->title ?? 'جلسه').' · '.SessionActions::when($this->session());
     }
 
+    /**
+     * The subject alone: the time is in the page's first section, and stays
+     * in the browser tab's title to tell open sessions apart.
+     */
+    public function getHeading(): string
+    {
+        return $this->session()->subject?->title ?? 'جلسه';
+    }
+
     public function getSubheading(): ?string
     {
         return $this->session()->classroom?->title;

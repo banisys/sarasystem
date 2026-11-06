@@ -4,7 +4,6 @@ namespace Modules\Class\Filament\Resources\ClassSessions;
 
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -63,7 +62,7 @@ class ClassSessionResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema->components([Section::make()->schema(SessionActions::detailsEntries())->columnSpanFull()]);
+        return $schema->components(SessionActions::detailsEntries())->columns(1);
     }
 
     public static function table(Table $table): Table
