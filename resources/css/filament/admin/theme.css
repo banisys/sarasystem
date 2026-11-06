@@ -203,3 +203,8 @@ html.dark .fi-modal > .fi-modal-close-overlay {
 .fi-spreadsheet-upload .filepond--item[data-filepond-item-state*='invalid'] .filepond--file-status-sub {
     display: none;
 }
+
+/* More space between the notifications icon and the avatar in the top bar. */
+.fi-topbar-end {
+    column-gap: 2rem;
+}
