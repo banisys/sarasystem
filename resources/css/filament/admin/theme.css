@@ -118,8 +118,7 @@ body > .fi-dropdown-panel.fi-dropdown-list[style*='min-width: 12rem'] {
 }
 
 /* The layer behind an open modal is solid: the page does not show through. */
-.fi-modal > .fi-modal-close-overlay,
-html.dark .fi-modal > .fi-modal-close-overlay {
+html:not(.dark) .fi-modal > .fi-modal-close-overlay {
     background-color: var(--gray-950);
 }
 
@@ -157,6 +156,29 @@ html.dark .fi-modal > .fi-modal-close-overlay {
 
 .fi-modal .fi-modal-header:has(> .fi-modal-fullscreen-btn) .fi-modal-heading {
     margin-inline-end: 4.5rem;
+}
+
+/* The title sits on the same horizontal line as the two buttons. */
+.fi-modal:not(.fi-modal-slide-over) .fi-modal-header:has(> .fi-modal-fullscreen-btn) {
+    padding-top: 1rem;
+}
+
+.fi-modal:not(.fi-modal-slide-over) .fi-modal-header:has(> .fi-modal-fullscreen-btn) .fi-modal-heading {
+    display: flex;
+    align-items: center;
+    min-height: 2.25rem;
+}
+
+/* The window keeps its rounded corners: its header, with its own background,
+   follows them instead of poking out square. */
+.fi-modal:not(.fi-modal-fullscreen) > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-header {
+    border-start-start-radius: inherit;
+    border-start-end-radius: inherit;
+}
+
+.fi-modal:not(.fi-modal-fullscreen) > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-footer {
+    border-end-start-radius: inherit;
+    border-end-end-radius: inherit;
 }
 
 .fi-modal .fi-modal-window.fi-align-center:not(.fi-modal-window-has-icon) .fi-modal-header:has(> .fi-modal-fullscreen-btn) .fi-modal-heading {

@@ -45,12 +45,7 @@ html.dark {
     --glass-float: rgb(17 25 44 / 0.88);
     --glass-line: rgb(255 255 255 / 0.08);
     --glass-blur: blur(22px) saturate(140%);
-}
-
-/* The backdrop: soft color fields like Glazzed's blurred photo, fixed. */
-html.dark body.fi-body {
-    background-color: #1b2536;
-    background-image:
+    --glass-backdrop:
         radial-gradient(ellipse 60% 45% at 85% 5%, rgb(37 70 160 / 0.85), transparent 70%),
         radial-gradient(ellipse 50% 40% at 15% 10%, rgb(52 72 98 / 0.9), transparent 70%),
         radial-gradient(ellipse 45% 40% at 95% 45%, rgb(150 45 85 / 0.7), transparent 70%),
@@ -58,6 +53,12 @@ html.dark body.fi-body {
         radial-gradient(ellipse 55% 40% at 55% 50%, rgb(90 60 120 / 0.55), transparent 70%),
         radial-gradient(ellipse 70% 45% at 40% 100%, rgb(40 140 155 / 0.75), transparent 70%),
         radial-gradient(ellipse 50% 40% at 95% 95%, rgb(45 90 150 / 0.7), transparent 70%);
+}
+
+/* The backdrop: soft color fields like Glazzed's blurred photo, fixed. */
+html.dark body.fi-body {
+    background-color: #1b2536;
+    background-image: var(--glass-backdrop);
     background-attachment: fixed;
 }
 
@@ -160,18 +161,25 @@ html.dark .fi-sidebar .fi-nav-search-input:focus {
 /* Floating layers: denser glass so they stay readable. */
 html.dark .fi-dropdown-panel,
 html.dark .fi-global-search-results-ctn,
-html.dark .fi-no-notification:not(.fi-inline),
-html.dark .fi-modal .fi-modal-window {
+html.dark .fi-no-notification:not(.fi-inline) {
     background-color: var(--glass-float);
     backdrop-filter: var(--glass-blur);
     --tw-ring-color: var(--glass-line);
+}
+
+/* A modal is clearer glass than the other floating layers: the backdrop's
+   colours show through it, blurred. */
+html.dark .fi-modal .fi-modal-window {
+    background-color: rgb(17 25 44 / 0.45);
+    backdrop-filter: blur(28px) saturate(160%);
+    --tw-ring-color: rgb(255 255 255 / 0.14);
 }
 
 /* Sticky header/footer of slide-overs: same tone as the window, so content
    scrolling under them stays hidden. */
 html.dark .fi-modal .fi-modal-window .fi-modal-header,
 html.dark .fi-modal .fi-modal-window .fi-modal-footer {
-    background-color: rgb(17 25 44 / 0.96);
+    background-color: rgb(17 25 44 / 0.35);
 }
 
 /* A pane with backdrop-filter would hold a modal opened inside it (a relation
@@ -199,4 +207,12 @@ html.dark .fi-ta-header-heading {
    in the stacking order, so it is lifted only while such a modal is open. */
 body > div.fi-layout > div.fi-main-ctn:has(.fi-modal.fi-width-screen.fi-modal-open) {
     z-index: 50;
+}
+
+/* The layer behind an open modal is opaque (the page does not show through)
+   but paints the same backdrop as the page, not a flat colour. */
+html.dark .fi-modal > .fi-modal-close-overlay {
+    background-color: #1b2536;
+    background-image: var(--glass-backdrop);
+    background-attachment: fixed;
 }
