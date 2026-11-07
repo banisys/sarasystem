@@ -12,6 +12,7 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Forms\Components\Builder as FormBuilder;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -213,6 +214,11 @@ class AdminPanelProvider extends PanelProvider
                 ->mask(fn (TextInput $component): ?RawJs => $component->isNumeric() ? RawJs::make('$money($input)') : null)
                 ->stripCharacters(fn (TextInput $component): array => $component->isNumeric() ? [','] : []);
         });
+
+        // Clocks show 24 hours (21:35), never AM / PM: the browser's native
+        // time input follows the operating system, so pickers (TimePicker
+        // too) use Filament's own, which is 24-hour.
+        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native(false));
 
         // Searchable selects open with (and search within) 10 options, and
         // relationship selects preload them; non-searchable ones keep 50 so
