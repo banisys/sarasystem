@@ -15,7 +15,7 @@ class ModalDefaultsTest extends TestCase
 {
     use InteractsWithTenants, RefreshDatabase;
 
-    public function test_modals_close_with_their_close_button_or_by_clicking_outside(): void
+    public function test_modals_close_with_their_close_button_only(): void
     {
         $tenant = Tenant::factory()->create();
         $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
@@ -25,7 +25,7 @@ class ModalDefaultsTest extends TestCase
 
         foreach ($actions as $action) {
             $this->assertTrue($action->hasModalCloseButton());
-            $this->assertTrue($action->isModalClosedByClickingAway());
+            $this->assertFalse($action->isModalClosedByClickingAway());
             $this->assertFalse($action->isModalClosedByEscaping());
         }
     }

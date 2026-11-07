@@ -189,10 +189,11 @@ class AdminPanelProvider extends PanelProvider
                     : null;
             }, 'desc'));
 
-        // Modals (actions, slide-overs, confirmations) close with the × button
-        // or by clicking outside, not by pressing Escape. A modal can opt back
-        // in with ->closeModalByEscaping().
+        // Modals (actions, slide-overs, confirmations) close only with the ×
+        // button, not by clicking outside or pressing Escape. A modal can opt
+        // back in with ->closeModalByClickingAway() / ->closeModalByEscaping().
         ModalComponent::closeButton();
+        ModalComponent::closedByClickingAway(false);
         ModalComponent::closedByEscaping(false);
 
         // The modal view focuses its window itself, without scrolling: the
