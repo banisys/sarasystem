@@ -118,6 +118,15 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
+     * Not started and nothing recorded (ADR 0066). Attendance marks a session
+     * held, and homework comes with content, so this needs no query.
+     */
+    public function canBeDeleted(): bool
+    {
+        return ! $this->hasStarted() && $this->status !== SessionStatus::Held && ! $this->hasContent();
+    }
+
+    /**
      * Signed download links of the materials, valid for a while.
      *
      * @return list<array{id: int, name: string, url: string}>

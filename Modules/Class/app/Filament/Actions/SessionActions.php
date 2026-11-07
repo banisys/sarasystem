@@ -361,7 +361,7 @@ class SessionActions
     }
 
     /**
-     * Only a make-up or extra session that hasn't started.
+     * Any session that hasn't been held (ADR 0066).
      */
     private static function delete(): Action
     {
@@ -370,9 +370,12 @@ class SessionActions
             ->icon(Heroicon::OutlinedTrash)
             ->color('danger')
             ->requiresConfirmation()
-            ->modalDescription('فقط جلسه‌ی جبرانی یا فوق‌العاده‌ای که هنوز شروع نشده حذف می‌شود.')
-            ->visible(fn (ClassSession $record): bool => self::canChange($record) && $record->schedule_id === null && ! $record->hasStarted())
-            ->action(fn (ClassSession $record) => $record->delete());
+            ->modalDescription('این جلسه برای همیشه حذف می‌شود و با تغییر برنامه‌ی کلاس هم برنمی‌گردد.')
+            ->visible(fn (ClassSession $record): bool => self::canChange($record) && $record->canBeDeleted())
+            ->action(fn (ClassSession $record, SessionPlanner $planner) => self::attempt(
+                fn () => $planner->deleteSession($record),
+                'جلسه حذف شد.',
+            ));
     }
 
     /**

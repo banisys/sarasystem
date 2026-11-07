@@ -20,6 +20,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-07 — Any session that hasn't been held can be deleted ([ADR 0066](decisions/0066-deleting-unheld-sessions.md)), not only hand-made ones: «حذف» in the sessions' row actions and under «سایر» on a session's page, for one that hasn't started, isn't held and has no content (cancelled ones too). The schedule remembers the day (`class_schedules.skipped_dates`, migration applied locally), so editing it or a holiday change doesn't bring the session back. Tutorial «اداره‌ی روزانه‌ی کلاس‌ها»: a step in «لغو و جلسه‌ی جبرانی» mentions it. 4 new tests; all 624 pass (`--parallel --processes=8`); Pint passes. Not checked in a browser.
 - 2026-11-07 — The dot of an in-progress session on the calendar's day / week views is more eye-catching: bigger, with a glow and an expanding ring (`session-calendar-card.blade.php`). Vite build passes. Not checked in a browser. No tutorial change needed.
 - 2026-11-07 — Admin panel modals no longer close by clicking outside (only the × button), reversing the 2026-11-05 choice; `ModalComponent::closedByClickingAway(false)`. Not checked in a browser. No tutorial change needed.
 - 2026-11-07 — Clocks in the admin panel are 24-hour (21:35), never AM / PM: every `DateTimePicker` / `TimePicker` is non-native (`AdminPanelProvider`), because the browser's native time input follows the operating system. Not checked in a browser. No tutorial change needed.
@@ -287,6 +288,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
+- Deleting sessions (ADR 0066): past sessions with nothing recorded can't be deleted; a schedule's skipped days can't be seen or cleared; no record of who deleted a session; an open calendar tab shows the session until it is reloaded.
 - Page help (ADR 0065): one text per page for the whole installation, not per tenant; the permission counts in the current tenant, so an `org_admin` who holds it only in the head office reads, not edits, on a branch's pages; plain text only (no images or links); no history of edits.
 - 3D people (ADR 0064): all look alike (one hair style, skin and build), so they don't say who someone is; a room of 300 seats has about 354k triangles, not tried on a real or weak GPU.
 - Workflow 3D view (ADR 0064): beyond about 12 steps the path gets long and small, so names start off; it shows a workflow's definition and open-case counts, not one case's history (that is the case's flowchart); it doesn't update itself; the lanes' colours are a fixed palette, not the tenants' own colours (ADR 0062).

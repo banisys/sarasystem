@@ -258,6 +258,30 @@ class SessionPlanner
     }
 
     /**
+     * Deletes a session that hasn't been held. Its schedule remembers the
+     * day, or rebuilding would bring the session back (ADR 0066).
+     *
+     * @throws ClassException
+     */
+    public function deleteSession(ClassSession $session): void
+    {
+        if (! $session->canBeDeleted()) {
+            throw new ClassException('فقط جلسه‌ای که هنوز شروع نشده و چیزی برای آن ثبت نشده حذف می‌شود.');
+        }
+
+        DB::transaction(function () use ($session): void {
+            $schedule = ClassSchedule::withoutTenantScope()->lockForUpdate()->find($session->schedule_id);
+
+            if ($schedule !== null) {
+                $day = ($session->original_starts_at ?? $session->starts_at)->toDateString();
+                $schedule->update(['skipped_dates' => array_values(array_unique([...($schedule->skipped_dates ?? []), $day]))]);
+            }
+
+            $session->delete();
+        });
+    }
+
+    /**
      * Who teaches this session instead of its teacher; null takes it back.
      *
      * @throws ClassException
@@ -302,7 +326,8 @@ class SessionPlanner
     }
 
     /**
-     * The schedule's future meetings, without holidays.
+     * The schedule's future meetings, without holidays and the days whose
+     * session was deleted by hand.
      *
      * @return Collection<int, array{start: CarbonImmutable, end: CarbonImmutable}>
      */
@@ -320,6 +345,7 @@ class SessionPlanner
             ->get();
 
         return collect($dates)
+            ->reject(fn (CarbonImmutable $date): bool => in_array($date->toDateString(), $schedule->skipped_dates ?? [], true))
             ->reject(fn (CarbonImmutable $date): bool => $holidays->contains(fn (Holiday $holiday): bool => $date->betweenIncluded($holiday->starts_on, $holiday->ends_on)))
             ->map(fn (CarbonImmutable $date): array => [
                 'start' => $date->setTimeFromTimeString($schedule->start_time),

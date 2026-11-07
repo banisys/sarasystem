@@ -116,6 +116,53 @@ class ClassSchedulesTest extends TestCase
         $this->assertNull($changed->fresh()->schedule_id);
     }
 
+    public function test_a_deleted_session_does_not_come_back_when_its_schedule_is_rebuilt(): void
+    {
+        $schedule = $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-21');
+        $this->planner->deleteSession(ClassSession::query()->whereDate('starts_at', '2026-11-07')->sole());
+
+        $this->planner->saveSchedule($schedule->fresh(), $this->classroom, $this->data([Weekday::Saturday], '2026-10-31', '2026-11-21', '10:00', '11:00'));
+        $holiday = Holiday::factory()->for($this->primary)->create(['starts_on' => '2026-11-07', 'ends_on' => '2026-11-07']);
+        $holiday->delete();
+
+        $this->assertSame(['2026-10-31', '2026-11-14', '2026-11-21'], $this->sessionDays());
+        $this->assertSame('10:00', ClassSession::query()->whereDate('starts_at', '2026-10-31')->sole()->starts_at->format('H:i'));
+    }
+
+    public function test_deleting_a_moved_session_skips_its_original_day(): void
+    {
+        $schedule = $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-14');
+        $session = ClassSession::query()->whereDate('starts_at', '2026-11-07')->sole();
+        $this->planner->move($session, '2026-11-08', '14:00', '15:00', null);
+
+        $this->planner->deleteSession($session->fresh());
+        $this->planner->sync($schedule->fresh());
+
+        $this->assertSame(['2026-10-31', '2026-11-14'], $this->sessionDays());
+    }
+
+    public function test_a_session_that_was_held_or_started_or_has_content_cannot_be_deleted(): void
+    {
+        $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-21');
+        [$held, $started, $withContent, $cancelled] = ClassSession::query()->orderBy('starts_at')->get()->all();
+        $held->update(['status' => SessionStatus::Held]);
+        $started->update(['starts_at' => now()->subMinute(), 'ends_at' => now()->addHour()]);
+        $withContent->update(['status' => SessionStatus::Cancelled, 'content_recorded_at' => now()]);
+        $this->planner->cancel($cancelled, 'اردو');
+
+        foreach ([$held, $started, $withContent] as $session) {
+            try {
+                $this->planner->deleteSession($session->fresh());
+                $this->fail('The session should not have been deleted.');
+            } catch (ClassException) {
+                $this->assertNotNull($session->fresh());
+            }
+        }
+
+        $this->planner->deleteSession($cancelled->fresh());
+        $this->assertNull($cancelled->fresh());
+    }
+
     public function test_a_new_holiday_removes_its_sessions_and_brings_them_back_when_deleted(): void
     {
         $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-21');

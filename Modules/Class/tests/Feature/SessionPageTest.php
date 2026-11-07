@@ -16,6 +16,7 @@ use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ListClassSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewClassSession;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\InteractsWithTenants;
@@ -149,6 +150,22 @@ class SessionPageTest extends TestCase
             ->assertRedirect(ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west));
 
         $this->assertNull(ClassSession::query()->find($session->id));
+    }
+
+    public function test_a_session_of_a_schedule_can_be_deleted_until_it_is_held(): void
+    {
+        $schedule = ClassSchedule::factory()->for($this->west)->for($this->classroom)->create();
+        $upcoming = $this->classSession(['schedule_id' => $schedule->id, 'starts_at' => '2026-10-30 10:00', 'ends_at' => '2026-10-30 11:00']);
+        $held = $this->classSession(['schedule_id' => $schedule->id, 'starts_at' => '2026-10-31 10:00', 'ends_at' => '2026-10-31 11:00', 'status' => SessionStatus::Held]);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(ViewClassSession::class, ['record' => $held->id])
+            ->assertActionHidden(TestAction::make('deleteSession'));
+        Livewire::test(ViewClassSession::class, ['record' => $upcoming->id])
+            ->callAction(TestAction::make('deleteSession'));
+
+        $this->assertNull($upcoming->fresh());
+        $this->assertSame(['2026-10-30'], $schedule->fresh()->skipped_dates);
     }
 
     public function test_the_list_opens_it_in_a_new_tab(): void

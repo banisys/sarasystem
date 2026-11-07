@@ -19,13 +19,15 @@ use Modules\Class\Enums\Weekday;
  * monthly (Jalali months) between two dates, at a time, optionally for a
  * subject with a teacher and in another place than the class's, following
  * a teaching plan (ADR 0025). Its sessions are built when it is saved
- * (SessionPlanner).
+ * (SessionPlanner), except on the days whose session was deleted by hand
+ * (ADR 0066).
  *
  * @property list<int> $weekdays
+ * @property list<string>|null $skipped_dates
  */
 #[Fillable([
     'tenant_id', 'classroom_id', 'subject_id', 'teacher_id', 'teaching_plan_id', 'frequency', 'interval', 'weekdays', 'month_day', 'month_week',
-    'starts_on', 'ends_on', 'start_time', 'end_time', 'location',
+    'starts_on', 'ends_on', 'start_time', 'end_time', 'location', 'skipped_dates',
 ])]
 class ClassSchedule extends Model
 {
@@ -127,6 +129,7 @@ class ClassSchedule extends Model
             'month_week' => 'integer',
             'starts_on' => 'date',
             'ends_on' => 'date',
+            'skipped_dates' => 'array',
         ];
     }
 }
