@@ -36,6 +36,16 @@ class PanelTableTest extends TestCase
         }
     }
 
+    public function test_the_first_column_is_the_row_number(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+
+        $table = Livewire::test(ListUsers::class)->instance()->getTable();
+
+        $this->assertSame('rowNumber', array_key_first($table->getColumns()));
+    }
+
     public function test_clicking_a_row_does_nothing(): void
     {
         $tenant = Tenant::factory()->create();
