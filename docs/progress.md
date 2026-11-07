@@ -20,6 +20,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-07 — The dot of an in-progress session on the calendar's day / week views is more eye-catching: bigger, with a glow and an expanding ring (`session-calendar-card.blade.php`). Vite build passes. Not checked in a browser. No tutorial change needed.
 - 2026-11-07 — Admin panel modals no longer close by clicking outside (only the × button), reversing the 2026-11-05 choice; `ModalComponent::closedByClickingAway(false)`. Not checked in a browser. No tutorial change needed.
 - 2026-11-07 — Clocks in the admin panel are 24-hour (21:35), never AM / PM: every `DateTimePicker` / `TimePicker` is non-native (`AdminPanelProvider`), because the browser's native time input follows the operating system. Not checked in a browser. No tutorial change needed.
 - 2026-11-07 — Every admin-panel table starts with a row-number column «ردیف» (continuing across pages), added once in `PanelTable::columns()`; tables built on a columns layout (stacks/splits) are skipped. 1 new test; all 619 pass (`--parallel --processes=4`; 8 processes hit the known lock limit again). Not checked in a browser. No tutorial change needed.

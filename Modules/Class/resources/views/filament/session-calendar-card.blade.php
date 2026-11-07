@@ -2,7 +2,10 @@
 <span class="flex items-center gap-1 font-semibold">
     <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['title'] }}</span>
     @if ($session['tone'] === 'live')
-        <span class="size-2 shrink-0 animate-pulse rounded-full bg-primary-600 motion-reduce:animate-none"></span>
+        <span class="relative flex size-3 shrink-0" title="در حال برگزاری">
+            <span class="absolute inline-flex size-full animate-ping rounded-full bg-primary-500 opacity-75 motion-reduce:animate-none"></span>
+            <span class="relative inline-flex size-3 animate-pulse rounded-full bg-primary-600 shadow-[0_0_6px_2px] shadow-primary-500/70 motion-reduce:animate-none"></span>
+        </span>
     @endif
 </span>
 <span class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 opacity-80">
