@@ -168,6 +168,20 @@ class SessionPageTest extends TestCase
         $this->assertSame(['2026-10-30'], $schedule->fresh()->skipped_dates);
     }
 
+    public function test_a_past_unrecorded_session_can_be_deleted_but_a_running_one_cannot(): void
+    {
+        $past = $this->classSession(['starts_at' => '2026-10-28 10:00', 'ends_at' => '2026-10-28 11:00']);
+        $running = $this->classSession(['starts_at' => '2026-10-29 11:30', 'ends_at' => '2026-10-29 12:30']);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(ViewClassSession::class, ['record' => $running->id])
+            ->assertActionHidden(TestAction::make('deleteSession'));
+        Livewire::test(ViewClassSession::class, ['record' => $past->id])
+            ->callAction(TestAction::make('deleteSession'));
+
+        $this->assertNull($past->fresh());
+    }
+
     public function test_the_list_opens_it_in_a_new_tab(): void
     {
         $session = $this->classSession(['starts_at' => '2026-10-30 10:00', 'ends_at' => '2026-10-30 11:00']);

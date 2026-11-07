@@ -266,7 +266,7 @@ class SessionPlanner
     public function deleteSession(ClassSession $session): void
     {
         if (! $session->canBeDeleted()) {
-            throw new ClassException('فقط جلسه‌ای که هنوز شروع نشده و چیزی برای آن ثبت نشده حذف می‌شود.');
+            throw new ClassException('جلسه‌ای که برگزار شده، در حال برگزاری است یا مطالبی برای آن ثبت شده حذف نمی‌شود.');
         }
 
         DB::transaction(function () use ($session): void {

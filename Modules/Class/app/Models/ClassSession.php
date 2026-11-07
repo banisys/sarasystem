@@ -118,12 +118,15 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
-     * Not started and nothing recorded (ADR 0066). Attendance marks a session
-     * held, and homework comes with content, so this needs no query.
+     * Not running now and nothing recorded, past ones too (ADR 0066).
+     * Attendance marks a session held, and homework comes with content, so
+     * this needs no query.
      */
     public function canBeDeleted(): bool
     {
-        return ! $this->hasStarted() && $this->status !== SessionStatus::Held && ! $this->hasContent();
+        $isRunning = $this->status === SessionStatus::Scheduled && $this->hasStarted() && $this->ends_at->isFuture();
+
+        return ! $isRunning && $this->status !== SessionStatus::Held && ! $this->hasContent();
     }
 
     /**

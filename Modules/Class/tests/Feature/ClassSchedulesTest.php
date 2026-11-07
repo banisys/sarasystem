@@ -163,6 +163,18 @@ class ClassSchedulesTest extends TestCase
         $this->assertNull($cancelled->fresh());
     }
 
+    public function test_a_past_session_with_nothing_recorded_can_be_deleted(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-20 12:00'));
+        $schedule = $this->weekly([Weekday::Saturday], '2026-10-24', '2026-11-07');
+        $this->travelTo(CarbonImmutable::parse('2026-10-29 12:00'));
+
+        $this->planner->deleteSession(ClassSession::query()->whereDate('starts_at', '2026-10-24')->sole());
+        $this->planner->sync($schedule->fresh());
+
+        $this->assertSame(['2026-10-31', '2026-11-07'], $this->sessionDays());
+    }
+
     public function test_a_new_holiday_removes_its_sessions_and_brings_them_back_when_deleted(): void
     {
         $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-21');
