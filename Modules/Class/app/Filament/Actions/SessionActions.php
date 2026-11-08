@@ -26,6 +26,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
+use Filament\Support\Exceptions\Halt;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -283,7 +284,8 @@ class SessionActions
     }
 
     /**
-     * Runs a SessionPlanner operation and reports its outcome.
+     * Runs a SessionPlanner operation and reports its outcome. When it is
+     * refused (e.g. a clash) the modal stays open, so the form can be fixed.
      */
     public static function attempt(callable $operation, string $success): void
     {
@@ -292,7 +294,8 @@ class SessionActions
         } catch (ClassException $exception) {
             Notification::make()->title($exception->getMessage())->danger()->send();
 
-            return;
+            // Keeps the modal open with what was entered, so it can be corrected.
+            throw new Halt;
         }
 
         Notification::make()->title($success)->success()->send();

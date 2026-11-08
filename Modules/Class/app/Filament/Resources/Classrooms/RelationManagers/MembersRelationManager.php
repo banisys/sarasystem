@@ -14,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Support\Exceptions\Halt;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -228,7 +229,8 @@ class MembersRelationManager extends RelationManager
         } catch (ClassException $exception) {
             Notification::make()->title($exception->getMessage())->danger()->send();
 
-            return;
+            // Keeps the modal open with what was entered, so it can be corrected.
+            throw new Halt;
         }
 
         Notification::make()->title($success)->success()->send();

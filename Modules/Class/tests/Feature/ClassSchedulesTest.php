@@ -268,6 +268,27 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame(SessionKind::MakeUp, ClassSession::query()->whereDate('starts_at', '2026-11-05')->sole()->kind);
     }
 
+    public function test_a_refused_schedule_keeps_its_modal_open_with_the_message(): void
+    {
+        $editor = User::factory()->create();
+        $this->roleWithPermissions('class_editor', ['ViewAny:Classroom', 'View:Classroom', 'Update:Classroom']);
+        $this->makeStaff($editor, $this->west);
+        $this->grantRole($editor, $this->west, 'class_editor');
+        $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-21');
+        $this->actingInPanel($editor, $this->west);
+
+        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->callAction(TestAction::make('addSchedule')->table(), data: [
+                'frequency' => Frequency::Weekly->value, 'interval' => 1, 'weekdays' => [Weekday::Saturday->value],
+                'starts_on' => '2026-10-31', 'ends_on' => '2026-11-07', 'start_time' => '08:30', 'end_time' => '09:30',
+            ])
+            ->assertNotified()
+            ->assertActionMounted(TestAction::make('addSchedule')->table())
+            ->assertSchemaStateSet(['start_time' => '08:30', 'end_time' => '09:30'], 'mountedActionSchema0');
+
+        $this->assertSame(1, $this->classroom->schedules()->count());
+    }
+
     public function test_the_sessions_list_shows_the_current_tenants_sessions_only(): void
     {
         $admin = User::factory()->create();
