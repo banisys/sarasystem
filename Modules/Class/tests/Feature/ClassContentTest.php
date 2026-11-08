@@ -75,7 +75,7 @@ class ClassContentTest extends TestCase
         app(SessionPlanner::class)->saveSchedule(null, $this->classroom, [
             'frequency' => Frequency::Weekly, 'interval' => 1, 'weekdays' => [Weekday::Saturday->value],
             'starts_on' => '2026-10-31', 'ends_on' => '2026-11-28', 'start_time' => '08:00', 'end_time' => '09:30',
-            'teacher_id' => $this->teacher->id, 'teaching_plan_id' => $this->plan->id,
+            'teacher_ids' => [$this->teacher->id], 'teaching_plan_id' => $this->plan->id,
         ]);
     }
 

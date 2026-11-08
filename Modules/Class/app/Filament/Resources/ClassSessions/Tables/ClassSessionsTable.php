@@ -8,6 +8,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Actions\SessionActions;
@@ -20,7 +21,7 @@ class ClassSessionsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => SessionActions::withAttendanceCounts($query->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])))
+            ->modifyQueryUsing(fn (Builder $query) => SessionActions::withAttendanceCounts($query->with(['classroom', 'subject', 'teachers', 'substitutes'])))
             ->defaultSort('starts_at')
             ->columns(SessionActions::columns(withClass: true))
             ->filters(self::filters(withClass: true))
@@ -48,13 +49,10 @@ class ClassSessionsTable
             SelectFilter::make('teacher')
                 ->label('مدرس')
                 ->options(fn (): array => User::query()
-                    ->whereIn('id', ClassSession::query()->select('teacher_id'))
-                    ->orWhereIn('id', ClassSession::query()->select('substitute_teacher_id'))
+                    ->whereIn('id', DB::table(ClassSession::TEACHERS_TABLE)->whereIn('session_id', ClassSession::query()->select('id'))->selectRaw('coalesce(substitute_id, teacher_id)'))
                     ->orderBy('name')->pluck('name', 'id')->all())
                 ->query(fn (Builder $query, array $data) => $query->when($data['value'] ?? null, fn (Builder $query, string $teacher) => $query
-                    ->where(fn (Builder $query) => $query
-                        ->where('substitute_teacher_id', $teacher)
-                        ->orWhere(fn (Builder $query) => $query->where('teacher_id', $teacher)->whereNull('substitute_teacher_id')))))
+                    ->taughtBy(User::query()->findOrFail($teacher))))
                 ->searchable(),
             SelectFilter::make('subject_id')
                 ->label('درس')

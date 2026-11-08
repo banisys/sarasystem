@@ -73,11 +73,10 @@ class SessionActions
             TextColumn::make('subject.title')
                 ->label('درس')
                 ->placeholder('—'),
-            TextColumn::make('teacher.name')
-                ->label('مدرس')
-                ->formatStateUsing(fn (ClassSession $record): string => $record->substituteTeacher
-                    ? $record->substituteTeacher->name.' (جایگزین)'
-                    : ($record->teacher?->name ?? '—'))
+            TextColumn::make('teachers')
+                ->label('مدرس‌ها')
+                ->state(fn (ClassSession $record): ?string => $record->teacherNames())
+                ->wrap()
                 ->placeholder('—'),
             TextColumn::make('location')
                 ->label('مکان')
@@ -183,10 +182,8 @@ class SessionActions
                         ->state(fn (ClassSession $record): string => self::when($record))
                         ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null),
                     TextEntry::make('teacher')
-                        ->label('مدرس')
-                        ->state(fn (ClassSession $record): ?string => $record->substituteTeacher
-                            ? $record->substituteTeacher->name.' (جایگزین'.($record->teacher ? ' '.$record->teacher->name : '').')'
-                            : $record->teacher?->name)
+                        ->label('مدرس‌ها')
+                        ->state(fn (ClassSession $record): ?string => $record->teacherNames())
                         ->placeholder('—'),
                     TextEntry::make('location')
                         ->label('مکان')
@@ -590,23 +587,47 @@ class SessionActions
             ));
     }
 
+    /**
+     * The session's own teachers, each with an optional substitute (ADR 0068).
+     */
     private static function substitute(): Action
     {
         return Action::make('substitute')
-            ->label('مدرس جایگزین')
+            ->label('مدرس‌ها و جایگزین')
             ->icon(Heroicon::OutlinedUserCircle)
             ->visible(fn (ClassSession $record): bool => self::canChange($record) && $record->status !== SessionStatus::Cancelled)
-            ->fillForm(fn (ClassSession $record): array => ['substitute_teacher_id' => $record->substitute_teacher_id])
+            ->modalDescription('اگر مدرسی نمی‌آید، جایگزینش را کنار نامش انتخاب کنید؛ بقیه‌ی مدرس‌ها سر کلاس می‌مانند. تغییر مدرس‌ها فقط همین جلسه را عوض می‌کند، نه برنامه را.')
+            ->modalWidth('2xl')
+            ->fillForm(fn (ClassSession $record): array => [
+                'rows' => $record->teachers()->get()->map(fn (User $teacher): array => [
+                    'teacher_id' => $teacher->getKey(),
+                    'substitute_id' => $teacher->pivot->substitute_id,
+                ])->all(),
+            ])
             ->schema([
-                Select::make('substitute_teacher_id')
-                    ->label('مدرس جایگزین')
-                    ->helperText('خالی یعنی خود مدرس جلسه.')
-                    ->searchable()
-                    ->getSearchResultsUsing(fn (string $search, ClassSession $record): array => self::searchTenantUsers($record, $search))
-                    ->getOptionLabelUsing(fn (mixed $value): ?string => User::query()->find($value)?->name),
+                Repeater::make('rows')
+                    ->hiddenLabel()
+                    ->defaultItems(0)
+                    ->reorderable(false)
+                    ->addActionLabel('افزودن مدرس')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('teacher_id')
+                            ->label('مدرس')
+                            ->options(fn (ClassSession $record, SessionPlanner $planner): array => $planner->teacherOptions($record->classroom)
+                                + $record->teachers()->get()->mapWithKeys(fn (User $teacher): array => [$teacher->getKey() => $teacher->name])->all())
+                            ->distinct()
+                            ->required(),
+                        Select::make('substitute_id')
+                            ->label('جایگزین')
+                            ->placeholder('خودش درس می‌دهد')
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search, ClassSession $record): array => self::searchTenantUsers($record, $search))
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => User::query()->find($value)?->name),
+                    ]),
             ])
             ->action(fn (array $data, ClassSession $record, SessionPlanner $planner) => self::attempt(
-                fn () => $planner->setSubstitute($record, filled($data['substitute_teacher_id'] ?? null) ? (int) $data['substitute_teacher_id'] : null),
+                fn () => $planner->setTeachers($record, array_values($data['rows'] ?? [])),
                 'ذخیره شد.',
             ));
     }

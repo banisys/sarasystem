@@ -100,7 +100,7 @@ class ScoresAndReportCardsTest extends TestCase
         $members->add($this->classroom, ClassRole::factory()->for($this->primary)->teacher()->create(), [$this->teacher->id]);
         app(SessionPlanner::class)->saveSchedule(null, $this->classroom, [
             'frequency' => Frequency::Weekly, 'weekdays' => [Weekday::Saturday->value], 'starts_on' => '2026-10-31', 'ends_on' => '2026-11-14',
-            'start_time' => '08:00', 'end_time' => '09:30', 'subject_id' => $this->math->id, 'teacher_id' => $this->teacher->id,
+            'start_time' => '08:00', 'end_time' => '09:30', 'subject_id' => $this->math->id, 'teacher_ids' => [$this->teacher->id],
         ]);
     }
 

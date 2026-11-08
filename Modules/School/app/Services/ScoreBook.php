@@ -21,7 +21,7 @@ use Modules\School\Models\ScorePeriod;
  * score period of the class's academic year and a subject of the grade's
  * curriculum, each learner of the class gets a number out of 20 or a
  * descriptive level (by the stage's scale) and a note. The subject's
- * teacher in the class (a schedule's teacher) enters them until the
+ * teacher in the class (one of a schedule's teachers) enters them until the
  * period's entry closes or it is published; whoever may edit the class, at
  * any time.
  */
@@ -81,7 +81,7 @@ class ScoreBook
         return ClassSchedule::withoutTenantScope()
             ->where('classroom_id', $classroom->getKey())
             ->where('subject_id', $subjectId)
-            ->where('teacher_id', $user->getKey())
+            ->whereHas('teachers', fn (Builder $teachers) => $teachers->whereKey($user->getKey()))
             ->exists();
     }
 
@@ -122,7 +122,7 @@ class ScoreBook
      */
     public function assignmentsOf(User $user): Collection
     {
-        return ClassSchedule::query()->where('teacher_id', $user->getKey())->whereNotNull('subject_id')
+        return ClassSchedule::query()->whereHas('teachers', fn (Builder $teachers) => $teachers->whereKey($user->getKey()))->whereNotNull('subject_id')
             ->with('classroom')
             ->get()
             ->unique(fn (ClassSchedule $schedule): string => $schedule->classroom_id.'-'.$schedule->subject_id)

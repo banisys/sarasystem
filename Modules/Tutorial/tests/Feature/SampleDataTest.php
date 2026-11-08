@@ -140,7 +140,7 @@ class SampleDataTest extends TestCase
         $this->assertSame(2, $batch->made(Subject::class)->count());
         $this->assertSame(6, $batch->made(ClassSchedule::class)->count());
 
-        $sessions = $batch->made(ClassSession::class)->where('teacher_id', $teacherIds->first())->orderBy('starts_at')->get();
+        $sessions = $batch->made(ClassSession::class)->whereHas('teachers', fn ($teachers) => $teachers->whereKey($teacherIds->first()))->orderBy('starts_at')->get();
         $sessions->each(function (ClassSession $session, int $index) use ($sessions): void {
             $next = $sessions->get($index + 1);
             $this->assertTrue($next === null || $next->starts_at->greaterThanOrEqualTo($session->ends_at), 'The shared teacher never teaches two sessions at once.');

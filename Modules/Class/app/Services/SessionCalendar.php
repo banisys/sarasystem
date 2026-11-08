@@ -102,7 +102,10 @@ class SessionCalendar
     public function forTeacher(User $teacher, string $view, CarbonImmutable $date): array
     {
         return [
-            ...$this->sessions(ClassSession::query()->taughtBy($teacher), Tenant::current(), $view, $date),
+            // On the teacher's own calendar, whether they stand in for someone.
+            ...$this->sessions(ClassSession::query()->taughtBy($teacher), Tenant::current(), $view, $date, fn (ClassSession $session): array => [
+                'is_substitute' => $session->teachers->contains(fn (User $row): bool => $row->pivot->substitute_id === $teacher->getKey()),
+            ]),
             'mode' => null,
             'shows_classroom' => true,
             'shows_teacher' => false,
@@ -157,7 +160,7 @@ class SessionCalendar
 
         $sessions = (clone $query)
             ->whereBetween('starts_at', [$period['first']->startOfDay(), $period['last']->endOfDay()])
-            ->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])
+            ->with(['classroom', 'subject', 'teachers', 'substitutes'])
             ->withCount('attendances')
             ->orderBy('starts_at')
             ->get();
@@ -242,8 +245,6 @@ class SessionCalendar
      */
     public function card(ClassSession $session): array
     {
-        $teacher = $session->substituteTeacher ?? $session->teacher;
-
         return [
             ...($this->extra ? ($this->extra)($session) : []),
             'id' => $session->getKey(),
@@ -254,8 +255,7 @@ class SessionCalendar
             'title' => $session->subject?->title ?? 'جلسه',
             'classroom' => $session->classroom?->title,
             'mode' => $session->classroom?->mode->value,
-            'teacher' => $teacher?->name,
-            'is_substitute' => $session->substituteTeacher !== null,
+            'teacher' => $session->teacherNames(),
             'location' => $session->location,
             'tone' => self::tone($session),
             'tone_label' => self::toneLabels()[self::tone($session)],

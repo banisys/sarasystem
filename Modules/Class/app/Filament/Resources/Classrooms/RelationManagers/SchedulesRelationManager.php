@@ -58,7 +58,7 @@ class SchedulesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['subject', 'teacher', 'teachingPlan'])->withCount(['sessions' => fn (Builder $sessions) => $sessions->upcoming()->takingPlace()]))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['subject', 'teachers', 'teachingPlan'])->withCount(['sessions' => fn (Builder $sessions) => $sessions->upcoming()->takingPlace()]))
             ->defaultSort('starts_on')
             ->columns([
                 TextColumn::make('frequency')
@@ -67,8 +67,9 @@ class SchedulesRelationManager extends RelationManager
                 TextColumn::make('subject.title')
                     ->label('درس')
                     ->placeholder('—'),
-                TextColumn::make('teacher.name')
-                    ->label('مدرس')
+                TextColumn::make('teachers.name')
+                    ->label('مدرس‌ها')
+                    ->listWithLineBreaks()
                     ->placeholder('—'),
                 TextColumn::make('teachingPlan.title')
                     ->label('طرح درس')
@@ -123,7 +124,8 @@ class SchedulesRelationManager extends RelationManager
                     ->modalWidth('3xl')
                     ->modalDescription('جلسه‌های گذشته و جلسه‌هایی که دستی تغییر کرده‌اند عوض نمی‌شوند.')
                     ->fillForm(fn (ClassSchedule $record): array => [
-                        ...$record->only(['subject_id', 'teacher_id', 'teaching_plan_id', 'interval', 'month_day', 'month_week', 'location']),
+                        'teacher_ids' => $record->teachers->modelKeys(),
+                        ...$record->only(['subject_id', 'teaching_plan_id', 'interval', 'month_day', 'month_week', 'location']),
                         'frequency' => $record->frequency->value,
                         'weekdays' => $record->weekdays,
                         'month_weekday' => $record->weekdays[0] ?? null,
@@ -233,9 +235,10 @@ class SchedulesRelationManager extends RelationManager
                 ->helperText('سرفصل‌های آن به ترتیب به جلسه‌ها داده می‌شود.')
                 ->options(fn (Get $get, ?ClassSchedule $record): array => TeachingPlan::options(filled($get('subject_id')) ? (int) $get('subject_id') : null, $record?->teaching_plan_id))
                 ->searchable(),
-            Select::make('teacher_id')
-                ->label('مدرس')
-                ->helperText('از اعضای کلاس که شرکت‌کننده نیستند.')
+            Select::make('teacher_ids')
+                ->label('مدرس‌ها')
+                ->helperText('یک یا چند نفر از اعضای کلاس که شرکت‌کننده نیستند؛ همه‌ی جلسه‌های برنامه را با هم درس می‌دهند.')
+                ->multiple()
                 ->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($this->classroom())),
             TextInput::make('location')
                 ->label('مکان')

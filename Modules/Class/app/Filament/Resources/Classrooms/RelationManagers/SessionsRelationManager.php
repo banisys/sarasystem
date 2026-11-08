@@ -86,7 +86,7 @@ class SessionsRelationManager extends RelationManager
                 TimePicker::make('start_time')->label('از ساعت')->seconds(false)->required(),
                 TimePicker::make('end_time')->label('تا ساعت')->seconds(false)->after('start_time')->required(),
                 Select::make('subject_id')->label('درس')->options(fn (): array => Subject::options())->searchable(),
-                Select::make('teacher_id')->label('مدرس')->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($this->classroom())),
+                Select::make('teacher_ids')->label('مدرس‌ها')->multiple()->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($this->classroom())),
                 TextInput::make('location')->label('مکان')->helperText('خالی یعنی مکان خود کلاس.')->maxLength(255),
                 Textarea::make('note')->label('توضیح')->rows(2)->columnSpanFull(),
             ])
@@ -99,7 +99,7 @@ class SessionsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => SessionActions::withAttendanceCounts($query->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])))
+            ->modifyQueryUsing(fn (Builder $query) => SessionActions::withAttendanceCounts($query->with(['classroom', 'subject', 'teachers', 'substitutes'])))
             ->defaultSort('starts_at')
             ->columns(SessionActions::columns(withClass: false))
             ->filters(ClassSessionsTable::filters(withClass: false))

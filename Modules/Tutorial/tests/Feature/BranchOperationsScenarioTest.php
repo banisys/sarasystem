@@ -67,7 +67,7 @@ class BranchOperationsScenarioTest extends TestCase
         $this->assertSame(1, $run->made(Classroom::class)->where('parent_id', $classroom->id)->count());
         $sessions = $run->made(ClassSession::class)->where('classroom_id', $classroom->id)->get();
         $this->assertFalse($sessions->contains(fn (ClassSession $session): bool => $session->starts_at->isSameDay(today()->addWeek())), 'The branch holiday has no session.');
-        $this->assertTrue($sessions->contains(fn (ClassSession $session): bool => $session->substitute_teacher_id !== null));
+        $this->assertTrue($sessions->contains(fn (ClassSession $session): bool => $session->hasSubstitute()));
         $this->assertSame(1, $sessions->where('status', SessionStatus::Cancelled)->count());
         $this->assertSame(1, $sessions->where('kind', SessionKind::MakeUp)->count());
         $this->assertSame(1, $sessions->whereNotNull('original_starts_at')->count());

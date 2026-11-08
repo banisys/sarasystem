@@ -287,7 +287,7 @@ class BranchOperations extends Scenario
                             'ends_on' => today()->addWeeks(4)->toDateString(),
                             'start_time' => $start->format('H:i'),
                             'end_time' => $end->format('H:i'),
-                            'teacher_id' => self::teacher($run, 1)->getKey(),
+                            'teacher_ids' => [self::teacher($run, 1)->getKey()],
                         ]));
                     })
                     ->doneWhen(fn (TutorialRun $run): bool => self::weeklySchedule($run) !== null && self::sessions($run)->count() >= 3),
@@ -314,7 +314,7 @@ class BranchOperations extends Scenario
                             'ends_on' => today()->addMonths(3)->toDateString(),
                             'start_time' => $start->format('H:i'),
                             'end_time' => $end->format('H:i'),
-                            'teacher_id' => self::teacher($run, 2)->getKey(),
+                            'teacher_ids' => [self::teacher($run, 2)->getKey()],
                         ]);
                     }))
                     ->doneWhen(fn (TutorialRun $run): bool => self::monthlySchedule($run) !== null),
@@ -334,12 +334,13 @@ class BranchOperations extends Scenario
                 Mission::make('substitute', 'مدرس جایگزین')
                     ->actor($officer, $asOfficer)
                     ->steps([
-                        'در «Conversation B2» از منوی ردیف کلاس «جلسه‌ها» را باز کنید و روی جلسه‌ی امروز در تقویم بزنید؛ در صفحه‌ی جلسه که در تب تازه باز می‌شود «سایر ← مدرس جایگزین» را بزنید و «رضا توکلی» را انتخاب کنید.',
+                        'در «Conversation B2» از منوی ردیف کلاس «جلسه‌ها» را باز کنید و روی جلسه‌ی امروز در تقویم بزنید؛ در صفحه‌ی جلسه که در تب تازه باز می‌شود «سایر ← مدرس‌ها و جایگزین» را بزنید و کنار «بهاره امینی» در «جایگزین» «رضا توکلی» را انتخاب کنید.',
+                        'یک جلسه می‌تواند چند مدرس داشته باشد (در «برنامه» یا همین‌جا با «افزودن مدرس»)؛ جایگزین فقط جای همان مدرس می‌آید و بقیه سر کلاس می‌مانند.',
                         'جایگزین باید عضو همین '.$tenant.' باشد و در آن ساعت جای دیگری درس نداشته باشد.',
                         'اختیاری: در «کارکنان ← کارمندان» با «جلسه‌های تدریس» در ردیف «رضا توکلی»، این جلسه را در تقویم تدریس او ببینید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
-                    ->perform(fn (TutorialRun $run): mixed => self::branch($run, 1)->execute(fn () => app(SessionPlanner::class)->setSubstitute(self::sessions($run)->first(), self::substitute($run)->getKey())))
+                    ->perform(fn (TutorialRun $run): mixed => self::branch($run, 1)->execute(fn () => app(SessionPlanner::class)->setSubstitute(self::sessions($run)->first(), self::teacher($run, 1)->getKey(), self::substitute($run)->getKey())))
                     ->doneWhen(fn (TutorialRun $run): bool => self::substituted($run) !== null),
                 Mission::make('substitute-attendance', 'حضور و غیاب با جایگزین')
                     ->actor('مدرس جایگزین', fn (TutorialRun $run): ?User => self::substitute($run))
@@ -383,13 +384,13 @@ class BranchOperations extends Scenario
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
                     ->perform(fn (TutorialRun $run): mixed => self::branch($run, 1)->execute(function () use ($run): void {
                         $planner = app(SessionPlanner::class);
-                        $session = self::sessions($run)->firstWhere(fn (ClassSession $session): bool => $session->original_starts_at === null && $session->substitute_teacher_id === null);
+                        $session = self::sessions($run)->firstWhere(fn (ClassSession $session): bool => $session->original_starts_at === null && ! $session->hasSubstitute());
                         $planner->cancel($session, 'بیماری مدرس');
                         $planner->addSession(self::conversationClass($run), [
                             'date' => today()->addDays(3)->toDateString(),
                             'start_time' => $session->starts_at->format('H:i'),
                             'end_time' => $session->ends_at->format('H:i'),
-                            'teacher_id' => self::teacher($run, 1)->getKey(),
+                            'teacher_ids' => [self::teacher($run, 1)->getKey()],
                             'kind' => SessionKind::MakeUp,
                         ]);
                     }))
@@ -648,6 +649,8 @@ class BranchOperations extends Scenario
     {
         $substitute = self::substitute($run);
 
-        return $substitute ? self::sessions($run)->firstWhere('substitute_teacher_id', $substitute->getKey()) : null;
+        return $substitute ? self::sessions($run)->first(fn (ClassSession $session): bool => $session->teachers->contains(
+            fn (User $teacher): bool => $teacher->pivot->substitute_id === $substitute->getKey(),
+        )) : null;
     }
 }

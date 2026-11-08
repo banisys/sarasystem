@@ -62,7 +62,7 @@ class MyClassesTest extends TestCase
 
         app(SessionPlanner::class)->saveSchedule(null, $this->classroom, [
             'frequency' => Frequency::Weekly, 'interval' => 1, 'weekdays' => [Weekday::Saturday->value, Weekday::Monday->value],
-            'starts_on' => '2026-10-31', 'ends_on' => '2026-11-30', 'start_time' => '08:00', 'end_time' => '09:30', 'teacher_id' => $this->teacher->id,
+            'starts_on' => '2026-10-31', 'ends_on' => '2026-11-30', 'start_time' => '08:00', 'end_time' => '09:30', 'teacher_ids' => [$this->teacher->id],
             'teaching_plan_id' => TeachingPlan::factory()->for($this->primary)->withTopics([1, 1])->create()->id,
         ]);
     }

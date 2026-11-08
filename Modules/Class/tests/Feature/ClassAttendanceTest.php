@@ -73,8 +73,8 @@ class ClassAttendanceTest extends TestCase
         // The third student joins after the session.
         ClassMember::query()->where('user_id', $this->students[2]->id)->update(['joined_on' => '2026-11-10']);
 
-        $this->session = ClassSession::factory()->create([
-            'classroom_id' => $this->classroom->id, 'teacher_id' => $this->teacher->id,
+        $this->session = ClassSession::factory()->taughtBy($this->teacher)->create([
+            'classroom_id' => $this->classroom->id,
             'starts_at' => '2026-11-01 10:00', 'ends_at' => '2026-11-01 11:30',
         ]);
         $this->register = app(AttendanceRegister::class);
@@ -132,8 +132,8 @@ class ClassAttendanceTest extends TestCase
         $this->assertFalse($this->register->canTake($observer, $this->session));
         $this->assertFalse($this->register->canTake($this->students[0], $this->session));
         $this->assertFalse($this->register->canTake($substitute, $this->session));
-        $this->session->update(['substitute_teacher_id' => $substitute->id]);
-        $this->assertTrue($this->register->canTake($substitute, $this->session));
+        $this->session->teachers()->updateExistingPivot($this->teacher->id, ['substitute_id' => $substitute->id]);
+        $this->assertTrue($this->register->canTake($substitute, $this->session->fresh()));
 
         // Closed for teachers after three days, not for whoever may edit the class.
         $this->travelTo(CarbonImmutable::parse('2026-11-05 00:01'));

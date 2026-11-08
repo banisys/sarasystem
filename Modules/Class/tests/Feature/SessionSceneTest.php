@@ -64,7 +64,7 @@ class SessionSceneTest extends TestCase
         $this->record($session, $late, AttendanceStatus::Late, lateMinutes: 10);
         $this->record($session, $absent, AttendanceStatus::Absent);
 
-        $scene = app(SessionScene::class)->for($session->fresh(['classroom', 'teacher', 'substituteTeacher']));
+        $scene = app(SessionScene::class)->for($session->fresh(['classroom', 'teachers']));
 
         $this->assertSame([
             ['name' => 'الف حاضر', 'status' => 'present', 'label' => 'حاضر'],
@@ -84,12 +84,13 @@ class SessionSceneTest extends TestCase
         $online = Classroom::factory()->for($this->west)->create(['mode' => ClassMode::Online]);
         $teacher = User::factory()->create();
         $substitute = User::factory()->create(['name' => 'مدرس جایگزین']);
-        $session = ClassSession::factory()->create(['classroom_id' => $online->id, 'teacher_id' => $teacher->id, 'substitute_teacher_id' => $substitute->id]);
+        $colleague = User::factory()->create(['name' => 'مدرس دوم']);
+        $session = ClassSession::factory()->taughtBy($teacher, $substitute)->taughtBy($colleague)->create(['classroom_id' => $online->id]);
 
         $scene = app(SessionScene::class)->for($session);
 
         $this->assertTrue($scene['virtual']);
-        $this->assertSame('مدرس جایگزین', $scene['teacher']);
+        $this->assertSame(['مدرس جایگزین', 'مدرس دوم'], $scene['teachers']);
         $this->assertSame([], $scene['seats']);
     }
 
@@ -137,7 +138,7 @@ class SessionSceneTest extends TestCase
         $this->assertTrue($scene->canSee($classViewer, $session));
 
         $teacher = User::factory()->create();
-        $session->update(['teacher_id' => $teacher->id]);
+        $session->teachers()->attach($teacher->id);
         $this->assertTrue($scene->canSee($teacher, $session->fresh()));
 
         // Fellow learners never see each other's attendance.

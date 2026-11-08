@@ -51,7 +51,7 @@ class SessionScene
     /**
      * @return array{
      *     virtual: bool,
-     *     teacher: string|null,
+     *     teachers: list<string>,
      *     seats: list<array{name: string, status: string, label: string}>,
      *     statuses: array<string, array{label: string, color: string, seated: bool, marker: bool, count: int}>,
      * }
@@ -83,7 +83,7 @@ class SessionScene
 
         return [
             'virtual' => $session->classroom?->mode === ClassMode::Online,
-            'teacher' => ($session->substituteTeacher ?? $session->teacher)?->name,
+            'teachers' => array_map(fn (array $row): string => ($row['substitute'] ?? $row['teacher'])->name, $session->teaching()),
             'seats' => $seats->all(),
             'statuses' => collect(self::LOOKS)
                 ->filter(fn (array $look, string $status): bool => $counts->has($status))

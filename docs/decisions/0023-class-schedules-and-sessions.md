@@ -1,7 +1,7 @@
 # 0023 — Class schedules and sessions
 
 - **Date:** 2026-10-29
-- **Status:** accepted
+- **Status:** accepted; the single teacher and substitute changed by [ADR 0068](0068-several-teachers-per-session.md) (several teachers, a substitute per teacher)
 
 ## Context
 This is step 2 of the classes plan ([ADR 0022](0022-classes.md)): when a class meets, and the sessions that come from it. Later steps attach attendance and session content to these sessions.

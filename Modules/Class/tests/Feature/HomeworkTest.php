@@ -63,8 +63,8 @@ class HomeworkTest extends TestCase
         $members->add($this->classroom, ClassRole::factory()->for($primary)->attendee()->create(), [$this->amir->id, $this->sara->id], CarbonImmutable::parse('2026-10-01'));
         $members->add($this->classroom, ClassRole::factory()->for($primary)->teacher()->create(), [$this->teacher->id]);
 
-        $this->session = ClassSession::factory()->create([
-            'classroom_id' => $this->classroom->id, 'teacher_id' => $this->teacher->id,
+        $this->session = ClassSession::factory()->taughtBy($this->teacher)->create([
+            'classroom_id' => $this->classroom->id,
             'starts_at' => '2026-10-31 08:00', 'ends_at' => '2026-10-31 09:30',
             'homework' => 'تمرین ۱ تا ۵ صفحه‌ی ۲۰', 'homework_due_on' => '2026-11-02', 'homework_max_score' => 20,
         ]);

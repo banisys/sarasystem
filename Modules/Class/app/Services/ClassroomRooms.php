@@ -39,7 +39,7 @@ class ClassroomRooms implements RoomSource
             ->whereIn('classroom_id', $ids)
             ->takingPlace()
             ->whereBetween('starts_at', [today(), today()->endOfDay()])
-            ->with(['subject', 'teacher', 'substituteTeacher'])
+            ->with(['subject', 'teachers', 'substitutes'])
             ->orderBy('starts_at')
             ->get()
             ->groupBy('classroom_id');
@@ -74,7 +74,7 @@ class ClassroomRooms implements RoomSource
                 'url' => $canOpen ? ClassroomResource::getUrl('sessions', ['record' => $classroom]) : null,
                 'live' => $live === null ? null : [
                     'subject' => $live->subject?->title,
-                    'teacher' => ($live->substituteTeacher ?? $live->teacher)?->name,
+                    'teacher' => $live->teacherNames(),
                     'time' => $live->starts_at->format('H:i').'–'.$live->ends_at->format('H:i'),
                     'url' => $canOpen ? ClassSessionResource::getUrl('view', ['record' => $live]) : null,
                 ],

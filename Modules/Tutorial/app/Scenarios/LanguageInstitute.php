@@ -304,7 +304,7 @@ class LanguageInstitute extends Scenario
                             'starts_on' => $start->toDateString(),
                             'start_time' => $start->format('H:i'),
                             'end_time' => $end->format('H:i'),
-                            'teacher_id' => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR)->getKey(),
+                            'teacher_ids' => [self::employeeWithRole($run, DefaultRoles::INSTRUCTOR)->getKey()],
                         ]));
                     })
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(ClassSession::class)->exists()),

@@ -129,13 +129,17 @@ function buildRoom(data) {
     const targets = [];
     const frontZ = -depth / 2 + 3.4;
 
-    // The teacher's table and, when the session has one, the teacher.
+    // The teacher's table and the session's teachers side by side behind it.
     box(2, 0.75, 0.8, COLORS.desk, 0, 0.375, -depth / 2 + 1.7);
-    if (data.teacher) {
-        const teacherX = 0;
+    const teachers = data.teachers ?? [];
+    if (teachers.length) {
         const teacherZ = -depth / 2 + 1;
-        add(makePeople([{ x: teacherX, z: teacherZ, scale: 0.92, color: COLORS.teacher }]));
-        targets.push({ position: new Vector3(teacherX, 1.75, teacherZ), text: `${data.teacher} · مدرس` });
+        const spacing = Math.min(1.2, (width - 2) / teachers.length);
+        const teacherXs = teachers.map((_, index) => (index - (teachers.length - 1) / 2) * spacing);
+        add(makePeople(teacherXs.map((x) => ({ x, z: teacherZ, scale: 0.92, color: COLORS.teacher }))));
+        teachers.forEach((name, index) => {
+            targets.push({ position: new Vector3(teacherXs[index], 1.75, teacherZ), text: `${name} · مدرس` });
+        });
     }
 
     const positions = seats.map((seat, index) => {

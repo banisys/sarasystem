@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Class\Database\Factories\ClassScheduleFactory;
 use Modules\Class\Enums\Frequency;
@@ -17,7 +18,7 @@ use Modules\Class\Enums\Weekday;
 /**
  * When a class meets (ADR 0023): a rule that repeats once, daily, weekly or
  * monthly (Jalali months) between two dates, at a time, optionally for a
- * subject with a teacher and in another place than the class's, following
+ * subject with teachers (ADR 0068) and in another place than the class's, following
  * a teaching plan (ADR 0025). Its sessions are built when it is saved
  * (SessionPlanner), except on the days whose session was deleted by hand
  * (ADR 0066).
@@ -26,7 +27,7 @@ use Modules\Class\Enums\Weekday;
  * @property list<string>|null $skipped_dates
  */
 #[Fillable([
-    'tenant_id', 'classroom_id', 'subject_id', 'teacher_id', 'teaching_plan_id', 'frequency', 'interval', 'weekdays', 'month_day', 'month_week',
+    'tenant_id', 'classroom_id', 'subject_id', 'teaching_plan_id', 'frequency', 'interval', 'weekdays', 'month_day', 'month_week',
     'starts_on', 'ends_on', 'start_time', 'end_time', 'location', 'skipped_dates',
 ])]
 class ClassSchedule extends Model
@@ -94,11 +95,13 @@ class ClassSchedule extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * Given to its sessions (ADR 0068).
+     *
+     * @return BelongsToMany<User, $this>
      */
-    public function teacher(): BelongsTo
+    public function teachers(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsToMany(User::class, 'class_schedule_teachers', 'schedule_id', 'user_id')->orderBy('users.name');
     }
 
     /**

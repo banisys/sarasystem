@@ -14,6 +14,7 @@ use App\Models\Workflow;
 use App\Workflow\AssigneeType;
 use App\Workflow\WorkflowEngine;
 use App\Workflow\WorkflowStep;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Class\Enums\AttendanceStatus;
@@ -403,7 +404,7 @@ class School extends Scenario
                             'start_time' => $start->format('H:i'),
                             'end_time' => $end->format('H:i'),
                             'subject_id' => self::math($run)->getKey(),
-                            'teacher_id' => self::teacher($run)->getKey(),
+                            'teacher_ids' => [self::teacher($run)->getKey()],
                             'teaching_plan_id' => self::plan($run)->getKey(),
                         ]));
                     })
@@ -739,7 +740,7 @@ class School extends Scenario
 
         return $classroom ? $run->made(ClassSchedule::class)->where('classroom_id', $classroom->getKey())
             ->where('frequency', Frequency::Weekly)->where('subject_id', self::math($run)?->getKey())
-            ->where('teacher_id', self::teacher($run)?->getKey())->oldest('id')->first() : null;
+            ->whereHas('teachers', fn (Builder $teachers) => $teachers->whereKey(self::teacher($run)?->getKey()))->oldest('id')->first() : null;
     }
 
     private static function firstSession(TutorialRun $run): ?ClassSession

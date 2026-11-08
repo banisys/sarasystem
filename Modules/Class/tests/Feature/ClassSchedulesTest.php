@@ -79,7 +79,7 @@ class ClassSchedulesTest extends TestCase
         $session = ClassSession::query()->orderBy('starts_at')->first();
         $this->assertSame('08:00', $session->starts_at->format('H:i'));
         $this->assertSame('09:30', $session->ends_at->format('H:i'));
-        $this->assertSame($this->teacher->id, $session->teacher_id);
+        $this->assertSame([$this->teacher->id], $session->teachers->modelKeys());
         $this->assertSame('کلاس ۱۰۱', $session->location);
         $this->assertSame(SessionKind::Regular, $session->kind);
     }
@@ -90,7 +90,7 @@ class ClassSchedulesTest extends TestCase
         [$moved, $cancelled, $substituted] = ClassSession::query()->orderBy('starts_at')->take(3)->get()->all();
         $this->planner->move($moved, '2026-10-31', '14:00', '15:00', null);
         $this->planner->cancel($cancelled, 'بیماری مدرس');
-        $this->planner->setSubstitute($substituted, $this->teacherOf($this->classroom)->id);
+        $this->planner->setSubstitute($substituted, $this->teacher->id, $this->teacherOf($this->classroom)->id);
 
         $this->planner->saveSchedule($schedule, $this->classroom, $this->data([Weekday::Sunday], '2026-10-31', '2026-11-16', '10:00', '11:00'));
 
@@ -193,7 +193,7 @@ class ClassSchedulesTest extends TestCase
         // The same teacher in another tenant at an overlapping time.
         $elsewhere = Classroom::factory()->for($this->primary)->create(['title' => 'کلاس ستاد']);
         $this->primary->execute(fn () => app(ClassMembers::class)->add($elsewhere, $this->teacherRole(), [$this->grantTeacher($this->teacher, $this->primary)->id]));
-        $this->assertClash(fn () => $this->primary->execute(fn () => $this->planner->saveSchedule(null, $elsewhere, $this->data([Weekday::Saturday], '2026-11-07', '2026-11-07', '09:00', '10:00', $this->teacher->id))), 'مدرس در «'.$this->classroom->title);
+        $this->assertClash(fn () => $this->primary->execute(fn () => $this->planner->saveSchedule(null, $elsewhere, $this->data([Weekday::Saturday], '2026-11-07', '2026-11-07', '09:00', '10:00', $this->teacher->id))), 'مدرس «'.$this->teacher->name.'» در «'.$this->classroom->title);
 
         // The same class.
         $this->assertClash(fn () => $this->weekly([Weekday::Saturday], '2026-11-14', '2026-11-14', teacher: null, fromTime: '09:00', toTime: '10:00'), 'همین کلاس');
@@ -250,7 +250,7 @@ class ClassSchedulesTest extends TestCase
         Livewire::test(SchedulesRelationManager::class, $owner)
             ->callAction(TestAction::make('addSchedule')->table(), data: [
                 'frequency' => Frequency::Weekly->value, 'interval' => 1, 'weekdays' => [Weekday::Sunday->value, Weekday::Tuesday->value],
-                'starts_on' => '2026-11-01', 'ends_on' => '2026-11-10', 'start_time' => '10:00', 'end_time' => '11:30', 'teacher_id' => $this->teacher->id,
+                'starts_on' => '2026-11-01', 'ends_on' => '2026-11-10', 'start_time' => '10:00', 'end_time' => '11:30', 'teacher_ids' => [$this->teacher->id],
             ])
             ->assertHasNoActionErrors();
         $this->assertSame(['2026-11-01', '2026-11-03', '2026-11-08', '2026-11-10'], $this->sessionDays());
@@ -322,7 +322,7 @@ class ClassSchedulesTest extends TestCase
     {
         return [
             'frequency' => Frequency::Weekly, 'interval' => 1, 'weekdays' => array_map(fn (Weekday $day): int => $day->value, $days),
-            'starts_on' => $from, 'ends_on' => $to, 'start_time' => $fromTime, 'end_time' => $toTime, 'teacher_id' => $teacher,
+            'starts_on' => $from, 'ends_on' => $to, 'start_time' => $fromTime, 'end_time' => $toTime, 'teacher_ids' => $teacher === null ? [] : [$teacher],
         ];
     }
 

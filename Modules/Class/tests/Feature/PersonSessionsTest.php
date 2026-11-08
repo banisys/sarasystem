@@ -63,9 +63,8 @@ class PersonSessionsTest extends TestCase
         $this->classSession('2026-10-28 10:00', teacher: $someone, substitute: $this->teacher);
         $this->classSession('2026-10-30 10:00', status: SessionStatus::Cancelled);
         $this->classSession('2026-10-30 14:00', teacher: $someone);
-        Tenant::factory()->create()->execute(fn () => ClassSession::factory()->create([
+        Tenant::factory()->create()->execute(fn () => ClassSession::factory()->taughtBy($this->teacher)->create([
             'classroom_id' => Classroom::factory()->for(Tenant::current())->create()->id,
-            'teacher_id' => $this->teacher->id,
             'starts_at' => '2026-10-26 10:00',
             'ends_at' => '2026-10-26 11:30',
         ]));
@@ -174,13 +173,11 @@ class PersonSessionsTest extends TestCase
     {
         $start = CarbonImmutable::parse($startsAt);
 
-        return ClassSession::factory()->create([
+        return ClassSession::factory()->taughtBy($teacher ?? $this->teacher, $substitute)->create([
             'classroom_id' => $this->classroom->id,
             'starts_at' => $start,
             'ends_at' => $start->addMinutes(90),
             'status' => $status,
-            'teacher_id' => ($teacher ?? $this->teacher)->id,
-            'substitute_teacher_id' => $substitute?->id,
         ]);
     }
 

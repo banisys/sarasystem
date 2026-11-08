@@ -30,14 +30,13 @@ class MyClasses
     {
         return ClassSession::query()->where(fn (Builder $query) => $query
             ->whereIn('classroom_id', ClassMember::query()->select('classroom_id')->where('user_id', $user->getKey()))
-            ->orWhere('teacher_id', $user->getKey())
-            ->orWhere('substitute_teacher_id', $user->getKey()));
+            ->orWhere(fn (Builder $query) => $query->withTeacher($user)));
     }
 
     public function hasAny(User $user): bool
     {
         return ClassMember::query()->where('user_id', $user->getKey())->exists()
-            || ClassSession::query()->where(fn (Builder $query) => $query->where('teacher_id', $user->getKey())->orWhere('substitute_teacher_id', $user->getKey()))->exists();
+            || ClassSession::query()->withTeacher($user)->exists();
     }
 
     public function canSee(User $user, ClassSession $session): bool
@@ -53,11 +52,12 @@ class MyClasses
      */
     public function roleIn(User $user, ClassSession $session): array
     {
-        $isTeacher = in_array($user->getKey(), [$session->teacher_id, $session->substitute_teacher_id], true);
+        $isSubstitute = $session->teachers->contains(fn (User $teacher): bool => $teacher->pivot->substitute_id === $user->getKey());
+        $isTeacher = $isSubstitute || $session->teachers->contains($user);
         $members = ClassMember::query()->where('classroom_id', $session->classroom_id)->where('user_id', $user->getKey())->with('classRole')->get();
 
         return [
-            'label' => $isTeacher ? ($session->substitute_teacher_id === $user->getKey() ? 'مدرس جایگزین' : 'مدرس') : $members->pluck('classRole.title')->join('، '),
+            'label' => $isTeacher ? ($isSubstitute ? 'مدرس جایگزین' : 'مدرس') : $members->pluck('classRole.title')->join('، '),
             'is_teacher' => $isTeacher,
             'is_attendee' => $members->contains(fn (ClassMember $member): bool => $member->classRole->is_attendee),
         ];
@@ -75,7 +75,7 @@ class MyClasses
 
         $sessions = $this->sessions($user)
             ->whereBetween('starts_at', [$first->startOfDay(), $last->endOfDay()])
-            ->with(['classroom', 'subject', 'teacher', 'substituteTeacher'])
+            ->with(['classroom', 'subject', 'teachers', 'substitutes'])
             ->orderBy('starts_at')
             ->get();
         $attendance = Attendance::query()->where('user_id', $user->getKey())->whereIn('session_id', $sessions->modelKeys())->get()->keyBy('session_id');
@@ -122,7 +122,7 @@ class MyClasses
             'time' => $session->starts_at->format('H:i').'–'.$session->ends_at->format('H:i'),
             'location' => $session->location,
             'meeting_url' => $session->classroom->mode->meetsOnline() ? $session->classroom->meeting_url : null,
-            'teacher' => ($session->substituteTeacher ?? $session->teacher)?->name,
+            'teacher' => $session->teacherNames(),
             'status' => $session->status->value,
             'status_label' => $session->status->getLabel(),
             'kind_label' => $session->kind->getLabel(),

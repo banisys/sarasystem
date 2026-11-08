@@ -62,8 +62,8 @@ class AbsenceSmsTest extends TestCase
         $classroom = Classroom::factory()->for($this->west)->create(['title' => 'هفتم الف']);
         [$this->amir, $this->sara, $this->teacher] = [$this->person('امیر محمدی'), $this->person('سارا جعفری'), $this->person('معلم')];
         app(ClassMembers::class)->add($classroom, ClassRole::factory()->for($primary)->attendee()->create(), [$this->amir->id, $this->sara->id], CarbonImmutable::parse('2026-10-01'));
-        $this->session = ClassSession::factory()->create([
-            'classroom_id' => $classroom->id, 'teacher_id' => $this->teacher->id,
+        $this->session = ClassSession::factory()->taughtBy($this->teacher)->create([
+            'classroom_id' => $classroom->id,
             'subject_id' => Subject::factory()->for($primary)->create(['title' => 'ریاضی'])->id,
             'starts_at' => '2026-10-31 08:00', 'ends_at' => '2026-10-31 09:30',
         ]);

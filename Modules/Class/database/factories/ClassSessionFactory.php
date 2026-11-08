@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
@@ -30,5 +31,13 @@ class ClassSessionFactory extends Factory
             'kind' => SessionKind::Extra,
             'status' => SessionStatus::Scheduled,
         ];
+    }
+
+    /**
+     * One of its teachers, optionally replaced by a substitute (ADR 0068).
+     */
+    public function taughtBy(User $teacher, ?User $substitute = null): static
+    {
+        return $this->afterCreating(fn (ClassSession $session) => $session->teachers()->attach($teacher->getKey(), ['substitute_id' => $substitute?->getKey()]));
     }
 }

@@ -27,8 +27,8 @@
 @php
     $line = array_filter([
         $showsClassroom ? $session['classroom'] : null,
-        $showsTeacher && $session['teacher'] ? $session['teacher'].($session['is_substitute'] ? ' (جایگزین)' : '') : null,
-        ! $showsTeacher && $session['is_substitute'] ? '(جایگزین)' : null,
+        $showsTeacher ? $session['teacher'] : null,
+        ! $showsTeacher && ($session['is_substitute'] ?? false) ? '(جایگزین)' : null,
         $roomy ? $session['location'] : null,
     ]);
 @endphp

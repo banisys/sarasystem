@@ -9,6 +9,7 @@ use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Class\Enums\Frequency;
@@ -24,8 +25,8 @@ use Modules\Class\Models\TeachingPlan;
 
 /**
  * Schedules and their sessions (ADR 0023). Saving a schedule checks it,
- * refuses clashes (the teacher, the class or the place busy at the same
- * time) and builds its sessions up to its last day, skipping holidays.
+ * refuses clashes (one of its teachers, the class or the place busy at the
+ * same time; several teachers per schedule and session, ADR 0068) and builds its sessions up to its last day, skipping holidays.
  * Building again keeps past sessions and those changed by hand, updates
  * the untouched future ones and adds or removes the rest. Holidays
  * changing rebuild the schedules they touch.
@@ -47,7 +48,6 @@ class SessionPlanner
         $schedule ??= new ClassSchedule(['tenant_id' => $classroom->tenant_id, 'classroom_id' => $classroom->getKey()]);
         $schedule->fill([
             'subject_id' => $data['subject_id'] ?? null,
-            'teacher_id' => $data['teacher_id'] ?? null,
             'teaching_plan_id' => $data['teaching_plan_id'] ?? null,
             'frequency' => $data['frequency'],
             'interval' => (int) ($data['interval'] ?? 1),
@@ -61,17 +61,20 @@ class SessionPlanner
             'location' => filled($data['location'] ?? null) ? trim($data['location']) : null,
         ]);
 
+        $teacherIds = self::ids($data['teacher_ids'] ?? []);
         $this->checkSchedule($schedule, $classroom);
+        $this->checkTeachers($classroom, $teacherIds);
         $planned = $this->planned($schedule, $classroom);
 
         if ($planned->count() > self::MAX_SESSIONS) {
             throw new ClassException('این برنامه بیش از '.self::MAX_SESSIONS.' جلسه می‌سازد؛ بازه را کوتاه‌تر کنید.');
         }
 
-        $this->checkClashes($planned, $classroom, $schedule->teacher_id, $this->locationOf($schedule, $classroom), exceptScheduleId: $schedule->getKey());
+        $this->checkClashes($planned, $classroom, $teacherIds, $this->locationOf($schedule, $classroom), exceptScheduleId: $schedule->getKey());
 
-        return DB::transaction(function () use ($schedule): ClassSchedule {
+        return DB::transaction(function () use ($schedule, $teacherIds): ClassSchedule {
             $schedule->save();
+            $schedule->teachers()->sync($teacherIds);
             $this->sync($schedule);
 
             return $schedule;
@@ -85,7 +88,7 @@ class SessionPlanner
     public function deleteSchedule(ClassSchedule $schedule): void
     {
         DB::transaction(function () use ($schedule): void {
-            $this->sessionsOf($schedule)->upcoming()->get()
+            $this->sessionsOf($schedule)->upcoming()->with('teachers')->get()
                 ->filter(fn (ClassSession $session): bool => $session->isUntouched())
                 ->each->delete();
 
@@ -103,8 +106,9 @@ class SessionPlanner
         $classroom = Classroom::withoutTenantScope()->findOrFail($schedule->classroom_id);
         $planned = $this->planned($schedule, $classroom)->keyBy(fn (array $slot): string => $slot['start']->toDateString());
         $location = $this->locationOf($schedule, $classroom);
+        $teacherIds = $schedule->teachers()->pluck('users.id')->all();
 
-        foreach ($this->sessionsOf($schedule)->upcoming()->get() as $session) {
+        foreach ($this->sessionsOf($schedule)->upcoming()->with('teachers')->get() as $session) {
             $key = ($session->original_starts_at ?? $session->starts_at)->toDateString();
 
             if (! $planned->has($key)) {
@@ -120,9 +124,9 @@ class SessionPlanner
                     'starts_at' => $planned[$key]['start'],
                     'ends_at' => $planned[$key]['end'],
                     'subject_id' => $schedule->subject_id,
-                    'teacher_id' => $schedule->teacher_id,
                     'location' => $location,
                 ]);
+                $session->teachers()->sync($teacherIds);
             }
 
             $planned->forget($key);
@@ -134,13 +138,12 @@ class SessionPlanner
                 'classroom_id' => $schedule->classroom_id,
                 'schedule_id' => $schedule->getKey(),
                 'subject_id' => $schedule->subject_id,
-                'teacher_id' => $schedule->teacher_id,
                 'starts_at' => $slot['start'],
                 'ends_at' => $slot['end'],
                 'location' => $location,
                 'kind' => SessionKind::Regular,
                 'status' => SessionStatus::Scheduled,
-            ]);
+            ])->teachers()->attach($teacherIds);
         }
     }
 
@@ -179,24 +182,28 @@ class SessionPlanner
     public function addSession(Classroom $classroom, array $data): ClassSession
     {
         [$start, $end] = self::interval($data['date'], $data['start_time'], $data['end_time']);
-        $teacherId = filled($data['teacher_id'] ?? null) ? (int) $data['teacher_id'] : null;
-        $this->checkTeacher($classroom, $teacherId);
+        $teacherIds = self::ids($data['teacher_ids'] ?? []);
+        $this->checkTeachers($classroom, $teacherIds);
         $location = filled($data['location'] ?? null) ? trim($data['location']) : ($classroom->mode->meetsInPerson() ? $classroom->location : null);
 
-        $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $classroom, $teacherId, $location);
+        $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $classroom, $teacherIds, $location);
 
-        return ClassSession::query()->create([
-            'tenant_id' => $classroom->tenant_id,
-            'classroom_id' => $classroom->getKey(),
-            'subject_id' => $data['subject_id'] ?? null,
-            'teacher_id' => $teacherId,
-            'starts_at' => $start,
-            'ends_at' => $end,
-            'location' => $location,
-            'kind' => $data['kind'],
-            'status' => SessionStatus::Scheduled,
-            'note' => $data['note'] ?? null,
-        ]);
+        return DB::transaction(function () use ($classroom, $data, $teacherIds, $start, $end, $location): ClassSession {
+            $session = ClassSession::query()->create([
+                'tenant_id' => $classroom->tenant_id,
+                'classroom_id' => $classroom->getKey(),
+                'subject_id' => $data['subject_id'] ?? null,
+                'starts_at' => $start,
+                'ends_at' => $end,
+                'location' => $location,
+                'kind' => $data['kind'],
+                'status' => SessionStatus::Scheduled,
+                'note' => $data['note'] ?? null,
+            ]);
+            $session->teachers()->attach($teacherIds);
+
+            return $session;
+        });
     }
 
     /**
@@ -215,7 +222,7 @@ class SessionPlanner
         }
 
         $location = filled($location) ? trim($location) : null;
-        $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $session->classroom, $session->actualTeacherId(), $location, exceptSessionId: $session->getKey());
+        $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $session->classroom, $session->actualTeacherIds(), $location, exceptSessionId: $session->getKey());
 
         $session->update([
             'original_starts_at' => $session->original_starts_at ?? $session->starts_at,
@@ -251,7 +258,7 @@ class SessionPlanner
             throw new ClassException('این جلسه لغو نشده است.');
         }
 
-        $this->checkClashes(collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]), $session->classroom, $session->actualTeacherId(), $session->location, exceptSessionId: $session->getKey());
+        $this->checkClashes(collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]), $session->classroom, $session->actualTeacherIds(), $session->location, exceptSessionId: $session->getKey());
         $session->update(['status' => SessionStatus::Scheduled, 'cancel_reason' => null]);
 
         return $session;
@@ -282,28 +289,80 @@ class SessionPlanner
     }
 
     /**
-     * Who teaches this session instead of its teacher; null takes it back.
+     * The session's own teachers, each with an optional substitute who
+     * teaches instead of them (ADR 0068). A new teacher must be a member of
+     * the class who isn't an attendee; a substitute anyone in the tenant.
+     * Changing who teaches keeps the schedule from rebuilding the session.
+     *
+     * @param  list<array{teacher_id: mixed, substitute_id?: mixed}>  $rows
      *
      * @throws ClassException
      */
-    public function setSubstitute(ClassSession $session, ?int $userId): ClassSession
+    public function setTeachers(ClassSession $session, array $rows): ClassSession
     {
-        if ($userId !== null) {
+        $current = $session->teachers()->pluck('users.id')->all();
+        $before = $session->load('teachers')->actualTeacherIds();
+        $rows = collect($rows)
+            ->filter(fn (array $row): bool => filled($row['teacher_id'] ?? null))
+            ->map(fn (array $row): array => [
+                'teacher_id' => (int) $row['teacher_id'],
+                'substitute_id' => filled($row['substitute_id'] ?? null) && (int) $row['substitute_id'] !== (int) $row['teacher_id'] ? (int) $row['substitute_id'] : null,
+            ])
+            ->values();
+        $teacherIds = $rows->pluck('teacher_id')->all();
+        $actual = $rows->map(fn (array $row): int => $row['substitute_id'] ?? $row['teacher_id']);
+
+        if (count($teacherIds) !== count(array_unique($teacherIds)) || $actual->count() !== $actual->unique()->count()) {
+            throw new ClassException('هر نفر فقط یک بار در فهرست مدرس‌های جلسه می‌آید.');
+        }
+
+        $this->checkTeachers($session->classroom, array_values(array_diff($teacherIds, $current)));
+
+        $substituteIds = $rows->pluck('substitute_id')->filter()->unique()->values();
+        if ($substituteIds->isNotEmpty()) {
             /** @var Tenant $tenant */
             $tenant = Tenant::query()->findOrFail($session->tenant_id);
 
-            if (! User::query()->inTenant($tenant)->whereKey($userId)->exists()) {
+            if (User::query()->inTenant($tenant)->whereKey($substituteIds)->count() !== $substituteIds->count()) {
                 throw new ClassException('مدرس جایگزین باید عضو همین '.config('sarasystem.tenant_label').' باشد.');
-            }
-
-            if ($session->status === SessionStatus::Scheduled) {
-                $this->checkClashes(collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]), null, $userId, null, exceptSessionId: $session->getKey());
             }
         }
 
-        $session->update(['substitute_teacher_id' => $userId === $session->teacher_id ? null : $userId]);
+        if ($session->status === SessionStatus::Scheduled) {
+            $this->checkClashes(collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]), null, array_values(array_diff($actual->all(), $before)), null, exceptSessionId: $session->getKey());
+        }
 
-        return $session;
+        DB::transaction(function () use ($session, $rows, $teacherIds, $current): void {
+            $session->teachers()->detach();
+            foreach ($rows as $row) {
+                $session->teachers()->attach($row['teacher_id'], ['substitute_id' => $row['substitute_id']]);
+            }
+
+            if (array_diff($teacherIds, $current) !== [] || array_diff($current, $teacherIds) !== []) {
+                $session->update(['is_modified' => true]);
+            }
+        });
+
+        return $session->unsetRelation('teachers')->unsetRelation('substitutes');
+    }
+
+    /**
+     * Who teaches instead of one of the session's teachers; null takes it back.
+     *
+     * @throws ClassException
+     */
+    public function setSubstitute(ClassSession $session, int $teacherId, ?int $substituteId): ClassSession
+    {
+        $rows = $session->teachers()->get()->map(fn (User $teacher): array => [
+            'teacher_id' => $teacher->getKey(),
+            'substitute_id' => $teacher->getKey() === $teacherId ? $substituteId : $teacher->pivot->substitute_id,
+        ]);
+
+        if (! $rows->contains('teacher_id', $teacherId)) {
+            throw new ClassException('این مدرس در این جلسه نیست.');
+        }
+
+        return $this->setTeachers($session, $rows->all());
     }
 
     /**
@@ -383,32 +442,34 @@ class SessionPlanner
             throw new ClassException('روز ماه را انتخاب کنید.');
         }
 
-        $this->checkTeacher($classroom, $schedule->teacher_id);
-
         if ($schedule->teaching_plan_id !== null && ! TeachingPlan::definedPlans()->whereKey($schedule->teaching_plan_id)->exists()) {
             throw new ClassException('طرح درس پیدا نشد.');
         }
     }
 
     /**
+     * @param  list<int>  $teacherIds
+     *
      * @throws ClassException
      */
-    private function checkTeacher(Classroom $classroom, ?int $teacherId): void
+    private function checkTeachers(Classroom $classroom, array $teacherIds): void
     {
-        if ($teacherId !== null && ! array_key_exists($teacherId, $this->teacherOptions($classroom))) {
+        if ($teacherIds !== [] && array_diff($teacherIds, array_keys($this->teacherOptions($classroom))) !== []) {
             throw new ClassException('مدرس باید عضو کلاس (غیر از شرکت‌کنندگان) باشد.');
         }
     }
 
     /**
-     * Refuses meetings that overlap a session of the same class, of the
-     * same teacher (in any tenant) or in the same place of the tenant.
+     * Refuses meetings that overlap a session of the same class, of one of
+     * the teachers (in any tenant, as who actually teaches it) or in the
+     * same place of the tenant.
      *
      * @param  Collection<int, array{start: CarbonImmutable, end: CarbonImmutable}>  $slots
+     * @param  list<int>  $teacherIds
      *
      * @throws ClassException
      */
-    private function checkClashes(Collection $slots, ?Classroom $classroom, ?int $teacherId, ?string $location, ?int $exceptScheduleId = null, ?int $exceptSessionId = null): void
+    private function checkClashes(Collection $slots, ?Classroom $classroom, array $teacherIds, ?string $location, ?int $exceptScheduleId = null, ?int $exceptSessionId = null): void
     {
         if ($slots->isEmpty()) {
             return;
@@ -422,13 +483,14 @@ class SessionPlanner
             ->when($exceptSessionId, fn (Builder $query) => $query->whereKeyNot($exceptSessionId))
             ->where(fn (Builder $query) => $query
                 ->when($classroom, fn (Builder $query) => $query->orWhere('classroom_id', $classroom->getKey()))
-                ->when($teacherId, fn (Builder $query) => $query
-                    ->orWhere('substitute_teacher_id', $teacherId)
-                    ->orWhere(fn (Builder $query) => $query->where('teacher_id', $teacherId)->whereNull('substitute_teacher_id')))
+                ->when($teacherIds !== [], fn (Builder $query) => $query->orWhereExists(fn (QueryBuilder $row) => $row
+                    ->from(ClassSession::TEACHERS_TABLE)
+                    ->whereColumn(ClassSession::TEACHERS_TABLE.'.session_id', 'class_sessions.id')
+                    ->whereIn(DB::raw('coalesce(substitute_id, teacher_id)'), $teacherIds)))
                 ->when($classroom && filled($location), fn (Builder $query) => $query->orWhere(fn (Builder $query) => $query
                     ->where('tenant_id', $classroom->tenant_id)
                     ->whereRaw('lower(location) = ?', [mb_strtolower($location)]))))
-            ->with(['classroom' => fn ($query) => $query->withoutGlobalScope(TenantScope::class)->with('tenant')])
+            ->with(['classroom' => fn ($query) => $query->withoutGlobalScope(TenantScope::class)->with('tenant'), 'teachers'])
             ->get();
 
         foreach ($slots as $slot) {
@@ -438,9 +500,10 @@ class SessionPlanner
                 continue;
             }
 
+            $busyTeacherId = array_values(array_intersect($teacherIds, $clash->actualTeacherIds()))[0] ?? null;
             $reason = match (true) {
                 $classroom !== null && $clash->classroom_id === $classroom->getKey() => 'همین کلاس جلسه‌ی دیگری دارد',
-                $teacherId !== null && $clash->actualTeacherId() === $teacherId => 'مدرس در «'.$this->classTitle($clash, $classroom).'» است',
+                $busyTeacherId !== null => 'مدرس «'.User::query()->find($busyTeacherId)?->name.'» در «'.$this->classTitle($clash, $classroom).'» است',
                 default => 'مکان در اختیار «'.$this->classTitle($clash, $classroom).'» است',
             };
 
@@ -492,6 +555,16 @@ class SessionPlanner
         }
 
         return [$start, $end];
+    }
+
+    /**
+     * Ids picked in a form, without blanks and repeats.
+     *
+     * @return list<int>
+     */
+    private static function ids(mixed $ids): array
+    {
+        return array_values(array_unique(array_map('intval', array_filter((array) $ids, 'filled'))));
     }
 
     /**

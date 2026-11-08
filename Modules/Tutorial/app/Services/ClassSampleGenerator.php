@@ -432,7 +432,7 @@ class ClassSampleGenerator
                 'start_time' => $start->format('H:i'),
                 'end_time' => $start->addMinutes((int) $options['duration'])->format('H:i'),
                 'subject_id' => $lesson['subject']?->getKey(),
-                'teacher_id' => $teacherIds === [] ? null : $teacherIds[$i % count($teacherIds)],
+                'teacher_ids' => $teacherIds === [] ? [] : [$teacherIds[$i % count($teacherIds)]],
                 'teaching_plan_id' => $lesson['plan']?->getKey(),
             ]);
         }
@@ -466,7 +466,8 @@ class ClassSampleGenerator
     {
         $holidays = Holiday::applyingIn($tenant)->whereDate('ends_on', '>=', $from)->whereDate('starts_on', '<=', today())->get();
         $topicIds = $schedule->teaching_plan_id ? TeachingPlan::withoutTenantScope()->findOrFail($schedule->teaching_plan_id)->topics()->orderBy('sort')->pluck('id')->all() : [];
-        $recorderId = $schedule->teacher_id ?? $owner->getKey();
+        $teacherIds = $schedule->teachers()->pluck('users.id')->all();
+        $recorderId = $teacherIds[0] ?? $owner->getKey();
         $topic = 0;
 
         foreach ($this->recurrence->dates($schedule) as $date) {
@@ -479,10 +480,11 @@ class ClassSampleGenerator
 
             $session = ClassSession::withoutTenantScope()->create([
                 'tenant_id' => $classroom->tenant_id, 'classroom_id' => $classroom->getKey(), 'schedule_id' => $schedule->getKey(),
-                'subject_id' => $schedule->subject_id, 'teacher_id' => $schedule->teacher_id,
+                'subject_id' => $schedule->subject_id,
                 'starts_at' => $start, 'ends_at' => $end, 'location' => $schedule->location ?? $classroom->location,
                 'kind' => SessionKind::Regular, 'status' => SessionStatus::Scheduled,
             ]);
+            $session->teachers()->attach($teacherIds);
 
             if ($end->isFuture()) {
                 continue;
@@ -599,7 +601,7 @@ class ClassSampleGenerator
                         'end_time' => $session->ends_at->format('H:i'),
                         'kind' => SessionKind::MakeUp,
                         'subject_id' => $session->subject_id,
-                        'teacher_id' => $session->teacher_id,
+                        'teacher_ids' => $session->teachers()->pluck('users.id')->all(),
                         'note' => 'جبرانی جلسه‌ی لغوشده',
                     ]);
 

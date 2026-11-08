@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\URL;
 use Modules\Class\Database\Factories\ClassSessionFactory;
 use Modules\Class\Enums\SessionKind;
@@ -23,12 +25,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * One meeting of a class (ADR 0023): built from a schedule, or added by
  * hand as a make-up or extra session. Taking its attendance or recording
  * what it covered (topics, summary, homework, materials) marks it held
- * (ADR 0024, ADR 0025). A session changed by hand (moved,
- * cancelled, a substitute teacher, a note) is no longer rebuilt by its
- * schedule; past sessions never are.
+ * (ADR 0024, ADR 0025). It has any number of teachers, each of whom
+ * may be replaced by a substitute (ADR 0068). A session changed by hand
+ * (moved, cancelled, its own teachers, a substitute, a note) is no longer
+ * rebuilt by its schedule; past sessions never are.
  */
 #[Fillable([
-    'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'teacher_id', 'substitute_teacher_id', 'starts_at', 'ends_at', 'location',
+    'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'starts_at', 'ends_at', 'location',
     'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note',
     'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'homework_max_score', 'content_recorded_by_id', 'content_recorded_at',
 ])]
@@ -36,6 +39,9 @@ class ClassSession extends Model implements HasMedia
 {
     /** @use HasFactory<ClassSessionFactory> */
     use BelongsToTenant, HasFactory, InteractsWithMedia;
+
+    /** Its teachers, each with an optional substitute (ADR 0068). */
+    public const TEACHERS_TABLE = 'class_session_teachers';
 
     /** Files handed out in the session or with its homework (ADR 0025). */
     public const MATERIALS_COLLECTION = 'materials';
@@ -65,16 +71,28 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
-     * Taught by the user: as the substitute, or as the teacher when there is
-     * no substitute (actualTeacherId()).
+     * Taught by the user: as a substitute, or as a teacher nobody replaces
+     * (actualTeacherIds()).
      *
      * @param  Builder<ClassSession>  $query
      */
     public function scopeTaughtBy(Builder $query, User $user): void
     {
-        $query->where(fn (Builder $query) => $query
-            ->where('substitute_teacher_id', $user->getKey())
-            ->orWhere(fn (Builder $query) => $query->whereNull('substitute_teacher_id')->where('teacher_id', $user->getKey())));
+        $query->whereExists(fn (QueryBuilder $row) => $row->from(self::TEACHERS_TABLE)
+            ->whereColumn(self::TEACHERS_TABLE.'.session_id', 'class_sessions.id')
+            ->whereRaw('coalesce(substitute_id, teacher_id) = ?', [$user->getKey()]));
+    }
+
+    /**
+     * One of its teachers or substitutes, replaced or not.
+     *
+     * @param  Builder<ClassSession>  $query
+     */
+    public function scopeWithTeacher(Builder $query, User $user): void
+    {
+        $query->whereExists(fn (QueryBuilder $row) => $row->from(self::TEACHERS_TABLE)
+            ->whereColumn(self::TEACHERS_TABLE.'.session_id', 'class_sessions.id')
+            ->where(fn (QueryBuilder $row) => $row->where('teacher_id', $user->getKey())->orWhere('substitute_id', $user->getKey())));
     }
 
     /**
@@ -109,7 +127,7 @@ class ClassSession extends Model implements HasMedia
     public function isUntouched(): bool
     {
         return $this->kind === SessionKind::Regular && ! $this->is_modified && $this->status === SessionStatus::Scheduled
-            && $this->substitute_teacher_id === null && blank($this->note) && $this->content_recorded_at === null;
+            && ! $this->hasSubstitute() && blank($this->note) && $this->content_recorded_at === null;
     }
 
     public function hasContent(): bool
@@ -152,11 +170,53 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
-     * Who teaches it: the substitute, if any.
+     * Who teaches it: each teacher, or their substitute.
+     *
+     * @return list<int>
      */
-    public function actualTeacherId(): ?int
+    public function actualTeacherIds(): array
     {
-        return $this->substitute_teacher_id ?? $this->teacher_id;
+        return $this->teachers
+            ->map(fn (User $teacher): int => $teacher->pivot->substitute_id ?? $teacher->getKey())
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Its teachers and the substitutes standing in for them, in order.
+     *
+     * @return list<array{teacher: User, substitute: User|null}>
+     */
+    public function teaching(): array
+    {
+        return $this->teachers
+            ->map(fn (User $teacher): array => [
+                'teacher' => $teacher,
+                'substitute' => $teacher->pivot->substitute_id === null
+                    ? null
+                    : $this->substitutes->first(fn (User $substitute): bool => $substitute->pivot->teacher_id === $teacher->getKey()),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * E.g. «مریم احمدی، سارا رضایی (جایگزین علی کریمی)»; null without teachers.
+     */
+    public function teacherNames(): ?string
+    {
+        $names = array_map(
+            fn (array $row): string => $row['substitute'] ? $row['substitute']->name.' (جایگزین '.$row['teacher']->name.')' : $row['teacher']->name,
+            $this->teaching(),
+        );
+
+        return $names === [] ? null : implode('، ', $names);
+    }
+
+    public function hasSubstitute(): bool
+    {
+        return $this->teachers->contains(fn (User $teacher): bool => $teacher->pivot->substitute_id !== null);
     }
 
     public function wasMoved(): bool
@@ -191,19 +251,26 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * Pivot: `substitute_id`, who teaches instead of them (ADR 0068).
+     *
+     * @return BelongsToMany<User, $this>
      */
-    public function teacher(): BelongsTo
+    public function teachers(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsToMany(User::class, self::TEACHERS_TABLE, 'session_id', 'teacher_id')
+            ->withPivot(['id', 'substitute_id'])
+            ->orderBy(self::TEACHERS_TABLE.'.id');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * Pivot: `teacher_id`, whom they stand in for.
+     *
+     * @return BelongsToMany<User, $this>
      */
-    public function substituteTeacher(): BelongsTo
+    public function substitutes(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'substitute_teacher_id');
+        return $this->belongsToMany(User::class, self::TEACHERS_TABLE, 'session_id', 'substitute_id')
+            ->withPivot('teacher_id');
     }
 
     /**
