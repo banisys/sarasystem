@@ -233,10 +233,13 @@ html:not(.dark) .fi-modal > .fi-modal-close-overlay {
 }
 
 /* Keep the last touched record visible; an inset outline avoids changing row
-   sizes and stays inside the table's scrolling container. */
+   sizes and stays inside the table's scrolling container. Only the background
+   transitions: Filament's transition-colors would fade the new outline from
+   the row's text colour. */
 .fi-ta-row[data-clicked-row] {
     outline: 1px dashed var(--gray-400);
     outline-offset: -2px;
+    transition-property: background-color;
 }
 
 html.dark .fi-ta-row[data-clicked-row] {
