@@ -4,7 +4,8 @@ namespace Tests\Feature\Auth;
 
 use App\Auth\Impersonation;
 use App\Auth\RecentCodeLogin;
-use App\Filament\Resources\Users\Pages\EditUser;
+use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Filament\Resources\Users\UserResource;
 use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
@@ -40,17 +41,18 @@ class ImpersonationTest extends TestCase
         $this->grantRole($this->teacher, $this->tenant, 'teacher');
     }
 
-    public function test_a_super_admin_logs_in_as_another_user_from_the_edit_page(): void
+    public function test_a_super_admin_logs_in_as_another_user_from_the_users_list(): void
     {
         $this->actingInPanel($this->admin, $this->tenant);
         session([ResolveCurrentTenant::SESSION_KEY => $this->tenant->getKey(), RecentCodeLogin::SESSION_KEY => now()->getTimestamp()]);
 
-        Livewire::test(EditUser::class, ['record' => $this->teacher->getRouteKey()])
-            ->callAction(TestAction::make('impersonate'))
+        Livewire::test(ListUsers::class)
+            ->callAction(TestAction::make('impersonate')->table($this->teacher))
             ->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($this->teacher);
         $this->assertSame($this->admin->getKey(), session(Impersonation::SESSION_KEY));
+        $this->assertSame(UserResource::getUrl('index', tenant: $this->tenant), session(Impersonation::RETURN_URL_SESSION_KEY));
         // The admin's tenant choice and password-reset window do not carry over.
         $this->assertNull(session(ResolveCurrentTenant::SESSION_KEY));
         $this->assertNull(session(RecentCodeLogin::SESSION_KEY));
@@ -63,8 +65,8 @@ class ImpersonationTest extends TestCase
         $this->makeStaff($this->teacher, $this->tenant);
         $this->actingInPanel($this->admin, $this->tenant);
 
-        Livewire::test(EditUser::class, ['record' => $this->teacher->getRouteKey()])
-            ->callAction(TestAction::make('impersonate'))
+        Livewire::test(ListUsers::class)
+            ->callAction(TestAction::make('impersonate')->table($this->teacher))
             ->assertRedirect(url('cpadmin'));
     }
 
@@ -123,8 +125,8 @@ class ImpersonationTest extends TestCase
         $this->grantRole($manager, $this->tenant, 'manager');
         $this->actingInPanel($manager, $this->tenant);
 
-        Livewire::test(EditUser::class, ['record' => $this->teacher->getRouteKey()])
-            ->assertActionHidden(TestAction::make('impersonate'));
+        Livewire::test(ListUsers::class)
+            ->assertActionHidden(TestAction::make('impersonate')->table($this->teacher));
 
         $this->expectExceptionObject(new HttpException(403));
         Impersonation::start($manager, $this->teacher);

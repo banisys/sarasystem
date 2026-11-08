@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Auth\Impersonation;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
@@ -9,10 +10,12 @@ use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Component;
 
 class UsersTable
 {
@@ -55,6 +58,7 @@ class UsersTable
             ])
             ->recordActions([
                 EditAction::make(),
+                static::impersonateAction(),
                 static::removeFromTenantAction(),
                 // Deleting is done here, not on the edit page (ADR 0006).
                 DeleteAction::make()
@@ -62,6 +66,28 @@ class UsersTable
                     ->modalDescription('حساب کاربری از سامانه و از همه‌ی '.config('sarasystem.tenant_plural_label').' حذف می‌شود. برای برداشتن فقط از این '.config('sarasystem.tenant_label').' «حذف از '.config('sarasystem.tenant_label').'» را بزنید.')
                     ->visible(fn (User $record): bool => $record->isNot(auth()->user()) && UserResource::canEdit($record)),
             ]);
+    }
+
+    /**
+     * Logs a super admin in as the user (ADR 0008); «بازگشت به حساب خودم»
+     * brings them back to this list.
+     */
+    public static function impersonateAction(): Action
+    {
+        return Action::make('impersonate')
+            ->label('ورود با این کاربر')
+            ->icon(Heroicon::OutlinedArrowRightEndOnRectangle)
+            ->requiresConfirmation()
+            ->modalDescription('تا وقتی «بازگشت به حساب خودم» را نزنید، همه‌ی کارها به نام این کاربر انجام می‌شود.')
+            ->visible(fn (User $record): bool => Impersonation::canImpersonate(auth()->user(), $record))
+            ->action(function (User $record, Component $livewire): void {
+                Impersonation::start(auth()->user(), $record, UserResource::getUrl('index'));
+
+                // The panel root picks a tenant the user can open; the
+                // current tenant may not be one of them.
+                $panel = Filament::getPanel('admin');
+                $livewire->redirect($record->canAccessPanel($panel) ? url($panel->getPath()) : route('dashboard'));
+            });
     }
 
     /**
