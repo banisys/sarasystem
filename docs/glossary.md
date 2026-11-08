@@ -97,7 +97,8 @@ Domain terms used in this project. Include the Persian term when the UI or users
 ## Classes (`Class` module, [ADR 0022](decisions/0022-classes.md))
 | Term | Persian | Meaning |
 |---|---|---|
-| Class | کلاس | A group of people of one tenant who meet on a schedule: «هفتم الف», «زبان انگلیسی - مقدماتی ۲», «دوره‌ی ایمنی کارگاه» (`Classroom`). It is in person, online (a meeting link) or blended, and may have a capacity. |
+| Class | کلاس | A group of people of one tenant who meet on a schedule: «هفتم الف», «زبان انگلیسی - مقدماتی ۲», «دوره‌ی ایمنی کارگاه» (`Classroom`). It is in person, online or blended, and may have a capacity. |
+| Online platform / online room | بستر کلاس آنلاین / اتاق کلاس آنلاین | Where an online class meets: a link (Google Meet, Skyroom, …) or a server the system talks to (Adobe Connect, «سرور کلاس آنلاین», `OnlineServer`). A class's room (`ClassOnlineRoom`) is in effect from a day on, so a class can move to another platform mid-term ([ADR 0073](decisions/0073-online-class-platforms.md)). |
 | Sub-class | زیرکلاس | A class under another class (one level), e.g. a lab group; its attendees come from the parent class. |
 | Term | دوره‌ی آموزشی | A teaching period of the organization (سال تحصیلی، ترم، دوره), defined in the head office; classes run in one. A school's academic year is a term. |
 | Class role | نقش کلاس | What a person is in a class (فراگیر، مدرس، ناظر، پشتیبان…), separate from system roles; its flags say whether its members are attendees, take attendance or record session content. |

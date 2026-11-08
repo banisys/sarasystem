@@ -55,7 +55,8 @@ class MyClassesTest extends TestCase
         $this->west->makeCurrent();
         $this->roleWithPermissions('member', []);
 
-        $this->classroom = Classroom::factory()->for($this->west)->create(['title' => 'هفتم الف', 'mode' => 'online', 'meeting_url' => 'https://meet.example.com/7a']);
+        $this->classroom = Classroom::factory()->for($this->west)->create(['title' => 'هفتم الف', 'mode' => 'online']);
+        $this->classroom->onlineRooms()->create(['platform' => 'link', 'meeting_url' => 'https://meet.example.com/7a']);
         $members = app(ClassMembers::class);
         $members->add($this->classroom, ClassRole::factory()->for($this->primary)->teacher()->create(), [($this->teacher = $this->person())->id]);
         $members->add($this->classroom, ClassRole::factory()->for($this->primary)->attendee()->create(), [($this->student = $this->person())->id], CarbonImmutable::parse('2026-10-01'));
@@ -80,7 +81,7 @@ class MyClassesTest extends TestCase
             ->where('calendar.days.0.date', '2026-10-31')
             ->where('calendar.days.0.sessions.0.class', 'هفتم الف')
             ->where('calendar.days.0.sessions.0.time', '08:00–09:30')
-            ->where('calendar.days.0.sessions.0.meeting_url', 'https://meet.example.com/7a')
+            ->where('calendar.days.0.sessions.0.online_platform', 'لینک')
             ->where('calendar.days.1.sessions', [])
             ->where('calendar.days.2.sessions.0.class', 'هفتم الف')
             ->where('calendar.days.4.holiday', 'اردو')

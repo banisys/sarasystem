@@ -22,7 +22,7 @@ use Modules\Class\Enums\ClassMode;
  * School module adds them.
  */
 #[Fillable([
-    'tenant_id', 'term_id', 'parent_id', 'title', 'code', 'description', 'mode', 'location', 'meeting_url', 'capacity',
+    'tenant_id', 'term_id', 'parent_id', 'title', 'code', 'description', 'mode', 'location', 'capacity',
     'starts_on', 'ends_on', 'is_active',
 ])]
 class Classroom extends Model
@@ -106,6 +106,16 @@ class Classroom extends Model
     public function sessions(): HasMany
     {
         return $this->hasMany(ClassSession::class);
+    }
+
+    /**
+     * Where it meets online, each from a day on (ADR 0073).
+     *
+     * @return HasMany<ClassOnlineRoom, $this>
+     */
+    public function onlineRooms(): HasMany
+    {
+        return $this->hasMany(ClassOnlineRoom::class);
     }
 
     protected function casts(): array

@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\Frequency;
+use Modules\Class\Enums\OnlinePlatform;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\Attendance;
@@ -218,7 +219,7 @@ class ClassSampleGenerator
         $several = $options['classes'] > 1;
         $code = $several ? $batch->code.'-'.($number + 1) : $batch->code;
 
-        return Classroom::withoutTenantScope()->create([
+        $classroom = Classroom::withoutTenantScope()->create([
             'tenant_id' => $tenant->getKey(),
             'term_id' => $term->getKey(),
             'title' => $several ? $batch->title.' '.self::CLASS_LETTERS[$number] : $batch->title,
@@ -226,12 +227,29 @@ class ClassSampleGenerator
             'description' => 'داده‌ی نمونه ('.$batch->code.') برای آشنایی با سامانه؛ با حذف این دسته در «داده‌ی نمونه» پاک می‌شود.',
             'mode' => $mode,
             'location' => $mode->meetsInPerson() ? 'اتاق '.$code : null,
-            'meeting_url' => $mode === ClassMode::InPerson ? null : 'https://meet.example.com/'.Str::lower($code),
             'capacity' => filled($options['capacity']) ? (int) $options['capacity'] : null,
             'starts_on' => $from,
             'ends_on' => $to,
             'is_active' => true,
         ]);
+
+        $this->addMeetingLink($classroom);
+
+        return $classroom;
+    }
+
+    /**
+     * An online class meets at a sample link (ADR 0073).
+     */
+    private function addMeetingLink(Classroom $classroom): void
+    {
+        if ($classroom->mode->meetsOnline()) {
+            $classroom->onlineRooms()->create([
+                'tenant_id' => $classroom->tenant_id,
+                'platform' => OnlinePlatform::Link,
+                'meeting_url' => 'https://meet.example.com/'.Str::lower($classroom->code),
+            ]);
+        }
     }
 
     /**
@@ -367,11 +385,12 @@ class ClassSampleGenerator
 
         for ($i = 1; $i <= $count; $i++) {
             $child = Classroom::withoutTenantScope()->create([
-                ...$classroom->only(['tenant_id', 'term_id', 'mode', 'location', 'meeting_url', 'starts_on', 'ends_on', 'is_active']),
+                ...$classroom->only(['tenant_id', 'term_id', 'mode', 'location', 'starts_on', 'ends_on', 'is_active']),
                 'parent_id' => $classroom->getKey(),
                 'title' => $classroom->title.' - گروه '.$i,
                 'code' => $classroom->code.'-'.$i,
             ]);
+            $this->addMeetingLink($child);
 
             if (($group = $groups[$i - 1] ?? []) !== [] && $people['attendeeRole'] !== null) {
                 $this->members->add($child, $people['attendeeRole'], $group, $joinedOn);

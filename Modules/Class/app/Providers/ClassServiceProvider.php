@@ -57,7 +57,7 @@ class ClassServiceProvider extends ModuleServiceProvider
 
         // The screens' permissions for the default roles (ADR 0039).
         app(DefaultRoles::class)->grant([
-            DefaultRoles::ORG_ADMIN => [...DefaultRoles::manage('Term'), ...DefaultRoles::manage('ClassRole', reorder: true), ...DefaultRoles::manage('Subject', reorder: true), ...DefaultRoles::manage('TeachingPlan')],
+            DefaultRoles::ORG_ADMIN => [...DefaultRoles::manage('Term'), ...DefaultRoles::manage('ClassRole', reorder: true), ...DefaultRoles::manage('Subject', reorder: true), ...DefaultRoles::manage('TeachingPlan'), ...DefaultRoles::manage('OnlineServer')],
             DefaultRoles::EDUCATION_OFFICER => [...DefaultRoles::manage('Classroom'), ...DefaultRoles::manage('ClassSession'), ...DefaultRoles::manage('Holiday')],
         ]);
         app(DefaultRoles::class)->installing(fn () => app(DefaultClassRoles::class)->install());

@@ -21,6 +21,12 @@ return [
         'locks_after_days' => (int) env('CLASS_CONTENT_LOCKS_AFTER_DAYS', 7),
     ],
 
+    // Online classes (ADR 0073): attendees enter a session's room this many
+    // minutes before it starts, until it ends; its staff at any time.
+    'online' => [
+        'opens_minutes_before' => (int) env('CLASS_ONLINE_OPENS_MINUTES_BEFORE', 15),
+    ],
+
     // Handing in homework (ADR 0030).
     'homework' => [
         // What a homework is scored out of unless the teacher says otherwise.

@@ -196,7 +196,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                         <PanelIcon name="pin" class="mt-0.5 size-5 shrink-0 text-violet-600" />
                         <div class="min-w-0">
                             <dt class="text-xs text-gray-500">مکان</dt>
-                            <dd class="text-sm font-medium text-gray-900">{{ session.location || (session.meeting_url ? 'آنلاین' : '—') }}</dd>
+                            <dd class="text-sm font-medium text-gray-900">{{ session.location || (session.online_platform ? `آنلاین (${session.online_platform})` : '—') }}</dd>
                         </div>
                     </div>
                     <div class="flex items-start gap-3 bg-white p-4">
@@ -209,7 +209,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 </dl>
 
                 <div
-                    v-if="session.cancel_reason || myAttendance || (session.meeting_url && session.status !== 'cancelled')"
+                    v-if="session.cancel_reason || myAttendance || session.join_url"
                     class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 p-4"
                 >
                     <div class="space-y-1 text-sm">
@@ -222,8 +222,8 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                         </p>
                     </div>
                     <a
-                        v-if="session.meeting_url && session.status !== 'cancelled'"
-                        :href="session.meeting_url"
+                        v-if="session.join_url"
+                        :href="session.join_url"
                         target="_blank"
                         rel="noopener"
                         :class="primaryButton"

@@ -140,7 +140,7 @@ function at(date, view = props.calendar.view) {
                         <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
                             <span>نقش: {{ item.roles }}</span>
                             <span>{{ item.mode }}</span>
-                            <a v-if="item.meeting_url" :href="item.meeting_url" target="_blank" rel="noopener" class="text-violet-700 hover:underline">ورود به کلاس آنلاین</a>
+                            <span v-if="item.online_platform">کلاس آنلاین: {{ item.online_platform }}</span>
                         </div>
                     </div>
                 </div>

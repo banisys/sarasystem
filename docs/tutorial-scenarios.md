@@ -230,7 +230,7 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 | **B. دوره‌ی آموزشی** |||||
 | 5 | Term «دوره‌های آموزشی پاییز» (a training round) | training manager | «کلاس‌ها → دوره‌های آموزشی» | term |
 | 6 | A class role «ناظر دوره» that takes attendance, limited to «کارشناس آموزش» | training manager | «کلاس‌ها → نقش‌های کلاس» | class role with the flags |
-| 7 | Class «امنیت اطلاعات - گروه ۱» in «واحد فروش», mode «آنلاین» with a meeting link, capacity 10 | training manager | «کلاس‌ها» | online classroom |
+| 7 | Class «امنیت اطلاعات - گروه ۱» in «واحد فروش», mode «آنلاین» with «بستر کلاس آنلاین» «لینک» and a meeting link (ADR 0073), capacity 10 | training manager | «کلاس‌ها» | online classroom |
 | 8 | Add the 5 trainees («فراگیر»), the trainer and yourself as «ناظر دوره» | training manager | tab «اعضا» | members by role |
 | 9 | Daily schedule for three days with the trainer | training manager | tab «برنامه» | 3 sessions |
 | 10 | As the trainer: open the session in «کلاس‌های من», take attendance (one «با تأخیر» 10 minutes), record content and a file | trainer | `/my-classes` | attendance + content |

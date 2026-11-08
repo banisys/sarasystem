@@ -196,7 +196,7 @@ class SampleDataTest extends TestCase
         $batch = SampleBatch::query()->sole();
         $classroom = $batch->made(Classroom::class)->sole();
         $this->assertNull($classroom->location);
-        $this->assertNotNull($classroom->meeting_url);
+        $this->assertNotNull($classroom->onlineRooms()->withoutGlobalScopes()->sole()->meeting_url);
         $this->assertSame(0, $batch->made(Attendance::class)->count());
         $this->assertSame(0, $batch->made(Guardianship::class)->count());
         $this->assertGreaterThan(0, $batch->made(ClassSession::class)->count());

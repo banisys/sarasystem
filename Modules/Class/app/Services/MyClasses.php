@@ -12,6 +12,7 @@ use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
 use Modules\Class\Models\HomeworkSubmission;
+use Modules\Class\Services\Online\OnlineRooms;
 
 /**
  * A person's side of classes in the user panel (ADR 0026): the sessions of
@@ -75,7 +76,7 @@ class MyClasses
 
         $sessions = $this->sessions($user)
             ->whereBetween('starts_at', [$first->startOfDay(), $last->endOfDay()])
-            ->with(['classroom', 'subject', 'teachers', 'substitutes'])
+            ->with(['classroom.onlineRooms.server', 'subject', 'teachers', 'substitutes'])
             ->orderBy('starts_at')
             ->get();
         $attendance = Attendance::query()->where('user_id', $user->getKey())->whereIn('session_id', $sessions->modelKeys())->get()->keyBy('session_id');
@@ -121,7 +122,9 @@ class MyClasses
             'subject' => $session->subject?->title,
             'time' => $session->starts_at->format('H:i').'–'.$session->ends_at->format('H:i'),
             'location' => $session->location,
-            'meeting_url' => $session->classroom->mode->meetsOnline() ? $session->classroom->meeting_url : null,
+            // The platform it meets on online (ADR 0073); the way in is
+            // added for the person themselves (MyClassController).
+            'online_platform' => app(OnlineRooms::class)->forSession($session)?->platformName(),
             'teacher' => $session->teacherNames(),
             'status' => $session->status->value,
             'status_label' => $session->status->getLabel(),

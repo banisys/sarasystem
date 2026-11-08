@@ -29,7 +29,7 @@ Later steps get their own ADRs.
 - **Terms:** an academic year built in (LMS) / **a generic term** / none. A school's academic year, an institute's term and a company's training round are all terms. Classes without a term are allowed for one-off trainings.
 - **Who defines terms and class roles:** each tenant / **the primary tenant for the whole organization**. This is the same as document and contract types (ADR 0019, ADR 0020): one list for every branch, so reports across branches agree.
 - **Holidays:** organization-wide only / per tenant only / **both**. The primary tenant's holidays apply to every tenant (Nowruz). A tenant adds its own (a branch trip).
-- **Online classes:** an Adobe Connect integration (LMS) / **only a meeting link for now**. The user chose the link. A provider integration can come later as a driver.
+- **Online classes:** an Adobe Connect integration (LMS) / **only a meeting link for now**. The user chose the link. A provider integration can come later as a driver. *(2026-11-08: platforms and Adobe Connect added, the link became a room, [ADR 0073](0073-online-class-platforms.md).)*
 - **Sub-classes:** none / **one level, whose attendees must be attendees of the parent class**. For example, a lab group of a school class.
 
 ## Decision

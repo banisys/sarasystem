@@ -2,19 +2,26 @@
 
 namespace Modules\Class\Filament\Resources\Classrooms\Schemas;
 
+use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\ClassMode;
+use Modules\Class\Enums\OnlinePlatform;
+use Modules\Class\Models\ClassOnlineRoom;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\Term;
+use Modules\Class\Services\ClassException;
+use Modules\Class\Services\Online\OnlineRooms;
 use Modules\Class\Support\ClassroomExtensions;
 
 /**
@@ -72,12 +79,50 @@ class ClassroomForm
                     ->placeholder('مثلاً: ساختمان ۲، کلاس ۱۰۴')
                     ->maxLength(255)
                     ->visible(fn (Get $get): bool => self::mode($get)?->meetsInPerson() ?? true),
+                // Where it meets online, each platform from a day on (ADR 0073).
+                Select::make('online_choice')
+                    ->label('بستر کلاس آنلاین')
+                    ->helperText('سرورها در «کلاس‌ها ← سرورهای کلاس آنلاین» تعریف می‌شوند.')
+                    ->options(fn (?Classroom $record): array => OnlineRooms::choices(self::currentRoom($record)?->choice()))
+                    ->default(OnlinePlatform::Link->value)
+                    ->selectablePlaceholder(false)
+                    ->required()
+                    ->live()
+                    ->dehydrated(false)
+                    ->visible(fn (Get $get): bool => self::mode($get)?->meetsOnline() ?? false)
+                    ->loadStateFromRelationshipsUsing(fn (Select $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->choice() ?? OnlinePlatform::Link->value))
+                    ->saveRelationshipsUsing(function (Classroom $record, mixed $state, Get $get): void {
+                        try {
+                            app(OnlineRooms::class)->change(
+                                $record,
+                                (string) $state,
+                                $get('meeting_url'),
+                                filled($get('online_from')) ? CarbonImmutable::parse($get('online_from')) : null,
+                                auth()->user(),
+                            );
+                        } catch (ClassException $exception) {
+                            Notification::make()->title($exception->getMessage())->danger()->send();
+
+                            throw new Halt;
+                        }
+                    }),
                 TextInput::make('meeting_url')
                     ->label('لینک کلاس آنلاین')
+                    ->placeholder('https://meet.google.com/… یا نشانی Skyroom')
                     ->url()
                     ->rule('url:http,https')
                     ->maxLength(500)
-                    ->visible(fn (Get $get): bool => self::mode($get)?->meetsOnline() ?? false),
+                    ->dehydrated(false)
+                    ->visible(fn (Get $get): bool => (self::mode($get)?->meetsOnline() ?? false) && $get('online_choice') === OnlinePlatform::Link->value)
+                    ->loadStateFromRelationshipsUsing(fn (TextInput $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->meeting_url)),
+                DatePicker::make('online_from')
+                    ->label('بستر تازه از تاریخ')
+                    ->helperText('جلسه‌های پیش از این روز در بستر قبلی می‌مانند؛ از این روز به بعد در بستر تازه برگزار می‌شوند.')
+                    ->jalali()
+                    ->default(fn (): string => today()->toDateString())
+                    ->required(fn (Get $get, ?Classroom $record): bool => self::switchesPlatform($get, $record))
+                    ->dehydrated(false)
+                    ->visible(fn (Get $get, ?Classroom $record): bool => self::switchesPlatform($get, $record)),
                 DatePicker::make('starts_on')
                     ->label('شروع')
                     ->jalali(),
@@ -96,6 +141,28 @@ class ClassroomForm
                 ...ClassroomExtensions::components('form'),
             ])
             ->columns(2);
+    }
+
+    /**
+     * The room in effect today, or the last one when none has started.
+     */
+    private static function currentRoom(?Classroom $record): ?ClassOnlineRoom
+    {
+        if ($record === null) {
+            return null;
+        }
+
+        return app(OnlineRooms::class)->on($record, today()) ?? $record->onlineRooms->sortBy(fn (ClassOnlineRoom $room) => $room->starts_on?->timestamp ?? 0)->last();
+    }
+
+    /**
+     * An existing class moving to another platform: ask from when.
+     */
+    private static function switchesPlatform(Get $get, ?Classroom $record): bool
+    {
+        $current = self::currentRoom($record);
+
+        return $current !== null && (self::mode($get)?->meetsOnline() ?? false) && $get('online_choice') !== $current->choice();
     }
 
     private static function mode(Get $get): ?ClassMode

@@ -2,12 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Class\Http\Controllers\MyClassController;
+use Modules\Class\Http\Controllers\OnlineSessionController;
 use Modules\Class\Http\Controllers\SessionMaterialController;
 
 // Signed, short-lived links to sessions' materials (docs/decisions/0025-teaching-plans-and-session-content.md).
 Route::middleware(['auth', 'signed'])->group(function () {
     Route::get('/class-materials/{media}', SessionMaterialController::class)->name('class.materials');
 });
+
+// Entering a session's online room, from either panel (docs/decisions/0073-online-class-platforms.md).
+Route::middleware(['auth', 'auth.session'])->get('/online-classes/sessions/{session}', OnlineSessionController::class)
+    ->whereNumber('session')
+    ->name('class.online.enter');
 
 // «کلاس‌های من» in the user panel, inside the current tenant (docs/decisions/0026-my-classes.md).
 Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('my-classes')->name('my-classes.')->group(function () {

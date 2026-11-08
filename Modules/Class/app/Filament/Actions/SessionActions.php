@@ -43,6 +43,8 @@ use Modules\Class\Models\PlanTopic;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\HomeworkBook;
+use Modules\Class\Services\Online\OnlineEntry;
+use Modules\Class\Services\Online\OnlineRooms;
 use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionCalendar;
 use Modules\Class\Services\SessionContentBook;
@@ -205,12 +207,16 @@ class SessionActions
                         ->label('نوع')
                         ->badge()
                         ->color('gray'),
-                    TextEntry::make('meeting_url')
-                        ->label('لینک جلسه')
-                        ->state(fn (ClassSession $record): ?string => $record->classroom?->mode->meetsOnline() ? $record->classroom->meeting_url : null)
-                        ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true)
-                        ->color('primary')
-                        ->visible(fn (ClassSession $record): bool => (bool) $record->classroom?->mode->meetsOnline() && filled($record->classroom->meeting_url))
+                    // The platform the session meets on, and the way in for
+                    // whoever may enter (ADR 0073).
+                    TextEntry::make('online_room')
+                        ->label('کلاس آنلاین')
+                        ->state(fn (ClassSession $record): ?string => app(OnlineRooms::class)->forSession($record)?->platformName())
+                        ->suffix(fn (ClassSession $record): ?string => self::canEnterOnline($record) ? ' — ورود به کلاس آنلاین' : null)
+                        ->url(fn (ClassSession $record): ?string => self::canEnterOnline($record) ? route('class.online.enter', $record) : null, shouldOpenInNewTab: true)
+                        ->icon('heroicon-m-video-camera')
+                        ->color(fn (ClassSession $record): string => self::canEnterOnline($record) ? 'primary' : 'gray')
+                        ->visible(fn (ClassSession $record): bool => app(OnlineRooms::class)->forSession($record) !== null)
                         ->columnSpanFull(),
                 ]),
             Grid::make(['default' => 1, 'lg' => 3])->schema([
@@ -330,6 +336,16 @@ class SessionActions
      * E.g. «سه‌شنبه ۱۴۰۵/۰۸/۱۲ · 08:00–09:30». The hours are isolated as
      * left-to-right, or a right-to-left page shows them as 09:30–08:00.
      */
+    /**
+     * The signed-in person may enter the session's online room (ADR 0073).
+     */
+    public static function canEnterOnline(ClassSession $session): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User && app(OnlineEntry::class)->offers($user, $session);
+    }
+
     public static function when(ClassSession $session, bool $original = false): string
     {
         $start = $original ? $session->original_starts_at : $session->starts_at;

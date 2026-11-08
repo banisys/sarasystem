@@ -24,6 +24,8 @@ use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\HomeworkBook;
 use Modules\Class\Services\MyClasses;
+use Modules\Class\Services\Online\OnlineEntry;
+use Modules\Class\Services\Online\OnlineRooms;
 use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionContentBook;
 
@@ -51,7 +53,7 @@ class MyClassController extends Controller
                 'title' => $members->first()->classroom->title,
                 'roles' => $members->pluck('classRole.title')->join('، '),
                 'mode' => $members->first()->classroom->mode->getLabel(),
-                'meeting_url' => $members->first()->classroom->mode->meetsOnline() ? $members->first()->classroom->meeting_url : null,
+                'online_platform' => $members->first()->classroom->mode->meetsOnline() ? app(OnlineRooms::class)->on($members->first()->classroom, today())?->platformName() : null,
             ])
             ->values();
 
@@ -62,7 +64,7 @@ class MyClassController extends Controller
         ]);
     }
 
-    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework): Response
+    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry): Response
     {
         $user = $this->person($request);
         abort_unless($myClasses->canSee($user, $session), 404);
@@ -78,6 +80,8 @@ class MyClassController extends Controller
         return Inertia::render('Class::Session', [
             'session' => [
                 ...$myClasses->sessionCard($session),
+                // Only for the person themselves, not a guardian (ADR 0073).
+                'join_url' => $isOwn && $entry->offers($user, $session) ? route('class.online.enter', $session) : null,
                 'when' => SessionActions::when($session),
                 'moved_from' => $session->wasMoved() ? SessionActions::when($session, original: true) : null,
                 'cancel_reason' => $session->cancel_reason,

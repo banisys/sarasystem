@@ -79,6 +79,9 @@ class ClassAdminTest extends TestCase
         $this->assertSame($term->id, $classroom->term_id);
         $this->assertSame(ClassMode::Online, $classroom->mode);
         $this->assertSame('2026-09-23', $classroom->starts_on->toDateString());
+        $room = $classroom->onlineRooms()->sole();
+        $this->assertSame('https://meet.example.com/7a', $room->meeting_url);
+        $this->assertNull($room->starts_on);
     }
 
     public function test_the_meeting_link_must_be_a_web_address(): void

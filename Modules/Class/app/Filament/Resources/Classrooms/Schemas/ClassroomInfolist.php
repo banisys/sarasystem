@@ -6,6 +6,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Services\Online\OnlineRooms;
 use Modules\Class\Support\ClassroomExtensions;
 
 class ClassroomInfolist
@@ -38,7 +39,13 @@ class ClassroomInfolist
                         TextEntry::make('starts_on')->label('تاریخ شروع')->jalaliDate()->placeholder('—'),
                         TextEntry::make('ends_on')->label('تاریخ پایان')->jalaliDate()->placeholder('—'),
                         TextEntry::make('location')->label('مکان')->placeholder('—'),
-                        TextEntry::make('meeting_url')->label('لینک کلاس آنلاین')->url(fn (Classroom $record): ?string => $record->meeting_url, shouldOpenInNewTab: true)->color('primary')->placeholder('—'),
+                        // Each platform from its day on (ADR 0073).
+                        TextEntry::make('online_rooms')
+                            ->label('کلاس آنلاین')
+                            ->state(fn (Classroom $record): array => $record->mode->meetsOnline() ? app(OnlineRooms::class)->history($record) : [])
+                            ->listWithLineBreaks()
+                            ->placeholder('—')
+                            ->columnSpanFull(),
                     ]),
                 Section::make('توضیحات')
                     ->extraAttributes(['class' => 'classroom-details-section'])
