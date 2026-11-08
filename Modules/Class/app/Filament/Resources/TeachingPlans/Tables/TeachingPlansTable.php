@@ -3,13 +3,17 @@
 namespace Modules\Class\Filament\Resources\TeachingPlans\Tables;
 
 use App\Filament\Support\TextFilter;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Modules\Class\Models\TeachingPlan;
+use Modules\Class\Services\TeachingPlanOverview;
 
 class TeachingPlansTable
 {
@@ -41,6 +45,16 @@ class TeachingPlansTable
                 TernaryFilter::make('is_active')->label('فعال'),
             ])
             ->recordActions([
+                // The whole plan as a picture (ADR 0071).
+                Action::make('overview')
+                    ->label('نمای طرح')
+                    ->icon(Heroicon::OutlinedMap)
+                    ->color('gray')
+                    ->modalHeading(fn (TeachingPlan $record): string => "نمای طرح درس «{$record->title}»")
+                    ->modalWidth('6xl')
+                    ->modalContent(fn (TeachingPlan $record): View => view('class::filament.teaching-plan-overview', ['overview' => app(TeachingPlanOverview::class)->of($record)]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('بستن'),
                 EditAction::make()
                     ->modalWidth('4xl'),
                 DeleteAction::make()

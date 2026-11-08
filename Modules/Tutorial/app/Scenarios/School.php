@@ -374,6 +374,7 @@ class School extends Scenario
                     ->steps([
                         $tenant.' را به «'.$primary.'» برگردانید و در «کلاس‌ها → طرح‌های درس» طرح «ریاضی هفتم» را برای درس «ریاضی» بسازید.',
                         'سه سرفصل به ترتیب: «اعداد صحیح»، «کسرها»، «معادله» (هر کدام یک جلسه).',
+                        'اختیاری: از منوی ردیف طرح «نمای طرح» را بزنید تا سرفصل‌ها را روی جلسه‌ها و کلاس‌هایی را که از طرح پیروی می‌کنند ببینید.',
                     ])
                     ->url(fn (): string => TeachingPlanResource::getUrl('index', panel: 'admin', tenant: Tenant::primary()))
                     ->fill(fn (TutorialRun $run): array => ['title' => 'ریاضی هفتم', 'subject_id' => self::math($run)?->getKey()])
