@@ -109,6 +109,7 @@ class MyClassController extends Controller
                 'topics' => $forecast->topicChoices($session)->map(fn (PlanTopic $topic): array => [
                     'id' => $topic->getKey(),
                     'title' => $topic->title,
+                    'plan' => $topic->teachingPlan?->title,
                     'done_elsewhere' => in_array($topic->getKey(), $forecast->coveredTopicIds($session->classroom_id), true)
                         && ! in_array($topic->getKey(), $session->covered_topic_ids ?? [], true),
                 ])->values(),
