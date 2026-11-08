@@ -21,6 +21,7 @@ use Modules\Class\Filament\Resources\Classrooms\Pages\ListClassrooms;
 use Modules\Class\Filament\Resources\OnlineServers\OnlineServerResource;
 use Modules\Class\Filament\Resources\OnlineServers\Pages\ListOnlineServers;
 use Modules\Class\Models\ClassOnlineRoom;
+use Modules\Class\Models\ClassOnlineSessionMeeting;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
@@ -202,6 +203,57 @@ class OnlineClassTest extends TestCase
         $this->as($this->student, $this->first)->assertRedirect('https://meet.example.com/7a');
     }
 
+    public function test_adobe_connect_can_make_a_room_for_each_session(): void
+    {
+        $server = OnlineServer::factory()->create(['host' => 'https://adobe.example.com']);
+        ClassSession::query()->delete();
+        $first = ClassSession::factory()->create(['classroom_id' => $this->classroom->id, 'starts_at' => '2026-11-01 10:00', 'ends_at' => '2026-11-01 11:30']);
+        $second = ClassSession::factory()->create(['classroom_id' => $this->classroom->id, 'starts_at' => '2026-11-08 10:00', 'ends_at' => '2026-11-08 11:30']);
+        app(OnlineRooms::class)->change($this->classroom, 'server:'.$server->id, null, CarbonImmutable::parse('2026-10-30'), perSession: true);
+        $this->fakeAdobe();
+
+        $this->as($this->teacher, $first)->assertRedirect('https://adobe.example.com/class7a/?session=breez2');
+        $this->as($this->teacher, $first)->assertRedirect();
+        $this->as($this->teacher, $second)->assertRedirect('https://adobe.example.com/class7a1/?session=breez4');
+
+        $this->assertSame(['555', '556'], ClassOnlineSessionMeeting::query()->orderBy('session_id')->pluck('external_id')->all());
+        $this->assertNull(ClassOnlineRoom::query()->sole()->external_id);
+        $this->assertCount(2, Http::recorded(fn (Request $request): bool => $this->action($request) === 'sco-update'));
+        Http::assertSent(fn (Request $request): bool => $this->action($request) === 'sco-update' && str_starts_with($request['name'], 'هفتم الف (7A) — 1405/08/10 10:00 #'));
+        $this->assertSame(['از ابتدا: Adobe Connect — '.$server->title.' (یک اتاق برای هر جلسه)'], app(OnlineRooms::class)->history($this->classroom));
+
+        // Another tenant doesn't see the session's meetings.
+        $this->primary->makeCurrent();
+        $this->assertSame(0, ClassOnlineSessionMeeting::query()->count());
+    }
+
+    public function test_a_new_class_on_adobe_connect_asks_for_a_room_per_class_or_per_session(): void
+    {
+        $server = OnlineServer::factory()->create();
+        $manager = User::factory()->create();
+        $this->roleWithPermissions('class_manager', ['ViewAny:Classroom', 'View:Classroom', 'Create:Classroom', 'Update:Classroom']);
+        $this->makeStaff($manager, $this->west);
+        $this->grantRole($manager, $this->west, 'class_manager');
+
+        $this->actingInPanel($manager, $this->west);
+        Livewire::test(ListClassrooms::class)
+            ->mountAction('create')
+            ->fillForm(['title' => 'هشتم ب', 'mode' => ClassMode::Online->value, 'online_choice' => 'server:'.$server->id])
+            ->assertFormFieldVisible('online_rooms_per')
+            ->fillForm(['online_rooms_per' => 'session'])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $room = Classroom::query()->where('title', 'هشتم ب')->sole()->onlineRooms()->sole();
+        $this->assertTrue($room->per_session);
+
+        // A link has no such choice.
+        Livewire::test(ListClassrooms::class)
+            ->mountAction('create')
+            ->fillForm(['title' => 'هشتم ج', 'mode' => ClassMode::Online->value, 'online_choice' => 'link'])
+            ->assertFormFieldHidden('online_rooms_per');
+    }
+
     public function test_adobe_connect_sets_the_password_again_when_signing_in_fails(): void
     {
         $server = OnlineServer::factory()->create();
@@ -260,13 +312,14 @@ class OnlineClassTest extends TestCase
     {
         $sessions = 0;
         $userLogins = 0;
+        $meetings = 0;
         $ok = '<results><status code="ok"/></results>';
 
-        Http::fake(['adobe.example.com/*' => function (Request $request) use (&$sessions, &$userLogins, $failFirstUserLogin, $ok) {
+        Http::fake(['adobe.example.com/*' => function (Request $request) use (&$sessions, &$userLogins, &$meetings, $failFirstUserLogin, $ok) {
             return Http::response(match ($this->action($request)) {
                 'common-info' => '<results><status code="ok"/><common><cookie>breez'.(++$sessions).'</cookie></common></results>',
                 'login' => $request['login'] !== 'admin' && $failFirstUserLogin && $userLogins++ === 0 ? '<results><status code="no-data"/></results>' : $ok,
-                'sco-update' => '<results><status code="ok"/><sco sco-id="555" folder-id="11003" type="meeting"><url-path>/class7a/</url-path></sco></results>',
+                'sco-update' => '<results><status code="ok"/><sco sco-id="'.(555 + $meetings).'" folder-id="11003" type="meeting"><url-path>/class7a'.($meetings++ ?: '').'/</url-path></sco></results>',
                 'principal-list' => '<results><status code="ok"/><principal-list/></results>',
                 'principal-update' => '<results><status code="ok"/><principal principal-id="777" type="user"/></results>',
                 'sco-shortcuts' => '<results><status code="ok"/><shortcuts><sco sco-id="11003" type="meetings"/></shortcuts></results>',

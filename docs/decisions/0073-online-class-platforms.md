@@ -8,7 +8,7 @@ Online classes had one meeting link per class (ADR 0022). The organization runs 
 
 ## Options considered
 - **Where the code lives:** a separate module that requires Class (could be sold and switched off on its own, ADR 0041) / **inside Class**. The user chose Class.
-- **Adobe rooms:** **one meeting per class** (a fixed address, recordings collected in one place, few API calls; a move to another platform starts a new room) / one meeting per session as in sarayedanesh (recordings per session, but many more calls and meetings made ahead of time). The user chose one per class.
+- **Adobe rooms** (later made a choice per class, [ADR 0074](0074-online-room-per-session.md)): **one meeting per class** (a fixed address, recordings collected in one place, few API calls; a move to another platform starts a new room) / one meeting per session as in sarayedanesh (recordings per session, but many more calls and meetings made ahead of time). The user chose one per class.
 - **Server settings:** **an admin page** (several servers, chosen per class; the password kept encrypted) / `.env` (only the developer can change them). The user chose the admin page.
 - **Account passwords:** the administrator's password for everyone (sarayedanesh: anyone who learns it can sign in as anyone) / a random password stored per person / **derived from the app key** (`HMAC(app key, server + user)`: nothing to store, different for each person and server).
 - **The way in:** show the room's address / **a route in our app** (`/online-classes/sessions/{id}`) that checks who may enter and as what, makes what is missing on the platform and redirects.
@@ -30,5 +30,5 @@ Online classes had one meeting link per class (ADR 0022). The organization runs 
 - Skyroom, Google Meet and others work today as links; a real integration (accounts, host rights) is a driver away.
 - Changing `APP_KEY` changes every derived password; the next entry resets it on the server, so nobody is locked out.
 - Access is given when people enter, not taken away: someone who leaves the class keeps their `view` permission on the Adobe meeting (but can't get a session from us, and the meeting is closed to guests). A host's rights are not lowered if they later become an attendee.
-- Not done: recordings (listing, passcodes, deleting old ones, as sarayedanesh does), attendance from Adobe's reports, several rooms per class (e.g. per sub-class they are separate classes anyway), a room per session, choosing a server per tenant by default, Skyroom / BigBlueButton drivers. Adobe Connect was tested only against a faked server, not a real one.
+- Not done: recordings (listing, passcodes, deleting old ones, as sarayedanesh does), attendance from Adobe's reports, several rooms per class (e.g. per sub-class they are separate classes anyway), choosing a server per tenant by default, Skyroom / BigBlueButton drivers. Adobe Connect was tested only against a faked server, not a real one.
 - Every entry makes 3–5 calls to Adobe (fewer after the first); a busy start of many classes at once hits the server at the same time.

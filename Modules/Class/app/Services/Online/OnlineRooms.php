@@ -71,23 +71,27 @@ class OnlineRooms
      * effect today keeps its place and only its link changes; a different
      * choice starts today.
      *
+     * A new room on a platform that offers it may be made per session
+     * (ADR 0074); a room kept as it is keeps its way.
+     *
      * @throws ClassException
      */
-    public function change(Classroom $classroom, string $choice, ?string $meetingUrl, ?CarbonInterface $from = null, ?User $actor = null): void
+    public function change(Classroom $classroom, string $choice, ?string $meetingUrl, ?CarbonInterface $from = null, ?User $actor = null, bool $perSession = false): void
     {
         [$platform, $server] = $this->parse($choice);
         $keepsPlan = $from === null;
         $from = CarbonImmutable::parse($from ?? today())->startOfDay();
         $meetingUrl = $platform === OnlinePlatform::Link ? (filled($meetingUrl) ? trim($meetingUrl) : null) : null;
+        $perSession = $perSession && $platform->offersRoomPerSession();
 
-        DB::transaction(function () use ($classroom, $choice, $platform, $server, $from, $keepsPlan, $meetingUrl, $actor): void {
+        DB::transaction(function () use ($classroom, $choice, $platform, $server, $from, $keepsPlan, $meetingUrl, $actor, $perSession): void {
             if (! $keepsPlan) {
                 $classroom->onlineRooms()->whereDate('starts_on', '>', $from)->delete();
             }
 
             $rooms = $classroom->onlineRooms()->lockForUpdate()->get();
             $effective = self::pick($rooms, $from) ?? $rooms->sortBy(fn (ClassOnlineRoom $room) => $room->starts_on?->timestamp ?? 0)->last();
-            $attributes = ['platform' => $platform, 'server_id' => $server?->getKey(), 'meeting_url' => $meetingUrl, 'created_by_id' => $actor?->getKey()];
+            $attributes = ['platform' => $platform, 'server_id' => $server?->getKey(), 'per_session' => $perSession, 'meeting_url' => $meetingUrl, 'created_by_id' => $actor?->getKey()];
 
             if ($effective !== null && $effective->choice() === $choice) {
                 if ($platform === OnlinePlatform::Link && $effective->meeting_url !== $meetingUrl) {
@@ -119,7 +123,7 @@ class OnlineRooms
         return $classroom->onlineRooms()->with('server')->get()
             ->sortBy(fn (ClassOnlineRoom $room) => $room->starts_on?->timestamp ?? 0)
             ->map(fn (ClassOnlineRoom $room): string => ($room->starts_on ? 'از '.SessionCalendar::jalali($room->starts_on->toImmutable(), 'Y/m/d') : 'از ابتدا')
-                .': '.$room->platformName()
+                .': '.$room->description()
                 .($room->platform === OnlinePlatform::Link ? ' '.($room->meeting_url ?? '(بدون نشانی)') : ''))
             ->values()
             ->all();

@@ -82,6 +82,6 @@ class OnlineEntry
             }
         }
 
-        return $room->platform->driver()->enter($room, $user, $asHost);
+        return $room->platform->driver()->enter($room, $session, $user, $asHost);
     }
 }

@@ -33,6 +33,15 @@ enum OnlinePlatform: string implements HasLabel
     }
 
     /**
+     * Whether a class may have a room per session on it instead of one for
+     * the whole class (ADR 0074).
+     */
+    public function offersRoomPerSession(): bool
+    {
+        return $this === self::AdobeConnect;
+    }
+
+    /**
      * Platforms an installation adds servers of.
      *
      * @return array<string, string>

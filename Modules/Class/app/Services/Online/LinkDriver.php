@@ -4,6 +4,7 @@ namespace Modules\Class\Services\Online;
 
 use App\Models\User;
 use Modules\Class\Models\ClassOnlineRoom;
+use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\OnlineServer;
 
 /**
@@ -12,7 +13,7 @@ use Modules\Class\Models\OnlineServer;
  */
 class LinkDriver implements OnlinePlatformDriver
 {
-    public function enter(ClassOnlineRoom $room, User $user, bool $asHost): string
+    public function enter(ClassOnlineRoom $room, ClassSession $session, User $user, bool $asHost): string
     {
         if (blank($room->meeting_url)) {
             throw new OnlineClassException('لینک کلاس آنلاین هنوز ثبت نشده است.');

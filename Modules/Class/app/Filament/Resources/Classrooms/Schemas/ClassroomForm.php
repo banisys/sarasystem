@@ -19,6 +19,7 @@ use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\OnlinePlatform;
 use Modules\Class\Models\ClassOnlineRoom;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Models\OnlineServer;
 use Modules\Class\Models\Term;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\Online\OnlineRooms;
@@ -99,6 +100,7 @@ class ClassroomForm
                                 $get('meeting_url'),
                                 filled($get('online_from')) ? CarbonImmutable::parse($get('online_from')) : null,
                                 auth()->user(),
+                                $get('online_rooms_per') === 'session',
                             );
                         } catch (ClassException $exception) {
                             Notification::make()->title($exception->getMessage())->danger()->send();
@@ -115,6 +117,20 @@ class ClassroomForm
                     ->dehydrated(false)
                     ->visible(fn (Get $get): bool => (self::mode($get)?->meetsOnline() ?? false) && $get('online_choice') === OnlinePlatform::Link->value)
                     ->loadStateFromRelationshipsUsing(fn (TextInput $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->meeting_url)),
+                // Adobe Connect: one room for the class or one per session (ADR 0074).
+                ToggleButtons::make('online_rooms_per')
+                    ->label('اتاق در Adobe Connect')
+                    ->options(['class' => 'یک اتاق برای کل کلاس', 'session' => 'یک اتاق برای هر جلسه'])
+                    ->helperText(fn (Get $get, ?Classroom $record): string => self::keepsRoom($get, $record)
+                        ? 'برای تغییر آن، بستر کلاس را از تاریخی به بستر یا سرور دیگری ببرید.'
+                        : 'یک اتاق: نشانی ثابت و فایل‌ها و اسلایدها برای جلسه‌ی بعد می‌ماند. هر جلسه یک اتاق: ضبط و گزارش حضور هر جلسه جدا است.')
+                    ->default('class')
+                    ->inline()
+                    ->required()
+                    ->dehydrated(false)
+                    ->disabled(fn (Get $get, ?Classroom $record): bool => self::keepsRoom($get, $record))
+                    ->visible(fn (Get $get): bool => (self::mode($get)?->meetsOnline() ?? false) && (self::chosenPlatform($get)?->offersRoomPerSession() ?? false))
+                    ->loadStateFromRelationshipsUsing(fn (ToggleButtons $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->per_session ? 'session' : 'class')),
                 DatePicker::make('online_from')
                     ->label('بستر تازه از تاریخ')
                     ->helperText('جلسه‌های پیش از این روز در بستر قبلی می‌مانند؛ از این روز به بعد در بستر تازه برگزار می‌شوند.')
@@ -163,6 +179,27 @@ class ClassroomForm
         $current = self::currentRoom($record);
 
         return $current !== null && (self::mode($get)?->meetsOnline() ?? false) && $get('online_choice') !== $current->choice();
+    }
+
+    /**
+     * The class stays in the room it has: its way (per class or per
+     * session) can't change there.
+     */
+    private static function keepsRoom(Get $get, ?Classroom $record): bool
+    {
+        $current = self::currentRoom($record);
+
+        return $current !== null && $get('online_choice') === $current->choice();
+    }
+
+    /**
+     * The platform of the server picked in «بستر کلاس آنلاین».
+     */
+    private static function chosenPlatform(Get $get): ?OnlinePlatform
+    {
+        $choice = (string) $get('online_choice');
+
+        return str_starts_with($choice, 'server:') ? OnlineServer::query()->find((int) substr($choice, 7))?->platform : null;
     }
 
     private static function mode(Get $get): ?ClassMode

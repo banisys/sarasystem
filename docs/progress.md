@@ -10,7 +10,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026), plus guardians, absence SMS and homework (ADR 0027–0030).
 - School (`School` module, [ADR 0031](decisions/0031-school-structure.md), [ADR 0032](decisions/0032-scores-and-report-cards.md)): parts A and B done. Possible next steps: year-final scores («نوبت» formulas, resits), rankings, activity notebook; admission setting a grade.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
-- Online class platforms ([ADR 0073](decisions/0073-online-class-platforms.md)): link and Adobe Connect done. Next: try Adobe Connect on a real server, then Skyroom (and others) as drivers; Adobe recordings.
+- Online class platforms ([ADR 0073](decisions/0073-online-class-platforms.md)): link and Adobe Connect done. A room per class or per session on Adobe Connect (ADR 0074). Next: try Adobe Connect on a real server, then Skyroom (and others) as drivers; Adobe recordings.
 
 ## Next
 - Contracts: approval workflow before issuing, the organization's signature, contracts tab on employee / learner pages; later a finance module for installments and payments that attaches to contracts.
@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-08 — Adobe Connect: a room per class or per session ([ADR 0074](decisions/0074-online-room-per-session.md)). The class form asks «اتاق در Adobe Connect» («یک اتاق برای کل کلاس» / «یک اتاق برای هر جلسه») when the chosen server is Adobe Connect, for a new class or a move to another platform; the room a class already has keeps its way (field disabled). Per session, each session's meeting («{class} — {date} {time} #{id}») is made on its first entry and kept in `class_online_session_meetings` (migration applied locally). «اطلاعات» says «(یک اتاق برای هر جلسه)». No tutorial change needed. 2 new tests.
 - 2026-11-08 — Online classes on several platforms, first Adobe Connect ([ADR 0073](decisions/0073-online-class-platforms.md)), inside the Class module, after the Adobe Connect code of the old sarayedanesh system.
   - «کلاس‌ها ← سرورهای کلاس آنلاین» (installation-wide): servers with platform, host, administrator login and password (encrypted), Adobe folder, login prefix, SSL check; «آزمایش اتصال».
   - The class form's «بستر کلاس آنلاین»: «لینک» (Google Meet, Skyroom, …) or a server. Moving an existing class to another platform asks «بستر تازه از تاریخ»: earlier sessions keep their platform, later ones use the new one. «اطلاعات» lists the platforms with their days. `classrooms.meeting_url` moved into a «لینک» room (migration applied locally) and the column is gone.
@@ -319,7 +320,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
-- Online classes (ADR 0073): Adobe Connect tried only against a faked server; access is given on entry and never taken back on the Adobe meeting; no recordings, Adobe attendance reports or per-session rooms; a server's permission counts in the current tenant, so an `org_admin` holding it only in the head office can't open the page from a branch.
+- Online classes (ADR 0073, ADR 0074): Adobe Connect tried only against a faked server; a room's way (per class / per session) can't be changed, only a move to another platform from a day; per-session meetings keep the name with the day the session had when made; access is given on entry and never taken back on the Adobe meeting; no recordings, Adobe attendance reports or per-session rooms; a server's permission counts in the current tenant, so an `org_admin` holding it only in the head office can't open the page from a branch.
 - Class staff without limits (ADR 0070): staff can change attendance of any past session, with no history beyond the last change (shown on the session's page since ADR 0072); a first «غایب» recorded long after still sends the absence SMS; a session with only content prepared ahead shows as «ثبت‌نشده» after it ends.
 - User panel home (ADR 0069): people with classes can't reach the dashboard (it has nothing of its own yet); with two modules offering a home, the first registered wins.
 - Several teachers (ADR 0068): no way to add a teacher to all of a schedule's future sessions except editing the schedule (which leaves sessions changed by hand alone); `migrate:rollback` keeps only the first teacher.

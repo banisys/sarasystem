@@ -4,6 +4,7 @@ namespace Modules\Class\Services\Online;
 
 use App\Models\User;
 use Modules\Class\Models\ClassOnlineRoom;
+use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\OnlineServer;
 
 /**
@@ -14,13 +15,13 @@ use Modules\Class\Models\OnlineServer;
 interface OnlinePlatformDriver
 {
     /**
-     * The address that takes the person into the room, as its host
+     * The address that takes the person into the session's room, as its host
      * (teaching, presenting) or as a participant; making the room and the
      * person's account on the platform first if needed.
      *
      * @throws OnlineClassException
      */
-    public function enter(ClassOnlineRoom $room, User $user, bool $asHost): string;
+    public function enter(ClassOnlineRoom $room, ClassSession $session, User $user, bool $asHost): string;
 
     /**
      * Why the system can't work with the server, or null when it can.

@@ -6,20 +6,24 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Class\Models\ClassOnlineRoom;
+use Modules\Class\Models\ClassOnlineSessionMeeting;
+use Modules\Class\Models\Classroom;
+use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\OnlineServer;
 use Modules\Class\Models\OnlineServerAccount;
+use Modules\Class\Services\SessionCalendar;
 
 /**
  * Adobe Connect (ADR 0073), after the old sarayedanesh system: a meeting
- * per room of a class, made the first time someone enters, closed to
- * guests; an account per person («{prefix}{user id}@{host}») made the
- * first time they enter, with a password worked out from the app key; the
+ * per room of a class, or per session when the room says so (ADR 0074),
+ * made the first time someone enters, closed to guests; an account per
+ * person («{prefix}{user id}@{host}») made the first time they enter, with a password worked out from the app key; the
  * person is given host or participant access to the meeting each time they
  * enter, logged in, and sent to the meeting with their session.
  */
 class AdobeConnectDriver implements OnlinePlatformDriver
 {
-    public function enter(ClassOnlineRoom $room, User $user, bool $asHost): string
+    public function enter(ClassOnlineRoom $room, ClassSession $session, User $user, bool $asHost): string
     {
         $server = $room->server;
 
@@ -28,11 +32,11 @@ class AdobeConnectDriver implements OnlinePlatformDriver
         }
 
         $api = new AdobeConnectApi($server);
-        $room = $this->meetingOf($api, $room);
+        ['id' => $meetingId, 'path' => $meetingPath] = $room->per_session ? $this->sessionMeetingOf($api, $room, $session) : $this->meetingOf($api, $room);
         $principalId = $this->accountOf($api, $server, $user);
 
         try {
-            $this->allow($api, $room, $principalId, $asHost);
+            $this->allow($api, $meetingId, $principalId, $asHost);
         } catch (AdobeConnectError $error) {
             if (! in_array($error->status, ['no-data', 'invalid'], true)) {
                 throw $error;
@@ -40,11 +44,11 @@ class AdobeConnectDriver implements OnlinePlatformDriver
 
             // The account was deleted on the server: make it again.
             OnlineServerAccount::query()->where('server_id', $server->getKey())->where('user_id', $user->getKey())->delete();
-            $this->allow($api, $room, $principalId = $this->accountOf($api, $server, $user), $asHost);
+            $this->allow($api, $meetingId, $principalId = $this->accountOf($api, $server, $user), $asHost);
         }
 
         try {
-            $session = $api->login($this->login($server, $user), $this->password($server, $user));
+            $token = $api->login($this->login($server, $user), $this->password($server, $user));
         } catch (AdobeConnectError $error) {
             if ($error->status === 'unreachable') {
                 throw $error;
@@ -53,10 +57,10 @@ class AdobeConnectDriver implements OnlinePlatformDriver
             // The password on the server is another (the app key changed,
             // or someone set it there): set ours again.
             $this->setPassword($api, $principalId, $this->password($server, $user));
-            $session = $api->login($this->login($server, $user), $this->password($server, $user));
+            $token = $api->login($this->login($server, $user), $this->password($server, $user));
         }
 
-        return $server->baseUrl().'/'.trim((string) $room->url_path, '/').'/?session='.urlencode($session);
+        return $server->baseUrl().'/'.trim((string) $meetingPath, '/').'/?session='.urlencode($token);
     }
 
     public function problemWith(OnlineServer $server): ?string
@@ -93,38 +97,90 @@ class AdobeConnectDriver implements OnlinePlatformDriver
     }
 
     /**
-     * The room's meeting, made on the first entry (one entry at a time).
+     * The class's meeting, made on the first entry (one entry at a time).
+     *
+     * @return array{id: string, path: ?string}
      */
-    private function meetingOf(AdobeConnectApi $api, ClassOnlineRoom $room): ClassOnlineRoom
+    private function meetingOf(AdobeConnectApi $api, ClassOnlineRoom $room): array
     {
-        if ($room->external_id !== null) {
-            return $room;
+        if ($room->external_id === null) {
+            DB::transaction(function () use ($api, &$room): void {
+                $room = ClassOnlineRoom::withoutTenantScope()->with(['classroom' => fn ($query) => $query->withoutGlobalScopes(), 'server'])->lockForUpdate()->findOrFail($room->getKey());
+
+                if ($room->external_id === null) {
+                    $classroom = $room->classroom;
+                    $meeting = $this->makeMeeting($api, $room->server, $this->classTitle($classroom).' #'.$room->getKey(), 'سرا سیستم — کلاس '.$classroom->getKey());
+                    $room->update(['external_id' => $meeting['id'], 'url_path' => $meeting['path']]);
+                }
+            });
         }
 
-        return DB::transaction(function () use ($api, $room): ClassOnlineRoom {
-            $room = ClassOnlineRoom::withoutTenantScope()->with(['classroom' => fn ($query) => $query->withoutGlobalScopes(), 'server'])->lockForUpdate()->findOrFail($room->getKey());
+        return ['id' => (string) $room->external_id, 'path' => $room->url_path];
+    }
 
-            if ($room->external_id !== null) {
-                return $room;
+    /**
+     * The session's own meeting (ADR 0074), made on its first entry; named
+     * with the session's day and time, so its recordings are easy to find.
+     *
+     * @return array{id: string, path: ?string}
+     */
+    private function sessionMeetingOf(AdobeConnectApi $api, ClassOnlineRoom $room, ClassSession $session): array
+    {
+        $meeting = DB::transaction(function () use ($api, $room, $session): ClassOnlineSessionMeeting {
+            // Locks the room, so two people entering together make one meeting.
+            $room = ClassOnlineRoom::withoutTenantScope()->with(['classroom' => fn ($query) => $query->withoutGlobalScopes(), 'server'])->lockForUpdate()->findOrFail($room->getKey());
+            $existing = ClassOnlineSessionMeeting::withoutTenantScope()->where('room_id', $room->getKey())->where('session_id', $session->getKey())->first();
+
+            if ($existing !== null) {
+                return $existing;
             }
 
             $classroom = $room->classroom;
-            $name = Str::limit(trim($classroom->title.($classroom->code ? " ({$classroom->code})" : '')), 200, '').' #'.$room->getKey();
+            $made = $this->makeMeeting(
+                $api,
+                $room->server,
+                $this->classTitle($classroom).' — '.SessionCalendar::jalali($session->starts_at->toImmutable(), 'Y/m/d').' '.$session->starts_at->format('H:i').' #'.$session->getKey(),
+                'سرا سیستم — کلاس '.$classroom->getKey().'، جلسه '.$session->getKey(),
+            );
 
-            $sco = $api->call('sco-update', [
-                'type' => 'meeting',
-                'name' => $name,
-                'folder-id' => $this->folderId($api, $room->server),
-                'description' => 'سرا سیستم — کلاس '.$classroom->getKey(),
-            ])->sco;
-
-            // Only accounts given access enter; no guests.
-            $api->call('permissions-update', ['acl-id' => (string) $sco['sco-id'], 'principal-id' => 'public-access', 'permission-id' => 'denied']);
-
-            $room->update(['external_id' => (string) $sco['sco-id'], 'url_path' => (string) $sco->{'url-path'}]);
-
-            return $room;
+            return ClassOnlineSessionMeeting::withoutTenantScope()->create([
+                'tenant_id' => $room->tenant_id,
+                'room_id' => $room->getKey(),
+                'session_id' => $session->getKey(),
+                'external_id' => $made['id'],
+                'url_path' => $made['path'],
+            ]);
         });
+
+        return ['id' => $meeting->external_id, 'path' => $meeting->url_path];
+    }
+
+    /**
+     * A meeting in the server's folder, closed to guests: only accounts
+     * given access enter.
+     *
+     * @return array{id: string, path: string}
+     */
+    private function makeMeeting(AdobeConnectApi $api, OnlineServer $server, string $name, string $description): array
+    {
+        $sco = $api->call('sco-update', [
+            'type' => 'meeting',
+            'name' => $name,
+            'folder-id' => $this->folderId($api, $server),
+            'description' => $description,
+        ])->sco;
+
+        $api->call('permissions-update', ['acl-id' => (string) $sco['sco-id'], 'principal-id' => 'public-access', 'permission-id' => 'denied']);
+
+        return ['id' => (string) $sco['sco-id'], 'path' => (string) $sco->{'url-path'}];
+    }
+
+    /**
+     * «هفتم الف (7A)».
+     */
+    private function classTitle(Classroom $classroom): string
+    {
+        return Str::limit(trim($classroom->title.($classroom->code ? " ({$classroom->code})" : '')), 200, '');
     }
 
     /**
@@ -183,9 +239,9 @@ class AdobeConnectDriver implements OnlinePlatformDriver
         return $principalId;
     }
 
-    private function allow(AdobeConnectApi $api, ClassOnlineRoom $room, string $principalId, bool $asHost): void
+    private function allow(AdobeConnectApi $api, string $meetingId, string $principalId, bool $asHost): void
     {
-        $api->call('permissions-update', ['acl-id' => $room->external_id, 'principal-id' => $principalId, 'permission-id' => $asHost ? 'host' : 'view']);
+        $api->call('permissions-update', ['acl-id' => $meetingId, 'principal-id' => $principalId, 'permission-id' => $asHost ? 'host' : 'view']);
     }
 
     private function setPassword(AdobeConnectApi $api, string $principalId, string $password): void

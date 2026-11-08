@@ -15,9 +15,10 @@ use Modules\Class\Enums\OnlinePlatform;
  * that moves to another platform in the middle of its term gets a new room
  * from that day, and its earlier sessions keep the old one. A platform's
  * room is made there the first time someone enters (`external_id`,
- * `url_path`).
+ * `url_path`); or, with `per_session` (ADR 0074), each session gets its own
+ * meeting there (ClassOnlineSessionMeeting).
  */
-#[Fillable(['tenant_id', 'classroom_id', 'platform', 'server_id', 'starts_on', 'meeting_url', 'external_id', 'url_path', 'created_by_id'])]
+#[Fillable(['tenant_id', 'classroom_id', 'platform', 'server_id', 'per_session', 'starts_on', 'meeting_url', 'external_id', 'url_path', 'created_by_id'])]
 class ClassOnlineRoom extends Model
 {
     use BelongsToTenant;
@@ -63,6 +64,14 @@ class ClassOnlineRoom extends Model
     }
 
     /**
+     * «یک اتاق برای هر جلسه» after the platform's name, when so.
+     */
+    public function description(): string
+    {
+        return $this->platformName().($this->per_session ? ' (یک اتاق برای هر جلسه)' : '');
+    }
+
+    /**
      * Something to enter: a link with an address, or a platform's room.
      */
     public function isUsable(): bool
@@ -74,6 +83,7 @@ class ClassOnlineRoom extends Model
     {
         return [
             'platform' => OnlinePlatform::class,
+            'per_session' => 'boolean',
             'starts_on' => 'date',
         ];
     }
