@@ -20,6 +20,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-08 — A session's page in the admin panel names who changed each part last ([ADR 0072](decisions/0072-last-change-on-session-page.md)). «مشخصات جلسه» shows «آخرین تغییر زمان، وضعیت یا مدرس‌ها», «مطالب و تکلیف» shows «آخرین ثبت مطالب» and «آخرین نمره‌دهی», and «حضور و غیاب» shows «آخرین تغییر», each with the name and the Jalali date and time; no history is kept. New columns `class_sessions.changed_by_id` / `changed_at`, set by SessionPlanner on move, cancel, restore and teachers (migration applied locally). No tutorial change needed. 1 new test. Checked in headless Chrome as the super admin on `mehregan/class-sessions/5775` (attendance and content lines); the «مشخصات جلسه» line only in the test.
 - 2026-11-08 — A session's page in «کلاس‌های من» (`/my-classes/sessions/{id}`) redesigned. The header is a card with status and kind badges, and facts with icons (time, teacher, place, role). Below it are tabs for whoever has forms: «حضور و غیاب», «مطالب و تکلیف» and «تکالیف دریافتی» (with counts); learners and guardians see the content and their hand-in without tabs.
   - Attendance: a live count per status, «همه حاضر», and larger status buttons.
   - Content: topics grouped by plan as chips you click, and those finished in other sessions folded away (the list showed every plan's topics flat); the plan's forecast as a hint; homework in its own box.
@@ -309,7 +310,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-10-22 — Project docs scaffold created.
 
 ## Known issues / tech debt
-- Class staff without limits (ADR 0070): staff can change attendance of any past session, with no history beyond the last recorder; a first «غایب» recorded long after still sends the absence SMS; a session with only content prepared ahead shows as «ثبت‌نشده» after it ends.
+- Class staff without limits (ADR 0070): staff can change attendance of any past session, with no history beyond the last change (shown on the session's page since ADR 0072); a first «غایب» recorded long after still sends the absence SMS; a session with only content prepared ahead shows as «ثبت‌نشده» after it ends.
 - User panel home (ADR 0069): people with classes can't reach the dashboard (it has nothing of its own yet); with two modules offering a home, the first registered wins.
 - Several teachers (ADR 0068): no way to add a teacher to all of a schedule's future sessions except editing the schedule (which leaves sessions changed by hand alone); `migrate:rollback` keeps only the first teacher.
 - Clock field (ADR 0067): it builds on Filament's internal `wrapInputHtml()`, so check it after a Filament upgrade; the panel doesn't show `minDate` / `maxDate`; not tried on a touch screen.

@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Identifiers;
 use Ariaieboy\Jalali\CalendarUtils;
+use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\CheckboxList;
@@ -166,6 +167,7 @@ class SessionActions
     {
         return [
             Section::make('مشخصات جلسه')
+                ->description(fn (ClassSession $record): ?string => self::lastChange('آخرین تغییر زمان، وضعیت یا مدرس‌ها', $record->changedBy, $record->changed_at))
                 ->extraAttributes(['class' => 'classroom-details-section'])
                 ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
                 ->schema([
@@ -213,6 +215,14 @@ class SessionActions
                 ]),
             Grid::make(['default' => 1, 'lg' => 3])->schema([
                 Section::make('مطالب و تکلیف')
+                    ->description(function (ClassSession $record): ?string {
+                        $graded = $record->homeworkSubmissions()->whereNotNull('graded_at')->with('gradedBy')->latest('graded_at')->first();
+
+                        return implode(' — ', array_filter([
+                            self::lastChange('آخرین ثبت مطالب', $record->contentRecordedBy, $record->content_recorded_at),
+                            self::lastChange('آخرین نمره‌دهی', $graded?->gradedBy, $graded?->graded_at),
+                        ])) ?: null;
+                    })
                     ->extraAttributes(['class' => 'classroom-details-section'])
                     ->columnSpan(['lg' => 2])
                     ->schema([
@@ -242,6 +252,11 @@ class SessionActions
                             ->visible(fn (ClassSession $record): bool => filled($record->note)),
                     ]),
                 Section::make('حضور و غیاب')
+                    ->description(function (ClassSession $record): ?string {
+                        $last = $record->attendances()->with('recordedBy')->latest('recorded_at')->first();
+
+                        return self::lastChange('آخرین تغییر', $last?->recordedBy, $last?->recorded_at);
+                    })
                     ->schema([
                         View::make('class::filament.session-attendance')
                             ->viewData(fn (ClassSession $record): array => ['rows' => self::attendanceRows($record)]),
@@ -251,6 +266,19 @@ class SessionActions
                     ]),
             ]),
         ];
+    }
+
+    /**
+     * «آخرین تغییر: نام · 1405/08/17 ساعت 10:30», or null when nobody has
+     * changed it yet (ADR 0072). Only the last change is kept.
+     */
+    public static function lastChange(string $label, ?User $by, ?CarbonInterface $at): ?string
+    {
+        if ($at === null) {
+            return null;
+        }
+
+        return $label.': '.($by?->name ?? 'نامشخص').' · '.CalendarUtils::strftime('Y/m/d', $at->toMutable()).' ساعت '.$at->format('H:i');
     }
 
     /**

@@ -10,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Class\Enums\Frequency;
@@ -230,6 +231,7 @@ class SessionPlanner
             'ends_at' => $end,
             'location' => $location,
             'is_modified' => true,
+            ...self::changedNow(),
         ]);
 
         return $session;
@@ -244,7 +246,7 @@ class SessionPlanner
             throw new ClassException('این جلسه برنامه‌ریزی‌شده نیست.');
         }
 
-        $session->update(['status' => SessionStatus::Cancelled, 'cancel_reason' => $reason, 'is_modified' => true]);
+        $session->update(['status' => SessionStatus::Cancelled, 'cancel_reason' => $reason, 'is_modified' => true, ...self::changedNow()]);
 
         return $session;
     }
@@ -259,7 +261,7 @@ class SessionPlanner
         }
 
         $this->checkClashes(collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]), $session->classroom, $session->actualTeacherIds(), $session->location, exceptSessionId: $session->getKey());
-        $session->update(['status' => SessionStatus::Scheduled, 'cancel_reason' => null]);
+        $session->update(['status' => SessionStatus::Scheduled, 'cancel_reason' => null, ...self::changedNow()]);
 
         return $session;
     }
@@ -338,9 +340,10 @@ class SessionPlanner
                 $session->teachers()->attach($row['teacher_id'], ['substitute_id' => $row['substitute_id']]);
             }
 
-            if (array_diff($teacherIds, $current) !== [] || array_diff($current, $teacherIds) !== []) {
-                $session->update(['is_modified' => true]);
-            }
+            $session->update([
+                ...(array_diff($teacherIds, $current) !== [] || array_diff($current, $teacherIds) !== [] ? ['is_modified' => true] : []),
+                ...self::changedNow(),
+            ]);
         });
 
         return $session->unsetRelation('teachers')->unsetRelation('substitutes');
@@ -573,5 +576,16 @@ class SessionPlanner
     private static function time(mixed $time): string
     {
         return CarbonImmutable::parse((string) $time)->format('H:i:s');
+    }
+
+    /**
+     * Who changed the session's time, status or teachers, and when; only the
+     * last one is kept (ADR 0072).
+     *
+     * @return array{changed_by_id: int|string|null, changed_at: Carbon}
+     */
+    private static function changedNow(): array
+    {
+        return ['changed_by_id' => auth()->id(), 'changed_at' => now()];
     }
 }

@@ -18,6 +18,7 @@ use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewClassSession;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Services\SessionPlanner;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
@@ -138,6 +139,40 @@ class SessionPageTest extends TestCase
             ->assertActionHidden(TestAction::make('cancelSession'));
 
         $this->assertSame(SessionStatus::Cancelled, $session->fresh()->status);
+    }
+
+    /**
+     * ADR 0072: each part of the page names who changed it last, and when;
+     * nothing older is kept.
+     */
+    public function test_each_part_names_who_changed_it_last(): void
+    {
+        $session = $this->classSession(['starts_at' => '2026-10-30 10:00', 'ends_at' => '2026-10-30 11:30']);
+        $student = User::factory()->create();
+        $first = User::factory()->create(['name' => 'سارا رضایی']);
+        $second = User::factory()->create(['name' => 'علی محمدی']);
+
+        $this->actingInPanel($admin = $this->admin(), $this->west);
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertDontSee('آخرین تغییر');
+
+        // Cancelled by one, restored by another: only the last shows.
+        $this->actingAs($first);
+        app(SessionPlanner::class)->cancel($session, 'اردو');
+        $this->travelTo(CarbonImmutable::parse('2026-10-29 12:30'));
+        $this->actingAs($second);
+        app(SessionPlanner::class)->restore($session->fresh());
+        $this->assertSame($second->id, $session->fresh()->changed_by_id);
+
+        $session->attendances()->create(['classroom_id' => $this->classroom->id, 'user_id' => $student->id, 'status' => AttendanceStatus::Present, 'recorded_by_id' => $first->id, 'recorded_at' => now()->subHour()]);
+        $session->update(['content_recorded_by_id' => $first->id, 'content_recorded_at' => now(), 'summary' => 'فصل ۱']);
+
+        $this->actingInPanel($admin, $this->west);
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertSee('آخرین تغییر زمان، وضعیت یا مدرس‌ها: علی محمدی · 1405/08/07 ساعت 12:30')
+            ->assertSee('آخرین ثبت مطالب: سارا رضایی · 1405/08/07 ساعت 12:30')
+            ->assertSee('آخرین تغییر: سارا رضایی · 1405/08/07 ساعت 11:30')
+            ->assertDontSee('آخرین نمره‌دهی');
     }
 
     public function test_deleting_the_session_goes_back_to_its_class(): void

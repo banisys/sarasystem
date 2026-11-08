@@ -32,7 +32,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 #[Fillable([
     'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'starts_at', 'ends_at', 'location',
-    'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note',
+    'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note', 'changed_by_id', 'changed_at',
     'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'homework_max_score', 'content_recorded_by_id', 'content_recorded_at',
 ])]
 class ClassSession extends Model implements HasMedia
@@ -292,6 +292,16 @@ class ClassSession extends Model implements HasMedia
     }
 
     /**
+     * Who last moved, cancelled, restored it or changed its teachers (ADR 0072).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function changedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by_id');
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function contentRecordedBy(): BelongsTo
@@ -306,6 +316,7 @@ class ClassSession extends Model implements HasMedia
             'homework_due_on' => 'date',
             'homework_max_score' => 'integer',
             'content_recorded_at' => 'datetime',
+            'changed_at' => 'datetime',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'original_starts_at' => 'datetime',
