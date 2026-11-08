@@ -105,6 +105,8 @@ class AdminPanelProvider extends PanelProvider
             // Collapsible table filters stay open across reloads when left open.
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.persist-filters-open'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.tenant-menu-same-page'))
+            // Last touched row stays marked, including clicks on actions and text selection.
+            ->renderHook(TablesRenderHook::TOOLBAR_AFTER, fn (): View => view('filament.admin.table-row-marker'))
             // Second horizontal scrollbar above every wide table.
             ->renderHook(TablesRenderHook::TOOLBAR_AFTER, fn (): View => view('filament.admin.table-top-scroll'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

@@ -16,6 +16,7 @@ Every list in the admin panel should behave the same way: row actions in one dro
 - Ungrouped row actions are wrapped in one `ActionGroup`; groups a table already passes are kept as they are.
 - Actions sit `BeforeColumns`, unless a table sets a position itself or uses a grid/stack layout.
 - Row URL and row action always return `null`.
+- **Last touched row (2026-11-08):** a shared `TOOLBAR_AFTER` hook tracks the last record pressed or clicked in each table, using capture listeners so actions that stop propagation and text selection also mark it. A light dashed outline works in both themes. The record key keeps the mark through Livewire updates; another row moves it, and leaving or reloading the page clears it. This is only a visual marker, independent of bulk-selection checkboxes.
 - **Delete lives in the list only** (user's rule, 2026-10-27): edit and view pages never get a delete button in their header. Each table's row actions carry the delete action with its rules (hidden for protected records, confirmation text). When a generated edit page comes with `DeleteAction` in `getHeaderActions()`, remove it.
 - No search box above tables (`->searchable(false)` in the panel defaults). Text look-ups are filters ([TextFilter](../../app/Filament/Support/TextFilter.php)), so all narrowing happens in one place, the filters dropdown. A table that really needs the box can opt back in with `->searchable()`.
 

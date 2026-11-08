@@ -231,3 +231,14 @@ html:not(.dark) .fi-modal > .fi-modal-close-overlay {
 .fi-topbar-end {
     column-gap: 2rem;
 }
+
+/* Keep the last touched record visible; an inset outline avoids changing row
+   sizes and stays inside the table's scrolling container. */
+.fi-ta-row[data-clicked-row] {
+    outline: 1px dashed var(--gray-400);
+    outline-offset: -2px;
+}
+
+html.dark .fi-ta-row[data-clicked-row] {
+    outline-color: var(--gray-500);
+}
