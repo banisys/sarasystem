@@ -312,7 +312,7 @@ class LanguageInstitute extends Scenario
                     ->actor('مدرس', fn (TutorialRun $run): ?User => self::employeeWithRole($run, DefaultRoles::INSTRUCTOR))
                     ->steps([
                         'با دکمه‌ی «ورود با حساب …» با حساب مدرس وارد شوید.',
-                        'در «کلاس‌های من» جلسه‌ی امروز را باز کنید.',
+                        'پنل کاربری مدرس با تقویم «کلاس‌های من» باز می‌شود (منوی سمت راست)؛ جلسه‌ی امروز را باز کنید.',
                         "«{$learner}» را «حاضر» بزنید و حضور و غیاب را ثبت کنید.",
                     ])
                     ->url(fn (): string => route('my-classes.index'))

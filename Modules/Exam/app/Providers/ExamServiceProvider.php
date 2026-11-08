@@ -43,7 +43,7 @@ class ExamServiceProvider extends ModuleServiceProvider
         // «آزمون‌ها» in the user-panel header, for participants of a
         // published exam in the current tenant (ADR 0013).
         UserPanel::navigationUsing('exams', fn (User $user, Tenant $tenant): array => Exam::query()->published()->forParticipant($user)->exists()
-            ? [['title' => 'آزمون‌ها', 'url' => route('exams.index')]]
+            ? [['title' => 'آزمون‌ها', 'url' => route('exams.index'), 'icon' => 'clipboard']]
             : []);
     }
 }

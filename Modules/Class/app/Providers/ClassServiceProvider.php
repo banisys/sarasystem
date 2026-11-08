@@ -84,9 +84,13 @@ class ClassServiceProvider extends ModuleServiceProvider
             $wards = app(Guardians::class)->wardsIn($user, $tenant)->filter(fn (User $ward): bool => $myClasses->hasAny($ward));
 
             return [
-                ...($myClasses->hasAny($user) ? [['title' => 'کلاس‌های من', 'url' => route('my-classes.index')]] : []),
-                ...$wards->map(fn (User $ward): array => ['title' => 'کلاس‌های '.$ward->name, 'url' => route('my-classes.index', ['for' => $ward->getKey()])])->values()->all(),
+                ...($myClasses->hasAny($user) ? [['title' => 'کلاس‌های من', 'url' => route('my-classes.index'), 'icon' => 'calendar']] : []),
+                ...$wards->map(fn (User $ward): array => ['title' => 'کلاس‌های '.$ward->name, 'url' => route('my-classes.index', ['for' => $ward->getKey()]), 'icon' => 'users'])->values()->all(),
             ];
         });
+
+        // Whoever teaches or attends classes opens the panel on their
+        // calendar of sessions (ADR 0069).
+        UserPanel::homeUsing('classes', fn (User $user, Tenant $tenant): ?string => app(MyClasses::class)->hasAny($user) ? route('my-classes.index') : null);
     }
 }

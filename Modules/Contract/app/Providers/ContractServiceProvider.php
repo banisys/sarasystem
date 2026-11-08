@@ -89,7 +89,7 @@ class ContractServiceProvider extends ModuleServiceProvider
         // «قراردادها» in the user-panel header, for people with an issued
         // contract in the current tenant (ADR 0020).
         UserPanel::navigationUsing('contracts', fn (User $user, Tenant $tenant): array => Contract::query()->visibleToPerson($user)->exists()
-            ? [['title' => 'قراردادها', 'url' => route('contracts.index')]]
+            ? [['title' => 'قراردادها', 'url' => route('contracts.index'), 'icon' => 'document']]
             : []);
     }
 }

@@ -160,12 +160,40 @@ class MyClassesTest extends TestCase
         $this->as($this->teacher, route('my-classes.session', $elsewhere))->assertNotFound();
     }
 
-    public function test_the_header_link_is_shown_to_class_members_only(): void
+    public function test_the_menu_link_is_shown_to_class_members_only(): void
     {
-        $hasLink = fn (User $user): bool => collect($this->as($user, route('dashboard'))->viewData('page')['props']['navigation'])->contains('title', 'کلاس‌های من');
+        $hasLink = fn (User $user): bool => collect($this->as($user, route('profile.edit'))->viewData('page')['props']['navigation'])->contains('title', 'کلاس‌های من');
 
         $this->assertTrue($hasLink($this->student));
         $this->assertFalse($hasLink($this->person()));
+    }
+
+    /**
+     * ADR 0069: a teacher (or anyone in classes) opens the panel on their
+     * calendar; others stay on the dashboard.
+     */
+    public function test_the_panel_opens_on_the_calendar_for_people_in_classes(): void
+    {
+        $this->as($this->teacher, route('dashboard'))->assertRedirect(route('my-classes.index'));
+        $this->as($this->teacher, route('my-classes.index'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Class::Index')
+            ->where('panelHome', route('my-classes.index'))
+            ->where('navigation.0', ['title' => 'کلاس‌های من', 'url' => route('my-classes.index'), 'icon' => 'calendar']));
+
+        $this->as($this->person(), route('dashboard'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Dashboard')
+            ->where('panelHome', null));
+    }
+
+    public function test_logging_in_as_a_teacher_lands_on_the_calendar(): void
+    {
+        $this->teacher->forceFill(['password' => 'secret-pass'])->save();
+
+        $this->withSession([ResolveCurrentTenant::SESSION_KEY => $this->west->id])
+            ->post(route('login'), ['identifier' => $this->teacher->email, 'password' => 'secret-pass'])
+            ->assertRedirect(route('dashboard'));
+
+        $this->get(route('dashboard'))->assertRedirect(route('my-classes.index'));
     }
 
     public function test_a_guardian_sees_the_wards_classes_read_only(): void

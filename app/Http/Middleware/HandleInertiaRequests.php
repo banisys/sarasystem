@@ -53,8 +53,10 @@ class HandleInertiaRequests extends Middleware
                 'available' => fn () => $this->availableTenants($request),
                 'label' => config('sarasystem.tenant_label'),
             ],
-            // Module links for the user-panel header (UserPanel::navigationUsing()).
+            // Module links for the user-panel side menu (UserPanel::navigationUsing()),
+            // and the page the panel opens on when a module offers one (ADR 0069).
             'navigation' => fn (): array => UserPanel::navigation($request->user(), Tenant::current()),
+            'panelHome' => fn (): ?string => UserPanel::home($request->user(), Tenant::current()),
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),
             ],

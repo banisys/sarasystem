@@ -78,11 +78,11 @@ class SchoolServiceProvider extends ModuleServiceProvider
             $cards = app(ReportCards::class);
 
             return [
-                ...(app(ScoreBook::class)->assignmentsOf($user)->isNotEmpty() ? [['title' => 'دفتر نمره', 'url' => route('school.scores.index')]] : []),
-                ...($cards->publishedFor($user->getKey(), $tenant->getKey())->isNotEmpty() ? [['title' => 'کارنامه', 'url' => route('school.report-cards.index')]] : []),
+                ...(app(ScoreBook::class)->assignmentsOf($user)->isNotEmpty() ? [['title' => 'دفتر نمره', 'url' => route('school.scores.index'), 'icon' => 'pencil']] : []),
+                ...($cards->publishedFor($user->getKey(), $tenant->getKey())->isNotEmpty() ? [['title' => 'کارنامه', 'url' => route('school.report-cards.index'), 'icon' => 'academic']] : []),
                 ...app(Guardians::class)->wardsIn($user, $tenant)
                     ->filter(fn (User $ward): bool => $cards->publishedFor($ward->getKey(), $tenant->getKey())->isNotEmpty())
-                    ->map(fn (User $ward): array => ['title' => 'کارنامه‌ی '.$ward->name, 'url' => route('school.report-cards.index', ['for' => $ward->getKey()])])
+                    ->map(fn (User $ward): array => ['title' => 'کارنامه‌ی '.$ward->name, 'url' => route('school.report-cards.index', ['for' => $ward->getKey()]), 'icon' => 'academic'])
                     ->values()->all(),
             ];
         });

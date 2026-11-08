@@ -7,8 +7,13 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\SwitchTenantController;
 use App\Http\Middleware\EnsureTenantSelected;
+use App\Models\Tenant;
+use App\UserPanel\UserPanel;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Inertia\Response;
 
 Route::get('/', PublicSiteController::class)->name('home');
 
@@ -38,7 +43,13 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::post('/tenants/{tenant:slug}/switch', [SwitchTenantController::class, 'store'])->name('tenants.switch');
 
     Route::middleware(EnsureTenantSelected::class)->group(function () {
-        Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
+        // The panel opens on a module's page when one is offered, e.g. a
+        // teacher's calendar (ADR 0069); otherwise on the dashboard.
+        Route::get('/dashboard', function (Request $request): RedirectResponse|Response {
+            $home = UserPanel::home($request->user(), Tenant::current());
+
+            return $home !== null ? redirect($home) : Inertia::render('Dashboard');
+        })->name('dashboard');
     });
 });
 
