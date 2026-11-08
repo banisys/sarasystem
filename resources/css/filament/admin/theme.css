@@ -2,6 +2,7 @@
 /* Frosted-glass dark mode; delete this line to turn it off. */
 @import './glass.css';
 @import './system-map.css';
+@import './clock-picker.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';

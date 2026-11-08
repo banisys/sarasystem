@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Forms\ClockPicker;
 use App\Filament\Support\InitialsAvatarProvider;
 use App\Filament\Support\PanelTable;
 use App\Http\Controllers\SwitchPanelTenantController;
@@ -16,6 +17,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
 use Filament\Forms\View\FormsIconAlias;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -98,6 +100,8 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.disable-native-validation'))
             // Each user's full-screen choice for all modals (ADR 0060).
             ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.modal-size-preference'))
+            // Alpine side of the clock field (ADR 0067).
+            ->renderHook(PanelsRenderHook::BODY_START, fn (): View => view('filament.admin.clock-picker-script'))
             // Collapsible table filters stay open across reloads when left open.
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.persist-filters-open'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.tenant-menu-same-page'))
@@ -217,9 +221,13 @@ class AdminPanelProvider extends PanelProvider
         });
 
         // Clocks show 24 hours (21:35), never AM / PM: the browser's native
-        // time input follows the operating system, so pickers (TimePicker
-        // too) use Filament's own, which is 24-hour.
+        // time input follows the operating system, so date-time pickers use
+        // Filament's own, which is 24-hour.
         DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native(false));
+
+        // Every TimePicker is our clock field: typed or picked from a panel of
+        // hours and minutes (ADR 0067). Fields are made through the container.
+        app()->bind(TimePicker::class, ClockPicker::class);
 
         // Searchable selects open with (and search within) 10 options, and
         // relationship selects preload them; non-searchable ones keep 50 so

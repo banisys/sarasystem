@@ -38,6 +38,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
   - Every table is a [PanelTable](../app/Filament/Support/PanelTable.php) (bound in place of Filament's `Table`): row actions are one dropdown (⋮) in the first column (ungrouped actions are wrapped in an `ActionGroup` automatically), and clicking a row does nothing, so cell text can be selected and copied. Resources just pass their actions to `->recordActions([...])` as usual. See [ADR 0006](decisions/0006-panel-table-behavior.md).
   - Delete is a row action in the list only; edit pages have no delete button ([ADR 0006](decisions/0006-panel-table-behavior.md)).
   - Numeric inputs are LTR with thousands separators.
+  - Clocks are 24-hour. Every `TimePicker` is our [ClockPicker](../app/Filament/Forms/ClockPicker.php), swapped in through the container: you type the time («930», «17.30», Persian digits) or pick an hour and a five-minute step from a panel, and the arrow keys move it ([ADR 0067](decisions/0067-clock-field.md)). `DateTimePicker`s use Filament's own non-native panel.
   - Searchable selects preload and show 10 options.
   - Modals close only with the × button in their header, not by clicking outside or pressing Escape (a modal can opt back in with `->closeModalByClickingAway()` / `->closeModalByEscaping()`).
   - Modals have a full-screen button beside the × that fills the content area beside the sidebar, and the choice applies to all of the user's modals ([ADR 0060](decisions/0060-modal-fullscreen-button.md), an override of Filament's modal view).
