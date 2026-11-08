@@ -95,6 +95,7 @@ class SystemAdministration extends Scenario
                         'نام «مریم صادقی»، کد ملی ۰۰۲۰۰۴۰۰۶۷ و یک رمز عبور بنویسید.',
                         "نقش‌های «{$manager}» و «".self::roleLabel(Utils::getPanelUserRoleName()).'» (ورود به پنل) را بزنید و ذخیره کنید.',
                         "نقش‌ها مال هر {$tenant} جداست: مریم فقط در «شعبه شرق» مدیر است.",
+                        'اختیاری: در فهرست کاربران روی متن یک ردیف کلیک کنید؛ کادر نقطه‌چین جای شما را نشان می‌دهد. با کلیدهای ↑ و ↓ بین ردیف‌های همین صفحه حرکت کنید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::usersUrl(self::east($run)))
                     ->fill(fn (): array => [
