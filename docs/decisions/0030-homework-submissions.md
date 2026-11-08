@@ -13,7 +13,7 @@ The legacy LMS had `homework_students` (description, teacher's description, scor
 - **Changing it:** once only / **until graded**. A learner fixes a mistake; once scored, the work is fixed.
 - **Late work:** refuse after the due date / **take it and mark it «با تأخیر»** (submitted after the end of the due day). `CLASS_HOMEWORK_ACCEPTS_LATE=false` refuses instead.
 - **Score scale:** fixed 0–20 / **per homework**: «نمره‌ی تکلیف از» on the session (1–100, default 20 from `CLASS_HOMEWORK_MAX_SCORE`), set with the homework. Schools score out of 20; institutes often out of 100. Decimal scores are allowed (two places).
-- **Who grades, and when:** the same people who record the session's content: its teacher or substitute, members whose class role records content, and class editors. **No time limit**, since grading often comes days later.
+- **Who grades, and when:** the same people who record the session's content: its teacher or substitute, members whose class role records content, and class editors (since [ADR 0070](0070-class-staff-without-limits.md) also every non-attendee member). **No time limit**, since grading often comes days later.
 - **Grading not-handed-in work:** only hand-ins get scores. «تحویل نداده» is shown next to the learners who didn't hand in; a zero for them can come later if wanted.
 - **Files:** medialibrary on the private disk with signed 30-minute links, through the same route as session materials (`class.materials`, now also for hand-in files).
 

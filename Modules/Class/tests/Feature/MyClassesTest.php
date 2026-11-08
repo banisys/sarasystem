@@ -124,8 +124,12 @@ class MyClassesTest extends TestCase
         Storage::fake('local');
         $session = $this->sessionOn('2026-10-31');
 
-        $this->as($this->teacher, route('my-classes.attendance', $session), 'post', ['rows' => [['user_id' => $this->student->id, 'status' => 'present']]])
-            ->assertSessionHasErrors(['form' => 'از کمی پیش از شروع جلسه باز می‌شود.']);
+        // A learner never takes attendance; the teacher may already (ADR 0070).
+        $this->as($this->student, route('my-classes.attendance', $session), 'post', ['rows' => [['user_id' => $this->student->id, 'status' => 'present']]])
+            ->assertSessionHasErrors('form');
+        $this->as($this->teacher, route('my-classes.session', $session))->assertInertia(fn (AssertableInertia $page) => $page
+            ->whereNot('attendance', null)
+            ->whereNot('contentForm', null));
 
         $this->travelTo(CarbonImmutable::parse('2026-10-31 08:05'));
         $this->as($this->teacher, route('my-classes.session', $session))->assertInertia(fn (AssertableInertia $page) => $page

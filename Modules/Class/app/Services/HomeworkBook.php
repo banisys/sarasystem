@@ -59,6 +59,7 @@ class HomeworkBook
         }
 
         return ($session->classroom !== null && $user->can('update', $session->classroom))
+            || $this->access->isClassStaff($user, $session)
             || $this->access->isStaffOf($user, $session, 'records_content');
     }
 

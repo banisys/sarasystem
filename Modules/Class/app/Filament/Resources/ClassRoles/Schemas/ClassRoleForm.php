@@ -7,6 +7,7 @@ use BezhanSalleh\FilamentShield\Support\Utils;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class ClassRoleForm
@@ -29,11 +30,16 @@ class ClassRoleForm
                     ->dehydrateStateUsing(fn (?array $state): array => array_values(array_map('intval', $state ?? []))),
                 Toggle::make('is_attendee')
                     ->label('شرکت‌کننده است')
-                    ->helperText('حضور و غیابش ثبت می‌شود و در ظرفیت کلاس حساب می‌شود.'),
+                    ->live()
+                    ->helperText('حضور و غیابش ثبت می‌شود و در ظرفیت کلاس حساب می‌شود. نقشی که شرکت‌کننده نیست (مدرس، ناظر، پشتیبان، …) در هر جلسه‌ی کلاس، گذشته، امروز یا آینده، حضور و غیاب می‌گیرد، مطالب ثبت می‌کند و تکلیف‌ها را نمره می‌دهد.'),
                 Toggle::make('takes_attendance')
-                    ->label('حضور و غیاب می‌گیرد'),
+                    ->label('حضور و غیاب می‌گیرد')
+                    ->helperText('برای شرکت‌کننده‌ها (مثلاً نماینده‌ی کلاس): از کمی پیش از شروع جلسه تا چند روز بعد.')
+                    ->visible(fn (Get $get): bool => (bool) $get('is_attendee')),
                 Toggle::make('records_content')
-                    ->label('مطالب جلسه را ثبت می‌کند'),
+                    ->label('مطالب جلسه را ثبت می‌کند')
+                    ->helperText('برای شرکت‌کننده‌ها: از کمی پیش از شروع جلسه تا چند روز بعد.')
+                    ->visible(fn (Get $get): bool => (bool) $get('is_attendee')),
             ])
             ->columns(1);
     }

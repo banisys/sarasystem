@@ -1,7 +1,7 @@
 # 0025 — Teaching plans and session content
 
 - **Date:** 2026-10-29
-- **Status:** accepted
+- **Status:** accepted; who and when changed by [ADR 0070](0070-class-staff-without-limits.md) (class staff at any time, content ahead leaves a session scheduled)
 
 ## Context
 This is step 4 of the classes plan ([ADR 0022](0022-classes.md)): what each session is meant to cover and what it did cover, with homework and materials. The user asked that the topics of each session be planned ahead and recorded.

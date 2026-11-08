@@ -115,6 +115,12 @@ class ClassAttendanceTest extends TestCase
         $this->assertSame($this->teacher->id, Attendance::query()->where('user_id', $this->students[0]->id)->sole()->recorded_by_id);
     }
 
+    /**
+     * ADR 0070: the class's staff (teachers, substitutes, every member whose
+     * class role is not an attendee role) at any time; a class editor from a
+     * few minutes before; an attendee whose role takes attendance in the
+     * usual window only.
+     */
     public function test_who_may_take_it_and_when(): void
     {
         $observer = ClassMember::query()->whereHas('classRole', fn ($role) => $role->where('title', 'مشاور'))->sole()->user;
@@ -122,25 +128,39 @@ class ClassAttendanceTest extends TestCase
         $editor = $this->person();
         $this->roleWithPermissions('class_editor', ['ViewAny:Classroom', 'View:Classroom', 'Update:Classroom']);
         $this->grantRole($editor, $this->west, 'class_editor');
+        $monitor = $this->person();
+        app(ClassMembers::class)->add($this->classroom, ClassRole::factory()->for(Tenant::primary())->attendee()->create(['title' => 'نماینده', 'takes_attendance' => true]), [$monitor->id], CarbonImmutable::parse('2026-10-01'));
 
-        $this->travelTo(CarbonImmutable::parse('2026-11-01 09:30'));
-        $this->assertStringContainsString('پیش از شروع', $this->register->refusal($this->teacher, $this->session));
-
-        $this->travelTo(CarbonImmutable::parse('2026-11-01 09:50'));
+        // A week before: the staff only.
+        $this->travelTo(CarbonImmutable::parse('2026-10-25 09:00'));
         $this->assertTrue($this->register->canTake($this->teacher, $this->session));
         $this->assertTrue($this->register->canTake($this->supervisor, $this->session));
-        $this->assertFalse($this->register->canTake($observer, $this->session));
+        $this->assertTrue($this->register->canTake($observer, $this->session));
+        $this->assertStringContainsString('پیش از شروع', $this->register->refusal($editor, $this->session));
+        $this->assertStringContainsString('پیش از شروع', $this->register->refusal($monitor, $this->session));
         $this->assertFalse($this->register->canTake($this->students[0], $this->session));
         $this->assertFalse($this->register->canTake($substitute, $this->session));
         $this->session->teachers()->updateExistingPivot($this->teacher->id, ['substitute_id' => $substitute->id]);
-        $this->assertTrue($this->register->canTake($substitute, $this->session->fresh()));
+        $this->session = $this->session->fresh();
+        $this->assertTrue($this->register->canTake($substitute, $this->session));
 
-        // Closed for teachers after three days, not for whoever may edit the class.
-        $this->travelTo(CarbonImmutable::parse('2026-11-05 00:01'));
-        $this->assertStringContainsString('مهلت', $this->register->refusal($this->teacher, $this->session));
+        $this->travelTo(CarbonImmutable::parse('2026-11-01 09:50'));
+        $this->assertTrue($this->register->canTake($editor, $this->session));
+        $this->assertTrue($this->register->canTake($monitor, $this->session));
+
+        // Long after: closed for the attendee, not for the staff or the editor.
+        $this->travelTo(CarbonImmutable::parse('2027-02-01 10:00'));
+        $this->assertStringContainsString('مهلت', $this->register->refusal($monitor, $this->session));
+        $this->assertTrue($this->register->canTake($this->teacher, $this->session));
+        $this->assertTrue($this->register->canTake($observer, $this->session));
         $this->assertTrue($this->register->canTake($editor, $this->session));
 
+        // A member who left is no longer staff.
+        ClassMember::query()->where('user_id', $observer->id)->update(['left_on' => '2026-12-01']);
+        $this->assertFalse($this->register->canTake($observer, $this->session));
+
         $this->session->update(['status' => SessionStatus::Cancelled]);
+        $this->assertFalse($this->register->canTake($this->teacher, $this->session));
         $this->assertFalse($this->register->canTake($editor, $this->session));
     }
 

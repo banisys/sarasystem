@@ -9,10 +9,12 @@ use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassSession;
 
 /**
- * Who may work on a session, and when (ADR 0024, ADR 0025): from a few
- * minutes before it starts, its teacher or substitute and the class's
- * members whose class role has the given flag, until some days after;
- * whoever may edit the class, at any time. Never on a cancelled session.
+ * Who may work on a session, and when (ADR 0024, ADR 0025, ADR 0070):
+ * the class's staff (its teachers and substitutes, and members whose class
+ * role is not an attendee role: teacher, supervisor, supporter, …) at any
+ * time, past, present or future; whoever may edit the class from a few
+ * minutes before it starts; an attendee whose class role has the given flag
+ * from then until some days after. Never on a cancelled session.
  */
 class SessionAccess
 {
@@ -25,6 +27,10 @@ class SessionAccess
     {
         if ($session->status === SessionStatus::Cancelled) {
             return 'جلسه لغو شده است.';
+        }
+
+        if ($this->isClassStaff($user, $session)) {
+            return null;
         }
 
         if (now()->lessThan($session->starts_at->copy()->subMinutes((int) config('class.attendance.opens_minutes_before')))) {
@@ -48,11 +54,25 @@ class SessionAccess
 
     /**
      * One of the session's teachers or substitutes, or a current member of its
+     * class whose class role is not an attendee role (ADR 0070).
+     */
+    public function isClassStaff(User $user, ClassSession $session): bool
+    {
+        return $this->teachesSession($user, $session) || ClassMember::withoutTenantScope()
+            ->where('classroom_id', $session->classroom_id)
+            ->where('user_id', $user->getKey())
+            ->current()
+            ->whereHas('classRole', fn (Builder $role) => $role->where('is_attendee', false))
+            ->exists();
+    }
+
+    /**
+     * One of the session's teachers or substitutes, or a current member of its
      * class whose role has the flag.
      */
     public function isStaffOf(User $user, ClassSession $session, string $roleFlag): bool
     {
-        if ($session->teachers->contains(fn (User $teacher): bool => $teacher->is($user) || $teacher->pivot->substitute_id === $user->getKey())) {
+        if ($this->teachesSession($user, $session)) {
             return true;
         }
 
@@ -62,5 +82,10 @@ class SessionAccess
             ->current()
             ->whereHas('classRole', fn (Builder $role) => $role->where($roleFlag, true))
             ->exists();
+    }
+
+    private function teachesSession(User $user, ClassSession $session): bool
+    {
+        return $session->teachers->contains(fn (User $teacher): bool => $teacher->is($user) || $teacher->pivot->substitute_id === $user->getKey());
     }
 }

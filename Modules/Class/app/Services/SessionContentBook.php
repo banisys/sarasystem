@@ -73,7 +73,8 @@ class SessionContentBook
                 'homework_max_score' => $maxScore,
                 'content_recorded_by_id' => $by->getKey(),
                 'content_recorded_at' => now(),
-                'status' => $session->status === SessionStatus::Scheduled ? SessionStatus::Held : $session->status,
+                // Content prepared ahead of time (ADR 0070) leaves a session scheduled.
+                'status' => $session->status === SessionStatus::Scheduled && $session->starts_at->lessThanOrEqualTo(now()) ? SessionStatus::Held : $session->status,
             ]);
 
             $session->getMedia(ClassSession::MATERIALS_COLLECTION)

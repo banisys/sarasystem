@@ -132,11 +132,33 @@ class ClassContentTest extends TestCase
         app(ClassMembers::class)->add($this->classroom, ClassRole::factory()->for($this->primary)->create(['title' => 'ناظر', 'takes_attendance' => true]), [$supervisor->id]);
         $book = app(SessionContentBook::class);
 
+        // ADR 0070: every staff member of the class, whatever the role's flags,
+        // and at any time; an attendee never (without the flag).
         $this->assertTrue($book->canRecord($this->teacher, $session));
-        $this->assertFalse($book->canRecord($supervisor, $session));
+        $this->assertTrue($book->canRecord($supervisor, $session));
 
-        $this->travelTo(CarbonImmutable::parse('2026-11-08 00:01'));
-        $this->assertStringContainsString('مهلت', $book->refusal($this->teacher, $session));
+        $this->travelTo(CarbonImmutable::parse('2027-03-01 00:01'));
+        $this->assertTrue($book->canRecord($this->teacher, $session));
+        $this->assertTrue($book->canRecord($supervisor, $session));
+    }
+
+    /**
+     * ADR 0070: content prepared before a session (homework, files) leaves
+     * it scheduled; recorded once it has started, it marks it held.
+     */
+    public function test_content_prepared_ahead_leaves_the_session_scheduled(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-20 09:00'));
+        $session = $this->sessionOn('2026-10-31');
+        $book = app(SessionContentBook::class);
+
+        $book->record($session, ['summary' => 'آماده‌سازی', 'homework' => 'تمرین ۱', 'homework_due_on' => '2026-11-02'], $this->teacher);
+        $this->assertSame(SessionStatus::Scheduled, $session->fresh()->status);
+        $this->assertSame('تمرین ۱', $session->fresh()->homework);
+
+        $this->travelTo(CarbonImmutable::parse('2026-10-31 09:00'));
+        $book->record($session->fresh(), ['summary' => 'درس داده شد'], $this->teacher);
+        $this->assertSame(SessionStatus::Held, $session->fresh()->status);
     }
 
     public function test_the_content_action_saves_topics_and_materials_and_links_are_signed(): void

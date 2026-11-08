@@ -1,7 +1,7 @@
 # 0024 — Class attendance
 
 - **Date:** 2026-10-29
-- **Status:** accepted
+- **Status:** accepted; who and when changed by [ADR 0070](0070-class-staff-without-limits.md) (class staff at any time)
 
 ## Context
 This is step 3 of the classes plan ([ADR 0022](0022-classes.md)): the attendance of the sessions built in step 2 ([ADR 0023](0023-class-schedules-and-sessions.md)).
