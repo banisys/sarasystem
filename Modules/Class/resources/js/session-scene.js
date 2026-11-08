@@ -25,7 +25,6 @@ const COLORS = {
     virtual: { floor: '#1e293b', wall: '#0f172a', board: '#38bdf8', trim: '#334155', window: '#38bdf8' },
     desk: '#c9a26d',
     chair: '#78716c',
-    teacher: '#6366f1',
 };
 
 /**
@@ -129,16 +128,16 @@ function buildRoom(data) {
     const targets = [];
     const frontZ = -depth / 2 + 3.4;
 
-    // The teacher's table and the session's teachers side by side behind it.
+    // The teacher's table and who teaches the session side by side behind it, in their class role's colour.
     box(2, 0.75, 0.8, COLORS.desk, 0, 0.375, -depth / 2 + 1.7);
     const teachers = data.teachers ?? [];
     if (teachers.length) {
         const teacherZ = -depth / 2 + 1;
         const spacing = Math.min(1.2, (width - 2) / teachers.length);
         const teacherXs = teachers.map((_, index) => (index - (teachers.length - 1) / 2) * spacing);
-        add(makePeople(teacherXs.map((x) => ({ x, z: teacherZ, scale: 0.92, color: COLORS.teacher }))));
-        teachers.forEach((name, index) => {
-            targets.push({ position: new Vector3(teacherXs[index], 1.75, teacherZ), text: `${name} · مدرس` });
+        add(makePeople(teachers.map((person, index) => ({ x: teacherXs[index], z: teacherZ, scale: 0.92, color: person.color }))));
+        teachers.forEach((person, index) => {
+            targets.push({ position: new Vector3(teacherXs[index], 1.75, teacherZ), text: `${person.name} · ${person.role}` });
         });
     }
 
@@ -187,6 +186,18 @@ function buildRoom(data) {
         targets.push({
             position: new Vector3(x, look.seated ? 1.55 : 1, z + 0.13),
             text: `${seat.name} · ${seat.label}`,
+        });
+    }
+
+    // The class's other staff (supervisors, supporters, …) stand along the back, facing the board.
+    const staff = data.staff ?? [];
+    if (staff.length) {
+        const staffZ = depth / 2 - 0.9;
+        const spacing = Math.min(1.2, (width - 1.5) / staff.length);
+        const staffXs = staff.map((_, index) => ((staff.length - 1) / 2 - index) * spacing);
+        add(makePeople(staff.map((person, index) => ({ x: staffXs[index], z: staffZ, scale: 0.92, turn: Math.PI, color: person.color }))));
+        staff.forEach((person, index) => {
+            targets.push({ position: new Vector3(staffXs[index], 1.75, staffZ), text: `${person.name} · ${person.role}` });
         });
     }
 

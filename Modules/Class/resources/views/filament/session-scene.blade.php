@@ -102,6 +102,12 @@
                                 {{ $status['label'] }} {{ $status['count'] }}
                             </span>
                         @endforeach
+                        @foreach ($scene['roles'] as $role)
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="size-2.5 rounded-sm" style="background-color: {{ $role['color'] }}"></span>
+                                {{ $role['label'] }} {{ $role['count'] }}
+                            </span>
+                        @endforeach
                         <span class="text-gray-400 dark:text-gray-500">جای نفرها نمادین است. کشیدن: چرخش · چرخ موس یا دو انگشت: زوم · کلیک راست یا کلیدهای جهت: جابه‌جایی · کلیک روی صندلی: نام</span>
                     </div>
                 </div>
@@ -118,6 +124,12 @@
                 <li class="inline-flex items-center gap-1.5">
                     <span class="size-2.5 shrink-0 rounded-full" style="background-color: {{ $scene['statuses'][$seat['status']]['color'] }}"></span>
                     {{ $seat['name'] }} · {{ $seat['label'] }}
+                </li>
+            @endforeach
+            @foreach ([...$scene['teachers'], ...$scene['staff']] as $person)
+                <li class="inline-flex items-center gap-1.5">
+                    <span class="size-2.5 shrink-0 rounded-sm" style="background-color: {{ $person['color'] }}"></span>
+                    {{ $person['name'] }} · {{ $person['role'] }}
                 </li>
             @endforeach
         </ul>

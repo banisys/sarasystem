@@ -90,7 +90,8 @@ class SessionSceneTest extends TestCase
         $scene = app(SessionScene::class)->for($session);
 
         $this->assertTrue($scene['virtual']);
-        $this->assertSame(['مدرس جایگزین', 'مدرس دوم'], $scene['teachers']);
+        $this->assertSame(['مدرس جایگزین', 'مدرس دوم'], array_column($scene['teachers'], 'name'));
+        $this->assertSame(['مدرس', 'مدرس'], array_column($scene['teachers'], 'role'));
         $this->assertSame([], $scene['seats']);
     }
 
@@ -152,6 +153,60 @@ class SessionSceneTest extends TestCase
         $this->attendee('فراگیر');
 
         $this->assertFalse(app(SessionScene::class)->canSee($this->admin(), $session));
+    }
+
+    public function test_the_class_staff_stand_in_the_room_in_their_roles_colours(): void
+    {
+        $session = $this->classSession();
+        $primary = Tenant::primary();
+        $teacherRole = ClassRole::factory()->for($primary)->create(['title' => 'مدرس', 'sort' => 1]);
+        $supervisorRole = ClassRole::factory()->for($primary)->create(['title' => 'ناظر', 'sort' => 2]);
+        $supporterRole = ClassRole::factory()->for($primary)->create(['title' => 'پشتیبان', 'sort' => 3]);
+        $teacher = $this->member('مدرس جلسه', $teacherRole);
+        $otherTeacher = $this->member('مدرس درس دیگر', $teacherRole);
+        $this->member('ناظر کلاس', $supervisorRole);
+        $this->member('پشتیبان یک', $supporterRole);
+        $this->member('پشتیبان دو', $supporterRole);
+        $this->member('پشتیبان رفته', $supporterRole, leftOn: '2026-10-01');
+        $this->attendee('فراگیر');
+        $session->teachers()->attach($teacher->id);
+        ClassSession::factory()->taughtBy($otherTeacher)->create(['classroom_id' => $this->classroom->id]);
+
+        $scene = app(SessionScene::class)->for($session->fresh());
+
+        $this->assertSame([['مدرس جلسه', 'مدرس']], $this->people($scene['teachers']));
+        $this->assertSame([['ناظر کلاس', 'ناظر'], ['پشتیبان دو', 'پشتیبان'], ['پشتیبان یک', 'پشتیبان']], $this->people($scene['staff']));
+        $this->assertSame(['مدرس', 'ناظر', 'پشتیبان'], array_column($scene['roles'], 'label'));
+        $this->assertSame([1, 1, 2], array_column($scene['roles'], 'count'));
+        $this->assertCount(3, array_unique(array_column($scene['roles'], 'color')));
+        $this->assertSame(SessionScene::TEACHER_COLOR, $scene['roles'][0]['color']);
+        $this->assertCount(1, $scene['seats']);
+
+        // A supervisor who teaches this session stands at the front, still as «ناظر» and in its colour.
+        $supervisor = User::query()->where('name', 'ناظر کلاس')->sole();
+        $session->teachers()->attach($supervisor->id);
+        $scene = app(SessionScene::class)->for($session->fresh());
+
+        $this->assertSame([['مدرس جلسه', 'مدرس'], ['ناظر کلاس', 'ناظر']], $this->people($scene['teachers']));
+        $this->assertSame([['پشتیبان دو', 'پشتیبان'], ['پشتیبان یک', 'پشتیبان']], $this->people($scene['staff']));
+        $this->assertSame($scene['roles'][1]['color'], $scene['teachers'][1]['color']);
+    }
+
+    /**
+     * @param  list<array{name: string, role: string, color: string}>  $people
+     * @return list<array{0: string, 1: string}>
+     */
+    private function people(array $people): array
+    {
+        return array_map(fn (array $person): array => [$person['name'], $person['role']], $people);
+    }
+
+    private function member(string $name, ClassRole $role, ?string $leftOn = null): User
+    {
+        $user = User::factory()->create(['name' => $name]);
+        ClassMember::factory()->create(['classroom_id' => $this->classroom->id, 'class_role_id' => $role->id, 'user_id' => $user->id, 'joined_on' => null, 'left_on' => $leftOn]);
+
+        return $user;
     }
 
     private function attendee(string $name): User
