@@ -33,7 +33,7 @@ The user wants:
     - a session changed by hand (moved, cancelled, substitute, note, make-up / extra) is kept;
     - a day that is gone loses its untouched or cancelled session;
     - a missing day gets a new session.
-  - Past sessions are never touched.
+  - Existing past sessions are never changed. Since [ADR 0075](0075-sessions-on-past-dates.md), missing sessions are created on past dates too; existing past sessions consume their original date during matching so saves do not duplicate them.
 - **Clashes:** warn / **refuse**. A schedule, a hand-made session, a move or a substitute is refused when any of these is busy at the time:
   - the teacher, in any tenant (as the substitute, or as the teacher without a substitute);
   - the same class;

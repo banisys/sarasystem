@@ -23,14 +23,12 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
-use Modules\Class\Models\Holiday;
 use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\Subject;
 use Modules\Class\Models\TeachingPlan;
 use Modules\Class\Models\Term;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\ClassMembers;
-use Modules\Class\Services\Recurrence;
 use Modules\Class\Services\SessionPlanner;
 use Modules\Employee\Enums\EmploymentStatus;
 use Modules\Employee\Enums\EmploymentType;
@@ -55,8 +53,8 @@ use Nwidart\Modules\Facades\Module;
  *
  * Members, schedules, cancellations and make-ups go through the class
  * services, so the class rules hold. The history of past sessions is
- * written directly: the services refuse past times, and taking attendance
- * through them would send absence SMS. Accounts have no mobile, so
+ * written directly on the planner’s sessions: taking attendance through
+ * the services would send absence SMS. Accounts have no mobile, so
  * nothing is ever sent to them. All in one transaction, recorded against
  * the batch (SampleRecorder).
  */
@@ -79,7 +77,6 @@ class ClassSampleGenerator
         private TutorialMode $mode,
         private ClassMembers $members,
         private SessionPlanner $planner,
-        private Recurrence $recurrence,
         private Guardians $guardians,
     ) {}
 
@@ -200,7 +197,7 @@ class ClassSampleGenerator
             $schedules = $this->addSchedules($classroom, $lessons, $options, $people['teachers'], $number * count($lessons), $from, $to);
 
             foreach ($schedules as $schedule) {
-                $this->addHistory($classroom, $schedule, $tenant, $options, $people['attendees'], $owner, $from);
+                $this->addHistory($schedule, $options, $people['attendees'], $owner);
             }
 
             $this->cancelWithMakeUp($classroom, (int) $options['cancelled_sessions']);
@@ -474,40 +471,28 @@ class ClassSampleGenerator
     }
 
     /**
-     * The schedule's sessions before now (the planner only builds future
-     * ones) and, for those that ended, attendance, content, homework,
-     * hand-ins and grades.
+     * Add attendance, content, homework, hand-ins and grades to the
+     * schedule's completed sessions built by the planner.
      *
      * @param  array<string, mixed>  $options
      * @param  list<int>  $attendeeIds
      */
-    private function addHistory(Classroom $classroom, ClassSchedule $schedule, Tenant $tenant, array $options, array $attendeeIds, User $owner, CarbonImmutable $from): void
+    private function addHistory(ClassSchedule $schedule, array $options, array $attendeeIds, User $owner): void
     {
-        $holidays = Holiday::applyingIn($tenant)->whereDate('ends_on', '>=', $from)->whereDate('starts_on', '<=', today())->get();
         $topicIds = $schedule->teaching_plan_id ? TeachingPlan::withoutTenantScope()->findOrFail($schedule->teaching_plan_id)->topics()->orderBy('sort')->pluck('id')->all() : [];
         $teacherIds = $schedule->teachers()->pluck('users.id')->all();
         $recorderId = $teacherIds[0] ?? $owner->getKey();
         $topic = 0;
 
-        foreach ($this->recurrence->dates($schedule) as $date) {
-            $start = $date->setTimeFromTimeString($schedule->start_time);
-            $end = $date->setTimeFromTimeString($schedule->end_time);
+        $sessions = ClassSession::withoutTenantScope()
+            ->where('schedule_id', $schedule->getKey())
+            ->where('ends_at', '<=', now())
+            ->orderBy('starts_at')
+            ->get();
 
-            if ($start->isFuture() || $holidays->contains(fn (Holiday $holiday): bool => $date->betweenIncluded($holiday->starts_on, $holiday->ends_on))) {
-                continue;
-            }
-
-            $session = ClassSession::withoutTenantScope()->create([
-                'tenant_id' => $classroom->tenant_id, 'classroom_id' => $classroom->getKey(), 'schedule_id' => $schedule->getKey(),
-                'subject_id' => $schedule->subject_id,
-                'starts_at' => $start, 'ends_at' => $end, 'location' => $schedule->location ?? $classroom->location,
-                'kind' => SessionKind::Regular, 'status' => SessionStatus::Scheduled,
-            ]);
-            $session->teachers()->attach($teacherIds);
-
-            if ($end->isFuture()) {
-                continue;
-            }
+        foreach ($sessions as $session) {
+            $date = $session->starts_at->toImmutable()->startOfDay();
+            $end = $session->ends_at;
 
             $absentIds = $options['attendance'] ? $this->takeAttendance($session, $attendeeIds, $options, $recorderId) : [];
 

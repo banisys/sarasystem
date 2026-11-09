@@ -73,7 +73,7 @@ class SessionsRelationManager extends RelationManager
             ->size(Size::Small)
             ->visible(fn (): bool => auth()->user()?->can('update', $this->classroom()) ?? false)
             ->modalWidth('2xl')
-            ->fillForm(fn (array $arguments): array => ['kind' => SessionKind::MakeUp->value, 'date' => $this->parseDate($arguments['date'] ?? null)?->max(today())->toDateString()])
+            ->fillForm(fn (array $arguments): array => ['kind' => SessionKind::MakeUp->value, 'date' => $this->parseDate($arguments['date'] ?? null)?->toDateString()])
             ->schema([
                 ToggleButtons::make('kind')
                     ->label('نوع')
@@ -82,7 +82,7 @@ class SessionsRelationManager extends RelationManager
                     ->inline()
                     ->required()
                     ->columnSpanFull(),
-                DatePicker::make('date')->label('تاریخ')->jalali()->minDate(today())->required(),
+                DatePicker::make('date')->label('تاریخ')->jalali()->required(),
                 TimePicker::make('start_time')->label('از ساعت')->seconds(false)->required(),
                 TimePicker::make('end_time')->label('تا ساعت')->seconds(false)->after('start_time')->required(),
                 Select::make('subject_id')->label('درس')->options(fn (): array => Subject::options())->searchable(),

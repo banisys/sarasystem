@@ -63,17 +63,17 @@ class ClassSchedulesTest extends TestCase
         $this->planner = app(SessionPlanner::class);
     }
 
-    public function test_a_weekly_schedule_builds_its_future_sessions_without_holidays(): void
+    public function test_a_weekly_schedule_builds_past_and_future_sessions_without_holidays(): void
     {
         Holiday::factory()->for($this->primary)->create(['starts_on' => '2026-11-07', 'ends_on' => '2026-11-07']);
         Holiday::factory()->for($this->west)->create(['starts_on' => '2026-11-09', 'ends_on' => '2026-11-09']);
         Holiday::factory()->for(Tenant::factory()->create())->create(['starts_on' => '2026-11-14', 'ends_on' => '2026-11-14']);
 
-        // From Monday 10-26: the past Monday and Wednesday get no sessions.
+        // From Monday 10-26: past meetings are built too.
         $this->weekly([Weekday::Saturday, Weekday::Monday, Weekday::Wednesday], '2026-10-26', '2026-11-16');
 
         $this->assertSame(
-            ['2026-10-31', '2026-11-02', '2026-11-04', '2026-11-11', '2026-11-14', '2026-11-16'],
+            ['2026-10-26', '2026-10-28', '2026-10-31', '2026-11-02', '2026-11-04', '2026-11-11', '2026-11-14', '2026-11-16'],
             $this->sessionDays(),
         );
         $session = ClassSession::query()->orderBy('starts_at')->first();
@@ -82,6 +82,36 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame([$this->teacher->id], $session->teachers->modelKeys());
         $this->assertSame('کلاس ۱۰۱', $session->location);
         $this->assertSame(SessionKind::Regular, $session->kind);
+    }
+
+    public function test_a_once_schedule_builds_a_session_that_has_already_started(): void
+    {
+        $data = $this->data([], '2026-10-29', '2026-10-29', '11:59', '17:00');
+        $data['frequency'] = Frequency::Once;
+
+        $schedule = $this->planner->saveSchedule(null, $this->classroom, $data);
+
+        $session = $schedule->sessions()->sole();
+        $this->assertSame('2026-10-29 11:59:00', $session->starts_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-29 17:00:00', $session->ends_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_rebuilding_preserves_existing_past_sessions_without_duplicating_them(): void
+    {
+        $schedule = $this->weekly([Weekday::Monday, Weekday::Wednesday], '2026-10-26', '2026-11-04');
+        $past = $schedule->sessions()->whereDate('starts_at', '2026-10-26')->sole();
+        $past->update(['status' => SessionStatus::Held, 'summary' => 'درس ثبت‌شده']);
+        $pastIds = $schedule->sessions()->where('starts_at', '<=', now())->pluck('id')->all();
+
+        $this->planner->saveSchedule($schedule, $this->classroom, $this->data([Weekday::Monday, Weekday::Wednesday], '2026-10-26', '2026-11-04', '10:00', '11:00'));
+        $this->planner->sync($schedule->fresh());
+
+        $this->assertSame(['2026-10-26', '2026-10-28', '2026-11-02', '2026-11-04'], $this->sessionDays());
+        $this->assertSame($pastIds, $schedule->sessions()->where('starts_at', '<=', now())->pluck('id')->all());
+        $this->assertSame('08:00', $past->fresh()->starts_at->format('H:i'));
+        $this->assertSame(SessionStatus::Held, $past->fresh()->status);
+        $this->assertSame('درس ثبت‌شده', $past->fresh()->summary);
+        $this->assertSame('10:00', $schedule->sessions()->whereDate('starts_at', '2026-11-02')->sole()->starts_at->format('H:i'));
     }
 
     public function test_editing_a_schedule_rebuilds_only_untouched_future_sessions(): void

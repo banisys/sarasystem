@@ -98,8 +98,8 @@ class SessionPlanner
     }
 
     /**
-     * Builds the schedule's future sessions again. No clash check: that is
-     * done when the schedule is saved.
+     * Builds missing sessions on every date, preserving existing past sessions.
+     * Saving the schedule checks clashes before synchronization.
      */
     public function sync(ClassSchedule $schedule): void
     {
@@ -109,8 +109,14 @@ class SessionPlanner
         $location = $this->locationOf($schedule, $classroom);
         $teacherIds = $schedule->teachers()->pluck('users.id')->all();
 
-        foreach ($this->sessionsOf($schedule)->upcoming()->with('teachers')->get() as $session) {
+        foreach ($this->sessionsOf($schedule)->with('teachers')->get() as $session) {
             $key = ($session->original_starts_at ?? $session->starts_at)->toDateString();
+
+            if ($session->starts_at->lessThanOrEqualTo(now())) {
+                $planned->forget($key);
+
+                continue;
+            }
 
             if (! $planned->has($key)) {
                 if ($session->isUntouched() || $session->status === SessionStatus::Cancelled) {
@@ -388,7 +394,7 @@ class SessionPlanner
     }
 
     /**
-     * The schedule's future meetings, without holidays and the days whose
+     * The schedule's meetings on all dates, without holidays and the days whose
      * session was deleted by hand.
      *
      * @return Collection<int, array{start: CarbonImmutable, end: CarbonImmutable}>
@@ -413,7 +419,6 @@ class SessionPlanner
                 'start' => $date->setTimeFromTimeString($schedule->start_time),
                 'end' => $date->setTimeFromTimeString($schedule->end_time),
             ])
-            ->filter(fn (array $slot): bool => $slot['start']->isFuture())
             ->values();
     }
 
