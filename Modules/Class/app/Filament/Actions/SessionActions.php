@@ -305,6 +305,7 @@ class SessionActions
         return $users->map(fn (User $user): TextEntry => TextEntry::make('session_user_'.$user->getKey())
             ->hiddenLabel()
             ->state($user->name)
+            ->extraAttributes(['class' => '[&_.fi-in-text-affixed-content]:flex-initial'])
             ->suffixAction(UsersTable::impersonateAction()
                 ->record($user)
                 ->iconButton()
