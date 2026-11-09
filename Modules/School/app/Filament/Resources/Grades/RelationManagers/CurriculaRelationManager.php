@@ -100,7 +100,6 @@ class CurriculaRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['subject', 'major']))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('subject.title')->label('درس'),

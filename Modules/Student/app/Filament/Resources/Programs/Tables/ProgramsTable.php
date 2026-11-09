@@ -18,7 +18,6 @@ class ProgramsTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['workflow', 'availableInTenants'])->withCount('preregistrations'))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')

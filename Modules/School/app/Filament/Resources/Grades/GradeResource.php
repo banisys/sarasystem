@@ -90,9 +90,6 @@ class GradeResource extends Resource
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with('stage')->withCount('curricula'))
-            ->defaultSort(fn (Builder $query) => $query
-                ->orderBy(Stage::withoutGlobalScopes()->select('sort')->whereColumn('school_stages.id', 'school_grades.stage_id'))
-                ->orderBy('sort'))
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')->label('عنوان'),

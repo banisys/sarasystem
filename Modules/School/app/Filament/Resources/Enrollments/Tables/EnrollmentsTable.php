@@ -34,7 +34,6 @@ class EnrollmentsTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['user', 'term', 'grade.stage', 'major', 'classroom']))
-            ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('user.name')->label('نام'),
                 TextColumn::make('user.national_code')->label('کد ملی')->copyable(),

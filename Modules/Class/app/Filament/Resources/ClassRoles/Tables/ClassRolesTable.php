@@ -16,7 +16,6 @@ class ClassRolesTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('members'))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')

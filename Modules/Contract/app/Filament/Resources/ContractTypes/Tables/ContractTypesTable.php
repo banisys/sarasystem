@@ -19,7 +19,6 @@ class ContractTypesTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('contracts'))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')

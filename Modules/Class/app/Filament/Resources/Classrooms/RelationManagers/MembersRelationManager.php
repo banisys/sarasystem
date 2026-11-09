@@ -59,7 +59,6 @@ class MembersRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['user', 'classRole'])->withAttendanceCounts())
-            ->defaultSort('id')
             ->columns([
                 TextColumn::make('user.name')
                     ->label('نام'),

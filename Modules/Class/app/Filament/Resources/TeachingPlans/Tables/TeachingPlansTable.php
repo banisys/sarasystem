@@ -21,7 +21,6 @@ class TeachingPlansTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('subject')->withCount(['topics', 'schedules'])->withSum('topics', 'sessions'))
-            ->defaultSort('title')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')

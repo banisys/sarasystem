@@ -44,7 +44,6 @@ class DocumentsRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['documentType', 'documentable', 'uploadedBy', 'verifiedBy', 'media']))
-            ->defaultSort('uploaded_at', 'desc')
             ->columns(DocumentsTable::columns(withPerson: false))
             ->headerActions([$this->newDocumentAction()])
             ->recordActions(DocumentsTable::recordActions());

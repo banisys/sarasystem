@@ -44,7 +44,6 @@ class ContractsRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['contractType', 'contractable', 'media', 'parent', 'renewals']))
-            ->defaultSort('id', 'desc')
             ->columns(ContractsTable::columns(withPerson: false))
             ->headerActions([$this->newContractAction()])
             ->recordActions(ContractsTable::recordActions());

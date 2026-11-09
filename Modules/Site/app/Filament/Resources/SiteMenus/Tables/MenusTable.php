@@ -18,7 +18,6 @@ class MenusTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('items'))
-            ->defaultSort('title')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')

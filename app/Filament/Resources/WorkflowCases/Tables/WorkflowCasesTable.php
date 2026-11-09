@@ -16,7 +16,6 @@ class WorkflowCasesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('step_started_at')
             ->emptyStateHeading('کارتابل شما خالی است')
             ->emptyStateDescription('پرونده‌هایی که به مرحله‌ی شما برسند اینجا نمایش داده می‌شوند.')
             ->columns([

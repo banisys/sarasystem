@@ -31,7 +31,6 @@ class ClassroomsTable
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->with(['term', 'parent', 'members' => fn ($members) => $members->current()->with(['user', 'classRole'])])
                 ->withCount(['children', 'members']))
-            ->defaultSort('title')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')

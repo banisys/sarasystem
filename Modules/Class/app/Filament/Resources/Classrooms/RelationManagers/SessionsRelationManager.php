@@ -100,7 +100,6 @@ class SessionsRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => SessionActions::withAttendanceCounts($query->with(['classroom', 'subject', 'teachers', 'substitutes'])))
-            ->defaultSort('starts_at')
             ->columns(SessionActions::columns(withClass: false))
             ->filters(ClassSessionsTable::filters(withClass: false))
             ->headerActions([$this->addSessionAction()])

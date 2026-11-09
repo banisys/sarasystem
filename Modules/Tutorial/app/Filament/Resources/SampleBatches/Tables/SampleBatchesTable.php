@@ -18,7 +18,6 @@ class SampleBatchesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('id', 'desc')
             ->modifyQueryUsing(fn ($query) => $query->with(['tenant', 'user'])->withCount('records'))
             ->emptyStateHeading('هنوز داده‌ی نمونه‌ای ساخته نشده است')
             ->emptyStateDescription('با «ساخت داده‌ی نمونه» کلاسی با اعضا، برنامه و سابقه‌ی جلسه‌ها بسازید.')

@@ -89,6 +89,24 @@ class PanelTableTest extends TestCase
             ->assertCanSeeTableRecords([$older, $newer], inOrder: true);
     }
 
+    public function test_default_order_uses_descending_ids_even_when_timestamps_are_in_reverse_order(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+        $first = User::factory()->create(['name' => 'Alpha', 'created_at' => '2026-03-01 09:00:00']);
+        $second = User::factory()->create(['name' => 'Zulu', 'created_at' => '2026-01-01 09:00:00']);
+        $outsider = User::factory()->create();
+        $this->makeStaff($first, $tenant);
+        $this->makeStaff($second, $tenant);
+        $this->makeStaff($outsider, Tenant::factory()->create());
+
+        Livewire::test(ListUsers::class)
+            ->assertCanSeeTableRecords([$second, $first], inOrder: true)
+            ->assertCanNotSeeTableRecords([$outsider])
+            ->sortTable('name', 'asc')
+            ->assertCanSeeTableRecords([$first, $second], inOrder: true);
+    }
+
     public function test_array_backed_tables_do_not_show_database_timestamps(): void
     {
         $tenant = Tenant::factory()->create();

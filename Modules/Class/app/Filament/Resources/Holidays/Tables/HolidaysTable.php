@@ -17,7 +17,6 @@ class HolidaysTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('starts_on', 'desc')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان'),

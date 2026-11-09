@@ -18,7 +18,6 @@ class JobPositionsTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('workflow')->withCount('applications'))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')

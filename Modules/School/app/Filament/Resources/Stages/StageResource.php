@@ -60,7 +60,6 @@ class StageResource extends Resource
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('grades'))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')->label('عنوان'),

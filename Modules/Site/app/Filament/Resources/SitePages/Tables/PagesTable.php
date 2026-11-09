@@ -20,8 +20,6 @@ class PagesTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('tenant'))
-            // The home page first, then the newest.
-            ->defaultSort(fn ($query) => $query->orderByRaw('path = ? desc', [Page::HOME_PATH])->latest())
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')

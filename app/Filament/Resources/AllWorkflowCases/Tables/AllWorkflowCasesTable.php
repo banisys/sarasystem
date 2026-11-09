@@ -19,7 +19,6 @@ class AllWorkflowCasesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('پرونده‌ای نیست')
             ->emptyStateDescription('پرونده‌هایی که فرایندی برایشان شروع شود، این‌جا نمایش داده می‌شوند.')
             ->columns([

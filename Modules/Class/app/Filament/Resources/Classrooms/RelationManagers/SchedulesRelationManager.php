@@ -59,7 +59,6 @@ class SchedulesRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['subject', 'teachers', 'teachingPlan'])->withCount(['sessions' => fn (Builder $sessions) => $sessions->upcoming()->takingPlace()]))
-            ->defaultSort('starts_on')
             ->columns([
                 TextColumn::make('frequency')
                     ->label('زمان')

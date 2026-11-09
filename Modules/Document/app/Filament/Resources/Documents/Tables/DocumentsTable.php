@@ -22,7 +22,6 @@ class DocumentsTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['documentType', 'documentable', 'uploadedBy', 'verifiedBy', 'media']))
-            ->defaultSort('uploaded_at', 'desc')
             ->columns(self::columns(withPerson: true))
             ->filters([
                 SelectFilter::make('document_type_id')

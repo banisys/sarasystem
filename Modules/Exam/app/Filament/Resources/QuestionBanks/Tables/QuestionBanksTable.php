@@ -18,7 +18,6 @@ class QuestionBanksTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('questions'))
-            ->defaultSort('title')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')

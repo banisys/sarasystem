@@ -34,7 +34,6 @@ class EnrollmentsRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['term', 'grade.stage', 'major', 'classroom']))
-            ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('term.title')->label('سال تحصیلی'),
                 TextColumn::make('grade.title')->label('پایه')->description(fn (Enrollment $record): ?string => $record->grade?->stage?->title),

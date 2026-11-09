@@ -24,7 +24,6 @@ class ContractsTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['contractType', 'contractable', 'media', 'parent', 'renewals']))
-            ->defaultSort('id', 'desc')
             ->columns(self::columns(withPerson: true))
             ->filters([
                 TextFilter::make('number')->label('شماره'),

@@ -19,7 +19,6 @@ class DocumentTypesTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('documents'))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')

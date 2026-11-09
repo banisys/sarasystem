@@ -150,14 +150,14 @@ class PageResourceTest extends TestCase
             ->assertActionHasUrl(TestAction::make('view')->table($page), url("/{$this->tenant->slug}/about-us"));
     }
 
-    public function test_the_home_page_is_listed_first_and_cannot_be_deleted_or_moved(): void
+    public function test_the_home_page_follows_id_order_and_cannot_be_deleted_or_moved(): void
     {
         $home = Page::withoutTenantScope()->where('tenant_id', $this->tenant->id)->where('path', '/')->sole();
         $other = Page::factory()->for($this->tenant)->create(['path' => '/about-us']);
         $this->actingInPanel($this->editor, $this->tenant);
 
         Livewire::test(ListPages::class)
-            ->assertCanSeeTableRecords([$home, $other], inOrder: true)
+            ->assertCanSeeTableRecords([$other, $home], inOrder: true)
             ->assertActionHidden(TestAction::make('delete')->table($home))
             ->assertActionVisible(TestAction::make('delete')->table($other));
 

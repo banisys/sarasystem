@@ -18,7 +18,6 @@ class OnlineServersTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount(['rooms' => fn ($rooms) => $rooms->withoutGlobalScopes()]))
-            ->defaultSort('title')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان'),

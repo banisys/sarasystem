@@ -20,7 +20,6 @@ class ExamAttemptsTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['exam', 'user']))
-            ->defaultSort('started_at', 'desc')
             ->columns([
                 TextColumn::make('user.name')
                     ->label('شرکت‌کننده'),

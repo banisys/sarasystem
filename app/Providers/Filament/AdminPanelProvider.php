@@ -177,8 +177,7 @@ class AdminPanelProvider extends PanelProvider
         // No search box (text lookups are filters, see TextFilter; a table
         // can opt back in with ->searchable()). Filters in a dropdown beside
         // the column manager (any AboveContent* layout puts the trigger on its
-        // own row), 25 rows per page, and newest records first when the model
-        // keeps timestamps.
+        // own row), 25 rows per page, and highest record ID first for model-backed tables.
         Table::configureUsing(fn (Table $table) => $table
             ->searchable(false)
             ->filtersLayout(FiltersLayout::Dropdown)
@@ -187,13 +186,7 @@ class AdminPanelProvider extends PanelProvider
             ->filtersFormMaxHeight('32rem')
             ->defaultPaginationPageOption(25)
             ->paginationPageOptions([10, 25, 50, 100])
-            ->defaultSort(function (Builder $query, string $direction): ?Builder {
-                $model = $query->getModel();
-
-                return $model->usesTimestamps() && $model->getCreatedAtColumn()
-                    ? $query->orderBy($model->qualifyColumn($model->getCreatedAtColumn()), $direction)
-                    : null;
-            }, 'desc'));
+            ->defaultSort(fn (Builder $query): Builder => $query->orderByDesc($query->getModel()->getQualifiedKeyName()), 'desc'));
 
         // Modals (actions, slide-overs, confirmations) close only with the ×
         // button, not by clicking outside or pressing Escape. A modal can opt

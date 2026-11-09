@@ -17,7 +17,6 @@ class SubjectsTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount(['schedules', 'sessions']))
-            ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
                 TextColumn::make('title')

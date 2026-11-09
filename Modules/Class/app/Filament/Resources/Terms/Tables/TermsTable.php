@@ -17,7 +17,6 @@ class TermsTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('classrooms'))
-            ->defaultSort('starts_on', 'desc')
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان'),
