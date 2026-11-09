@@ -42,6 +42,10 @@ class SkyroomApi
         }
 
         if (! $response->successful()) {
+            if ($response->status() === 503) {
+                throw new OnlineClassException('سرویس Skyroom موقتاً در دسترس نیست یا محدودیت تعداد درخواست‌ها پر شده است؛ کمی بعد دوباره تلاش کنید.');
+            }
+
             throw new OnlineClassException('سرور Skyroom پاسخ درستی نداد (HTTP '.$response->status().').');
         }
 
@@ -52,9 +56,17 @@ class SkyroomApi
         }
 
         if (! $data['ok']) {
-            Log::warning('Skyroom refused', ['server' => $this->server->getKey(), 'action' => $action]);
+            $code = is_int($data['error_code'] ?? null) ? $data['error_code'] : null;
+            Log::warning('Skyroom refused', ['server' => $this->server->getKey(), 'action' => $action, 'code' => $code]);
 
-            throw new OnlineClassException('Skyroom درخواست «'.$action.'» را نپذیرفت؛ کلید API، ظرفیت و وضعیت سرویس را بررسی کنید.');
+            throw new OnlineClassException(match ($code) {
+                10 => 'وب‌سرویس Skyroom غیرفعال است.',
+                11 => 'کلید API سرور Skyroom معتبر نیست.',
+                12 => 'دسترسی این درخواست در Skyroom مجاز نیست.',
+                13 => 'پارامترهای درخواست Skyroom معتبر نیست؛ تنظیمات سرور را بررسی کنید.',
+                15 => 'اتاق یا داده‌ی درخواستی در Skyroom پیدا نشد.',
+                default => 'Skyroom درخواست «'.$action.'» را نپذیرفت؛ کلید API، ظرفیت و وضعیت سرویس را بررسی کنید.',
+            });
         }
 
         if (! array_key_exists('result', $data)) {

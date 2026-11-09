@@ -20,7 +20,8 @@ use Modules\Class\Enums\OnlinePlatform;
  * server's «Shared Meetings»), `login_prefix` (people's logins are
  * «{prefix}{user id}@{host}»), `verify_ssl`.
  * Skyroom: host is the API endpoint without its key; password is the API
- * key. Settings: `max_users` (fallback room capacity), `host_concurrent`.
+ * key. Settings: optional `service_id`, `max_users` (fallback room capacity),
+ * `host_concurrent`.
  */
 #[Fillable(['platform', 'title', 'host', 'username', 'password', 'settings', 'is_active'])]
 #[Hidden(['password'])]
