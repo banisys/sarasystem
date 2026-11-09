@@ -24,6 +24,7 @@ use Illuminate\Support\Arr;
  *   actions dropdown.
  * - The first data column is the row's number («ردیف»), continuing across
  *   pages. Tables built on a columns layout (stacks, splits) don't get it.
+ * - Creation and update timestamps are visible, sortable Jalali date-times.
  */
 class PanelTable extends Table
 {
@@ -34,14 +35,40 @@ class PanelTable extends Table
     {
         $hasLayout = collect($components)->contains(fn ($component): bool => $component instanceof ColumnLayoutComponent);
 
-        if ($hasLayout) {
-            return parent::columns($components);
-        }
-
-        return parent::columns([
+        parent::columns($hasLayout ? $components : [
             TextColumn::make('rowNumber')->label('ردیف')->rowIndex()->extraHeaderAttributes(['style' => 'width: 1%']),
             ...$components,
         ]);
+
+        foreach (['created_at' => 'تاریخ ایجاد', 'updated_at' => 'آخرین ویرایش'] as $name => $label) {
+            $column = $this->getColumn($name);
+
+            if (! $column) {
+                $column = TextColumn::make($name)
+                    ->visible(function () use ($name): bool {
+                        $modelClass = $this->getModel();
+
+                        if (! $modelClass) {
+                            return false;
+                        }
+
+                        $model = new $modelClass;
+
+                        return $model->usesTimestamps()
+                            && in_array($name, [$model->getCreatedAtColumn(), $model->getUpdatedAtColumn()], true);
+                    });
+
+                $this->pushColumns([$column]);
+            }
+
+            $column->label($label)->sortable()->toggleable(isToggledHiddenByDefault: false);
+
+            if ($column instanceof TextColumn) {
+                $column->jalaliDateTime();
+            }
+        }
+
+        return $this;
     }
 
     /**
