@@ -59,9 +59,9 @@ The user wants:
   - [SessionPlanner](../../Modules/Class/app/Services/SessionPlanner.php) checks, saves and builds schedules (at most 1000 sessions each), skips the holidays that apply in the class's tenant, checks clashes, and moves, cancels, restores and substitutes sessions.
 - **Holidays:** `Holiday` saved / deleted → `SessionPlanner::holidayChanged()`. The primary tenant's holidays rebuild every tenant's schedules in their range.
 - **Admin:**
-  - On the class page:
-    - tab «برنامه»: add / edit / delete schedules, with a one-line summary per schedule;
-    - tab «جلسه‌ها» (a day / week / month / year calendar since [ADR 0047](0047-class-session-calendar.md)): the class's sessions with row actions («جابه‌جایی»، «مدرس جایگزین»، «لغو جلسه»، «برگرداندن جلسه»، «حذف» for hand-made ones not started yet, for any session not held since [ADR 0066](0066-deleting-unheld-sessions.md)) and «جلسه‌ی جبرانی / فوق‌العاده».
+  - Separate class pages, reached through the class list’s row actions:
+    - «برنامه»: add / edit / delete schedules, with a one-line summary per schedule; the header’s «جلسه‌ها» button opens the same class’s sessions in the current tenant;
+    - «جلسه‌ها» (a day / week / month / year calendar since [ADR 0047](0047-class-session-calendar.md)): the class's sessions with row actions («جابه‌جایی»، «مدرس جایگزین»، «لغو جلسه»، «برگرداندن جلسه»، «حذف» for hand-made ones not started yet, for any session not held since [ADR 0066](0066-deleting-unheld-sessions.md)) and «جلسه‌ی جبرانی / فوق‌العاده».
   - Menu:
     - «کلاس‌ها → جلسه‌ها»: every session of the tenant, from today by default, filterable by dates, class, teacher, subject, status and kind;
     - «کلاس‌ها → درس‌ها»: primary tenant only.
