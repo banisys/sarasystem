@@ -13,8 +13,8 @@ Support and testing need to see the system exactly as a given user sees it (thei
 ## Decision
 Own service, [Impersonation](../../app/Auth/Impersonation.php):
 - **Only super admins** may impersonate, and never another super admin or themselves, and not while already impersonating. Managers with `Update:User` may not: impersonation gives the actor every tenant the target belongs to, beyond the tenants the manager manages (compare ADR 0003).
-- Started from the users list in the admin panel (row action «ورود با این کاربر»; until 2026-11-08 a button on the user edit page). Staff land on the panel root (which picks one of *their* tenants), others on `/dashboard`.
-- The super admin's id and the page to return to are kept in the session. A bar «بازگشت به حساب خودم» is shown on every page (panel render hook and `AppLayout.vue`); `POST /impersonation/leave` logs the super admin back in and returns to the users list.
+- Started from the users list in the admin panel (row action «ورود با این کاربر»; until 2026-11-08 a button on the user edit page), or the session page's «افراد جلسه» section (small icon beside each name, added 2026-11-09). The latter lists the session's teachers, substitutes, members present on its date, attendees and recorded actors, and returns to that session on leaving. It reuses the users action and the same service and confirmation. Staff land on the panel root (which picks one of *their* tenants), others on `/dashboard`.
+- The super admin's id and the page to return to are kept in the session. A bar «بازگشت به حساب خودم» is shown on every page (panel render hook and `AppLayout.vue`); `POST /impersonation/leave` logs the super admin back in and returns to the originating list or session.
 - On each switch, the web-side tenant choice and the `RecentCodeLogin` mark are dropped (so the actor can't change the target's password without the current one), and the session's password hash is set for the new user so `auth.session` does not log them out.
 - Start and end are written to the application log.
 

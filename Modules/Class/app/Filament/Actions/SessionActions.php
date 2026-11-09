@@ -2,6 +2,8 @@
 
 namespace Modules\Class\Filament\Actions;
 
+use App\Auth\Impersonation;
+use App\Filament\Resources\Users\Tables\UsersTable;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Identifiers;
@@ -9,6 +11,7 @@ use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -32,6 +35,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
+use Livewire\Component;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionStatus;
@@ -271,7 +275,48 @@ class SessionActions
                             ->visible(fn (ClassSession $record, SessionScene $scene): bool => ($user = auth()->user()) instanceof User && $scene->canSee($user, $record)),
                     ]),
             ]),
+            Section::make('افراد جلسه')
+                ->visible(fn (): bool => auth()->user()?->isSuperAdmin() && ! Impersonation::isActive())
+                ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
+                ->schema(fn (ClassSession $record): array => self::peopleEntries($record)),
         ];
+    }
+
+    /**
+     * Session participants and recorded actors, with the existing impersonation
+     * action. Building entries from the scoped session also restricts targets.
+     *
+     * @return list<TextEntry>
+     */
+    private static function peopleEntries(ClassSession $session): array
+    {
+        $day = $session->starts_at->toDateString();
+        $members = $session->classroom?->members()
+            ->where(fn (Builder $query) => $query->whereNull('joined_on')->orWhereDate('joined_on', '<=', $day))
+            ->where(fn (Builder $query) => $query->whereNull('left_on')->orWhereDate('left_on', '>=', $day))
+            ->with('user')->get()->pluck('user') ?? collect();
+        $users = $members->concat($session->teachers)->concat($session->substitutes)
+            ->concat(app(AttendanceRegister::class)->attendees($session))
+            ->concat([$session->changedBy, $session->contentRecordedBy])
+            ->concat($session->attendances()->with('recordedBy')->get()->pluck('recordedBy'))
+            ->concat($session->homeworkSubmissions()->with(['user', 'gradedBy'])->get()->flatMap(fn (HomeworkSubmission $submission): array => [$submission->user, $submission->gradedBy]))
+            ->filter()->unique('id')->sortBy('name');
+
+        return $users->map(fn (User $user): TextEntry => TextEntry::make('session_user_'.$user->getKey())
+            ->hiddenLabel()
+            ->state($user->name)
+            ->suffixAction(UsersTable::impersonateAction()
+                ->record($user)
+                ->iconButton()
+                ->tooltip('ورود با این کاربر')
+                ->modalHeading('ورود با حساب '.$user->name)
+                ->action(function (Component $livewire) use ($session, $user): void {
+                    Impersonation::start(auth()->user(), $user, ClassSessionResource::getUrl('view', ['record' => $session]));
+
+                    $panel = Filament::getPanel('admin');
+                    $livewire->redirect($user->canAccessPanel($panel) ? url($panel->getPath()) : route('dashboard'));
+                })))
+            ->values()->all();
     }
 
     /**

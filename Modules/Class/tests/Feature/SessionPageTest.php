@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Tests\Feature;
 
+use App\Auth\Impersonation;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -15,6 +16,8 @@ use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ListClassSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewClassSession;
+use Modules\Class\Models\ClassMember;
+use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
@@ -80,6 +83,70 @@ class SessionPageTest extends TestCase
 
         $this->actingInPanel($this->admin(), $this->west);
         $this->get(ClassSessionResource::getUrl('view', ['record' => $theirs->id], tenant: $this->west))->assertNotFound();
+    }
+
+    public function test_the_super_admin_can_impersonate_a_session_teacher_and_return_to_the_session(): void
+    {
+        $teacher = User::factory()->create(['name' => 'مدرس جلسه']);
+        $session = $this->classSession();
+        $session->teachers()->attach($teacher);
+        $this->actingInPanel($admin = $this->admin(), $this->west);
+        $url = ClassSessionResource::getUrl('view', ['record' => $session], tenant: $this->west);
+
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertSee('افراد جلسه')
+            ->callAction(TestAction::make('impersonate')->schemaComponent('session_user_'.$teacher->id, 'infolist'))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($teacher);
+        $this->assertSame($admin->id, session(Impersonation::SESSION_KEY));
+        $this->post(route('impersonation.leave'))->assertRedirect($url);
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_session_viewers_cannot_impersonate_its_people(): void
+    {
+        $teacher = User::factory()->create();
+        $session = $this->classSession();
+        $session->teachers()->attach($teacher);
+        $this->roleWithPermissions('sessions_viewer', ['ViewAny:ClassSession']);
+        $viewer = User::factory()->create();
+        $this->makeStaff($viewer, $this->west);
+        $this->grantRole($viewer, $this->west, 'sessions_viewer');
+        $this->actingInPanel($viewer, $this->west);
+
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertDontSee('افراد جلسه')
+            ->assertActionDoesNotExist(TestAction::make('impersonate')->schemaComponent('session_user_'.$teacher->id, 'infolist'));
+
+        $this->assertAuthenticatedAs($viewer);
+        $this->assertFalse(Impersonation::isActive());
+    }
+
+    public function test_session_people_include_members_and_substitutes_but_not_other_tenants_users(): void
+    {
+        $session = $this->classSession();
+        $teacher = User::factory()->create();
+        $substitute = User::factory()->create();
+        $learner = User::factory()->create();
+        $session->teachers()->attach($teacher, ['substitute_id' => $substitute->id]);
+        ClassMember::factory()->for($this->classroom)->create([
+            'user_id' => $learner->id,
+            'class_role_id' => ClassRole::factory()->attendee()->create()->id,
+        ]);
+        $otherTenant = Tenant::factory()->create();
+        $outsider = User::factory()->create(['name' => 'فرد شعبه دیگر']);
+        $this->grantRole($outsider, $otherTenant, 'student');
+        $this->actingInPanel($admin = $this->admin(), $this->west);
+        $session->teachers()->attach($admin);
+
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertSee([$teacher->name, $substitute->name, $learner->name])
+            ->assertDontSee($outsider->name)
+            ->assertActionVisible(TestAction::make('impersonate')->schemaComponent('session_user_'.$learner->id, 'infolist'))
+            ->assertActionVisible(TestAction::make('impersonate')->schemaComponent('session_user_'.$substitute->id, 'infolist'))
+            ->assertActionHidden(TestAction::make('impersonate')->schemaComponent('session_user_'.$admin->id, 'infolist'))
+            ->assertActionDoesNotExist(TestAction::make('impersonate')->schemaComponent('session_user_'.$outsider->id, 'infolist'));
     }
 
     public function test_who_may_open_it(): void
