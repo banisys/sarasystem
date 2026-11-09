@@ -73,7 +73,7 @@ Some clients pay per feature, so an installation must work with any module disab
 - PHPUnit; tests live in `tests/Feature`, `tests/Unit` and `Modules/{Name}/tests`.
 - **Which tests to run ([ADR 0059](decisions/0059-running-tests.md)):**
   - While working, run only what the change touches: `php artisan test --compact Modules/{Name}/tests`, a file, or `--filter`. If the change affects a screen or service another module uses, add that module's tests. If it affects a tutorial mission, add `Modules/Tutorial/tests`.
-  - Run the whole suite once at the end of a task that reaches a commit point or changes something shared (`app/`, `tests/` helpers, config, core hooks, or what several modules use).
+  - Run the whole suite once at the end of a task only if it changes something shared (`app/`, `tests/` helpers, config, core hooks, or what several modules use). A commit alone does not require the whole suite; a module-only change runs only the affected tests.
 - The whole suite runs in parallel with `php artisan test --parallel --processes=8` (`brianium/paratest`). More processes gave no real gain on the dev machine. Each process gets its own database (`testing_test_1`, `testing_test_2`, …, created and migrated automatically). Single files or `--filter` runs stay sequential.
 - Before adding expensive work to a `setUp()`, check its cost: it is paid once per test. A slow helper or service used in `setUp()` is usually better fixed at its source.
 - Tests run on PostgreSQL, in the `testing` database of the `pgsql` container (`phpunit.xml`), with `RefreshDatabase`. The database is created by `docker/pgsql/create-testing-database.sql` when the volume is first initialised; on an existing volume, create it with `CREATE DATABASE testing`.

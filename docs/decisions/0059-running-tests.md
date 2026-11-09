@@ -23,14 +23,14 @@ We measured on the dev machine (i7-13620H laptop: 6 performance and 4 efficiency
 - `Modules/Tutorial/tests` took 53 s, about a third of the suite's test time, and `DefaultRoles::install()` was the main reason: 1.3 s and 533 queries each time, used by its 28 tests. `Permission::findOrCreate()` forgets the permission cache with each permission it makes and reads it all back for the next.
 
 ## Options considered
-- **Run only the tests a change touches during a task** — the largest gain (a module's tests take seconds instead of the whole suite); a break elsewhere is found later, so the whole suite still has to run before a commit.
+- **Run only the tests a change touches during a task** — the largest gain (a module's tests take seconds instead of the whole suite); module-only changes keep this scope through commit; shared changes require a final whole-suite run.
 - **Make `DefaultRoles::install()` cheap** — fixes the real hot spot, and installations benefit too.
 - **Share one install between tests (static copy of the rows)** — also fast, but adds test-only machinery and leaves the slow install in place.
 - **Database on tmpfs, OPcache in the CLI, Xdebug off, `schema:dump`** — no gain beyond the noise in the measurements (`schema:dump` was not run; migrations cost too little for it to matter), and more setup to keep.
 - **Trim the data in the slowest tests** — possible later; not measured.
 
 ## Decision
-- While working, run only the tests of what the change touches. Run the whole suite once at the end of a task that reaches a commit point or changes something shared ([conventions.md → Testing](../conventions.md#testing)).
+- While working, run only the tests of what the change touches. Run the whole suite once at the end of a task only if it changes something shared ([conventions.md → Testing](../conventions.md#testing)).
 - Run the whole suite with `--parallel --processes=8`.
 - `DefaultRoles::install()` makes the missing permissions in one `insertOrIgnore` statement and reads them back in one query.
 - The `pgsql` service runs with `max_locks_per_transaction=256`, so a run with more processes no longer fails.
@@ -38,7 +38,8 @@ We measured on the dev machine (i7-13620H laptop: 6 performance and 4 efficiency
 Result, measured the same way on 583 tests: `Modules/Tutorial/tests` 19 s, whole suite 27–36 s with 8 processes, 37 s with 16, 43 s with 4, 112 s with 1.
 
 ## Consequences
-- A bug in another module may show up only in the final whole-suite run, so that run is not optional at a commit point.
+- **Amended 2026-11-09:** a commit alone does not require the whole suite. Module-only changes run affected tests; changes to shared code still require one final whole-suite run.
+- A bug outside the affected tests may show up only in a later whole-suite run. This is the accepted tradeoff for faster module-only work.
 - `DefaultRoles::install()` makes permissions without model events, so nothing that listens for a new `Permission` hears them. Nothing does today, and the tutorial must not record them anyway.
 - `max_locks_per_transaction` also applies to the local application database. Production settings are separate and not affected by this file.
 - These numbers belong to one laptop. Measure again before relying on them on another machine.
