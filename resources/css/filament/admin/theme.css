@@ -10,6 +10,11 @@
 @source '../../../../Modules/*/resources/views/filament/**/*';
 @source '../../../../Modules/*/resources/views/livewire/**/*';
 
+/* Lists and other pages with content tables use all space beside the sidebar. */
+.fi-main:has(.fi-page-content .fi-ta) {
+    max-width: none;
+}
+
 /* Panel font (ported from LMS). Registered with ->font('Shabnam', provider:
    LocalFontProvider::class) in AdminPanelProvider, which sets Filament's
    --font-family; only the Light weight exists, used for all text. */
