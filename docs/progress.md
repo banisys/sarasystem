@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-09 — The class schedules page’s «جلسه‌ها» header button now uses a neutral outlined style with a transparent background. No tutorial change needed (same label and navigation). Class admin tests pass (7 tests, 64 assertions); Pint passes.
 - 2026-11-09 — Class «برنامه» page has a header button «جلسه‌ها» opening that class’s sessions in the current tenant. Updated the weekly-schedule tutorial step and corrected ADR 0023’s outdated tab description to separate pages. Relevant Class admin/schedule tests and Tutorial tests pass (56 tests, 698 assertions); Pint passes. Not checked in a browser.
 - 2026-11-09 — Testing policy amended at the user’s request: committing no longer triggers the whole suite. Module-only work runs affected tests; shared changes still require one final whole-suite run. Updated `CLAUDE.md` (`AGENTS.md` symlink), conventions and ADR 0059. Documentation only; no tests or tutorial update needed.
 - 2026-11-09 — Compact admin timestamp columns: Jalali date on the first line, smaller `HH:mm` time below, and minimal column widths in `PanelTable`. Sorting remains on the original timestamps. Updated the users tutorial tip and ADR 0006 / architecture. All 660 tests (4730 assertions, 4 processes) and Pint pass. Not checked in a browser.

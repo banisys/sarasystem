@@ -14,6 +14,8 @@ class ClassSchedules extends ClassroomSectionPage
         return [
             Action::make('sessions')
                 ->label('جلسه‌ها')
+                ->color('gray')
+                ->outlined()
                 ->icon(Heroicon::OutlinedClock)
                 ->url(fn (): string => ClassroomResource::getUrl('sessions', ['record' => $this->getRecord()])),
         ];
