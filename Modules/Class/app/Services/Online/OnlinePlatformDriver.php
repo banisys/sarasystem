@@ -9,7 +9,7 @@ use Modules\Class\Models\OnlineServer;
 
 /**
  * What the system does with a platform of online classes (ADR 0073). A
- * new platform (Skyroom, BigBlueButton, …) is a case of OnlinePlatform and
+ * new platform (BigBlueButton, …) is a case of OnlinePlatform and
  * a driver.
  */
 interface OnlinePlatformDriver

@@ -29,6 +29,7 @@ use Modules\Class\Models\OnlineServer;
 use Modules\Class\Models\OnlineServerAccount;
 use Modules\Class\Services\ClassMembers;
 use Modules\Class\Services\Online\OnlineRooms;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -58,6 +59,8 @@ class OnlineClassTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        config(['inertia.ssr.enabled' => false]);
 
         $this->travelTo(CarbonImmutable::parse('2026-10-29 12:00'));
         $this->primary = Tenant::factory()->create();
@@ -306,6 +309,183 @@ class OnlineClassTest extends TestCase
             ->assertHasNoTableActionErrors();
         $this->assertSame('Secret#1', $server->fresh()->password);
         $this->assertSame('سرور یک', $server->fresh()->title);
+    }
+
+    public function test_skyroom_reuses_the_class_room_and_gives_each_person_their_session_role(): void
+    {
+        $server = OnlineServer::factory()->skyroom()->create(['password' => 'sky-key']);
+        $this->classroom->update(['capacity' => 25]);
+        app(OnlineRooms::class)->change($this->classroom, 'server:'.$server->id, null, CarbonImmutable::parse('2026-11-05'));
+        Http::preventStrayRequests();
+        Http::fake(['https://www.skyroom.online/skyroom/api/sky-key' => fn (Request $request) => Http::response([
+            'ok' => true,
+            'result' => $request['action'] === 'createRoom' ? 123 : 'https://www.skyroom.online/ch/sara/class?token=short-lived',
+        ])]);
+
+        $this->as($this->teacher, $this->second)->assertRedirect('https://www.skyroom.online/ch/sara/class?token=short-lived');
+        $this->as($this->teacher, $this->second)->assertRedirect();
+        $this->travelTo(CarbonImmutable::parse('2026-11-08 10:00'));
+        $this->as($this->student, $this->second)->assertRedirect();
+
+        $this->assertSame('123', ClassOnlineRoom::query()->where('server_id', $server->id)->sole()->external_id);
+        $this->assertSame(0, OnlineServerAccount::query()->count());
+        $this->assertCount(1, Http::recorded(fn (Request $request): bool => $request['action'] === 'createRoom'));
+        Http::assertSent(fn (Request $request): bool => $request['action'] === 'createRoom'
+            && $request['params']['guest_login'] === false && $request['params']['op_login_first'] === true
+            && $request['params']['max_users'] === 25);
+        Http::assertSent(fn (Request $request): bool => $request['action'] === 'createLoginUrl'
+            && $request['params'] === ['room_id' => 123, 'user_id' => 'sara'.$this->teacher->id, 'nickname' => $this->teacher->name,
+                'access' => 3, 'concurrent' => 3, 'language' => 'fa', 'ttl' => 300]);
+        Http::assertSent(fn (Request $request): bool => $request['action'] === 'createLoginUrl'
+            && $request['params']['user_id'] === 'sara'.$this->student->id && $request['params']['access'] === 1
+            && $request['params']['concurrent'] === 1);
+
+        $this->travelTo(CarbonImmutable::parse('2026-11-01 10:00'));
+        $this->as($this->student, $this->first)->assertRedirect('https://meet.example.com/7a');
+        $this->assertSame(['از ابتدا: لینک https://meet.example.com/7a', 'از 1405/08/14: Skyroom — '.$server->title], app(OnlineRooms::class)->history($this->classroom));
+    }
+
+    public function test_skyroom_rejects_unauthorized_and_out_of_time_entry_before_calling_the_api(): void
+    {
+        $server = OnlineServer::factory()->skyroom()->create();
+        app(OnlineRooms::class)->change($this->classroom, 'server:'.$server->id, null);
+        Http::preventStrayRequests();
+        Http::fake();
+
+        $this->refused($this->as($this->student, $this->second), 'کلاس آنلاین از 15 دقیقه پیش از شروع جلسه (10:00) باز می‌شود.');
+        $outsider = User::factory()->create();
+        $this->grantRole($outsider, $this->primary, 'member');
+        $this->actingAs($outsider)->get(route('class.online.enter', $this->second))->assertNotFound();
+        $server->update(['is_active' => false]);
+        $this->refused($this->as($this->teacher, $this->second), 'سرور کلاس آنلاین این کلاس غیرفعال است؛ به مدیر کلاس خبر دهید.');
+        Http::assertNothingSent();
+    }
+
+    #[TestWith([500, ['ok' => true, 'result' => 123], 'سرور Skyroom پاسخ درستی نداد (HTTP 500).'])]
+    #[TestWith([200, ['ok' => false, 'error_message' => 'secret-key'], 'Skyroom درخواست «createRoom» را نپذیرفت؛ کلید API، ظرفیت و وضعیت سرویس را بررسی کنید.'])]
+    #[TestWith([200, '<html>not skyroom</html>', 'پاسخ سرور Skyroom خوانا نبود؛ نشانی وب‌سرویس را بررسی کنید.'])]
+    #[TestWith([200, ['ok' => true], 'پاسخ سرور Skyroom نتیجه ندارد.'])]
+    #[TestWith([200, ['ok' => true, 'result' => 0], 'شناسه‌ی اتاق دریافتی از Skyroom معتبر نیست.'])]
+    public function test_skyroom_failures_show_a_safe_reason_and_do_not_keep_a_room(int $status, array|string $body, string $message): void
+    {
+        $server = OnlineServer::factory()->skyroom()->create();
+        app(OnlineRooms::class)->change($this->classroom, 'server:'.$server->id, null);
+        Http::preventStrayRequests();
+        Http::fake(['https://www.skyroom.online/skyroom/api/secret' => Http::response($body, $status)]);
+
+        $this->refused($this->as($this->teacher, $this->second), $message);
+
+        $this->assertNull(ClassOnlineRoom::query()->where('server_id', $server->id)->sole()->external_id);
+        Http::assertSentCount(1);
+    }
+
+    public function test_skyroom_network_failures_do_not_expose_the_api_key(): void
+    {
+        $server = OnlineServer::factory()->skyroom()->create();
+        app(OnlineRooms::class)->change($this->classroom, 'server:'.$server->id, null);
+        Http::preventStrayRequests();
+        Http::fake(['https://www.skyroom.online/skyroom/api/secret' => Http::failedConnection()]);
+
+        $this->refused($this->as($this->teacher, $this->second), 'سرور Skyroom در دسترس نیست.');
+        $this->assertNull(ClassOnlineRoom::query()->where('server_id', $server->id)->sole()->external_id);
+    }
+
+    public function test_skyroom_rejects_an_invalid_login_url_and_retries_entry_with_the_existing_room(): void
+    {
+        $server = OnlineServer::factory()->skyroom()->create();
+        app(OnlineRooms::class)->change($this->classroom, 'server:'.$server->id, null);
+        $room = ClassOnlineRoom::query()->where('server_id', $server->id)->sole();
+        $room->update(['external_id' => '123']);
+        Http::preventStrayRequests();
+        Http::fake(['https://www.skyroom.online/skyroom/api/secret' => Http::sequence()
+            ->push(['ok' => true, 'result' => 'javascript:alert(1)'])
+            ->push(['ok' => true, 'result' => 'https://www.skyroom.online/ch/sara/room'])]);
+
+        $this->refused($this->as($this->teacher, $this->second), 'لینک ورود دریافتی از Skyroom معتبر نیست.');
+        $this->as($this->teacher, $this->second)->assertRedirect('https://www.skyroom.online/ch/sara/room');
+        Http::assertNotSent(fn (Request $request): bool => $request['action'] === 'createRoom');
+        Http::assertSentCount(2);
+    }
+
+    public function test_skyroom_server_form_keeps_the_key_encrypted_and_tests_the_connection(): void
+    {
+        $admin = User::factory()->create();
+        $this->roleWithPermissions('server_admin', ['ViewAny:OnlineServer', 'Create:OnlineServer', 'Update:OnlineServer']);
+        $this->makeStaff($admin, $this->primary);
+        $this->grantRole($admin, $this->primary, 'server_admin');
+        $this->actingInPanel($admin, $this->primary);
+        Http::preventStrayRequests();
+        Http::fake(['https://www.skyroom.online/skyroom/api/test-key' => Http::response(['ok' => true, 'result' => []])]);
+
+        Livewire::test(ListOnlineServers::class)
+            ->mountAction('create')
+            ->fillForm(['platform' => 'skyroom'])
+            ->assertFormFieldHidden('username')
+            ->fillForm(['title' => 'اسکای‌روم', 'host' => 'https://www.skyroom.online/skyroom/api', 'password' => 'test-key',
+                'settings' => ['max_users' => 40, 'host_concurrent' => 2]])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $server = OnlineServer::query()->sole();
+        $this->assertSame(OnlinePlatform::Skyroom, $server->platform);
+        $this->assertSame('test-key', $server->password);
+        $this->assertNotSame('test-key', DB::table('online_servers')->value('password'));
+        $this->assertArrayNotHasKey('password', $server->toArray());
+        Livewire::test(ListOnlineServers::class)->callTableAction('check', $server)->assertNotified('اتصال به سرور برقرار است.');
+        Livewire::test(ListOnlineServers::class)
+            ->callTableAction(EditAction::class, $server, data: ['title' => 'اسکای‌روم دوم', 'password' => ''])
+            ->assertHasNoTableActionErrors();
+        $this->assertSame('test-key', $server->fresh()->password);
+        Http::assertSent(fn (Request $request): bool => $request['action'] === 'getServices');
+    }
+
+    public function test_the_class_form_offers_skyroom_and_keeps_a_used_servers_platform(): void
+    {
+        $server = OnlineServer::factory()->skyroom()->create();
+        $admin = User::factory()->create();
+        $this->roleWithPermissions('online_admin', ['ViewAny:Classroom', 'View:Classroom', 'Update:Classroom', 'ViewAny:OnlineServer', 'Update:OnlineServer']);
+        $this->makeStaff($admin, $this->west);
+        $this->grantRole($admin, $this->west, 'online_admin');
+        $this->actingInPanel($admin, $this->west);
+
+        Livewire::test(ListClassrooms::class)
+            ->mountTableAction(EditAction::class, $this->classroom)
+            ->fillForm(['online_choice' => 'server:'.$server->id, 'online_from' => '2026-11-05'])
+            ->assertFormFieldHidden('online_rooms_per')
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $room = ClassOnlineRoom::query()->where('server_id', $server->id)->sole();
+        $this->assertSame(OnlinePlatform::Skyroom, $room->platform);
+        $this->assertFalse($room->per_session);
+        $this->assertSame('2026-11-05', $room->starts_on->toDateString());
+
+        // The room belongs to a different tenant from the server administrator.
+        $this->makeStaff($admin, $this->primary);
+        $this->grantRole($admin, $this->primary, 'online_admin');
+        $this->actingInPanel($admin, $this->primary);
+        Livewire::test(ListOnlineServers::class)
+            ->mountTableAction(EditAction::class, $server)
+            ->assertFormFieldDisabled('platform')
+            ->fillForm(['platform' => OnlinePlatform::AdobeConnect->value, 'username' => 'admin'])
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+        $this->assertSame(OnlinePlatform::Skyroom, $server->fresh()->platform);
+    }
+
+    public function test_skyroom_settings_require_a_key_and_positive_capacity_and_concurrency(): void
+    {
+        $admin = User::factory()->create();
+        $this->roleWithPermissions('server_admin', ['ViewAny:OnlineServer', 'Create:OnlineServer']);
+        $this->makeStaff($admin, $this->primary);
+        $this->grantRole($admin, $this->primary, 'server_admin');
+        $this->actingInPanel($admin, $this->primary);
+
+        Livewire::test(ListOnlineServers::class)
+            ->callAction('create', data: ['platform' => 'skyroom', 'title' => 'اسکای‌روم', 'host' => 'https://www.skyroom.online/skyroom/api',
+                'password' => '', 'settings' => ['max_users' => 0, 'host_concurrent' => 0]])
+            ->assertHasActionErrors(['password' => 'required', 'settings.max_users' => 'min', 'settings.host_concurrent' => 'min']);
+        $this->assertSame(0, OnlineServer::query()->count());
     }
 
     private function fakeAdobe(bool $failFirstUserLogin = false): void

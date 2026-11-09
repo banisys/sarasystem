@@ -28,4 +28,14 @@ class OnlineServerFactory extends Factory
             'is_active' => true,
         ];
     }
+
+    public function skyroom(): static
+    {
+        return $this->state(fn (): array => [
+            'platform' => OnlinePlatform::Skyroom,
+            'host' => 'https://www.skyroom.online/skyroom/api',
+            'username' => null,
+            'settings' => ['max_users' => 50, 'host_concurrent' => 3],
+        ]);
+    }
 }

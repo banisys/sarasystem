@@ -6,12 +6,13 @@ use Filament\Support\Contracts\HasLabel;
 use Modules\Class\Services\Online\AdobeConnectDriver;
 use Modules\Class\Services\Online\LinkDriver;
 use Modules\Class\Services\Online\OnlinePlatformDriver;
+use Modules\Class\Services\Online\SkyroomDriver;
 
 /**
  * Where an online class meets (ADR 0073). «لینک» is any meeting address
  * (Google Meet, Skyroom, …) people are sent to as it is; the others are
- * platforms the system talks to on a server: it makes the room and the
- * people's accounts and signs them in.
+ * platforms the system talks to on a server: it makes the room and
+ * signs people in with their session role.
  */
 enum OnlinePlatform: string implements HasLabel
 {
@@ -19,11 +20,14 @@ enum OnlinePlatform: string implements HasLabel
 
     case AdobeConnect = 'adobe_connect';
 
+    case Skyroom = 'skyroom';
+
     public function getLabel(): string
     {
         return match ($this) {
             self::Link => 'لینک',
             self::AdobeConnect => 'Adobe Connect',
+            self::Skyroom => 'Skyroom',
         };
     }
 
@@ -59,6 +63,7 @@ enum OnlinePlatform: string implements HasLabel
         return match ($this) {
             self::Link => app(LinkDriver::class),
             self::AdobeConnect => app(AdobeConnectDriver::class),
+            self::Skyroom => app(SkyroomDriver::class),
         };
     }
 }
