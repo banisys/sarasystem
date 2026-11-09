@@ -12,6 +12,7 @@ use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 /**
  * The panel's table, bound in place of Filament's (AdminPanelProvider), so
@@ -64,7 +65,11 @@ class PanelTable extends Table
             $column->label($label)->sortable()->toggleable(isToggledHiddenByDefault: false);
 
             if ($column instanceof TextColumn) {
-                $column->jalaliDateTime();
+                $column->jalaliDate()
+                    ->description(fn (TextColumn $column, mixed $state): ?string => filled($state)
+                        ? Carbon::parse($state)->setTimezone($column->getTimezone())->format('H:i')
+                        : null)
+                    ->width('1%');
             }
         }
 
