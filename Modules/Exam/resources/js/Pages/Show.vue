@@ -31,6 +31,7 @@ function start() {
 
     <AppLayout>
         <div class="space-y-4">
+            <Link v-if="exam.context_url" :href="exam.context_url" class="text-sm text-violet-700">بازگشت به آزمون‌های جلسه</Link>
             <div class="flex items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-gray-900">{{ exam.title }}</h1>
                 <Link :href="route('exams.index')" class="text-sm text-gray-500 hover:text-gray-800">همه‌ی آزمون‌ها</Link>

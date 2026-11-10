@@ -13,7 +13,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 | 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 26 | Class, Employee, School, Student (+ Document, Exam) | **built** ([School](../Modules/Tutorial/app/Scenarios/School.php)) |
 | 4 | «کارگزینی: مدارک و قراردادها» | every organization with staff | 18 | Contract, Document, Employee | **built** ([HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources.php)) |
 | 5 | «آموزش سازمانی کارکنان» | companies (TMS) | 17 | Employee, Class, Exam | planned |
-| 6 | «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» | institutes and schools with branches | 20 | Class, Employee, Student | **built** ([BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperations.php)) |
+| 6 | «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» | institutes and schools with branches | 21 (20 without Exam) | Class, Employee, Student (+ Exam) | **built** ([BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperations.php)) |
 | 7 | «وب‌سایت سازمان» | every organization with a public site | 10 | Site (+ Employee, Student for the form links) | planned |
 
 **Order offered to a client:** 2 first (who can do what), then the one that matches the organization (1, 3 or 5), then 4, 6 and 7 as needed. Scenarios are independent of each other: each makes its own data from scratch, so any one can be run alone and reset alone.
@@ -257,7 +257,7 @@ Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperat
 
 **Who it is for:** institutes and schools with several branches, after scenario 1 or 3.
 **Goal:** the everyday work of a branch: programs offered in some branches, a class with a capacity and a sub-class, weekly and monthly timetables and clashes, a branch holiday, a substitute who takes attendance, a moved session, a cancellation with a make-up, a learner who leaves.
-**Modules:** requires Class, Employee, Student.
+**Modules:** requires Class, Employee, Student; Exam adds the session-exam mission.
 **Actors:** خودتان, «کارشناس آموزش شعبه پونک» (مینا جعفری, does the branch's class work), «کارشناس آموزش شعبه تجریش» (کامران صدری), «مدرس جایگزین» (رضا توکلی), applicant.
 
 **Sample data:** branches «شعبه پونک» (`pounak`), «شعبه تجریش» (`tajrish`), told apart by order; teacher «بهاره امینی» (instructor in both); programs «مکالمه‌ی پیشرفته» (both branches, with the select field «سطح فعلی زبان») and «IELTS» (تجریش only); learners «نگار رحمانی», «پویا کریمی»; term «ترم زمستان»; classes «Conversation B2» (+ sub-class «گروه ب») and «IELTS Prep».
@@ -284,6 +284,7 @@ Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperat
 | **D. تغییرهای روزمره** ||||
 | 15 | «مدرس جایگزین» on today's session | officer 1 | a substituted session |
 | 16 | The substitute takes attendance (one late 10 minutes) | substitute | attendance recorded by him |
+| 16a (Exam on) | Prepared «تمرین مکالمه» exam with one written question; assign an independent copy to today's session; optional learner entry and teacher grading | officer 1 | an exam made in the run points to the substituted session |
 | 17 | «جابه‌جایی» of the second session to five days from today, «اتاق ۳» | officer 1 | a moved session |
 | 18 | «لغو جلسه» of the third with a reason, and a make-up in three days | officer 1 | cancelled + make-up session |
 | 19 | A learner leaves («تاریخ خروج» today) | officer 1 | member with a leave date |

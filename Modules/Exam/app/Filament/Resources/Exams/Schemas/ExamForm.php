@@ -18,6 +18,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Enums\RetakePolicy;
+use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\QuestionBank;
 
 class ExamForm
@@ -140,10 +141,11 @@ class ExamForm
                             ->label('ترتیب گزینه‌ها تصادفی باشد'),
                     ]),
                 Section::make('شرکت‌کنندگان')
-                    ->description('آزمون را این کاربران و دارندگان این نقش‌ها (در همین '.config('sarasystem.tenant_label').') می‌بینند.')
+                    ->description(fn (?Exam $record): string => $record?->context_type !== null ? 'شرکت‌کنندگان این آزمون از عضویت در جلسه تعیین می‌شوند؛ انتخاب کاربر یا نقش این‌جا کاربرد ندارد.' : 'آزمون را این کاربران و دارندگان این نقش‌ها (در همین '.config('sarasystem.tenant_label').') می‌بینند.')
                     ->columns(2)
                     ->schema([
                         Select::make('participantUsers')
+                            ->hidden(fn (?Exam $record): bool => $record?->context_type !== null)
                             ->label('کاربران')
                             ->relationship('participantUsers', 'name', fn (Builder $query) => $query->inTenant(self::tenant()))
                             ->getOptionLabelFromRecordUsing(fn (User $record): string => $record->mobile ? "{$record->name} ({$record->mobile})" : $record->name)
@@ -151,6 +153,7 @@ class ExamForm
                             ->multiple()
                             ->rules([fn (): Closure => self::usersOfCurrentTenant()]),
                         Select::make('participantRoles')
+                            ->hidden(fn (?Exam $record): bool => $record?->context_type !== null)
                             ->label('نقش‌ها')
                             ->relationship('participantRoles', 'name', fn (Builder $query) => self::participantRoleQuery($query))
                             ->getOptionLabelFromRecordUsing(fn (Role $record): string => $record->display_name)

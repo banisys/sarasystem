@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\UserPanel\UserPanel;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Support\ExamContexts;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class ExamServiceProvider extends ModuleServiceProvider
@@ -30,6 +31,12 @@ class ExamServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    public function register(): void
+    {
+        parent::register();
+        $this->app->singleton(ExamContexts::class);
+    }
 
     public function boot(): void
     {

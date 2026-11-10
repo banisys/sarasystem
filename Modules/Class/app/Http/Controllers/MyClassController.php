@@ -28,6 +28,8 @@ use Modules\Class\Services\Online\OnlineEntry;
 use Modules\Class\Services\Online\OnlineRooms;
 use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionContentBook;
+use Modules\Class\Services\SessionExamSource;
+use Nwidart\Modules\Facades\Module;
 
 /**
  * «کلاس‌های من» in the user panel (ADR 0026): the person's calendar of
@@ -82,6 +84,7 @@ class MyClassController extends Controller
                 ...$myClasses->sessionCard($session),
                 // Only for the person themselves, not a guardian (ADR 0073).
                 'join_url' => $isOwn && $entry->offers($user, $session) ? route('class.online.enter', $session) : null,
+                'exams_url' => $isOwn && Module::isEnabled('Exam') ? app(SessionExamSource::class)->link($session, $user) : null,
                 'when' => SessionActions::when($session),
                 'moved_from' => $session->wasMoved() ? SessionActions::when($session, original: true) : null,
                 'cancel_reason' => $session->cancel_reason,

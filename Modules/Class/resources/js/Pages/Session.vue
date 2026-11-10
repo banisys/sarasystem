@@ -152,6 +152,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
     <Head :title="session.class" />
 
     <AppLayout>
+        <Link v-if="session.exams_url" :href="session.exams_url" class="mb-4 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700">آزمون‌های جلسه</Link>
         <div class="space-y-5">
             <Link :href="route('my-classes.index', ward ? { for: ward.id } : {})" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-violet-700">
                 <PanelIcon name="back" class="size-4" />

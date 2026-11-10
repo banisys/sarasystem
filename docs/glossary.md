@@ -65,7 +65,8 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Question bank | بانک سؤال | A named set of questions of one tenant. A question can be in several banks. |
 | Choice / written question | چندگزینه‌ای / تشریحی | A choice question has options with exactly one correct and is graded automatically; a written (descriptive) answer is graded by staff. |
 | Exam section | بخش آزمون | One row of an exam's «سؤال‌ها»: take N active questions from one bank when an attempt starts. |
-| Participant | شرکت‌کننده | Who may take an exam: users chosen by name, or holders of a chosen role in the exam's tenant. |
+| Participant | شرکت‌کننده | Who may take an exam: users chosen by name, holders of a chosen role in the exam's tenant, or (for session exams) attendee members on the session date. |
+| Session exam | آزمون جلسه | An independent copy of a prepared exam for one class session; its attempts/results are separate from other sessions. The host supplies membership and staff permissions through the optional Exam context contract ([ADR 0079](decisions/0079-exams-in-class-sessions.md)). |
 | Attempt | شرکت در آزمون | One sitting of an exam by a user. It keeps a copy of the questions as they were served; its score is set once every answer is graded. |
 | Grace time | زمان ارفاق | Minutes after an attempt's deadline during which answers are still accepted (slow connections). After it the attempt closes with its saved answers. |
 | Negative marking | نمره‌ی منفی | Every N wrong choice answers cancel one right one (a wrong answer costs 1/N of its question's score). |

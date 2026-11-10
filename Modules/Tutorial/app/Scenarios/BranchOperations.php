@@ -37,6 +37,11 @@ use Modules\Class\Services\SessionPlanner;
 use Modules\Employee\Enums\EmploymentType;
 use Modules\Employee\Filament\Resources\Employees\EmployeeResource;
 use Modules\Employee\Services\RegisterEmployee;
+use Modules\Exam\Models\Exam;
+use Modules\Exam\Models\Question;
+use Modules\Exam\Models\QuestionBank;
+use Modules\Exam\Services\ContextExams;
+use Modules\Exam\Support\ExamContexts;
 use Modules\Student\Enums\Gender;
 use Modules\Student\Enums\Nationality;
 use Modules\Student\Enums\PreregistrationStatus;
@@ -47,6 +52,7 @@ use Modules\Student\Models\Program;
 use Modules\Student\Models\Student;
 use Modules\Tutorial\Models\TutorialRun;
 use Modules\Tutorial\Scenarios\Concerns\FindsEmployees;
+use Nwidart\Modules\Facades\Module;
 
 /**
  * «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» (ADR 0040,
@@ -358,6 +364,30 @@ class BranchOperations extends Scenario
                         self::substitute($run),
                     )))
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(Attendance::class)->where('recorded_by_id', self::substitute($run)?->getKey())->exists()),
+                ...(Module::isEnabled('Exam') ? [
+                    Mission::make('session-exam', 'آزمون مستقل جلسه')
+                        ->actor($officer, $asOfficer)
+                        ->steps([
+                            'در شعبه پونک، از «آزمون ← بانک‌های سؤال» بانک «تمرین مکالمه» بسازید؛ یک سؤال تشریحی فعال با متن «خودتان را به انگلیسی معرفی کنید.» و نمره ۴ به آن اضافه کنید.',
+                            'از «آزمون‌ها» آزمون منتشرشده «تمرین مکالمه» با یک سؤال از همین بانک بسازید؛ نمره کل ۲۰، نمره قبولی ۱۲ و دفعات شرکت ۱ باشد. برای نسخهٔ آماده نیازی به انتخاب شرکت‌کننده نیست.',
+                            'جلسهٔ امروز Conversation B2 را باز کنید، «آزمون‌های جلسه» را بزنید و آزمون آماده را به جلسه اضافه کنید. نسخهٔ جلسه مستقل است و شرکت‌کنندگان از اعضای کلاس در روز جلسه تعیین می‌شوند؛ مدرس و جایگزین نیز همین صفحه را در «کلاس‌های من» دارند.',
+                            'اختیاری: یکی از زبان‌آموزان در زمان جلسه از همین دکمه وارد آزمون شود و پاسخ دهد؛ مدرس در «نتایج و تصحیح ← پاسخ‌ها و تصحیح» نمرهٔ پاسخ تشریحی را ثبت کند. فراگیر تنها نتیجهٔ خودش را طبق تنظیم نمایش نتیجه می‌بیند.',
+                            '«توقف انتشار» دسترسی شرکت‌کنندگان را می‌بندد و پاسخ‌ها را نگه می‌دارد. زمان آزمون هنگام افزودن از جلسه کپی می‌شود؛ جابه‌جایی بعدی جلسه آن را تغییر نمی‌دهد. در صورت نیاز، زمان نسخهٔ جلسه را از بخش «آزمون‌ها» ویرایش کنید.',
+                        ])
+                        ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
+                        ->perform(function (TutorialRun $run): void {
+                            self::branch($run, 1)->execute(function () use ($run): void {
+                                $bank = QuestionBank::query()->create(['title' => 'تمرین مکالمه']);
+                                $question = Question::query()->create(['type' => 'descriptive', 'body' => 'خودتان را به انگلیسی معرفی کنید.', 'score' => 4, 'is_active' => true]);
+                                $question->banks()->attach($bank);
+                                $exam = Exam::query()->create(['title' => 'تمرین مکالمه', 'is_published' => true, 'duration_minutes' => 10, 'total_score' => 20, 'passing_score' => 12, 'max_attempts' => 1]);
+                                $exam->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 1]);
+                                $context = app(ExamContexts::class)->resolve('class-session', self::substituted($run)->id, self::officer($run, 1));
+                                app(ContextExams::class)->assign($context, $exam->id);
+                            });
+                        })
+                        ->doneWhen(fn (TutorialRun $run): bool => $run->made(Exam::class)->where('context_type', 'class-session')->where('context_id', self::substituted($run)?->id)->exists()),
+                ] : []),
                 Mission::make('move', 'جابه‌جایی جلسه')
                     ->actor($officer, $asOfficer)
                     ->steps([

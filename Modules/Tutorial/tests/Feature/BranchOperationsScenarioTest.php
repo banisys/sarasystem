@@ -18,12 +18,14 @@ use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Services\DefaultClassRoles;
+use Modules\Exam\Models\Exam;
 use Modules\Student\Models\Program;
 use Modules\Tutorial\Filament\Pages\StepByStepTutorial;
 use Modules\Tutorial\Models\TutorialRun;
 use Modules\Tutorial\Scenarios\BranchOperations;
 use Modules\Tutorial\Services\TutorialProgress;
 use Modules\Tutorial\Tests\Concerns\RunsTutorials;
+use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -75,11 +77,21 @@ class BranchOperationsScenarioTest extends TestCase
         $this->assertSame(1, $run->made(ClassMember::class)->whereNotNull('left_on')->count());
         $this->assertSame(1, $run->made(Program::class)->where('is_active', false)->count());
 
+        if (Module::isEnabled('Exam')) {
+            $exam = $run->made(Exam::class)->where('context_type', 'class-session')->sole();
+            $this->assertTrue($sessions->contains('id', $exam->context_id));
+            $this->assertSame(1, $exam->sections()->count());
+            $this->assertArrayHasKey('session-exam', $run->completed_missions);
+        }
+
         Livewire::test(StepByStepTutorial::class)->callAction('reset')->assertNotified('آموزش از اول');
 
         $this->assertModelMissing($pounak);
         $this->assertModelMissing($bahareh);
         $this->assertSame(0, ClassSession::withoutTenantScope()->count());
+        if (Module::isEnabled('Exam')) {
+            $this->assertSame(0, Exam::withoutTenantScope()->count());
+        }
     }
 
     public function test_the_program_missions_follow_where_programs_are_offered(): void

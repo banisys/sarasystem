@@ -12,6 +12,7 @@ use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Services\ExamTaking;
+use Modules\Exam\Support\ExamContexts;
 
 /**
  * The participant's side of exams (ADR 0013): their exams in the current
@@ -57,6 +58,7 @@ class ExamController extends Controller
                 'id' => $exam->id,
                 'title' => $exam->title,
                 'description' => $exam->description,
+                'context_url' => $exam->context_type === null ? null : app(ExamContexts::class)->url($exam->context_type, $exam->context_id),
                 'starts_at' => $exam->starts_at?->toIso8601String(),
                 'ends_at' => $exam->ends_at?->toIso8601String(),
                 'duration_minutes' => $exam->duration_minutes,

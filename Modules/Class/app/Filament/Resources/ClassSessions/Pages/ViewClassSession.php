@@ -2,11 +2,14 @@
 
 namespace Modules\Class\Filament\Resources\ClassSessions\Pages;
 
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Services\SessionExamSource;
+use Nwidart\Modules\Facades\Module;
 
 /**
  * Everything about one session, with its actions in the header (ADR 0050).
@@ -61,7 +64,15 @@ class ViewClassSession extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return SessionActions::pageActions();
+        $actions = SessionActions::pageActions();
+        if (Module::isEnabled('Exam')) {
+            $url = app(SessionExamSource::class)->link($this->session(), auth()->user());
+            if ($url !== null) {
+                $actions[] = Action::make('sessionExams')->label('آزمون‌های جلسه')->url($url)->openUrlInNewTab();
+            }
+        }
+
+        return $actions;
     }
 
     private function session(): ClassSession

@@ -40,3 +40,6 @@ The user also chose **manual grading of written answers** and **specific partici
 
 ## Lifecycle hardening
 See [ADR 0078](0078-exam-attempt-consistency.md) for transactional save/submit/finish, repeat-safe finalization and bounded question/attempt reads.
+
+## Class sessions
+[ADR 0079](0079-exams-in-class-sessions.md) adds independent copies for class sessions through an optional host contract. Their participants come from session-date membership; standalone exams keep named/role participants. Session staff can review and grade that session's answers through the user panel without global `Update:ExamAttempt` permission.

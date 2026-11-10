@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Modules\Exam\Database\Factories\ExamFactory;
 use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Enums\RetakePolicy;
+use Modules\Exam\Support\ExamContexts;
 
 /**
  * An online exam of one tenant (ADR 0013). Its questions are drawn from
@@ -89,16 +90,21 @@ class Exam extends Model
         $modelHasRoles = config('permission.table_names.model_has_roles');
         $userKey = config('permission.column_names.model_morph_key');
 
-        $query->where(fn (Builder $query) => $query
-            ->whereHas('participantUsers', fn (Builder $users) => $users->whereKey($user->getKey()))
-            ->orWhereExists(fn (QueryBuilder $roles) => $roles
-                ->selectRaw('1')
-                ->from('exam_participant_roles')
-                ->join($modelHasRoles, "{$modelHasRoles}.role_id", '=', 'exam_participant_roles.role_id')
-                ->whereColumn('exam_participant_roles.exam_id', $query->qualifyColumn('id'))
-                ->whereColumn("{$modelHasRoles}.tenant_id", $query->qualifyColumn('tenant_id'))
-                ->where("{$modelHasRoles}.model_type", $user->getMorphClass())
-                ->where("{$modelHasRoles}.{$userKey}", $user->getKey())));
+        $query->where(function (Builder $participants) use ($user, $modelHasRoles, $userKey): void {
+            $participants->where(function (Builder $query) use ($user, $modelHasRoles, $userKey): void {
+                $query->whereNull('context_type')->where(fn (Builder $query) => $query
+                    ->whereHas('participantUsers', fn (Builder $users) => $users->whereKey($user->getKey()))
+                    ->orWhereExists(fn (QueryBuilder $roles) => $roles
+                        ->selectRaw('1')
+                        ->from('exam_participant_roles')
+                        ->join($modelHasRoles, "{$modelHasRoles}.role_id", '=', 'exam_participant_roles.role_id')
+                        ->whereColumn('exam_participant_roles.exam_id', $query->qualifyColumn('id'))
+                        ->whereColumn("{$modelHasRoles}.tenant_id", $query->qualifyColumn('tenant_id'))
+                        ->where("{$modelHasRoles}.model_type", $user->getMorphClass())
+                        ->where("{$modelHasRoles}.{$userKey}", $user->getKey())));
+            });
+            app(ExamContexts::class)->forParticipant($participants, $user);
+        });
     }
 
     public function hasParticipant(User $user): bool

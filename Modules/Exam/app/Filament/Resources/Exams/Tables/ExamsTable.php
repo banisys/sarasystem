@@ -44,7 +44,7 @@ class ExamsTable
                     ->placeholder('0'),
                 TextColumn::make('participants')
                     ->label('شرکت‌کنندگان')
-                    ->state(fn (Exam $record): string => "{$record->participant_users_count} کاربر، {$record->participant_roles_count} نقش"),
+                    ->state(fn (Exam $record): string => $record->context_type !== null ? 'اعضای جلسه' : "{$record->participant_users_count} کاربر، {$record->participant_roles_count} نقش"),
                 TextColumn::make('attempts_count')
                     ->label('تعداد شرکت')
                     ->sortable(),

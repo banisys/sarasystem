@@ -19,6 +19,9 @@ use Modules\Class\Services\ClassroomRooms;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Class\Services\MyClasses;
 use Modules\Class\Services\PlanForecast;
+use Modules\Class\Services\SessionExamSource;
+use Modules\Exam\Support\ExamContexts;
+use Nwidart\Modules\Facades\Module;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class ClassServiceProvider extends ModuleServiceProvider
@@ -54,6 +57,13 @@ class ClassServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        if (Module::isEnabled('Exam')) {
+            app(ExamContexts::class)->register(
+                SessionExamSource::TYPE,
+                app(SessionExamSource::class),
+            );
+        }
 
         // The screens' permissions for the default roles (ADR 0039).
         app(DefaultRoles::class)->grant([
