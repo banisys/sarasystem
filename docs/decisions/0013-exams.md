@@ -17,7 +17,7 @@ The user also chose **manual grading of written answers** and **specific partici
 - **What an attempt stores:** question ids + a JSON of served answers (LMS `exam_question_users`), with scoring reading the live questions, vs **one row per served question with a copy of it** (`exam_attempt_answers`: body, options in the order shown, correct option, score). With the copy, editing or deleting a question later doesn't change past results, and grading works per row.
 - **Who may take an exam:** any logged-in user (LMS) vs **participants: users chosen by name and/or roles** (holders of the role in the exam's tenant). The user chose specific participants. Roles keep the list short for a whole group (e.g. «دانش‌آموز»), without depending on a class concept.
 - **Saving answers:** only on submit (LMS: a closed tab or a timeout loses everything, and the time-out closes the attempt with no answers) vs **autosave while answering** (`PUT /exams/{exam}/attempt`), with the time-out closing the attempt with what was saved.
-- **Closing attempts whose time is over:** a scheduled command vs **lazily**: when the participant opens the exam, when answers arrive, and when staff open the results list or the attempt. No scheduler is set up yet.
+- **Closing attempts whose time is over:** a scheduled command vs **lazily**: when the participant opens the exam, when answers arrive, and when staff open the results list or the attempt. The initial implementation had no scheduler; a scheduler now exists, but exam expiry remains lazy.
 - **User-panel navigation:** the core layout (AppLayout.vue) must not know modules (ADR 0005). So the core got a generic hook, `UserPanel::navigationUsing()`, shared as the `navigation` Inertia prop, like `PublicSite::navigationUsing()` (ADR 0012).
 
 ## Decision
@@ -34,6 +34,9 @@ The user also chose **manual grading of written answers** and **specific partici
 ## Consequences
 - An exam is not tied to a class or course. When School/courses arrive, they can point to an exam (or add a participant source) without changing this module.
 - Questions are plain text for now: no images, formulas or rich text. Adding them means a richer `body` and copying it into attempts the same way.
-- An abandoned attempt stays «در حال آزمون» until someone opens the exam or the results; a scheduled `closeOverdueAttempts()` can be added once the scheduler runs.
+- An abandoned attempt stays «در حال آزمون» until someone opens the exam or the results; a scheduled tenant-aware expiry command remains future work. The existing closure service now processes bounded batches (ADR 0078).
 - Seeing an attempt's answers needs `Update:ExamAttempt` (the attempt page is an edit page).
 - The `exam_*` LMS data (2 test exams) is not migrated.
+
+## Lifecycle hardening
+See [ADR 0078](0078-exam-attempt-consistency.md) for transactional save/submit/finish, repeat-safe finalization and bounded question/attempt reads.

@@ -26,7 +26,7 @@ class ExamController extends Controller
         $user = $request->user();
 
         $exams = Exam::query()->published()->forParticipant($user)
-            ->with(['attempts' => fn ($query) => $query->whereBelongsTo($user)->latest('id')])
+            ->with(['attempts' => fn ($query) => $query->whereBelongsTo($user)->latest('id')->limit(1)])
             ->orderByRaw('starts_at desc nulls last')->orderByDesc('id')
             ->get()
             ->map(fn (Exam $exam): array => [

@@ -101,7 +101,7 @@ class ExamTaking
     {
         return DB::transaction(function () use ($exam, $user): ExamAttempt {
             // One start at a time per exam, so a double click can't open two attempts.
-            Exam::query()->whereKey($exam->getKey())->lockForUpdate()->first();
+            $exam = Exam::query()->whereKey($exam->getKey())->lockForUpdate()->firstOrFail();
 
             if ($attempt = $this->currentAttempt($exam, $user)) {
                 return $attempt;
@@ -153,6 +153,17 @@ class ExamTaking
      */
     public function save(ExamAttempt $attempt, array $answers): void
     {
+        DB::transaction(function () use ($attempt, $answers): void {
+            $this->lockAttempt($attempt);
+            $this->saveAnswers($attempt, $answers);
+        });
+    }
+
+    /**
+     * @param  array<int|string, string|null>  $answers
+     */
+    private function saveAnswers(ExamAttempt $attempt, array $answers): void
+    {
         if (! $attempt->isInProgress() || $attempt->isOverdue()) {
             throw ValidationException::withMessages(['answers' => 'زمان این آزمون تمام شده است.']);
         }
@@ -179,9 +190,10 @@ class ExamTaking
     public function submit(ExamAttempt $attempt, array $answers): ExamAttempt
     {
         return DB::transaction(function () use ($attempt, $answers): ExamAttempt {
-            $this->save($attempt, $answers);
+            $this->lockAttempt($attempt);
+            $this->saveAnswers($attempt, $answers);
 
-            return $this->finish($attempt, timedOut: false);
+            return $this->finishLockedAttempt($attempt, timedOut: false);
         });
     }
 
@@ -191,6 +203,26 @@ class ExamTaking
      */
     public function finish(ExamAttempt $attempt, bool $timedOut): ExamAttempt
     {
+        return DB::transaction(function () use ($attempt, $timedOut): ExamAttempt {
+            $this->lockAttempt($attempt);
+
+            return $this->finishLockedAttempt($attempt, $timedOut);
+        });
+    }
+
+    private function lockAttempt(ExamAttempt $attempt): void
+    {
+        $locked = ExamAttempt::query()->whereKey($attempt->getKey())->lockForUpdate()->firstOrFail();
+        $attempt->setRawAttributes($locked->getAttributes(), sync: true);
+        $attempt->unsetRelations();
+    }
+
+    private function finishLockedAttempt(ExamAttempt $attempt, bool $timedOut): ExamAttempt
+    {
+        if (! $attempt->isInProgress()) {
+            return $attempt;
+        }
+
         $exam = $attempt->exam;
 
         $attempt->answers()->get()->each(function (AttemptAnswer $answer) use ($exam): void {
@@ -214,7 +246,7 @@ class ExamTaking
      */
     public function closeOverdueAttempts(): void
     {
-        ExamAttempt::query()->inProgress()->where('deadline_at', '<', now())->with('exam')->get()
+        ExamAttempt::query()->inProgress()->where('deadline_at', '<', now())->with('exam')->lazyById(100)
             ->filter(fn (ExamAttempt $attempt): bool => $attempt->isOverdue())
             ->each(fn (ExamAttempt $attempt) => $this->finish($attempt, timedOut: true));
     }
@@ -242,14 +274,21 @@ class ExamTaking
         $drawn = collect();
 
         foreach ($exam->sections()->with('questionBank')->get() as $section) {
-            $candidates = $section->questionBank?->questions()->active()->orderBy('exam_questions.id')->get()
-                ->reject(fn (Question $question): bool => $drawn->has($question->getKey())) ?? collect();
-
-            if ($exam->shuffle_questions) {
-                $candidates = $candidates->shuffle();
+            if ($section->questionBank === null || $section->question_count <= 0) {
+                continue;
             }
 
-            $candidates->take($section->question_count)->each(fn (Question $question) => $drawn->put($question->getKey(), $question));
+            $candidates = $section->questionBank->questions()->active()
+                ->whereNotIn('exam_questions.id', $drawn->keys());
+
+            if ($exam->shuffle_questions) {
+                $candidates->inRandomOrder();
+            } else {
+                $candidates->orderBy('exam_questions.id');
+            }
+
+            $candidates->limit($section->question_count)->get()
+                ->each(fn (Question $question) => $drawn->put($question->getKey(), $question));
         }
 
         return $drawn->values();

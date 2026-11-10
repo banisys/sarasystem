@@ -6,9 +6,11 @@ use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Testing\TestResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 use Modules\Exam\Enums\AttemptStatus;
 use Modules\Exam\Enums\ResultVisibility;
@@ -18,6 +20,7 @@ use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
+use Modules\Exam\Services\ExamTaking;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -271,6 +274,132 @@ class TakeExamTest extends TestCase
             ->where('result.score', 20)
             ->where('result.answers.0.your_answer', 'گزینه a')
             ->where('result.answers.0.correct_answer', 'گزینه a'));
+    }
+
+    public function test_overdue_attempts_are_closed_across_batches_without_touching_other_tenants_or_grace_time(): void
+    {
+        $this->freezeTime();
+        $exam = $this->examFor($this->student, ['grace_minutes' => 2]);
+        $this->tenant->makeCurrent();
+        ExamAttempt::factory()->for($exam)->for($this->student)->count(101)
+            ->create(['deadline_at' => now()->subMinutes(3)]);
+        $withinGrace = ExamAttempt::factory()->for($exam)->for($this->student)
+            ->create(['deadline_at' => now()->subMinute()]);
+        $foreign = ExamAttempt::factory()->for(Exam::factory()->for($this->otherTenant))->for($this->student)
+            ->create(['deadline_at' => now()->subHour()]);
+
+        app(ExamTaking::class)->closeOverdueAttempts();
+
+        $this->assertSame(101, $exam->attempts()->finished()->where('timed_out', true)->count());
+        $this->assertSame(AttemptStatus::InProgress, $withinGrace->fresh()->status);
+        $this->assertSame(AttemptStatus::InProgress, $foreign->fresh()->status);
+    }
+
+    public function test_the_exam_list_uses_each_participants_latest_attempt(): void
+    {
+        $first = $this->examFor($this->student, ['starts_at' => null]);
+        $second = $this->examFor($this->student, ['starts_at' => null]);
+        foreach ([$first, $second] as $exam) {
+            ExamAttempt::factory()->for($exam)->for($this->student)->create(['status' => AttemptStatus::Completed]);
+            ExamAttempt::factory()->for($exam)->for($this->student)->create(['status' => AttemptStatus::PendingReview]);
+            ExamAttempt::factory()->for($exam)->create();
+        }
+
+        $this->visit(route('exams.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('exams', 2)
+            ->where('exams.0.id', $second->id)
+            ->where('exams.0.last_status', AttemptStatus::PendingReview->getLabel())
+            ->where('exams.1.id', $first->id)
+            ->where('exams.1.last_status', AttemptStatus::PendingReview->getLabel()));
+    }
+
+    public function test_a_stale_autosave_cannot_change_a_submitted_answer(): void
+    {
+        $this->questions(1, [$this->bank]);
+        $exam = $this->examWithBank();
+        $this->tenant->makeCurrent();
+        $taking = app(ExamTaking::class);
+        $attempt = $taking->start($exam, $this->student);
+        $stale = $attempt->fresh();
+        $answer = $attempt->answers()->sole();
+        $taking->submit($attempt, [$answer->id => 'a']);
+
+        try {
+            $taking->save($stale, [$answer->id => 'b']);
+            $this->fail('A submitted attempt accepted a stale autosave.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('answers', $exception->errors());
+        }
+
+        $this->assertSame('a', $answer->fresh()->selected_option);
+        $this->assertSame(20.0, $attempt->fresh()->score);
+    }
+
+    public function test_finishing_twice_keeps_the_original_result_and_submission_time(): void
+    {
+        $this->freezeTime();
+        $this->questions(1, [$this->bank]);
+        $exam = $this->examWithBank();
+        $this->tenant->makeCurrent();
+        $taking = app(ExamTaking::class);
+        $attempt = $taking->start($exam, $this->student);
+        $stale = $attempt->fresh();
+        $taking->submit($attempt, [$attempt->answers()->sole()->id => 'a']);
+        $submittedAt = $attempt->submitted_at->toIso8601String();
+        $exam->update(['total_score' => 100]);
+        $this->travel(1)->minutes();
+
+        $taking->finish($stale, timedOut: true);
+
+        $this->assertSame(20.0, $stale->score);
+        $this->assertFalse($stale->timed_out);
+        $this->assertSame($submittedAt, $stale->submitted_at->toIso8601String());
+    }
+
+    public function test_start_uses_the_current_exam_settings_instead_of_a_stale_model(): void
+    {
+        $this->questions(1, [$this->bank]);
+        $exam = $this->examWithBank();
+        $this->tenant->makeCurrent();
+        $exam->fresh()->update(['starts_at' => now()->addHour()]);
+
+        try {
+            app(ExamTaking::class)->start($exam, $this->student);
+            $this->fail('An exam started before its updated start time.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('exam', $exception->errors());
+        }
+
+        $this->assertSame(0, $exam->attempts()->count());
+    }
+
+    public function test_finishing_an_attempt_from_another_tenant_is_rejected(): void
+    {
+        $answer = $this->answerOfAnotherTenant();
+        $this->otherTenant->makeCurrent();
+        $attempt = $answer->attempt;
+        $this->tenant->makeCurrent();
+
+        $this->expectException(ModelNotFoundException::class);
+
+        app(ExamTaking::class)->finish($attempt, timedOut: true);
+    }
+
+    public function test_question_selection_loads_only_the_requested_share(): void
+    {
+        $this->questions(12, [$this->bank]);
+        $exam = $this->examWithBank(['shuffle_questions' => true]);
+        $exam->sections()->first()->update(['question_count' => 3]);
+        $this->tenant->makeCurrent();
+        $retrieved = 0;
+        Question::retrieved(function () use (&$retrieved): void {
+            $retrieved++;
+        });
+
+        $attempt = app(ExamTaking::class)->start($exam, $this->student);
+
+        $this->assertSame(3, $attempt->answers()->count());
+        $this->assertSame(3, $retrieved);
     }
 
     /**
