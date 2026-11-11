@@ -1,6 +1,6 @@
 <ul
     data-parent-id="{{ $parentId }}"
-    @class(['flex flex-col gap-6', 'ms-1 sm:ms-2' => $parentId !== null])
+    @class(['flex flex-col gap-6', 'pt-4 ps-4 sm:pt-6 sm:ps-6' => $parentId === null, 'ms-1 sm:ms-2' => $parentId !== null])
 >
     @foreach ($tree->childrenOf($parentId, $visibleIds) as $category)
         <li
