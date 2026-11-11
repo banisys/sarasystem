@@ -44,6 +44,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
   - Searchable selects preload and show 10 options.
   - Modals close only with the × button in their header, not by clicking outside or pressing Escape (a modal can opt back in with `->closeModalByClickingAway()` / `->closeModalByEscaping()`).
   - Modals have a full-screen button beside the × that fills the content area beside the sidebar, and the choice applies to all of the user's modals ([ADR 0060](decisions/0060-modal-fullscreen-button.md), an override of Filament's modal view).
+  - The shared [admin theme](../resources/css/filament/admin/theme.css) balances the vertical spacing in modal headers and footers so their contents sit in the middle of each band.
 - **Panel tenancy:** URLs are `/cpadmin/{tenant-slug}/…` and Filament shows a tenant switcher. See [Tenancy](#tenancy).
 - Registered plugins: Shield (roles & permissions UI) and ApexCharts. The other Filament packages are used per component and need no panel registration:
   - Jalali: `->jalali()` on DatePicker/DateTimePicker, `->jalaliDate()` on TextColumn/TextEntry
