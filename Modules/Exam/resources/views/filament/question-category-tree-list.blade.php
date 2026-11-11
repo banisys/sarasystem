@@ -11,26 +11,32 @@
                 'after:pointer-events-none after:absolute after:inset-s-0 after:top-4 after:w-4 after:border-t after:border-gray-400 dark:after:border-gray-600 sm:after:w-5' => $parentId !== null,
             ])
         >
-            <div class="flex min-h-8 flex-wrap items-start justify-between gap-x-4 gap-y-1">
-                <div class="flex min-w-0 flex-wrap items-start gap-x-2">
+            <div class="group relative flex min-h-8 min-w-0 flex-wrap items-center gap-x-2">
+                @canany(['update', 'delete'], $category)
+                    <button
+                        type="button"
+                        class="min-w-0 cursor-pointer wrap-anywhere text-start leading-8 font-medium text-gray-950 after:absolute after:inset-0 after:rounded-md focus-visible:after:ring-2 focus-visible:after:ring-primary-500 dark:text-white"
+                        wire:click="mountAction('edit', { category: {{ $category->id }} })"
+                    >
+                        {{ $category->title }}
+                    </button>
+                @else
                     <span class="min-w-0 wrap-anywhere leading-8 font-medium text-gray-950 dark:text-white">{{ $category->title }}</span>
-                    <span class="text-xs leading-8 text-gray-500 dark:text-gray-400">{{ $category->questions_count }} سؤال</span>
-                </div>
+                @endcanany
 
-                <div class="flex min-h-8 items-center gap-1">
-                    @if ($canCreate)
-                        <x-filament::icon-button icon="heroicon-o-plus" color="gray" size="sm" label="افزودن زیردسته" tooltip="افزودن زیردسته"
-                            wire:click="mountAction('create', { parent: {{ $category->id }} })" />
-                    @endif
-                    @can('update', $category)
-                        <x-filament::icon-button icon="heroicon-o-pencil-square" color="gray" size="sm" label="ویرایش دسته" tooltip="ویرایش دسته"
-                            wire:click="mountAction('edit', { category: {{ $category->id }} })" />
-                    @endcan
-                    @can('delete', $category)
-                        <x-filament::icon-button icon="heroicon-o-trash" color="danger" size="sm" label="حذف دسته" tooltip="حذف دسته"
-                            wire:click="mountAction('delete', { category: {{ $category->id }} })" />
-                    @endcan
-                </div>
+                @if ($canCreate)
+                    <x-filament::icon-button
+                        icon="heroicon-o-plus"
+                        color="gray"
+                        size="sm"
+                        label="افزودن زیردسته"
+                        tooltip="افزودن زیردسته"
+                        class="relative z-10 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100"
+                        wire:click="mountAction('create', { parent: {{ $category->id }} })"
+                    />
+                @endif
+
+                <span class="text-xs leading-8 text-gray-500 dark:text-gray-400">{{ $category->questions_count }} سؤال</span>
             </div>
 
             @if ($tree->childrenOf($category->id, $visibleIds) !== [])

@@ -5,6 +5,7 @@ namespace Modules\Exam\Tests\Feature;
 use App\Authorization\DefaultRoles;
 use App\Models\Tenant;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -219,19 +220,58 @@ class QuestionCategoryTest extends TestCase
         $question = Question::factory()->for($this->tenant)->for($child, 'category')->create();
 
         Livewire::test(ListQuestionCategories::class)
-            ->callAction('delete', arguments: ['category' => $root->id])
+            ->callAction([TestAction::make('edit')->arguments(['category' => $root->id]), 'delete'])
             ->assertNotified('دسته‌ای که سؤال یا زیردسته دارد قابل حذف نیست.')
-            ->callAction('delete', arguments: ['category' => $child->id])
+            ->assertActionMounted('edit')
+            ->unmountAction()
+            ->callAction([TestAction::make('edit')->arguments(['category' => $child->id]), 'delete'])
             ->assertNotified('دسته‌ای که سؤال یا زیردسته دارد قابل حذف نیست.');
 
         $this->assertModelExists($root);
         $this->assertSame($child->id, $question->fresh()->category_id);
         $question->update(['category_id' => null]);
 
-        Livewire::test(ListQuestionCategories::class)->callAction('delete', arguments: ['category' => $child->id]);
+        Livewire::test(ListQuestionCategories::class)
+            ->callAction([TestAction::make('edit')->arguments(['category' => $child->id]), 'delete'])
+            ->assertActionNotMounted();
 
         $this->assertModelMissing($child);
         $this->assertModelExists($question);
+    }
+
+    public function test_edit_and_delete_permissions_are_independent_inside_the_category_modal(): void
+    {
+        $category = $this->category('ریاضی');
+        $editor = User::factory()->create();
+        $remover = User::factory()->create();
+        $this->makeStaff($editor, $this->tenant);
+        $this->makeStaff($remover, $this->tenant);
+        $this->roleWithPermissions('category_editor', ['ViewAny:QuestionCategory', 'Update:QuestionCategory']);
+        $this->roleWithPermissions('category_remover', ['ViewAny:QuestionCategory', 'Delete:QuestionCategory']);
+        $this->grantRole($editor, $this->tenant, 'category_editor');
+        $this->grantRole($remover, $this->tenant, 'category_remover');
+        $delete = [TestAction::make('edit')->arguments(['category' => $category->id]), 'delete'];
+
+        $this->actingInPanel($editor, $this->tenant);
+        Livewire::test(ListQuestionCategories::class)
+            ->assertActionHidden($delete)
+            ->mountAction('edit', ['category' => $category->id])
+            ->assertActionMounted('edit')
+            ->call('mountAction', 'delete')
+            ->assertSet('mountedActions.0.name', 'edit')
+            ->assertSet('mountedActions.1.name', null);
+        $this->assertModelExists($category);
+
+        $this->actingInPanel($remover, $this->tenant);
+        Livewire::test(ListQuestionCategories::class)
+            ->assertActionVisible($delete)
+            ->mountAction('edit', ['category' => $category->id])
+            ->assertActionMounted('edit')
+            ->callMountedAction()
+            ->assertForbidden();
+
+        Livewire::test(ListQuestionCategories::class)->callAction($delete);
+        $this->assertModelMissing($category);
     }
 
     public function test_database_rejects_foreign_category_links_even_when_bypassing_models(): void

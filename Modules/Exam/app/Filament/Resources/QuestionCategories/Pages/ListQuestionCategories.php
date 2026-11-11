@@ -2,9 +2,11 @@
 
 namespace Modules\Exam\Filament\Resources\QuestionCategories\Pages;
 
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\Enums\ActionStatus;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
@@ -69,14 +71,21 @@ class ListQuestionCategories extends Page
     {
         return EditAction::make()
             ->record(fn (array $arguments): QuestionCategory => $this->categoryOrFail($arguments['category'] ?? null))
+            ->authorize(fn (QuestionCategory $record): bool => QuestionCategoryResource::canEdit($record)
+                || QuestionCategoryResource::canDelete($record))
             ->schema(QuestionCategoryResource::form(...))
+            ->disabledForm(fn (QuestionCategory $record): bool => ! QuestionCategoryResource::canEdit($record))
+            ->modalSubmitAction(fn (Action $action, QuestionCategory $record): Action|false => QuestionCategoryResource::canEdit($record) ? $action : false)
+            ->extraModalFooterActions([$this->deleteCategoryAction()])
+            ->before(fn (QuestionCategory $record) => abort_unless(QuestionCategoryResource::canEdit($record), 403))
             ->using(QuestionCategoryResource::saveCategory(...));
     }
 
-    public function deleteAction(): DeleteAction
+    private function deleteCategoryAction(): DeleteAction
     {
         return DeleteAction::make()
-            ->record(fn (array $arguments): QuestionCategory => $this->categoryOrFail($arguments['category'] ?? null))
+            ->label('حذف دسته')
+            ->cancelParentActions(fn (DeleteAction $action): bool => $action->getStatus() === ActionStatus::Success)
             ->modalDescription('برای حذف، ابتدا سؤال‌ها و زیردسته‌های این دسته را به جای دیگری منتقل کنید.')
             ->failureNotificationTitle('دسته‌ای که سؤال یا زیردسته دارد قابل حذف نیست.')
             ->using(function (QuestionCategory $record): ?bool {
