@@ -10,6 +10,17 @@ class ListQuestions extends ListRecords
 {
     protected static string $resource = QuestionResource::class;
 
+    public function mount(): void
+    {
+        $previousCategory = data_get($this->tableFilters, 'category.value');
+        if (is_int($previousCategory) || is_string($previousCategory)) {
+            $this->tableFilters['category']['values'] ??= [$previousCategory];
+            unset($this->tableFilters['category']['value']);
+        }
+
+        parent::mount();
+    }
+
     protected function getHeaderActions(): array
     {
         return [

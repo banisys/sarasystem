@@ -206,11 +206,24 @@ class QuestionCategoryTest extends TestCase
             ->filterTable('category', $root->id)
             ->assertCanSeeTableRecords([$rootQuestion, $deepQuestion])
             ->assertCanNotSeeTableRecords([$uncategorized, $otherQuestion])
+            ->filterTable('category', [$root->id, $child->id, $other->id])
+            ->assertCanSeeTableRecords([$rootQuestion, $deepQuestion, $otherQuestion])
+            ->assertCanNotSeeTableRecords([$uncategorized])
+            ->filterTable('category', [$other->id, 'uncategorized', $foreign->id])
+            ->assertCanSeeTableRecords([$uncategorized, $otherQuestion])
+            ->assertCanNotSeeTableRecords([$rootQuestion, $deepQuestion])
             ->filterTable('category', 'uncategorized')
             ->assertCanSeeTableRecords([$uncategorized])
             ->assertCanNotSeeTableRecords([$rootQuestion, $deepQuestion, $otherQuestion])
             ->filterTable('category', $foreign->id)
             ->assertCountTableRecords(0);
+
+        Livewire::withQueryParams(['filters' => ['category' => ['value' => (string) $root->id]]])
+            ->test(ListQuestions::class)
+            ->assertCanSeeTableRecords([$rootQuestion, $deepQuestion])
+            ->assertCanNotSeeTableRecords([$uncategorized, $otherQuestion])
+            ->filterTable('category', [])
+            ->assertCanSeeTableRecords([$rootQuestion, $deepQuestion, $uncategorized, $otherQuestion]);
     }
 
     public function test_delete_requires_moving_subcategories_and_questions_first(): void

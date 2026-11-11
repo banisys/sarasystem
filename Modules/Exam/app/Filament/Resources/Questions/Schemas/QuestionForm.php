@@ -2,6 +2,7 @@
 
 namespace Modules\Exam\Filament\Resources\Questions\Schemas;
 
+use App\Filament\Forms\Components\TreeSelect;
 use Closure;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -38,11 +39,10 @@ class QuestionForm
                             ->default(QuestionType::Choice)
                             ->required()
                             ->live(),
-                        Select::make('category_id')
+                        TreeSelect::make('category_id')
                             ->label('دستهٔ سؤال')
                             ->placeholder('بدون دسته')
-                            ->searchable()
-                            ->options(fn (): array => QuestionCategoryTree::current()->options())
+                            ->nodes(fn (): array => QuestionCategoryTree::current()->nodes())
                             ->columnSpanFull(),
                         Textarea::make('body')
                             ->label('متن سؤال')

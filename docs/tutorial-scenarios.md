@@ -156,7 +156,7 @@ Implemented in [School](../Modules/Tutorial/app/Scenarios/School.php).
 | 22 | Next year's term and «ارتقا به سال بعد» | you | a record in another term |
 | **F. آزمون آنلاین** (Exam on) ||||
 | 23 | Bank «ریاضی هفتم»: 3 choice + 1 written questions | you | bank with a written question |
-| 24 | Create «ریاضی» and hover or focus its row to reveal «افزودن زیردسته» beside the title. Add «اعداد صحیح», assign a question to it, and filter by the parent | you | bank has a question assigned to a subcategory |
+| 24 | Create «ریاضی» and hover or focus its row to reveal «افزودن زیردسته» beside the title. Add «اعداد صحیح», assign a question to it with the tree selector, and filter by the parent | you | bank has a question assigned to a subcategory |
 | 25 | Exam: 4 questions from the bank, role «فراگیر», now for an hour | you | published exam drawing from the bank |
 | 26 | Take it | student | attempt submitted |
 | 27 | Grade the written answer | you | attempt completed |

@@ -83,6 +83,25 @@ class QuestionCategoryTree
         return $this->paths[$id] ?? null;
     }
 
+    /** @return list<array{id: int, label: string, children: array}> */
+    public function nodes(?int $excludingBranch = null, ?int $parentId = null): array
+    {
+        $nodes = [];
+        foreach ($this->childrenOf($parentId) as $category) {
+            if ($category->id === $excludingBranch) {
+                continue;
+            }
+
+            $nodes[] = [
+                'id' => $category->id,
+                'label' => $category->title,
+                'children' => $this->nodes($excludingBranch, $category->id),
+            ];
+        }
+
+        return $nodes;
+    }
+
     /** @return list<int> */
     public function branchIds(int $id): array
     {

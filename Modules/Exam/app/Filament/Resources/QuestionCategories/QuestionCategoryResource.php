@@ -2,9 +2,9 @@
 
 namespace Modules\Exam\Filament\Resources\QuestionCategories;
 
+use App\Filament\Forms\Components\TreeSelect;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -40,11 +40,10 @@ class QuestionCategoryResource extends Resource
     {
         return $schema->components([
             TextInput::make('title')->label('عنوان')->required()->maxLength(255),
-            Select::make('parent_id')
+            TreeSelect::make('parent_id')
                 ->label('دستهٔ والد')
                 ->placeholder('بدون والد')
-                ->searchable()
-                ->options(fn (?QuestionCategory $record): array => QuestionCategoryTree::current()->options($record?->id)),
+                ->nodes(fn (?QuestionCategory $record): array => QuestionCategoryTree::current()->nodes($record?->id)),
         ]);
     }
 

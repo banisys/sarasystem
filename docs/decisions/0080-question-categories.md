@@ -24,3 +24,4 @@ Exam managers need a subject hierarchy to organize questions and find them acros
 - Existing questions start uncategorized. Classification changes neither bank memberships nor past attempt snapshots.
 - Moving a branch updates the displayed paths and the results of parent filters immediately. To delete a category, first move its subcategories and move or clear its question assignments.
 - The category picker and filter load the current tenant's taxonomy in one query. Filtering computes the branch in memory and applies its IDs to the paginated question query.
+- [ADR 0081](0081-admin-tree-select.md) adds the expandable single-selection field to the parent and question forms, and multiple branch selection to the question filter.

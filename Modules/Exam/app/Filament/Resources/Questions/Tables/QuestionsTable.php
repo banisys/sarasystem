@@ -2,6 +2,7 @@
 
 namespace Modules\Exam\Filament\Resources\Questions\Tables;
 
+use App\Filament\Forms\Components\TreeSelect;
 use App\Filament\Support\TextFilter;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -60,16 +61,36 @@ class QuestionsTable
                     ->relationship('banks', 'title'),
                 SelectFilter::make('category')
                     ->label('دسته و زیردسته‌ها')
-                    ->searchable()
+                    ->multiple()
+                    ->resetState(['values' => []])
                     ->options(fn (): array => ['uncategorized' => 'بدون دسته'] + $categories()->options())
+                    ->schema([
+                        TreeSelect::make('values')
+                            ->label('دسته و زیردسته‌ها')
+                            ->placeholder('همهٔ دسته‌ها')
+                            ->multiple()
+                            ->nodes(fn (): array => [
+                                ['id' => 'uncategorized', 'label' => 'بدون دسته'],
+                                ...$categories()->nodes(),
+                            ]),
+                    ])
                     ->query(function (Builder $query, array $data) use ($categories): Builder {
-                        $value = $data['value'] ?? null;
+                        $values = $data['values'] ?? [];
+                        if ($values === []) {
+                            return $query;
+                        }
 
-                        return match ($value) {
-                            null, '' => $query,
-                            'uncategorized' => $query->whereNull('category_id'),
-                            default => $query->whereIn('category_id', $categories()->branchIds((int) filter_var($value, FILTER_VALIDATE_INT))),
-                        };
+                        $ids = [];
+                        foreach ((array) $values as $value) {
+                            $id = filter_var($value, FILTER_VALIDATE_INT);
+                            if ($id !== false) {
+                                $ids += array_fill_keys($categories()->branchIds($id), true);
+                            }
+                        }
+
+                        return $query->where(fn (Builder $branches): Builder => $branches
+                            ->whereIn('category_id', array_keys($ids))
+                            ->when(in_array('uncategorized', (array) $values, true), fn (Builder $branches): Builder => $branches->orWhereNull('category_id')));
                     }),
                 SelectFilter::make('type')
                     ->label('نوع')

@@ -1,0 +1,116 @@
+@php
+    $nodes = $getTreeNodes();
+    $labels = $getTreeOptionLabels($nodes);
+    $statePath = $getStatePath();
+    $id = $getId();
+@endphp
+
+<x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
+    <div
+        wire:key="{{ $getLivewireKey() }}.{{ md5(serialize([$nodes, $isMultiple(), $isDisabled()])) }}"
+        x-data="{
+            state: $wire.{{ $applyStateBindingModifiers('$entangle('.\Illuminate\Support\Js::from($statePath).')') }},
+            labels: @js((object) $labels),
+            multiple: @js($isMultiple()),
+            open: false,
+            collapsed: Object.create(null),
+            visible: null,
+            get selected() {
+                const values = this.multiple ? this.state : [this.state]
+                return Array.isArray(values) ? values.filter(value => value !== null && value !== '').map(String) : []
+            },
+            get summary() {
+                return this.selected.map(value => Object.hasOwn(this.labels, value) ? this.labels[value] : '').filter(Boolean).join('، ')
+            },
+            select(value, checked) {
+                if (this.multiple) {
+                    this.state = checked ? [...new Set([...this.selected, value])] : this.selected.filter(id => id !== value)
+                } else {
+                    this.state = value
+                    this.close(true)
+                }
+            },
+            clear() {
+                this.state = this.multiple ? [] : null
+            },
+            close(focus = false) {
+                this.open = false
+                if (focus) this.$refs.trigger.focus()
+            },
+            filter(query) {
+                const term = query.trim().toLocaleLowerCase()
+                if (!term) {
+                    this.visible = null
+                    return
+                }
+
+                const visible = new Set()
+                for (const option of this.$refs.list.querySelectorAll('[data-tree-value]')) {
+                    if (!this.labels[option.dataset.treeValue]?.toLocaleLowerCase().includes(term)) continue
+                    for (let node = option; node && !visible.has(node.dataset.treeValue); node = node.parentElement.closest('[data-tree-value]')) {
+                        visible.add(node.dataset.treeValue)
+                    }
+                }
+                this.visible = visible
+            },
+        }"
+        x-on:click.outside="close()"
+        x-on:keydown.escape="if (open) { $event.stopPropagation(); close(true) }"
+        {{ $getExtraAttributeBag() }}
+    >
+        <x-filament::input.wrapper :disabled="$isDisabled()" :valid="! $errors->has($statePath)">
+            <button
+                id="{{ $id }}"
+                type="button"
+                x-ref="trigger"
+                x-on:click="open = !open"
+                x-bind:aria-expanded="open.toString()"
+                aria-controls="{{ $id }}-options"
+                @disabled($isDisabled())
+                class="flex min-h-9 w-full min-w-0 items-center justify-between gap-2 px-3 py-1.5 text-start text-sm text-gray-950 disabled:text-gray-500 dark:text-white dark:disabled:text-gray-400"
+            >
+                <span class="truncate" x-bind:title="summary" x-text="summary || @js($getPlaceholder() ?? 'انتخاب کنید')"></span>
+                <x-filament::icon icon="heroicon-o-chevron-down" class="size-4 shrink-0 text-gray-500" />
+            </button>
+        </x-filament::input.wrapper>
+
+        @unless ($isDisabled())
+            <div
+                id="{{ $id }}-options"
+                x-show="open"
+                x-cloak
+                class="mt-2 space-y-2 rounded-lg bg-white p-2 ring-1 ring-gray-950/10 dark:bg-gray-900 dark:ring-white/15"
+            >
+                @if ($isSearchable() && $nodes !== [])
+                    <x-filament::input.wrapper>
+                        <x-filament::input
+                            type="search"
+                            aria-label="جست‌وجو در گزینه‌ها"
+                            placeholder="جست‌وجو در گزینه‌ها"
+                            x-on:input="filter($event.target.value)"
+                            x-on:keydown.enter.prevent
+                        />
+                    </x-filament::input.wrapper>
+                @endif
+
+                <div x-ref="list" role="group" aria-label="{{ $getLabel() }}" class="max-h-52 overflow-y-auto">
+                    @include('filament.forms.components.tree-select-options', ['nodes' => $nodes, 'fieldId' => $id, 'multiple' => $isMultiple()])
+
+                    <p x-show="visible !== null && visible.size === 0" class="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">گزینه‌ای پیدا نشد.</p>
+                    @if ($nodes === [])
+                        <p class="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">گزینه‌ای برای انتخاب وجود ندارد.</p>
+                    @endif
+                </div>
+
+                <button
+                    type="button"
+                    x-show="selected.length > 0"
+                    x-on:click="clear()"
+                    class="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-primary-500 dark:text-gray-300 dark:hover:bg-white/10"
+                >
+                    پاک کردن انتخاب
+                </button>
+            </div>
+        @endunless
+    </div>
+</x-dynamic-component>
