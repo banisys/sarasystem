@@ -15,6 +15,7 @@ Exam managers need to see the category hierarchy while selecting a parent or ass
 ## Decision
 
 - [TreeSelect](../../app/Filament/Forms/Components/TreeSelect.php) accepts nested nodes with IDs and labels. It uses a scalar selection by default and an array with `multiple()`. Search retains ancestor context. Callers supply the permitted nodes and apply their own authorization and domain rules.
+- The options open in a native popover anchored to the field. This keeps subsequent fields in place and lets the options escape clipping in modals and table filters. The panel opens above the field when there is more room there and scrolls if space is limited.
 - Exam uses single selection for a category's parent and a question's category. Editing a category excludes itself and its descendants from the parent selector.
 - The question filter uses multiple selection. Results match any selected branch, including its descendants, and «بدون دسته» may be combined with branches. Existing URLs with a single category filter are normalized to the new state.
 

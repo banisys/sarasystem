@@ -12,7 +12,6 @@
             state: $wire.{{ $applyStateBindingModifiers('$entangle('.\Illuminate\Support\Js::from($statePath).')') }},
             labels: @js((object) $labels),
             multiple: @js($isMultiple()),
-            open: false,
             collapsed: Object.create(null),
             visible: null,
             get selected() {
@@ -34,8 +33,26 @@
                 this.state = this.multiple ? [] : null
             },
             close(focus = false) {
-                this.open = false
+                this.$refs.panel.hidePopover()
                 if (focus) this.$refs.trigger.focus()
+            },
+            positionPanel() {
+                const panel = this.$refs.panel
+                if (!panel.matches(':popover-open')) return
+
+                const trigger = this.$refs.trigger.getBoundingClientRect()
+                const viewportHeight = document.documentElement.clientHeight
+                const gap = 8
+                const below = viewportHeight - trigger.bottom - gap * 2
+                const above = trigger.top - gap * 2
+
+                panel.style.width = `${trigger.width}px`
+                panel.style.left = `${trigger.left}px`
+
+                const opensUp = panel.scrollHeight > below && above > below
+                panel.style.maxHeight = `${Math.max(0, opensUp ? above : below)}px`
+                panel.style.top = opensUp ? 'auto' : `${trigger.bottom + gap}px`
+                panel.style.bottom = opensUp ? `${viewportHeight - trigger.top + gap}px` : 'auto'
             },
             filter(query) {
                 const term = query.trim().toLocaleLowerCase()
@@ -54,8 +71,11 @@
                 this.visible = visible
             },
         }"
-        x-on:click.outside="close()"
-        x-on:keydown.escape="if (open) { $event.stopPropagation(); close(true) }"
+        @unless ($isDisabled())
+            x-on:scroll.window.capture.throttle.16ms="positionPanel()"
+            x-on:resize.window="positionPanel()"
+            x-on:keydown.escape="if ($refs.panel.matches(':popover-open')) { $event.preventDefault(); $event.stopPropagation(); close(true) }"
+        @endunless
         {{ $getExtraAttributeBag() }}
     >
         <x-filament::input.wrapper :disabled="$isDisabled()" :valid="! $errors->has($statePath)">
@@ -63,9 +83,9 @@
                 id="{{ $id }}"
                 type="button"
                 x-ref="trigger"
-                x-on:click="open = !open"
-                x-bind:aria-expanded="open.toString()"
-                aria-controls="{{ $id }}-options"
+                @unless ($isDisabled())
+                    popovertarget="{{ $id }}-options"
+                @endunless
                 @disabled($isDisabled())
                 class="flex min-h-9 w-full min-w-0 items-center justify-between gap-2 px-3 py-1.5 text-start text-sm text-gray-950 disabled:text-gray-500 dark:text-white dark:disabled:text-gray-400"
             >
@@ -77,9 +97,10 @@
         @unless ($isDisabled())
             <div
                 id="{{ $id }}-options"
-                x-show="open"
-                x-cloak
-                class="mt-2 space-y-2 rounded-lg bg-white p-2 ring-1 ring-gray-950/10 dark:bg-gray-900 dark:ring-white/15"
+                popover
+                x-ref="panel"
+                x-on:toggle="positionPanel()"
+                class="fixed inset-auto m-0 space-y-2 overflow-y-auto overscroll-contain rounded-lg bg-white p-2 shadow-lg ring-1 ring-gray-950/10 dark:bg-gray-900 dark:ring-white/15"
             >
                 @if ($isSearchable() && $nodes !== [])
                     <x-filament::input.wrapper>
