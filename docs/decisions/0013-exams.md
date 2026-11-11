@@ -44,6 +44,10 @@ See [ADR 0078](0078-exam-attempt-consistency.md) for transactional save/submit/f
 ## Class sessions
 [ADR 0079](0079-exams-in-class-sessions.md) adds independent copies for class sessions through an optional host contract. Their participants come from session-date membership; standalone exams keep named/role participants. Session staff can review and grade that session's answers through the user panel without global `Update:ExamAttempt` permission.
 
+## Fill-in-the-blank questions
+
+[ADR 0083](0083-fill-in-the-blank-questions.md) adds a single inline blank with automatic grading against accepted answers copied into the attempt.
+
 [ADR 0080](0080-question-categories.md) adds a category tree for classifying and filtering questions in the admin panel. Exam sections still draw from question banks.
 
 [ADR 0082](0082-question-tags.md) adds a tenant-owned tag catalog and multiple tags per question, with tag filtering in the admin panel.

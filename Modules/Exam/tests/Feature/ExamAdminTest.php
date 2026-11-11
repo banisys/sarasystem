@@ -107,6 +107,33 @@ class ExamAdminTest extends TestCase
         $this->assertSame([$bank->id], $question->banks->pluck('id')->all());
     }
 
+    public function test_a_fill_in_the_blank_question_needs_a_marker_and_accepted_answers_in_its_own_tenant(): void
+    {
+        $bank = QuestionBank::factory()->for($this->tenant)->create();
+        $foreignBank = QuestionBank::factory()->for($this->otherTenant)->create();
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        $data = ['banks' => [$bank->id], 'type' => 'fill_in_the_blank', 'body' => 'حاصل ۳ + ۲ برابر ___ است.', 'accepted_answers' => [
+            ['answer' => '۵'],
+            ['answer' => 'پنج'],
+        ]];
+
+        Livewire::test(CreateQuestion::class)
+            ->fillForm([...$data, 'body' => '___ و ___', 'accepted_answers' => [], 'banks' => [$foreignBank->id]])
+            ->call('create')
+            ->assertHasFormErrors(['body', 'accepted_answers', 'banks']);
+
+        Livewire::test(CreateQuestion::class)
+            ->fillForm($data)
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $question = Question::query()->sole();
+        $this->assertSame($this->tenant->id, $question->tenant_id);
+        $this->assertSame(['۵', 'پنج'], $question->accepted_answers);
+        $this->assertNull($question->options);
+    }
+
     public function test_an_exam_takes_participants_only_from_this_tenant(): void
     {
         $bank = QuestionBank::factory()->for($this->tenant)->create();

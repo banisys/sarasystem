@@ -9,6 +9,8 @@ enum QuestionType: string implements HasLabel
     /** Pick one of several options; graded automatically. */
     case Choice = 'choice';
 
+    case FillInTheBlank = 'fill_in_the_blank';
+
     /** A written answer; graded by staff. */
     case Descriptive = 'descriptive';
 
@@ -16,6 +18,7 @@ enum QuestionType: string implements HasLabel
     {
         return match ($this) {
             self::Choice => 'چندگزینه‌ای',
+            self::FillInTheBlank => 'جای خالی',
             self::Descriptive => 'تشریحی',
         };
     }

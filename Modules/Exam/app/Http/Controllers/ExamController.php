@@ -11,6 +11,7 @@ use Modules\Exam\Http\Controllers\Concerns\ChecksParticipant;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\Question;
 use Modules\Exam\Services\ExamTaking;
 use Modules\Exam\Support\ExamContexts;
 
@@ -51,6 +52,7 @@ class ExamController extends Controller
         $attempt = $taking->currentAttempt($exam, $user);
         $finished = $taking->finishedAttempts($exam, $user);
         $blockedReason = $attempt === null ? $taking->blockedReason($exam, $user) : null;
+        $retakesClosed = in_array($blockedReason, [ExamTaking::BLOCKED_ENDED, ExamTaking::BLOCKED_NO_ATTEMPTS_LEFT, ExamTaking::BLOCKED_PASSED], true);
         $exam->load('sections');
 
         return Inertia::render('Exam::Show', [
@@ -72,7 +74,7 @@ class ExamController extends Controller
             'attemptsUsed' => $finished->count(),
             'blocked' => $blockedReason === null ? null : ExamTaking::blockedMessage($blockedReason),
             'attempt' => $attempt === null ? null : $this->runningAttempt($attempt),
-            'result' => $attempt === null && $finished->isNotEmpty() ? $this->result($exam, $finished->first()) : null,
+            'result' => $attempt === null && $finished->isNotEmpty() ? $this->result($exam, $finished->first(), $retakesClosed) : null,
         ]);
     }
 
@@ -89,6 +91,7 @@ class ExamController extends Controller
                 'id' => $answer->id,
                 'type' => $answer->question_type->value,
                 'body' => $answer->question_body,
+                'blank_parts' => $answer->isFillInTheBlank() ? explode(Question::BLANK_MARKER, $answer->question_body, 2) : null,
                 'options' => $answer->options ?? [],
                 'max_score' => $answer->max_score,
                 'answer' => $answer->isChoice() ? $answer->selected_option : $answer->text_answer,
@@ -102,7 +105,7 @@ class ExamController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function result(Exam $exam, ExamAttempt $attempt): array
+    private function result(Exam $exam, ExamAttempt $attempt, bool $retakeBlocked): array
     {
         $visibility = $exam->result_visibility;
         $isGraded = $attempt->score !== null;
@@ -120,7 +123,7 @@ class ExamController extends Controller
                     'body' => $answer->question_body,
                     'type' => $answer->question_type->value,
                     'your_answer' => $answer->isChoice() ? $answer->optionText($answer->selected_option) : $answer->text_answer,
-                    'correct_answer' => $answer->isChoice() ? $answer->optionText($answer->correct_option) : null,
+                    'correct_answer' => $answer->isFillInTheBlank() && ! $retakeBlocked ? null : $answer->correctAnswerText(),
                     'score' => $answer->score,
                     'max_score' => $answer->max_score,
                 ])->all()

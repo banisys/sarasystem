@@ -116,7 +116,17 @@ onBeforeUnmount(() => {
             <div class="flex items-start justify-between gap-3">
                 <p class="whitespace-pre-line font-medium text-gray-900">
                     <span class="text-violet-700">{{ currentPage * perPage + index + 1 }}.</span>
-                    {{ question.body }}
+                    <template v-if="question.blank_parts">
+                        {{ question.blank_parts[0] }}
+                        <input
+                            v-model="autosave.answers[question.id]"
+                            type="text"
+                            :aria-label="`پاسخ جای خالی سؤال ${currentPage * perPage + index + 1}`"
+                            class="my-1 w-36 max-w-full rounded-lg border border-gray-300 px-2 py-1 focus:border-violet-500 focus:ring-violet-500"
+                        />
+                        {{ question.blank_parts[1] }}
+                    </template>
+                    <template v-else>{{ question.body }}</template>
                 </p>
                 <span class="shrink-0 text-xs text-gray-500">{{ question.max_score }} نمره</span>
             </div>
@@ -148,7 +158,7 @@ onBeforeUnmount(() => {
             </div>
 
             <textarea
-                v-else
+                v-else-if="!question.blank_parts"
                 v-model="autosave.answers[question.id]"
                 rows="5"
                 class="mt-4 w-full rounded-lg border-gray-300 focus:border-violet-500 focus:ring-violet-500"

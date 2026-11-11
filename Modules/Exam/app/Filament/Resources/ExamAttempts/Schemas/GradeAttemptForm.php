@@ -12,7 +12,7 @@ use Modules\Exam\Models\ExamAttempt;
 
 /**
  * The attempt and its answers. Only the score of written answers can be
- * changed; choice answers were graded on submit.
+ * changed. Automatic answers were graded on submit.
  */
 class GradeAttemptForm
 {
@@ -56,8 +56,8 @@ class GradeAttemptForm
                             ->placeholder('بی‌پاسخ'),
                         TextEntry::make('correct_option')
                             ->label('پاسخ درست')
-                            ->visible(fn (AttemptAnswer $record): bool => $record->isChoice())
-                            ->state(fn (AttemptAnswer $record): ?string => $record->optionText($record->correct_option)),
+                            ->visible(fn (AttemptAnswer $record): bool => ! $record->requiresManualGrading())
+                            ->state(fn (AttemptAnswer $record): ?string => $record->correctAnswerText()),
                         TextEntry::make('text_answer')
                             ->label('پاسخ')
                             ->visible(fn (AttemptAnswer $record): bool => ! $record->isChoice())
@@ -68,7 +68,7 @@ class GradeAttemptForm
                             ->numeric()
                             ->minValue(0)
                             ->maxValue(fn (AttemptAnswer $record): float => $record->max_score)
-                            ->disabled(fn (AttemptAnswer $record): bool => $record->isChoice())
+                            ->disabled(fn (AttemptAnswer $record): bool => ! $record->requiresManualGrading())
                             ->placeholder('تصحیح نشده'),
                     ])
                     ->columns(2)
@@ -85,7 +85,7 @@ class GradeAttemptForm
      */
     private static function gradeData(array $data, AttemptAnswer $record): array
     {
-        if ($record->isChoice() || ! array_key_exists('score', $data)) {
+        if (! $record->requiresManualGrading() || ! array_key_exists('score', $data)) {
             return [];
         }
 

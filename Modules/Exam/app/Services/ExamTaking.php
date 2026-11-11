@@ -135,6 +135,7 @@ class ExamTaking
                 'question_body' => $question->body,
                 'options' => $question->type === QuestionType::Choice ? $this->servedOptions($question, (bool) $exam->shuffle_options) : null,
                 'correct_option' => $question->type === QuestionType::Choice ? $question->correctOptionKey() : null,
+                'accepted_answers' => $question->accepted_answers,
                 'max_score' => $question->score,
             ]));
 
@@ -198,7 +199,7 @@ class ExamTaking
     }
 
     /**
-     * Close the attempt with the answers saved so far: grade choice answers
+     * Close the attempt with the answers saved so far: grade automatic answers
      * and empty written ones, then sum the score.
      */
     public function finish(ExamAttempt $attempt, bool $timedOut): ExamAttempt
@@ -228,6 +229,8 @@ class ExamTaking
         $attempt->answers()->get()->each(function (AttemptAnswer $answer) use ($exam): void {
             if ($answer->isChoice()) {
                 $answer->score = $answer->choiceScore($exam->negative_marking);
+            } elseif ($answer->isFillInTheBlank()) {
+                $answer->score = $answer->fillInTheBlankScore();
             } elseif (blank($answer->text_answer)) {
                 $answer->score = 0;
             }

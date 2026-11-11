@@ -91,8 +91,8 @@ class ContextExamController extends Controller
             'answers' => $attempt->answers()->get()->map(fn (AttemptAnswer $answer): array => [
                 'id' => $answer->id, 'body' => $answer->question_body,
                 'answer' => $answer->isChoice() ? $answer->optionText($answer->selected_option) : $answer->text_answer,
-                'correct' => $answer->isChoice() ? $answer->optionText($answer->correct_option) : null,
-                'is_choice' => $answer->isChoice(), 'max_score' => $answer->max_score, 'score' => $answer->score,
+                'correct' => $answer->correctAnswerText(),
+                'requires_manual_grading' => $answer->requiresManualGrading(), 'max_score' => $answer->max_score, 'score' => $answer->score,
             ]),
         ]);
     }
@@ -111,7 +111,7 @@ class ContextExamController extends Controller
             $answers = $locked->answers()->get()->keyBy('id');
             foreach ($data['scores'] as $id => $score) {
                 $answer = $answers->get($id);
-                if ($answer === null || $answer->isChoice() || ($score !== null && $score > $answer->max_score)) {
+                if ($answer === null || ! $answer->requiresManualGrading() || ($score !== null && $score > $answer->max_score)) {
                     throw ValidationException::withMessages(['scores' => 'فقط نمرهٔ پاسخ تشریحی همین آزمون، تا سقف نمرهٔ سؤال، قابل ثبت است.']);
                 }
                 $score = $score === null ? null : (float) $score;

@@ -13,6 +13,7 @@ use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 use Modules\Exam\Enums\AttemptStatus;
+use Modules\Exam\Enums\QuestionType;
 use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Enums\RetakePolicy;
 use Modules\Exam\Models\AttemptAnswer;
@@ -183,6 +184,39 @@ class TakeExamTest extends TestCase
         $this->assertSame(AttemptStatus::Completed, $attempt->status);
         $this->assertSame(8.0, $attempt->score);
         $this->assertFalse($attempt->passed());
+    }
+
+    public function test_fill_in_the_blank_answers_use_the_attempt_snapshot_and_stay_hidden_until_the_final_result(): void
+    {
+        $exam = $this->examWithBank(['max_attempts' => 2, 'negative_marking' => 3, 'result_visibility' => ResultVisibility::ScoreWithAnswers]);
+        $questions = $this->questions(3, [$this->bank], [
+            'type' => QuestionType::FillInTheBlank,
+            'body' => 'حاصل ___ است.',
+            'accepted_answers' => ['پنج', 'عدد ۵'],
+            'score' => 2,
+        ]);
+
+        $this->visit(route('exams.attempt.start', $exam), method: 'post')->assertRedirect();
+        $answers = $this->tenant->execute(fn () => ExamAttempt::query()->sole()->answers()->get());
+        $this->visit(route('exams.show', $exam))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('attempt.questions.0.blank_parts', ['حاصل ', ' است.'])
+            ->where('attempt.questions.0.options', [])
+            ->missing('attempt.questions.0.accepted_answers'));
+
+        $this->tenant->execute(fn () => $questions[0]->update(['accepted_answers' => ['هفت']]));
+        $this->visit(route('exams.attempt.submit', $exam), method: 'post', data: ['answers' => [
+            $answers[0]->id => 'عدد   ٥',
+            $answers[1]->id => 'هشت',
+        ]])->assertRedirect();
+
+        $this->tenant->execute(fn () => $this->assertSame([2.0, 0.0, 0.0], ExamAttempt::query()->sole()->answers()->pluck('score')->all()));
+        $this->visit(route('exams.show', $exam))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('result.is_graded', true)
+            ->where('result.answers.0.correct_answer', null));
+
+        $exam->update(['max_attempts' => 1]);
+        $this->visit(route('exams.show', $exam))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('result.answers.0.correct_answer', 'پنج، عدد ۵'));
     }
 
     public function test_an_empty_written_answer_scores_zero_without_review(): void

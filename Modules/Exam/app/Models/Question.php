@@ -21,9 +21,11 @@ use Modules\Exam\Enums\QuestionType;
  *
  * @property list<array{key: string, text: string, is_correct: bool}>|null $options
  */
-#[Fillable(['tenant_id', 'category_id', 'type', 'body', 'options', 'score', 'is_active'])]
+#[Fillable(['tenant_id', 'category_id', 'type', 'body', 'options', 'accepted_answers', 'score', 'is_active'])]
 class Question extends Model
 {
+    public const BLANK_MARKER = '___';
+
     /** @use HasFactory<QuestionFactory> */
     use BelongsToTenant, HasFactory;
 
@@ -31,10 +33,13 @@ class Question extends Model
 
     protected static function booted(): void
     {
-        // A written question has no options.
         static::saving(function (self $question): void {
-            if ($question->type === QuestionType::Descriptive) {
+            if ($question->type !== QuestionType::Choice) {
                 $question->options = null;
+            }
+
+            if ($question->type !== QuestionType::FillInTheBlank) {
+                $question->accepted_answers = null;
             }
         });
     }
@@ -100,6 +105,7 @@ class Question extends Model
     {
         return [
             'type' => QuestionType::class,
+            'accepted_answers' => 'array',
             'score' => 'float',
             'is_active' => 'boolean',
         ];

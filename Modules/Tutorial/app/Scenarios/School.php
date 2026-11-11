@@ -536,7 +536,8 @@ class School extends Scenario
             Mission::make('question-bank', 'بانک سؤال')
                 ->steps([
                     $tenant.' را «دبیرستان نمونه» کنید؛ در «آزمون → بانک‌های سؤال» بانک «ریاضی هفتم» را بسازید.',
-                    'در «آزمون → سؤال‌ها» سه سؤال چهارگزینه‌ای (با یک گزینه‌ی درست) و یک سؤال تشریحی، هر کدام با بارم یک، بسازید و برای هر کدام بانک «ریاضی هفتم» را بزنید.',
+                    'در «آزمون → سؤال‌ها» دو سؤال چهارگزینه‌ای، یک سؤال تشریحی و یک سؤال «جای خالی» با بارم یک بسازید و بانک «ریاضی هفتم» را انتخاب کنید.',
+                    'برای سؤال جای خالی، «نصف ۱۲ برابر ___ است.» را بنویسید و «۶» را به‌عنوان پاسخ پذیرفتنی ثبت کنید.',
                 ])
                 ->url(fn (TutorialRun $run): ?string => self::schoolUrl($run, QuestionBankResource::class))
                 ->fill(fn (): array => ['title' => 'ریاضی هفتم'])
@@ -551,7 +552,7 @@ class School extends Scenario
                     $bank->questions()->attach([
                         $choice('حاصل ۳- + ۵ چند است؟', ['۲', '۸', '۲-', '۸-'], 0)->getKey(),
                         $choice('کدام عدد صحیح منفی است؟', ['۰', '۷', '۴-', '۱'], 2)->getKey(),
-                        $choice('نصف ۱۲ چند است؟', ['۴', '۶', '۸', '۲۴'], 1)->getKey(),
+                        Question::query()->create(['tenant_id' => $tenantId, 'type' => QuestionType::FillInTheBlank, 'body' => 'نصف ۱۲ برابر ___ است.', 'accepted_answers' => ['۶'], 'score' => 1, 'is_active' => true])->getKey(),
                         Question::query()->create(['tenant_id' => $tenantId, 'type' => QuestionType::Descriptive, 'body' => 'معادله‌ی x + 4 = 9 را حل کنید.', 'score' => 1, 'is_active' => true])->getKey(),
                     ]);
                 })
@@ -613,7 +614,11 @@ class School extends Scenario
                     $taking = app(ExamTaking::class);
                     $attempt = $taking->start(self::exam($run), self::student($run)->user);
                     $taking->submit($attempt, $attempt->answers()->get()->mapWithKeys(fn (AttemptAnswer $answer): array => [
-                        $answer->getKey() => $answer->isChoice() ? $answer->correct_option : 'x = 5',
+                        $answer->getKey() => match ($answer->question_type) {
+                            QuestionType::Choice => $answer->correct_option,
+                            QuestionType::FillInTheBlank => '۶',
+                            QuestionType::Descriptive => 'x = 5',
+                        },
                     ])->all());
                 }))
                 ->doneWhen(fn (TutorialRun $run): bool => self::attempt($run)?->submitted_at !== null),

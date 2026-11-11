@@ -62,7 +62,7 @@ function start() {
                         <div><dt class="text-gray-500">دفعات شرکت</dt><dd>{{ attemptsUsed }} از {{ exam.max_attempts }}</dd></div>
                         <div v-if="exam.negative_marking">
                             <dt class="text-gray-500">نمره‌ی منفی</dt>
-                            <dd>هر {{ exam.negative_marking }} پاسخ غلط، یک پاسخ درست</dd>
+                            <dd>هر {{ exam.negative_marking }} پاسخ غلط چندگزینه‌ای، یک پاسخ درست</dd>
                         </div>
                     </dl>
 
