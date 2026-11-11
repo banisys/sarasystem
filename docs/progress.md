@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-11 — Gave each Exam category root and its descendants a separate card ([ADR 0080](decisions/0080-question-categories.md)). Verified four cards, descendant grouping, and search in Chrome on desktop and mobile, including dark mode. All 11 category tests and the Vite build pass.
 - 2026-11-11 — Aligned direct question counts at the left edge of each Exam category row. Verified alignment and the adjacent add-child button in Chrome on desktop and mobile. All 11 category tests and the Vite build pass.
 - 2026-11-11 — Increased the Exam category tree indentation per child level from 32 to 48 px on desktop and from 24 to 32 px on mobile, with matching branch connectors. Verified both widths in Chrome on the north sample tree. All 11 category tests and the Vite build pass.
 - 2026-11-11 — Added three sample root categories to the local Exam batch `SMP-0002` in `north`: language and writing, basic sciences, and organizational skills. Verified in the admin tree data that each root has exactly two direct children and all nine records belong to the batch.

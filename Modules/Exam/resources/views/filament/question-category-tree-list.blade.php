@@ -6,6 +6,7 @@
         <li
             wire:key="question-category-{{ $category->id }}"
             @class([
+                'fi-section min-w-0 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10' => $parentId === null,
                 'relative ps-7 sm:ps-10' => $parentId !== null,
                 'before:pointer-events-none before:absolute before:inset-s-0 before:-top-6 before:bottom-0 before:border-s before:border-gray-400 dark:before:border-gray-600 last:before:bottom-auto last:before:h-10' => $parentId !== null,
                 'after:pointer-events-none after:absolute after:inset-s-0 after:top-4 after:w-6 after:border-t after:border-gray-400 dark:after:border-gray-600 sm:after:w-9' => $parentId !== null,
