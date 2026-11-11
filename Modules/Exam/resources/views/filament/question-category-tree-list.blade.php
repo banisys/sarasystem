@@ -6,9 +6,9 @@
         <li
             wire:key="question-category-{{ $category->id }}"
             @class([
-                'relative ps-5 sm:ps-6' => $parentId !== null,
+                'relative ps-7 sm:ps-10' => $parentId !== null,
                 'before:pointer-events-none before:absolute before:inset-s-0 before:-top-6 before:bottom-0 before:border-s before:border-gray-400 dark:before:border-gray-600 last:before:bottom-auto last:before:h-10' => $parentId !== null,
-                'after:pointer-events-none after:absolute after:inset-s-0 after:top-4 after:w-4 after:border-t after:border-gray-400 dark:after:border-gray-600 sm:after:w-5' => $parentId !== null,
+                'after:pointer-events-none after:absolute after:inset-s-0 after:top-4 after:w-6 after:border-t after:border-gray-400 dark:after:border-gray-600 sm:after:w-9' => $parentId !== null,
             ])
         >
             <div class="group relative flex min-h-8 min-w-0 flex-wrap items-center gap-x-2">

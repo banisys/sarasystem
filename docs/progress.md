@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-11 — Increased the Exam category tree indentation per child level from 32 to 48 px on desktop and from 24 to 32 px on mobile, with matching branch connectors. Verified both widths in Chrome on the north sample tree. All 11 category tests and the Vite build pass.
 - 2026-11-11 — Added three sample root categories to the local Exam batch `SMP-0002` in `north`: language and writing, basic sciences, and organizational skills. Verified in the admin tree data that each root has exactly two direct children and all nine records belong to the batch.
 - 2026-11-11 — Added top and right spacing to the root of the Exam category tree, 24 px on desktop and 16 px on mobile. Verified both in Chrome. All 11 category tests and the Vite build pass.
 - 2026-11-11 — Simplified Exam category row actions ([ADR 0080](decisions/0080-question-categories.md)). Clicking a row opens the edit modal, with a separately authorized delete action in the footer. The add-child icon appears beside the title on hover or keyboard focus and stays visible on touch devices. Updated the school tutorial. Category and school scenario checks: 13 tests pass (167 assertions); Tutorial off: 11 pass; Exam off: 2 pass. Pint and Vite build pass. Chrome verified the row click, hover/focus, touch visibility and both nested delete confirmation and add-child modals.
