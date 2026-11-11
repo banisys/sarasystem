@@ -156,9 +156,10 @@ Implemented in [School](../Modules/Tutorial/app/Scenarios/School.php).
 | 22 | Next year's term and «ارتقا به سال بعد» | you | a record in another term |
 | **F. آزمون آنلاین** (Exam on) ||||
 | 23 | Bank «ریاضی هفتم»: 3 choice + 1 written questions | you | bank with a written question |
-| 24 | Exam: 4 questions from the bank, role «فراگیر», now for an hour | you | published exam drawing from the bank |
-| 25 | Take it | student | attempt submitted |
-| 26 | Grade the written answer | you | attempt completed |
+| 24 | Create «ریاضی / اعداد صحیح», assign a question to the subcategory, and filter by the parent | you | bank has a question assigned to a subcategory |
+| 25 | Exam: 4 questions from the bank, role «فراگیر», now for an hour | you | published exam drawing from the bank |
+| 26 | Take it | student | attempt submitted |
+| 27 | Grade the written answer | you | attempt completed |
 
 **Differences from the first design:** the parents' fields are turned on in the program's «فیلدهای فرم» rather than the whole «تنظیم فرم پیش‌ثبت‌نام» (a whole-form setup may already exist and would change real data); the document type is made in the workflow mission; the read-only missions (learner page tabs, the parent's view, the report card view) are steps of the missions before them.
 

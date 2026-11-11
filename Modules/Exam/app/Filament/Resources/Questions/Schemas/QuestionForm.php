@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 use Modules\Exam\Enums\QuestionType;
 use Modules\Exam\Models\QuestionBank;
+use Modules\Exam\Support\QuestionCategoryTree;
 
 class QuestionForm
 {
@@ -37,6 +38,12 @@ class QuestionForm
                             ->default(QuestionType::Choice)
                             ->required()
                             ->live(),
+                        Select::make('category_id')
+                            ->label('دستهٔ سؤال')
+                            ->placeholder('بدون دسته')
+                            ->searchable()
+                            ->options(fn (): array => QuestionCategoryTree::current()->options())
+                            ->columnSpanFull(),
                         Textarea::make('body')
                             ->label('متن سؤال')
                             ->required()

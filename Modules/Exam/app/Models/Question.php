@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 use Modules\Exam\Database\Factories\QuestionFactory;
@@ -20,7 +21,7 @@ use Modules\Exam\Enums\QuestionType;
  *
  * @property list<array{key: string, text: string, is_correct: bool}>|null $options
  */
-#[Fillable(['tenant_id', 'type', 'body', 'options', 'score', 'is_active'])]
+#[Fillable(['tenant_id', 'category_id', 'type', 'body', 'options', 'score', 'is_active'])]
 class Question extends Model
 {
     /** @use HasFactory<QuestionFactory> */
@@ -41,6 +42,12 @@ class Question extends Model
     protected static function newFactory(): QuestionFactory
     {
         return QuestionFactory::new();
+    }
+
+    /** @return BelongsTo<QuestionCategory, $this> */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(QuestionCategory::class, 'category_id');
     }
 
     /**

@@ -18,6 +18,8 @@ use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Exam\Enums\AttemptStatus;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\Question;
+use Modules\Exam\Models\QuestionCategory;
 use Modules\School\Models\Enrollment;
 use Modules\School\Models\Grade;
 use Modules\School\Models\Score;
@@ -27,6 +29,7 @@ use Modules\Tutorial\Models\TutorialRun;
 use Modules\Tutorial\Scenarios\School;
 use Modules\Tutorial\Services\TutorialProgress;
 use Modules\Tutorial\Tests\Concerns\RunsTutorials;
+use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -78,13 +81,26 @@ class SchoolScenarioTest extends TestCase
         $this->assertCount(1, $cards);
         $this->assertSame(['هفتم', 'هشتم'], Enrollment::withoutTenantScope()->where('user_id', $amir->id)->orderBy('term_id')->get()
             ->map(fn (Enrollment $enrollment): string => Grade::withoutTenantScope()->find($enrollment->grade_id)->title)->all());
-        $this->assertSame(AttemptStatus::Completed, $run->made(ExamAttempt::class)->sole()->status);
+        $categories = [];
+        if (Module::isEnabled('Exam')) {
+            $this->assertSame(AttemptStatus::Completed, $run->made(ExamAttempt::class)->sole()->status);
+            $root = $run->made(QuestionCategory::class)->whereNull('parent_id')->sole();
+            $child = $run->made(QuestionCategory::class)->where('parent_id', $root->id)->sole();
+            $this->assertSame('اعداد صحیح', $child->title);
+            $this->assertSame($child->id, $run->made(Question::class)->whereNotNull('category_id')->sole()->category_id);
+            $categories = [$root, $child];
+        } else {
+            $this->assertNull((new School)->mission('question-category'));
+        }
 
         Livewire::test(StepByStepTutorial::class)->callAction('reset')->assertNotified('آموزش از اول');
 
         $this->assertModelMissing($school);
         $this->assertModelMissing($amir);
         $this->assertModelMissing($father);
+        foreach ($categories as $category) {
+            $this->assertModelMissing($category);
+        }
         $this->assertSame(0, Enrollment::withoutTenantScope()->count());
     }
 

@@ -10,12 +10,20 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Enums\QuestionType;
+use Modules\Exam\Models\Question;
+use Modules\Exam\Support\QuestionCategoryTree;
 
 class QuestionsTable
 {
     public static function configure(Table $table): Table
     {
+        $tree = null;
+        $categories = function () use (&$tree): QuestionCategoryTree {
+            return $tree ??= QuestionCategoryTree::current();
+        };
+
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('banks'))
             ->columns([
@@ -29,6 +37,11 @@ class QuestionsTable
                 TextColumn::make('banks.title')
                     ->label('بانک‌ها')
                     ->badge(),
+                TextColumn::make('category_path')
+                    ->label('دسته')
+                    ->state(fn (Question $record): ?string => $categories()->label($record->category_id))
+                    ->placeholder('بدون دسته')
+                    ->wrap(),
                 TextColumn::make('score')
                     ->label('بارم')
                     ->sortable(),
@@ -45,6 +58,19 @@ class QuestionsTable
                 SelectFilter::make('bank')
                     ->label('بانک')
                     ->relationship('banks', 'title'),
+                SelectFilter::make('category')
+                    ->label('دسته و زیردسته‌ها')
+                    ->searchable()
+                    ->options(fn (): array => ['uncategorized' => 'بدون دسته'] + $categories()->options())
+                    ->query(function (Builder $query, array $data) use ($categories): Builder {
+                        $value = $data['value'] ?? null;
+
+                        return match ($value) {
+                            null, '' => $query,
+                            'uncategorized' => $query->whereNull('category_id'),
+                            default => $query->whereIn('category_id', $categories()->branchIds((int) filter_var($value, FILTER_VALIDATE_INT))),
+                        };
+                    }),
                 SelectFilter::make('type')
                     ->label('نوع')
                     ->options(QuestionType::class),

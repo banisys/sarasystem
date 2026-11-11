@@ -56,11 +56,13 @@ use Modules\Exam\Enums\RetakePolicy;
 use Modules\Exam\Filament\Resources\ExamAttempts\ExamAttemptResource;
 use Modules\Exam\Filament\Resources\Exams\ExamResource;
 use Modules\Exam\Filament\Resources\QuestionBanks\QuestionBankResource;
+use Modules\Exam\Filament\Resources\QuestionCategories\QuestionCategoryResource;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
+use Modules\Exam\Models\QuestionCategory;
 use Modules\Exam\Services\ExamTaking;
 use Modules\School\Enums\ScoreScale;
 use Modules\School\Filament\Resources\Enrollments\EnrollmentResource;
@@ -552,6 +554,20 @@ class School extends Scenario
                     ]);
                 })
                 ->doneWhen(fn (TutorialRun $run): bool => self::bank($run) !== null),
+            Mission::make('question-category', 'دسته‌بندی سؤال‌ها')
+                ->steps([
+                    'در «آزمون → دسته‌های سؤال» دستهٔ «ریاضی» و زیر آن دستهٔ «اعداد صحیح» را بسازید.',
+                    'در «سؤال‌ها»، یکی از سؤال‌های بانک «ریاضی هفتم» را ویرایش کنید و دستهٔ «ریاضی / اعداد صحیح» را انتخاب کنید.',
+                    'در فیلتر «دسته و زیردسته‌ها»، «ریاضی» را بزنید تا سؤالِ زیردستهٔ «اعداد صحیح» را هم ببینید.',
+                ])
+                ->url(fn (TutorialRun $run): ?string => self::schoolUrl($run, QuestionCategoryResource::class))
+                ->perform(fn (TutorialRun $run): mixed => self::school($run)->execute(function () use ($run): void {
+                    $parent = QuestionCategory::query()->firstOrCreate(['title' => 'ریاضی', 'parent_id' => null]);
+                    $child = $parent->children()->firstOrCreate(['title' => 'اعداد صحیح']);
+                    self::bank($run)->questions()->oldest('exam_questions.id')->firstOrFail()->update(['category_id' => $child->id]);
+                }))
+                ->doneWhen(fn (TutorialRun $run): bool => self::school($run)?->execute(fn (): bool => self::bank($run)?->questions()
+                    ->whereHas('category', fn ($query) => $query->whereNotNull('parent_id'))->exists() ?? false) ?? false),
             Mission::make('exam', 'ساخت آزمون')
                 ->steps([
                     'در «آزمون → آزمون‌ها» آزمون «آزمونک ریاضی» را بسازید: از امروز تا یک ساعت بعد، ۱۵ دقیقه، از ۲۰ نمره، نمره‌ی قبولی ۱۰.',

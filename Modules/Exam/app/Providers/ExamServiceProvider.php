@@ -44,7 +44,13 @@ class ExamServiceProvider extends ModuleServiceProvider
 
         // The screens' permissions for the default roles (ADR 0039).
         app(DefaultRoles::class)->grant([
-            DefaultRoles::EDUCATION_OFFICER => [...DefaultRoles::manage('QuestionBank'), ...DefaultRoles::manage('Question'), ...DefaultRoles::manage('Exam'), ...DefaultRoles::manage('ExamAttempt')],
+            DefaultRoles::EDUCATION_OFFICER => [
+                ...DefaultRoles::manage('QuestionBank'),
+                ...DefaultRoles::manage('QuestionCategory'),
+                ...DefaultRoles::manage('Question'),
+                ...DefaultRoles::manage('Exam'),
+                ...DefaultRoles::manage('ExamAttempt'),
+            ],
         ]);
 
         // «آزمون‌ها» in the user-panel header, for participants of a
