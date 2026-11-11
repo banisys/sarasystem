@@ -1,6 +1,6 @@
 @php
     $nodes = $getTreeNodes();
-    $labels = $getTreeOptionLabels($nodes);
+    $paths = $getTreeOptionPaths($nodes);
     $statePath = $getStatePath();
     $id = $getId();
 @endphp
@@ -10,7 +10,7 @@
         wire:key="{{ $getLivewireKey() }}.{{ md5(serialize([$nodes, $isMultiple(), $isDisabled()])) }}"
         x-data="{
             state: $wire.{{ $applyStateBindingModifiers('$entangle('.\Illuminate\Support\Js::from($statePath).')') }},
-            labels: @js((object) $labels),
+            paths: @js((object) $paths),
             multiple: @js($isMultiple()),
             collapsed: Object.create(null),
             visible: null,
@@ -18,8 +18,8 @@
                 const values = this.multiple ? this.state : [this.state]
                 return Array.isArray(values) ? values.filter(value => value !== null && value !== '').map(String) : []
             },
-            get summary() {
-                return this.selected.map(value => Object.hasOwn(this.labels, value) ? this.labels[value] : '').filter(Boolean).join('، ')
+            get selectedPaths() {
+                return this.selected.filter(value => Object.hasOwn(this.paths, value)).map(value => this.paths[value])
             },
             select(value, checked) {
                 if (this.multiple) {
@@ -63,7 +63,7 @@
 
                 const visible = new Set()
                 for (const option of this.$refs.list.querySelectorAll('[data-tree-value]')) {
-                    if (!this.labels[option.dataset.treeValue]?.toLocaleLowerCase().includes(term)) continue
+                    if (!this.paths[option.dataset.treeValue]?.join(' / ').toLocaleLowerCase().includes(term)) continue
                     for (let node = option; node && !visible.has(node.dataset.treeValue); node = node.parentElement.closest('[data-tree-value]')) {
                         visible.add(node.dataset.treeValue)
                     }
@@ -89,7 +89,22 @@
                 @disabled($isDisabled())
                 class="flex min-h-9 w-full min-w-0 items-center justify-between gap-2 px-3 py-1.5 text-start text-sm text-gray-950 disabled:text-gray-500 dark:text-white dark:disabled:text-gray-400"
             >
-                <span class="truncate" x-bind:title="summary" x-text="summary || @js($getPlaceholder() ?? 'انتخاب کنید')"></span>
+                <span class="min-w-0 truncate" x-bind:title="selectedPaths.map(path => path.join(' › ')).join('، ')">
+                    <span x-show="selectedPaths.length === 0">{{ $getPlaceholder() ?? 'انتخاب کنید' }}</span>
+                    <template x-for="(path, pathIndex) in selectedPaths" x-bind:key="pathIndex">
+                        <span>
+                            <span x-show="pathIndex > 0">، </span>
+                            <template x-for="(label, index) in path" x-bind:key="index">
+                                <span>
+                                    <span x-show="index > 0" aria-hidden="true" class="fi-tree-select-path-separator inline-block align-middle">
+                                        <x-filament::icon icon="heroicon-m-chevron-left" class="size-4" />
+                                    </span>
+                                    <span x-text="label"></span>
+                                </span>
+                            </template>
+                        </span>
+                    </template>
+                </span>
                 <x-filament::icon icon="heroicon-o-chevron-down" class="size-4 shrink-0 text-gray-500" />
             </button>
         </x-filament::input.wrapper>

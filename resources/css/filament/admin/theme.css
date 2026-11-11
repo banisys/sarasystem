@@ -10,6 +10,10 @@
 @source '../../../../Modules/*/resources/views/filament/**/*';
 @source '../../../../Modules/*/resources/views/livewire/**/*';
 
+html[dir='ltr'] .fi-tree-select-path-separator {
+    rotate: 180deg;
+}
+
 /* Lists and other pages with content tables use all space beside the sidebar. */
 .fi-main:has(.fi-page-content .fi-ta) {
     max-width: none;

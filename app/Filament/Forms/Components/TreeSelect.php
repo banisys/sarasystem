@@ -39,15 +39,25 @@ class TreeSelect extends Select
      * @param  list<array{id: int|string, label: string, children?: array}>  $nodes
      * @return array<int|string, string>
      */
-    public function getTreeOptionLabels(array $nodes, string $prefix = ''): array
+    public function getTreeOptionLabels(array $nodes): array
     {
-        $labels = [];
+        return array_map(fn (array $path): string => implode(' / ', $path), $this->getTreeOptionPaths($nodes));
+    }
+
+    /**
+     * @param  list<array{id: int|string, label: string, children?: array}>  $nodes
+     * @param  list<string>  $ancestors
+     * @return array<int|string, list<string>>
+     */
+    public function getTreeOptionPaths(array $nodes, array $ancestors = []): array
+    {
+        $paths = [];
         foreach ($nodes as $node) {
-            $path = $prefix.$node['label'];
-            $labels[$node['id']] = $path;
-            $labels += $this->getTreeOptionLabels($node['children'] ?? [], $path.' / ');
+            $path = [...$ancestors, $node['label']];
+            $paths[$node['id']] = $path;
+            $paths += $this->getTreeOptionPaths($node['children'] ?? [], $path);
         }
 
-        return $labels;
+        return $paths;
     }
 }
