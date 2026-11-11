@@ -9,6 +9,8 @@ class CreateQuestion extends CreateRecord
 {
     protected static string $resource = QuestionResource::class;
 
+    protected ?bool $hasDatabaseTransactions = true;
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

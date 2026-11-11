@@ -10,7 +10,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 |---|---|---|---|---|---|
 | 1 | «آموزشگاه زبان با یک شعبه» | language institutes; everyone's first scenario | 20 | Employee, Student, Class (+ Document, Contract) | **built** ([LanguageInstitute](../Modules/Tutorial/app/Scenarios/LanguageInstitute.php)) |
 | 2 | «مدیریت سامانه و دسترسی‌ها» | every installer / head office | 13 | none (+ Employee for the workflow chapter) | **built** ([SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAdministration.php)) |
-| 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 26 | Class, Employee, School, Student (+ Document, Exam) | **built** ([School](../Modules/Tutorial/app/Scenarios/School.php)) |
+| 3 | «مدرسه: از پیش‌ثبت‌نام تا کارنامه» | school chains | 28 | Class, Employee, School, Student (+ Document, Exam) | **built** ([School](../Modules/Tutorial/app/Scenarios/School.php)) |
 | 4 | «کارگزینی: مدارک و قراردادها» | every organization with staff | 18 | Contract, Document, Employee | **built** ([HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources.php)) |
 | 5 | «آموزش سازمانی کارکنان» | companies (TMS) | 17 | Employee, Class, Exam | planned |
 | 6 | «اداره‌ی روزانه‌ی کلاس‌ها در چند شعبه» | institutes and schools with branches | 21 (20 without Exam) | Class, Employee, Student (+ Exam) | **built** ([BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperations.php)) |
@@ -157,9 +157,10 @@ Implemented in [School](../Modules/Tutorial/app/Scenarios/School.php).
 | **F. آزمون آنلاین** (Exam on) ||||
 | 23 | Bank «ریاضی هفتم»: 3 choice + 1 written questions | you | bank with a written question |
 | 24 | Create «ریاضی» and hover or focus its row to reveal «افزودن زیردسته» beside the title. Add «اعداد صحیح», assign a question to it with the tree selector, and filter by the parent | you | bank has a question assigned to a subcategory |
-| 25 | Exam: 4 questions from the bank, role «فراگیر», now for an hour | you | published exam drawing from the bank |
-| 26 | Take it | student | attempt submitted |
-| 27 | Grade the written answer | you | attempt completed |
+| 25 | Create the «مرور» tag, assign it to a bank question, and filter the questions by it | you | bank has a question tagged «مرور» |
+| 26 | Exam: 4 questions from the bank, role «فراگیر», now for an hour | you | published exam drawing from the bank |
+| 27 | Take it | student | attempt submitted |
+| 28 | Grade the written answer | you | attempt completed |
 
 **Differences from the first design:** the parents' fields are turned on in the program's «فیلدهای فرم» rather than the whole «تنظیم فرم پیش‌ثبت‌نام» (a whole-form setup may already exist and would change real data); the document type is made in the workflow mission; the read-only missions (learner page tabs, the parent's view, the report card view) are steps of the missions before them.
 

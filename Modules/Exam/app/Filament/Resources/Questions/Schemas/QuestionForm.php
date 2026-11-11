@@ -15,6 +15,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 use Modules\Exam\Enums\QuestionType;
+use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Support\QuestionCategoryTree;
 
@@ -43,6 +44,13 @@ class QuestionForm
                             ->label('دستهٔ سؤال')
                             ->placeholder('بدون دسته')
                             ->nodes(fn (): array => QuestionCategoryTree::current()->nodes())
+                            ->columnSpanFull(),
+                        Select::make('tags')
+                            ->label('برچسب‌ها')
+                            ->multiple()
+                            ->relationship('tags', 'title')
+                            ->searchable()
+                            ->pivotData(fn (Question $record): array => ['tenant_id' => $record->tenant_id])
                             ->columnSpanFull(),
                         Textarea::make('body')
                             ->label('متن سؤال')

@@ -58,6 +58,12 @@ class Question extends Model
         return $this->belongsToMany(QuestionBank::class, 'exam_bank_question');
     }
 
+    /** @return BelongsToMany<QuestionTag, $this> */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(QuestionTag::class, 'exam_question_question_tag');
+    }
+
     /**
      * @param  Builder<self>  $query
      */

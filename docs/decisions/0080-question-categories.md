@@ -5,7 +5,7 @@
 
 ## Context
 
-Exam managers need a subject hierarchy to organize questions and find them across banks. Existing exams use bank membership to draw questions. Tags are a separate phase.
+Exam managers need a subject hierarchy to organize questions and find them across banks. Existing exams use bank membership to draw questions. Tags are managed separately ([ADR 0082](0082-question-tags.md)).
 
 ## Options considered
 

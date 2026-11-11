@@ -47,6 +47,7 @@ class ExamServiceProvider extends ModuleServiceProvider
             DefaultRoles::EDUCATION_OFFICER => [
                 ...DefaultRoles::manage('QuestionBank'),
                 ...DefaultRoles::manage('QuestionCategory'),
+                ...DefaultRoles::manage('QuestionTag'),
                 ...DefaultRoles::manage('Question'),
                 ...DefaultRoles::manage('Exam'),
                 ...DefaultRoles::manage('ExamAttempt'),

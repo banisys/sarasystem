@@ -57,12 +57,14 @@ use Modules\Exam\Filament\Resources\ExamAttempts\ExamAttemptResource;
 use Modules\Exam\Filament\Resources\Exams\ExamResource;
 use Modules\Exam\Filament\Resources\QuestionBanks\QuestionBankResource;
 use Modules\Exam\Filament\Resources\QuestionCategories\QuestionCategoryResource;
+use Modules\Exam\Filament\Resources\QuestionTags\QuestionTagResource;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Models\QuestionCategory;
+use Modules\Exam\Models\QuestionTag;
 use Modules\Exam\Services\ExamTaking;
 use Modules\School\Enums\ScoreScale;
 use Modules\School\Filament\Resources\Enrollments\EnrollmentResource;
@@ -568,6 +570,20 @@ class School extends Scenario
                 }))
                 ->doneWhen(fn (TutorialRun $run): bool => self::school($run)?->execute(fn (): bool => self::bank($run)?->questions()
                     ->whereHas('category', fn ($query) => $query->whereNotNull('parent_id'))->exists() ?? false) ?? false),
+            Mission::make('question-tag', 'برچسب‌گذاری سؤال‌ها')
+                ->steps([
+                    'در «آزمون → برچسب‌های سؤال» با «افزودن برچسب»، برچسب «مرور» را بسازید.',
+                    'در «سؤال‌ها»، یکی از سؤال‌های بانک «ریاضی هفتم» را ویرایش کنید، «مرور» را از فیلد «برچسب‌ها» انتخاب کنید و ذخیره کنید. هر سؤال می‌تواند چند برچسب داشته باشد.',
+                    'در فهرست «سؤال‌ها»، در فیلتر «برچسب‌ها» گزینهٔ «مرور» را انتخاب کنید.',
+                ])
+                ->url(fn (TutorialRun $run): ?string => self::schoolUrl($run, QuestionTagResource::class))
+                ->perform(fn (TutorialRun $run): mixed => self::school($run)->execute(function () use ($run): void {
+                    $tag = QuestionTag::query()->firstOrCreate(['title' => 'مرور']);
+                    $question = self::bank($run)->questions()->oldest('exam_questions.id')->firstOrFail();
+                    $question->tags()->syncWithoutDetaching([$tag->id => ['tenant_id' => $question->tenant_id]]);
+                }))
+                ->doneWhen(fn (TutorialRun $run): bool => self::school($run)?->execute(fn (): bool => self::bank($run)?->questions()
+                    ->whereHas('tags', fn ($query) => $query->where('title', 'مرور'))->exists() ?? false) ?? false),
             Mission::make('exam', 'ساخت آزمون')
                 ->steps([
                     'در «آزمون → آزمون‌ها» آزمون «آزمونک ریاضی» را بسازید: از امروز تا یک ساعت بعد، ۱۵ دقیقه، از ۲۰ نمره، نمره‌ی قبولی ۱۰.',

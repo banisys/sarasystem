@@ -20,6 +20,7 @@ use Modules\Exam\Enums\AttemptStatus;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionCategory;
+use Modules\Exam\Models\QuestionTag;
 use Modules\School\Models\Enrollment;
 use Modules\School\Models\Grade;
 use Modules\School\Models\Score;
@@ -82,6 +83,7 @@ class SchoolScenarioTest extends TestCase
         $this->assertSame(['هفتم', 'هشتم'], Enrollment::withoutTenantScope()->where('user_id', $amir->id)->orderBy('term_id')->get()
             ->map(fn (Enrollment $enrollment): string => Grade::withoutTenantScope()->find($enrollment->grade_id)->title)->all());
         $categories = [];
+        $tag = null;
         if (Module::isEnabled('Exam')) {
             $this->assertSame(AttemptStatus::Completed, $run->made(ExamAttempt::class)->sole()->status);
             $root = $run->made(QuestionCategory::class)->whereNull('parent_id')->sole();
@@ -89,8 +91,12 @@ class SchoolScenarioTest extends TestCase
             $this->assertSame('اعداد صحیح', $child->title);
             $this->assertSame($child->id, $run->made(Question::class)->whereNotNull('category_id')->sole()->category_id);
             $categories = [$root, $child];
+            $tag = $run->made(QuestionTag::class)->sole();
+            $this->assertSame('مرور', $tag->title);
+            $this->assertSame(1, $school->execute(fn (): int => $tag->questions()->count()));
         } else {
             $this->assertNull((new School)->mission('question-category'));
+            $this->assertNull((new School)->mission('question-tag'));
         }
 
         Livewire::test(StepByStepTutorial::class)->callAction('reset')->assertNotified('آموزش از اول');
@@ -100,6 +106,10 @@ class SchoolScenarioTest extends TestCase
         $this->assertModelMissing($father);
         foreach ($categories as $category) {
             $this->assertModelMissing($category);
+        }
+        if ($tag !== null) {
+            $this->assertModelMissing($tag);
+            $this->assertDatabaseMissing('exam_question_question_tag', ['question_tag_id' => $tag->id]);
         }
         $this->assertSame(0, Enrollment::withoutTenantScope()->count());
     }

@@ -64,6 +64,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 |---|---|---|
 | Question bank | بانک سؤال | A named set of questions of one tenant. A question can be in several banks. |
 | Question category | دستهٔ سؤال | An optional classification for a question. Categories form a tree in each tenant, and filtering by a category also includes its descendants. |
+| Question tag | برچسب سؤال | A reusable label from the tenant’s catalog. A question can have several tags alongside its category. [ADR 0082](decisions/0082-question-tags.md). |
 | Choice / written question | چندگزینه‌ای / تشریحی | A choice question has options with exactly one correct and is graded automatically; a written (descriptive) answer is graded by staff. |
 | Exam section | بخش آزمون | One row of an exam's «سؤال‌ها»: take N active questions from one bank when an attempt starts. |
 | Participant | شرکت‌کننده | Who may take an exam: users chosen by name, holders of a chosen role in the exam's tenant, or (for session exams) attendee members on the session date. |

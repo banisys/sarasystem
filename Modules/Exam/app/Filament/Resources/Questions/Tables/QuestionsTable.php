@@ -26,7 +26,7 @@ class QuestionsTable
         };
 
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('banks'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['banks', 'tags']))
             ->columns([
                 TextColumn::make('body')
                     ->label('متن سؤال')
@@ -42,6 +42,10 @@ class QuestionsTable
                     ->label('دسته')
                     ->state(fn (Question $record): ?string => $categories()->label($record->category_id))
                     ->placeholder('بدون دسته')
+                    ->wrap(),
+                TextColumn::make('tags.title')
+                    ->label('برچسب‌ها')
+                    ->badge()
                     ->wrap(),
                 TextColumn::make('score')
                     ->label('بارم')
@@ -92,6 +96,11 @@ class QuestionsTable
                             ->whereIn('category_id', array_keys($ids))
                             ->when(in_array('uncategorized', (array) $values, true), fn (Builder $branches): Builder => $branches->orWhereNull('category_id')));
                     }),
+                SelectFilter::make('tags')
+                    ->label('برچسب‌ها')
+                    ->multiple()
+                    ->relationship('tags', 'title')
+                    ->searchable(),
                 SelectFilter::make('type')
                     ->label('نوع')
                     ->options(QuestionType::class),
