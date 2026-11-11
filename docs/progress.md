@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-11 — Removed the gap between Tree Select and its options panel in both opening directions. Chrome measured a zero-pixel gap at mobile and desktop widths. Vite build and all 728 tests pass. No tutorial update was needed.
 - 2026-11-11 — Tree Select opens over the form without moving later fields ([ADR 0081](decisions/0081-admin-tree-select.md)). Chrome verified RTL alignment, placement above and below the trigger, rendering outside a scroll container, and focus restoration on dismissal at mobile and desktop widths. Vite build and all 728 tests pass. Tutorial steps still match the selection flow.
 - 2026-11-11 — Reduced vertical padding on both edges of admin modal headers and footers to 12 px. Chrome confirmed centered titles and actions in the built theme at mobile and desktop widths in both themes. Vite build and all 728 tests pass. No tutorial change needed.
 - 2026-11-11 — Balanced vertical spacing in the shared admin modal header and footer. Checked title and action alignment in Chrome with the built theme at mobile and desktop widths, in light and dark mode, including expanded modals and slide-overs. Vite build and all 728 tests pass. No tutorial steps changed.

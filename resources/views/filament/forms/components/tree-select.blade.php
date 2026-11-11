@@ -42,17 +42,17 @@
 
                 const trigger = this.$refs.trigger.getBoundingClientRect()
                 const viewportHeight = document.documentElement.clientHeight
-                const gap = 8
-                const below = viewportHeight - trigger.bottom - gap * 2
-                const above = trigger.top - gap * 2
+                const viewportPadding = 8
+                const below = viewportHeight - trigger.bottom - viewportPadding
+                const above = trigger.top - viewportPadding
 
                 panel.style.width = `${trigger.width}px`
                 panel.style.left = `${trigger.left}px`
 
                 const opensUp = panel.scrollHeight > below && above > below
                 panel.style.maxHeight = `${Math.max(0, opensUp ? above : below)}px`
-                panel.style.top = opensUp ? 'auto' : `${trigger.bottom + gap}px`
-                panel.style.bottom = opensUp ? `${viewportHeight - trigger.top + gap}px` : 'auto'
+                panel.style.top = opensUp ? 'auto' : `${trigger.bottom}px`
+                panel.style.bottom = opensUp ? `${viewportHeight - trigger.top}px` : 'auto'
             },
             filter(query) {
                 const term = query.trim().toLocaleLowerCase()
