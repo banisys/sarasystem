@@ -20,6 +20,7 @@ const form = useForm({ scores: Object.fromEntries(props.answers.filter(answer =>
                     <p class="whitespace-pre-wrap text-sm leading-7 text-gray-700">پاسخ: {{ answer.answer || 'بی‌پاسخ' }}</p>
                     <p v-if="!answer.requires_manual_grading" class="text-sm text-emerald-700">پاسخ درست: {{ answer.correct }} · نمره: {{ answer.score ?? '—' }} از {{ answer.max_score }}</p>
                     <template v-else>
+                        <p v-if="answer.correct" class="whitespace-pre-wrap text-sm text-emerald-700">پاسخ نمونه: {{ answer.correct }}</p>
                         <label :for="`score-${answer.id}`" class="block text-sm">نمره از {{ answer.max_score }} (خالی: تصحیح‌نشده)</label>
                         <input :id="`score-${answer.id}`" v-model="form.scores[answer.id]" :disabled="!can_grade" type="number" step="0.01" min="0" :max="answer.max_score" dir="ltr" class="w-32 rounded-lg border border-gray-300 p-2 disabled:bg-gray-100" />
                     </template>

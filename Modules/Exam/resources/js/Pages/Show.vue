@@ -104,8 +104,8 @@ function start() {
                             <p class="mt-2 whitespace-pre-line text-sm">
                                 <span class="text-gray-500">پاسخ شما:</span> {{ answer.your_answer ?? 'بی‌پاسخ' }}
                             </p>
-                            <p v-if="answer.correct_answer" class="mt-1 text-sm text-emerald-700">
-                                <span class="text-gray-500">پاسخ درست:</span> {{ answer.correct_answer }}
+                            <p v-if="answer.correct_answer" class="mt-1 whitespace-pre-wrap text-sm text-emerald-700">
+                                <span class="text-gray-500">{{ answer.type === 'descriptive' ? 'پاسخ نمونه:' : 'پاسخ درست:' }}</span> {{ answer.correct_answer }}
                             </p>
                             <p class="mt-1 text-xs text-gray-500">
                                 {{ answer.score === null ? 'تصحیح نشده' : `${answer.score} از ${answer.max_score}` }}

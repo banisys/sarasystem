@@ -57,7 +57,7 @@ class SessionExamsTest extends TestCase
         $this->membership = ClassMember::factory()->for($classroom)->for($this->learner, 'user')
             ->for(ClassRole::factory()->for($this->tenant)->attendee())->create(['joined_on' => today()->subDay()]);
         $bank = QuestionBank::factory()->for($this->tenant)->create();
-        Question::factory()->for($this->tenant)->descriptive()->create(['score' => 4])->banks()->attach($bank);
+        Question::factory()->for($this->tenant)->descriptive()->create(['score' => 4, 'model_answer' => 'راه‌حل نمونه'])->banks()->attach($bank);
         $this->template = Exam::factory()->for($this->tenant)->create(['max_attempts' => 1, 'total_score' => 20]);
         $this->template->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 1]);
     }
@@ -159,7 +159,10 @@ class SessionExamsTest extends TestCase
         $this->asTeacher();
         $review = route('exams.context.review', ['class-session', $this->session->id, $attempt]);
         $grade = route('exams.context.grade', ['class-session', $this->session->id, $attempt]);
-        $this->get($review)->assertInertia(fn (AssertableInertia $page) => $page->component('Exam::Review')->where('can_grade', true)->where('answers.0.answer', 'پاسخ من'));
+        $this->get($review)->assertInertia(fn (AssertableInertia $page) => $page->component('Exam::Review')
+            ->where('can_grade', true)
+            ->where('answers.0.answer', 'پاسخ من')
+            ->where('answers.0.correct', 'راه‌حل نمونه'));
         $this->post($grade, ['scores' => [$answer->id => 5]])->assertSessionHasErrors('scores');
         $this->assertNull($answer->fresh()->score);
         $this->post($grade, ['scores' => [$answer->id => 3]])->assertRedirect($review);

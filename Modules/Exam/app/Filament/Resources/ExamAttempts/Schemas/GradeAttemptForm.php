@@ -63,6 +63,11 @@ class GradeAttemptForm
                             ->visible(fn (AttemptAnswer $record): bool => ! $record->isChoice())
                             ->placeholder('بی‌پاسخ')
                             ->columnSpanFull(),
+                        TextEntry::make('model_answer')
+                            ->label('پاسخ نمونه')
+                            ->visible(fn (AttemptAnswer $record): bool => $record->requiresManualGrading() && filled($record->model_answer))
+                            ->extraAttributes(['class' => 'whitespace-pre-wrap'])
+                            ->columnSpanFull(),
                         TextInput::make('score')
                             ->label(fn (AttemptAnswer $record): string => "نمره (از {$record->max_score})")
                             ->numeric()

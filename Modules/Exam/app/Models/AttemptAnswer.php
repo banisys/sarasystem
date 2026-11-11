@@ -21,7 +21,7 @@ use Modules\Exam\Enums\QuestionType;
  */
 #[Fillable([
     'tenant_id', 'attempt_id', 'question_id', 'sort', 'question_type', 'question_body',
-    'options', 'correct_option', 'accepted_answers', 'max_score', 'selected_option', 'text_answer',
+    'options', 'correct_option', 'accepted_answers', 'model_answer', 'max_score', 'selected_option', 'text_answer',
     'score', 'graded_by', 'graded_at',
 ])]
 class AttemptAnswer extends Model
@@ -76,11 +76,11 @@ class AttemptAnswer extends Model
 
     public function correctAnswerText(): ?string
     {
-        if ($this->isChoice()) {
-            return $this->optionText($this->correct_option);
-        }
-
-        return $this->isFillInTheBlank() ? implode('، ', $this->accepted_answers ?? []) : null;
+        return match ($this->question_type) {
+            QuestionType::Choice => $this->optionText($this->correct_option),
+            QuestionType::FillInTheBlank => implode('، ', $this->accepted_answers ?? []),
+            QuestionType::Descriptive => $this->model_answer,
+        };
     }
 
     public function fillInTheBlankScore(): float

@@ -66,6 +66,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Question category | دستهٔ سؤال | An optional classification for a question. Categories form a tree in each tenant, and filtering by a category also includes its descendants. |
 | Question tag | برچسب سؤال | A reusable label from the tenant’s catalog. A question can have several tags alongside its category. [ADR 0082](decisions/0082-question-tags.md). |
 | Choice / written question | چندگزینه‌ای / تشریحی | A choice question has options with exactly one correct and is graded automatically; a written (descriptive) answer is graded by staff. |
+| Model answer | پاسخ نمونه | An optional reference solution for staff grading a written question. The attempt keeps the version available when it started. |
 | Fill-in-the-blank question | سؤال جای خالی | A question with one short inline answer, graded against a list of accepted answers. |
 | Exam section | بخش آزمون | One row of an exam's «سؤال‌ها»: take N active questions from one bank when an attempt starts. |
 | Participant | شرکت‌کننده | Who may take an exam: users chosen by name, holders of a chosen role in the exam's tenant, or (for session exams) attendee members on the session date. |

@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-11 — Added optional model answers for descriptive questions. Attempts snapshot the answer for staff grading and for participant results when answer visibility is enabled and retakes are closed. Updated the school tutorial and applied the local migration. All 57 targeted tests, Pint and Vite build passed.
 - 2026-11-11 — Added fill-in-the-blank questions with one inline blank, accepted answers, and automatic grading from the attempt snapshot ([ADR 0083](decisions/0083-fill-in-the-blank-questions.md)). Updated the school tutorial and applied the local migration. All 56 targeted Exam, session exam and school tutorial tests passed across the verification runs. Pint and Vite build passed.
 - 2026-11-11 — Replaced Tree Select path separators with directional breadcrumb chevrons. Chrome checked nested and multiple paths, literal slashes in category names, and both reading directions. Pint, Vite build and all 728 tests pass. No tutorial change was needed.
 - 2026-11-11 — Removed the gap between Tree Select and its options panel in both opening directions. Chrome measured a zero-pixel gap at mobile and desktop widths. Vite build and all 728 tests pass. No tutorial update was needed.

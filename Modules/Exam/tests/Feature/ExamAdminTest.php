@@ -134,6 +134,20 @@ class ExamAdminTest extends TestCase
         $this->assertNull($question->options);
     }
 
+    public function test_a_descriptive_question_can_store_a_multiline_model_answer(): void
+    {
+        $bank = QuestionBank::factory()->for($this->tenant)->create();
+        $this->actingInPanel($this->manager, $this->tenant);
+        $modelAnswer = "۴ را از دو طرف کم کنید.\nx = 5";
+
+        Livewire::test(CreateQuestion::class)
+            ->fillForm(['banks' => [$bank->id], 'type' => 'descriptive', 'body' => 'معادله را حل کنید.', 'model_answer' => $modelAnswer])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($modelAnswer, Question::query()->sole()->model_answer);
+    }
+
     public function test_an_exam_takes_participants_only_from_this_tenant(): void
     {
         $bank = QuestionBank::factory()->for($this->tenant)->create();

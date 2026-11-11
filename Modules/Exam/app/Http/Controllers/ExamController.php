@@ -123,7 +123,7 @@ class ExamController extends Controller
                     'body' => $answer->question_body,
                     'type' => $answer->question_type->value,
                     'your_answer' => $answer->isChoice() ? $answer->optionText($answer->selected_option) : $answer->text_answer,
-                    'correct_answer' => $answer->isFillInTheBlank() && ! $retakeBlocked ? null : $answer->correctAnswerText(),
+                    'correct_answer' => $answer->isChoice() || $retakeBlocked ? $answer->correctAnswerText() : null,
                     'score' => $answer->score,
                     'max_score' => $answer->max_score,
                 ])->all()

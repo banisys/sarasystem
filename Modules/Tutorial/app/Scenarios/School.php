@@ -538,6 +538,7 @@ class School extends Scenario
                     $tenant.' را «دبیرستان نمونه» کنید؛ در «آزمون → بانک‌های سؤال» بانک «ریاضی هفتم» را بسازید.',
                     'در «آزمون → سؤال‌ها» دو سؤال چهارگزینه‌ای، یک سؤال تشریحی و یک سؤال «جای خالی» با بارم یک بسازید و بانک «ریاضی هفتم» را انتخاب کنید.',
                     'برای سؤال جای خالی، «نصف ۱۲ برابر ___ است.» را بنویسید و «۶» را به‌عنوان پاسخ پذیرفتنی ثبت کنید.',
+                    'برای سؤال تشریحی «معادلهٔ x + 4 = 9 را حل کنید.» می‌توانید «x = 5» را به‌عنوان پاسخ نمونه ثبت کنید.',
                 ])
                 ->url(fn (TutorialRun $run): ?string => self::schoolUrl($run, QuestionBankResource::class))
                 ->fill(fn (): array => ['title' => 'ریاضی هفتم'])
@@ -553,7 +554,7 @@ class School extends Scenario
                         $choice('حاصل ۳- + ۵ چند است؟', ['۲', '۸', '۲-', '۸-'], 0)->getKey(),
                         $choice('کدام عدد صحیح منفی است؟', ['۰', '۷', '۴-', '۱'], 2)->getKey(),
                         Question::query()->create(['tenant_id' => $tenantId, 'type' => QuestionType::FillInTheBlank, 'body' => 'نصف ۱۲ برابر ___ است.', 'accepted_answers' => ['۶'], 'score' => 1, 'is_active' => true])->getKey(),
-                        Question::query()->create(['tenant_id' => $tenantId, 'type' => QuestionType::Descriptive, 'body' => 'معادله‌ی x + 4 = 9 را حل کنید.', 'score' => 1, 'is_active' => true])->getKey(),
+                        Question::query()->create(['tenant_id' => $tenantId, 'type' => QuestionType::Descriptive, 'body' => 'معادله‌ی x + 4 = 9 را حل کنید.', 'model_answer' => 'x = 5', 'score' => 1, 'is_active' => true])->getKey(),
                     ]);
                 })
                 ->doneWhen(fn (TutorialRun $run): bool => self::bank($run) !== null),

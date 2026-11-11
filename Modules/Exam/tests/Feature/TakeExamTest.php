@@ -145,12 +145,15 @@ class TakeExamTest extends TestCase
     public function test_answers_are_saved_and_submitted_with_negative_marking_and_written_answers_wait_for_review(): void
     {
         [$right, $wrong, $skipped] = $this->questions(3, [$this->bank], ['score' => 2]);
-        $written = Question::factory()->for($this->tenant)->descriptive()->create(['score' => 4]);
+        $written = Question::factory()->for($this->tenant)->descriptive()->create(['score' => 4, 'model_answer' => 'راه‌حل نمونه']);
         $written->banks()->attach($this->bank);
         $exam = $this->examWithBank(['negative_marking' => 2]);
 
         $this->visit(route('exams.attempt.start', $exam), method: 'post');
         $answers = AttemptAnswer::withoutTenantScope()->get()->keyBy('question_id');
+        $this->visit(route('exams.show', $exam))->assertInertia(fn (AssertableInertia $page) => $page
+            ->missing('attempt.questions.3.model_answer'));
+        $this->tenant->execute(fn () => $written->update(['model_answer' => 'راه‌حل جدید']));
         $foreignAnswer = $this->answerOfAnotherTenant();
 
         $this->visit(route('exams.attempt.save', $exam), method: 'put', data: ['answers' => [
@@ -175,6 +178,8 @@ class TakeExamTest extends TestCase
         $this->assertSame(-1.0, $answers[$wrong->id]->fresh()->score);
         $this->assertSame(0.0, $answers[$skipped->id]->fresh()->score);
         $this->assertNull($answers[$written->id]->fresh()->score);
+        $this->visit(route('exams.show', $exam))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('result.answers.3.correct_answer', 'راه‌حل نمونه'));
 
         // Graded later: (2 - 1 + 0 + 3) of 10 raw → 8 of 20.
         $this->tenant->makeCurrent();

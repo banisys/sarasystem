@@ -136,6 +136,7 @@ class ExamTaking
                 'options' => $question->type === QuestionType::Choice ? $this->servedOptions($question, (bool) $exam->shuffle_options) : null,
                 'correct_option' => $question->type === QuestionType::Choice ? $question->correctOptionKey() : null,
                 'accepted_answers' => $question->accepted_answers,
+                'model_answer' => $question->model_answer,
                 'max_score' => $question->score,
             ]));
 

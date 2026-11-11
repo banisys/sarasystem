@@ -61,6 +61,13 @@ class QuestionForm
                             ->required()
                             ->rows(4)
                             ->columnSpanFull(),
+                        Textarea::make('model_answer')
+                            ->label('پاسخ نمونه')
+                            ->helperText('اختیاری است و به مصحح در نمره‌دهی کمک می‌کند.')
+                            ->visible(fn (Get $get): bool => self::type($get('type')) === QuestionType::Descriptive)
+                            ->maxLength(20000)
+                            ->rows(4)
+                            ->columnSpanFull(),
                         TextInput::make('score')
                             ->label('بارم')
                             ->numeric()

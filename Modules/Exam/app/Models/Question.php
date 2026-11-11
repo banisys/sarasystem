@@ -21,7 +21,7 @@ use Modules\Exam\Enums\QuestionType;
  *
  * @property list<array{key: string, text: string, is_correct: bool}>|null $options
  */
-#[Fillable(['tenant_id', 'category_id', 'type', 'body', 'options', 'accepted_answers', 'score', 'is_active'])]
+#[Fillable(['tenant_id', 'category_id', 'type', 'body', 'options', 'accepted_answers', 'model_answer', 'score', 'is_active'])]
 class Question extends Model
 {
     public const BLANK_MARKER = '___';
@@ -40,6 +40,10 @@ class Question extends Model
 
             if ($question->type !== QuestionType::FillInTheBlank) {
                 $question->accepted_answers = null;
+            }
+
+            if ($question->type !== QuestionType::Descriptive) {
+                $question->model_answer = null;
             }
         });
     }

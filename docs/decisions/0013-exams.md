@@ -48,6 +48,10 @@ See [ADR 0078](0078-exam-attempt-consistency.md) for transactional save/submit/f
 
 [ADR 0083](0083-fill-in-the-blank-questions.md) adds a single inline blank with automatic grading against accepted answers copied into the attempt.
 
+## Model answers for written questions
+
+A written question can include an optional model answer. The attempt copies it alongside the question body, so staff see the same reference even if the question is edited later. Staff still assign the score. Participants see the reference in results only when the exam shows answers and retakes are closed.
+
 [ADR 0080](0080-question-categories.md) adds a category tree for classifying and filtering questions in the admin panel. Exam sections still draw from question banks.
 
 [ADR 0082](0082-question-tags.md) adds a tenant-owned tag catalog and multiple tags per question, with tag filtering in the admin panel.
