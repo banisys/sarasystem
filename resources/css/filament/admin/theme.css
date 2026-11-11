@@ -149,14 +149,26 @@ html:not(.dark) .fi-modal > .fi-modal-close-overlay {
     }
 }
 
+/* Both edges of each band have equal space around its contents. */
+.fi-modal > .fi-modal-window-ctn > .fi-modal-window {
+    --modal-band-padding: 0.75rem;
+}
+
+.fi-modal > .fi-modal-window-ctn > .fi-modal-window > :is(.fi-modal-header, .fi-modal-footer) {
+    padding-block: var(--modal-band-padding);
+}
+
+.fi-modal .fi-modal-window .fi-modal-close-btn,
+.fi-modal .fi-modal-window .fi-modal-fullscreen-btn {
+    top: var(--modal-band-padding);
+}
+
 .fi-modal .fi-modal-window .fi-modal-fullscreen-btn {
     position: absolute;
-    top: 1rem;
     inset-inline-end: 3.5rem;
 }
 
 .fi-modal.fi-modal-slide-over .fi-modal-window .fi-modal-fullscreen-btn {
-    top: 1.25rem;
     inset-inline-end: 4rem;
 }
 
@@ -164,24 +176,7 @@ html:not(.dark) .fi-modal > .fi-modal-close-overlay {
     margin-inline-end: 4.5rem;
 }
 
-/* Both edges of each band have equal space around its contents. */
-.fi-modal > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-header {
-    padding-block: 1.5rem;
-}
-
-.fi-modal.fi-modal-slide-over > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-header {
-    padding-block: 1.25rem;
-}
-
-.fi-modal:not(.fi-modal-has-sticky-footer) > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-footer {
-    padding-block-start: 1.5rem;
-}
-
 /* The title sits on the same horizontal line as the two buttons. */
-.fi-modal:not(.fi-modal-slide-over) .fi-modal-header:has(> .fi-modal-fullscreen-btn) {
-    padding-block: 1rem;
-}
-
 .fi-modal:not(.fi-modal-slide-over) .fi-modal-header:has(> .fi-modal-fullscreen-btn) .fi-modal-heading {
     display: flex;
     align-items: center;
