@@ -5,7 +5,7 @@ namespace Modules\Exam\Support;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Exam\Models\QuestionCategory;
 
-/** A snapshot of the current tenant's category tree for admin labels and filtering. */
+/** A snapshot of the current tenant's category tree for admin display and filtering. */
 class QuestionCategoryTree
 {
     /** @var array<int, list<QuestionCategory>> */
@@ -14,19 +14,60 @@ class QuestionCategoryTree
     /** @var array<int, string> */
     private array $paths = [];
 
+    /** @var array<int, int|null> */
+    private array $parents = [];
+
     /** @param Collection<int, QuestionCategory> $categories */
     private function __construct(Collection $categories)
     {
         foreach ($categories as $category) {
             $this->children[$category->parent_id ?? 0][] = $category;
+            $this->parents[$category->id] = $category->parent_id;
         }
 
         $this->buildPaths();
     }
 
-    public static function current(): self
+    public static function current(bool $withQuestionCounts = false): self
     {
-        return new self(QuestionCategory::query()->orderBy('title')->orderBy('id')->get(['id', 'parent_id', 'title']));
+        $query = QuestionCategory::query()->select(['id', 'parent_id', 'title'])->orderBy('title')->orderBy('id');
+
+        return new self($query->when($withQuestionCounts, fn ($query) => $query->withCount('questions'))->get());
+    }
+
+    /**
+     * @param  array<int, true>|null  $visibleIds
+     * @return list<QuestionCategory>
+     */
+    public function childrenOf(?int $parentId, ?array $visibleIds = null): array
+    {
+        $children = $this->children[$parentId ?? 0] ?? [];
+
+        return $visibleIds === null ? $children : array_values(array_filter(
+            $children, fn (QuestionCategory $category): bool => isset($visibleIds[$category->id]),
+        ));
+    }
+
+    /** @return array<int, true>|null */
+    public function matchingIds(string $search): ?array
+    {
+        if ($search === '') {
+            return null;
+        }
+
+        $visible = [];
+        foreach ($this->paths as $id => $path) {
+            if (mb_stripos($path, $search) === false) {
+                continue;
+            }
+
+            while ($id !== null && ! isset($visible[$id])) {
+                $visible[$id] = true;
+                $id = $this->parents[$id];
+            }
+        }
+
+        return $visible;
     }
 
     /** @return array<int, string> */

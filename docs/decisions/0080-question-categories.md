@@ -14,7 +14,7 @@ Exam managers need a subject hierarchy to organize questions and find them acros
 
 ## Decision
 
-- Each tenant manages its tree at «آزمون → دسته‌های سؤال». Root categories have no parent. Create and edit use the same modal form, with full category paths in the parent selector and the list.
+- Each tenant manages its tree at «آزمون → دسته‌های سؤال». [The category page](../../Modules/Exam/app/Filament/Resources/QuestionCategories/Pages/ListQuestionCategories.php) shows nested branches styled like the Site menu editor ([ADR 0012](0012-site-menus.md)), with direct question counts and per-row actions. Search keeps matching branches in context. Create and edit use the same modal form, with full paths in the parent selector. The row action «افزودن زیردسته» preselects the parent; editing a category's parent moves the branch.
 - A question may select a category at any depth. The question list displays its full path, and the category filter includes all descendants. «بدون دسته» finds uncategorized questions. The existing banks still define exam sections and question selection.
 - Composite foreign keys enforce same-tenant parent and question links. [QuestionCategory](../../Modules/Exam/app/Models/QuestionCategory.php) serializes writes that assign a parent in the same tenant and checks ancestors under the lock to reject cycles. The database refuses to delete a category that still has questions or children.
 - The panel uses `*:QuestionCategory` permissions. The education officer and the roles above it receive the standard category permissions through the default role installer. The school tutorial teaches creation, assignment and filtering only when Exam is enabled.

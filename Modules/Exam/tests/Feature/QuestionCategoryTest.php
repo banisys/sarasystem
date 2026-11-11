@@ -5,7 +5,6 @@ namespace Modules\Exam\Tests\Feature;
 use App\Authorization\DefaultRoles;
 use App\Models\Tenant;
 use App\Models\User;
-use Filament\Actions\Testing\TestAction;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +43,7 @@ class QuestionCategoryTest extends TestCase
         $this->actingInPanel($manager, $this->tenant);
     }
 
-    public function test_admin_can_create_and_move_a_subcategory_and_see_its_full_path(): void
+    public function test_admin_can_create_and_move_a_subcategory_from_the_tree(): void
     {
         Livewire::test(ListQuestionCategories::class)
             ->callAction('create', data: ['title' => 'ریاضی'])
@@ -52,16 +51,20 @@ class QuestionCategoryTest extends TestCase
         $root = QuestionCategory::query()->sole();
 
         Livewire::test(ListQuestionCategories::class)
-            ->callAction('create', data: ['title' => 'جبر', 'parent_id' => $root->id])
+            ->mountAction('create', ['parent' => $root->id])
+            ->assertActionDataSet(['parent_id' => $root->id])
+            ->setActionData(['title' => 'جبر', 'parent_id' => $root->id])
+            ->callMountedAction()
             ->assertHasNoActionErrors();
         $child = $root->children()->sole();
         $otherRoot = $this->category('منطق');
 
         Livewire::test(ListQuestionCategories::class)
-            ->assertSee('ریاضی / جبر')
-            ->callAction(TestAction::make('edit')->table($child), data: ['title' => 'استدلال', 'parent_id' => $otherRoot->id])
-            ->assertHasNoActionErrors();
-        Livewire::test(ListQuestionCategories::class)->assertSee('منطق / استدلال');
+            ->assertSeeHtml('data-parent-id="'.$root->id.'"')
+            ->callAction('edit', data: ['title' => 'استدلال', 'parent_id' => $otherRoot->id], arguments: ['category' => $child->id])
+            ->assertHasNoActionErrors()
+            ->assertDontSeeHtml('data-parent-id="'.$root->id.'"')
+            ->assertSeeHtml('data-parent-id="'.$otherRoot->id.'"');
 
         $this->assertSame($otherRoot->id, $child->fresh()->parent_id);
         $this->assertSame($this->tenant->id, $child->tenant_id);
@@ -74,10 +77,14 @@ class QuestionCategoryTest extends TestCase
         $bank = QuestionBank::factory()->for($this->tenant)->create();
 
         Livewire::test(ListQuestionCategories::class)
-            ->assertCanSeeTableRecords([$own])
-            ->assertCanNotSeeTableRecords([$foreign])
+            ->assertSee($own->title)
+            ->assertDontSee($foreign->title)
             ->callAction('create', data: ['title' => 'نامعتبر', 'parent_id' => $foreign->id])
             ->assertHasActionErrors(['parent_id']);
+
+        Livewire::test(ListQuestionCategories::class)
+            ->mountAction('edit', ['category' => $foreign->id])
+            ->assertNotFound();
 
         Livewire::test(CreateQuestion::class)
             ->fillForm(['banks' => [$bank->id], 'type' => QuestionType::Descriptive->value, 'body' => 'چرا؟', 'category_id' => $foreign->id])
@@ -97,6 +104,45 @@ class QuestionCategoryTest extends TestCase
         $this->get(QuestionCategoryResource::getUrl('index', tenant: $this->tenant))->assertForbidden();
     }
 
+    public function test_a_view_only_user_can_read_the_tree_but_cannot_mount_write_actions(): void
+    {
+        $category = $this->category('ریاضی');
+        $reader = User::factory()->create();
+        $this->makeStaff($reader, $this->tenant);
+        $this->roleWithPermissions('category_reader', ['ViewAny:QuestionCategory']);
+        $this->grantRole($reader, $this->tenant, 'category_reader');
+        $this->actingInPanel($reader, $this->tenant);
+
+        Livewire::test(ListQuestionCategories::class)
+            ->assertSee($category->title)
+            ->assertDontSee('افزودن زیردسته')
+            ->mountAction('create', ['parent' => $category->id])
+            ->assertActionNotMounted()
+            ->mountAction('edit', ['category' => $category->id])
+            ->assertActionNotMounted()
+            ->mountAction('delete', ['category' => $category->id])
+            ->assertActionNotMounted();
+    }
+
+    public function test_search_keeps_matching_categories_in_context_and_displays_direct_question_counts(): void
+    {
+        $root = $this->category('ریاضی');
+        $child = $this->category('جبر', $root);
+        $grandchild = $this->category('معادله', $child);
+        $this->category('هندسه', $root);
+        Question::factory()->for($this->tenant)->for($grandchild, 'category')->create();
+
+        Livewire::test(ListQuestionCategories::class)
+            ->set('search', 'معادله')
+            ->assertSee('ریاضی')
+            ->assertSee('جبر')
+            ->assertSee('معادله')
+            ->assertSee('1 سؤال')
+            ->assertDontSee('هندسه')
+            ->set('search', 'زیست')
+            ->assertSee('دسته‌ای مطابق جست‌وجو پیدا نشد.');
+    }
+
     public function test_a_category_cannot_be_moved_beneath_itself_or_a_descendant(): void
     {
         $root = $this->category('ریاضی');
@@ -105,7 +151,7 @@ class QuestionCategoryTest extends TestCase
 
         foreach ([$root, $grandchild] as $parent) {
             Livewire::test(ListQuestionCategories::class)
-                ->callAction(TestAction::make('edit')->table($root), data: ['title' => 'ریاضی', 'parent_id' => $parent->id])
+                ->callAction('edit', data: ['title' => 'ریاضی', 'parent_id' => $parent->id], arguments: ['category' => $root->id])
                 ->assertHasActionErrors(['parent_id']);
         }
 
@@ -173,16 +219,16 @@ class QuestionCategoryTest extends TestCase
         $question = Question::factory()->for($this->tenant)->for($child, 'category')->create();
 
         Livewire::test(ListQuestionCategories::class)
-            ->callAction(TestAction::make('delete')->table($root))
+            ->callAction('delete', arguments: ['category' => $root->id])
             ->assertNotified('دسته‌ای که سؤال یا زیردسته دارد قابل حذف نیست.')
-            ->callAction(TestAction::make('delete')->table($child))
+            ->callAction('delete', arguments: ['category' => $child->id])
             ->assertNotified('دسته‌ای که سؤال یا زیردسته دارد قابل حذف نیست.');
 
         $this->assertModelExists($root);
         $this->assertSame($child->id, $question->fresh()->category_id);
         $question->update(['category_id' => null]);
 
-        Livewire::test(ListQuestionCategories::class)->callAction(TestAction::make('delete')->table($child));
+        Livewire::test(ListQuestionCategories::class)->callAction('delete', arguments: ['category' => $child->id]);
 
         $this->assertModelMissing($child);
         $this->assertModelExists($question);
