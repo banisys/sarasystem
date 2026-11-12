@@ -1,7 +1,7 @@
 # 0023 — Class schedules and sessions
 
 - **Date:** 2026-10-29
-- **Status:** accepted; the single teacher and substitute changed by [ADR 0068](0068-several-teachers-per-session.md) (several teachers, a substitute per teacher)
+- **Status:** accepted; the single teacher and substitute changed by [ADR 0068](0068-several-teachers-per-session.md) (several teachers, a substitute per teacher), and exam sessions added by [ADR 0084](0084-class-exam-schedules.md)
 
 ## Context
 This is step 2 of the classes plan ([ADR 0022](0022-classes.md)): when a class meets, and the sessions that come from it. Later steps attach attendance and session content to these sessions.
@@ -51,7 +51,7 @@ The user wants:
     - first and last day, start and end time, and an optional place instead of the class's.
   - `class_sessions` (`ClassSession`):
     - class, schedule (null for hand-made sessions and after the schedule is deleted), subject, teacher, substitute, start / end, place
-    - kind: regular / make-up / extra
+    - kind: regular / make-up / extra / exam
     - status: scheduled / held / cancelled (held is set by attendance in step 3)
     - cancel reason, `is_modified`, `original_starts_at` (the time before the first move), note.
 - **Services:**
@@ -60,7 +60,7 @@ The user wants:
 - **Holidays:** `Holiday` saved / deleted → `SessionPlanner::holidayChanged()`. The primary tenant's holidays rebuild every tenant's schedules in their range.
 - **Admin:**
   - Separate class pages, reached through the class list’s row actions:
-    - «برنامه»: add / edit / delete schedules, with a one-line summary per schedule; the header’s «جلسه‌ها» button opens the same class’s sessions in the current tenant;
+    - «برنامه»: add / edit / delete teaching schedules or add individually dated exam sessions; the header’s «جلسه‌ها» button opens the same class’s sessions in the current tenant;
     - «جلسه‌ها» (a day / week / month / year calendar since [ADR 0047](0047-class-session-calendar.md)): the class's sessions with row actions («جابه‌جایی»، «مدرس جایگزین»، «لغو جلسه»، «برگرداندن جلسه»، «حذف» for hand-made ones not started yet, for any session not held since [ADR 0066](0066-deleting-unheld-sessions.md)) and «جلسه‌ی جبرانی / فوق‌العاده».
   - Menu:
     - «کلاس‌ها → جلسه‌ها»: every session of the tenant, from today by default, filterable by dates, class, teacher, subject, status and kind;

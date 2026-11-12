@@ -12,6 +12,7 @@ use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
+use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
@@ -22,6 +23,7 @@ use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
+use Modules\Class\Models\Subject;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\ClassMembers;
 use Modules\Class\Services\SessionPlanner;
@@ -317,6 +319,96 @@ class ClassSchedulesTest extends TestCase
             ->assertSchemaStateSet(['start_time' => '08:30', 'end_time' => '09:30'], 'mountedActionSchema0');
 
         $this->assertSame(1, $this->classroom->schedules()->count());
+    }
+
+    public function test_the_exam_schedule_modal_creates_separate_sessions_for_the_class(): void
+    {
+        $editor = User::factory()->superAdmin()->create();
+        $subject = Subject::factory()->for($this->primary)->create();
+        $this->actingInPanel($editor, $this->west);
+        $action = TestAction::make('addExamSchedule')->table();
+
+        $this->get(ClassroomResource::getUrl('schedules', ['record' => $this->classroom], tenant: $this->west))
+            ->assertOk()
+            ->assertSee($this->classroom->title);
+
+        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->assertSee('افزودن برنامه درسی')
+            ->assertSee('افزودن برنامه امتحانی')
+            ->mountAction($action)
+            ->assertActionMounted($action)
+            ->fillForm(['sessions' => [
+                ['date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00', 'subject_id' => $subject->id, 'teacher_ids' => [$this->teacher->id], 'note' => 'آزمون پایان دوره'],
+                ['date' => '2026-11-08', 'start_time' => '13:30', 'end_time' => '15:00', 'location' => 'سالن آزمون'],
+            ]])
+            ->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertNotified('جلسه‌های امتحانی ثبت شدند.');
+
+        [$first, $second] = $this->classroom->sessions()->orderBy('starts_at')->get()->all();
+        $this->assertSame(['2026-11-05', '2026-11-08'], $this->sessionDays());
+        $this->assertSame(SessionKind::Exam, $first->kind);
+        $this->assertSame(SessionKind::Exam, $second->kind);
+        $this->assertNull($first->schedule_id);
+        $this->assertSame($subject->id, $first->subject_id);
+        $this->assertSame([$this->teacher->id], $first->teachers->modelKeys());
+        $this->assertSame('کلاس ۱۰۱', $first->location);
+        $this->assertSame('آزمون پایان دوره', $first->note);
+        $this->assertSame('13:30–15:00', $second->starts_at->format('H:i').'–'.$second->ends_at->format('H:i'));
+        $this->assertSame('سالن آزمون', $second->location);
+        $this->assertFalse($this->classroom->schedules()->exists());
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->call('showSessions', 'day', '2026-11-08')
+            ->assertSee('امتحانی');
+    }
+
+    public function test_an_exam_schedule_clash_keeps_the_form_open_without_saving_any_exam_sessions(): void
+    {
+        $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-07');
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $action = TestAction::make('addExamSchedule')->table();
+
+        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->callAction($action, data: ['sessions' => [
+                ['date' => '2026-11-06', 'start_time' => '08:30', 'end_time' => '09:30'],
+                ['date' => '2026-11-07', 'start_time' => '08:30', 'end_time' => '09:30'],
+            ]])
+            ->assertNotified()
+            ->assertActionMounted($action);
+
+        $this->assertSame(['2026-10-31', '2026-11-07'], $this->sessionDays());
+    }
+
+    public function test_exam_scheduling_rejects_an_end_time_before_the_start_time(): void
+    {
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $action = TestAction::make('addExamSchedule')->table();
+
+        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->callAction($action, data: ['sessions' => [
+                ['date' => '2026-11-06', 'start_time' => '10:30', 'end_time' => '09:30'],
+            ]])
+            ->assertHasActionErrors(['sessions.0.end_time' => 'after'])
+            ->assertActionMounted($action);
+
+        $this->assertFalse($this->classroom->sessions()->exists());
+    }
+
+    public function test_exam_scheduling_is_limited_to_class_editors_in_the_current_tenant(): void
+    {
+        $viewer = User::factory()->create();
+        $this->roleWithPermissions('class_viewer', ['ViewAny:Classroom', 'View:Classroom']);
+        $this->makeStaff($viewer, $this->west);
+        $this->grantRole($viewer, $this->west, 'class_viewer');
+        $foreignClass = Classroom::factory()->for($this->primary)->create();
+
+        $this->actingInPanel($viewer, $this->west);
+        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->assertActionHidden(TestAction::make('addExamSchedule')->table());
+
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $this->get(ClassroomResource::getUrl('schedules', ['record' => $foreignClass], tenant: $this->west))
+            ->assertNotFound();
     }
 
     public function test_the_sessions_list_shows_the_current_tenants_sessions_only(): void

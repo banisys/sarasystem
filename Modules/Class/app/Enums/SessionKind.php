@@ -5,8 +5,7 @@ namespace Modules\Class\Enums;
 use Filament\Support\Contracts\HasLabel;
 
 /**
- * Regular sessions come from a schedule; make-up and extra ones are added
- * by hand.
+ * Regular sessions come from a teaching schedule; other kinds are added by hand.
  */
 enum SessionKind: string implements HasLabel
 {
@@ -16,12 +15,15 @@ enum SessionKind: string implements HasLabel
 
     case Extra = 'extra';
 
+    case Exam = 'exam';
+
     public function getLabel(): string
     {
         return match ($this) {
             self::Regular => 'عادی',
             self::MakeUp => 'جبرانی',
             self::Extra => 'فوق‌العاده',
+            self::Exam => 'امتحانی',
         };
     }
 }

@@ -72,6 +72,10 @@ class BranchOperationsScenarioTest extends TestCase
         $this->assertTrue($sessions->contains(fn (ClassSession $session): bool => $session->hasSubstitute()));
         $this->assertSame(1, $sessions->where('status', SessionStatus::Cancelled)->count());
         $this->assertSame(1, $sessions->where('kind', SessionKind::MakeUp)->count());
+        $examSession = $sessions->where('kind', SessionKind::Exam)->sole();
+        $this->assertTrue($examSession->starts_at->isSameDay(today()->addDays(6)));
+        $this->assertNull($examSession->schedule_id);
+        $this->assertArrayHasKey('exam-schedule', $run->completed_missions);
         $this->assertSame(1, $sessions->whereNotNull('original_starts_at')->count());
         $this->assertSame([AttendanceStatus::Present, AttendanceStatus::Late], $run->made(Attendance::class)->orderBy('id')->pluck('status')->all());
         $this->assertSame(1, $run->made(ClassMember::class)->whereNotNull('left_on')->count());

@@ -23,7 +23,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * One meeting of a class (ADR 0023): built from a schedule, or added by
- * hand as a make-up or extra session. Taking its attendance or recording
+ * hand as a make-up, extra or exam session. Taking its attendance or recording
  * what it covered (topics, summary, homework, materials) marks it held
  * (ADR 0024, ADR 0025). It has any number of teachers, each of whom
  * may be replaced by a substitute (ADR 0068). A session changed by hand

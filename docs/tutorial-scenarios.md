@@ -35,7 +35,7 @@ Screen names are the Persian labels as they are in the system today. Check them 
 | Documents: types, upload, check, expiry | ◐ | | ◐ | ● | | | |
 | Contracts: types, merge tags, issue, e-signature, paper, amendment, renewal | ◐ | | | ● | | | |
 | Terms, class roles, classes, members, capacity, sub-classes | ◐ | | ● | | ● | ● | |
-| Subjects, schedules (once / weekly / monthly), holidays, clashes | ◐ | | ● | | ◐ | ● | |
+| Subjects, schedules (once / weekly / monthly), exam sittings, holidays, clashes | ◐ | | ● | | ◐ | ● | |
 | Sessions: move, substitute, cancel, make-up | | | | | | ● | |
 | Attendance, absence SMS | ◐ | | ● | | ● | ● | |
 | Teaching plans, session content, homework, grading | | | ● | | ◐ | | |
@@ -281,6 +281,7 @@ Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperat
 | 10 | «Conversation B2» with capacity 1, the capacity refusal, capacity 2, both learners and the teacher | officer 1 | class with 2 attendees and the teacher |
 | 11 | Sub-class with one learner from the parent | officer 1 | sub-class with an attendee |
 | 12 | Weekly schedule: today, +2 and +4 days, four weeks, starting in ten minutes | officer 1 | weekly schedule with ≥ 3 sessions |
+| 12a | Exam schedule: add a sitting six days from today, 10:00 to 11:00, then find «امتحانی» on the class calendar | officer 1 | exam session for Conversation B2 |
 | 13 | «IELTS Prep» in تجریش, monthly «دومین» (tomorrow's weekday) for three months; the teacher clash is shown first | officer 2 | monthly schedule with a week of month |
 | 14 | Branch holiday a week from today; that day's session goes | officer 1 | branch holiday, no session on it |
 | **D. تغییرهای روزمره** ||||

@@ -278,7 +278,7 @@ class BranchOperations extends Scenario
                 Mission::make('weekly', 'برنامه‌ی هفتگی')
                     ->actor($officer, $asOfficer)
                     ->steps([
-                        'در «Conversation B2» از منوی ردیف کلاس «برنامه» ← «افزودن برنامه»: تکرار «هفتگی»، سه روز در هفته (امروز، دو روز بعد و چهار روز بعد)، از امروز تا چهار هفته‌ی بعد.',
+                        'در «Conversation B2» از منوی ردیف کلاس «برنامه» ← «افزودن برنامه درسی»: تکرار «هفتگی»، سه روز در هفته (امروز، دو روز بعد و چهار روز بعد)، از امروز تا چهار هفته‌ی بعد.',
                         'برنامه برای تاریخ‌های گذشته هم جلسه می‌سازد؛ ویرایش دوباره، جلسه‌های گذشته‌ی موجود و اطلاعات ثبت‌شده‌ی آن‌ها را تغییر نمی‌دهد.',
                         'ساعت از ده دقیقه‌ی بعد به مدت یک ساعت، مدرس «بهاره امینی»؛ ذخیره کنید و با دکمه‌ی «جلسه‌ها» بالای صفحه‌ی برنامه، جلسه‌ها را در تقویم (نمای «هفتگی» یا «ماهانه») ببینید.',
                     ])
@@ -298,6 +298,22 @@ class BranchOperations extends Scenario
                         ]));
                     })
                     ->doneWhen(fn (TutorialRun $run): bool => self::weeklySchedule($run) !== null && self::sessions($run)->count() >= 3),
+                Mission::make('exam-schedule', 'برنامهٔ امتحانی کلاس')
+                    ->actor($officer, $asOfficer)
+                    ->steps([
+                        'در صفحهٔ «برنامه» کلاس Conversation B2، «افزودن برنامه امتحانی» را بزنید. برای شش روز بعد، ساعت ۱۰ تا ۱۱، یک جلسه ثبت کنید. هر ردیف فرم تاریخ، ساعت و مکان خودش را دارد.',
+                        'از بالای صفحه «جلسه‌ها» را باز کنید و در تقویم جلسه‌ای با برچسب «امتحانی» پیدا کنید. جابه‌جایی یا لغو جلسه از همان تقویم انجام می‌شود.',
+                    ])
+                    ->url(fn (TutorialRun $run): ?string => self::classUrl($run, 'schedules'))
+                    ->perform(fn (TutorialRun $run) => self::branch($run, 1)->execute(
+                        fn () => app(SessionPlanner::class)->addExamSessions(self::conversationClass($run), [[
+                            'date' => today()->addDays(6)->toDateString(), 'start_time' => '10:00', 'end_time' => '11:00',
+                        ]]),
+                    ))
+                    ->doneWhen(fn (TutorialRun $run): bool => $run->made(ClassSession::class)
+                        ->where('classroom_id', self::conversationClass($run)?->getKey())
+                        ->where('kind', SessionKind::Exam)
+                        ->exists()),
                 Mission::make('monthly', 'برنامه‌ی ماهانه و تداخل')
                     ->actor('کارشناس آموزش شعبه تجریش', fn (TutorialRun $run): ?User => self::officer($run, 2))
                     ->steps([
@@ -628,11 +644,11 @@ class BranchOperations extends Scenario
                 && $classroom->members()->withoutGlobalScopes()->where('user_id', self::teacher($run, 1)?->getKey())->exists()) : null;
     }
 
-    private static function classUrl(TutorialRun $run): ?string
+    private static function classUrl(TutorialRun $run, string $page = 'members'): ?string
     {
         $classroom = self::conversationClass($run);
 
-        return $classroom ? ClassroomResource::getUrl('members', ['record' => $classroom], panel: 'admin', tenant: self::branch($run, 1)) : null;
+        return $classroom ? ClassroomResource::getUrl($page, ['record' => $classroom], panel: 'admin', tenant: self::branch($run, 1)) : null;
     }
 
     private static function subClass(TutorialRun $run): ?Classroom

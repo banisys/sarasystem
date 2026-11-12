@@ -22,6 +22,7 @@ use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
+use Modules\Class\Models\Subject;
 use Modules\Class\Models\TeachingPlan;
 
 /**
@@ -180,7 +181,31 @@ class SessionPlanner
     }
 
     /**
-     * A make-up or extra session added by hand.
+     * A group of individually dated exam sessions. A clash in any row
+     * rolls back the entire group.
+     *
+     * @param  list<array<string, mixed>>  $sessions
+     *
+     * @throws ClassException
+     */
+    public function addExamSessions(Classroom $classroom, array $sessions): void
+    {
+        DB::transaction(function () use ($classroom, $sessions): void {
+            $classroom = Classroom::query()->lockForUpdate()->findOrFail($classroom->getKey());
+
+            foreach ($sessions as $session) {
+                $subjectId = $session['subject_id'] ?? null;
+                if (filled($subjectId) && ! Subject::definedSubjects()->whereKey($subjectId)->exists()) {
+                    throw new ClassException('درس انتخاب‌شده پیدا نشد.');
+                }
+
+                $this->addSession($classroom, [...$session, 'kind' => SessionKind::Exam]);
+            }
+        });
+    }
+
+    /**
+     * A make-up, extra or exam session added by hand.
      *
      * @param  array<string, mixed>  $data
      *

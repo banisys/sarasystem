@@ -7,7 +7,9 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
@@ -18,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Filament\Actions\SessionActions;
@@ -97,7 +100,7 @@ class SchedulesRelationManager extends RelationManager
             ])
             ->headerActions([
                 Action::make('addSchedule')
-                    ->label('افزودن برنامه')
+                    ->label('افزودن برنامه درسی')
                     ->icon(Heroicon::OutlinedPlus)
                     ->visible(fn (): bool => $this->canManage())
                     ->modalWidth('3xl')
@@ -114,6 +117,7 @@ class SchedulesRelationManager extends RelationManager
                         fn () => $planner->saveSchedule(null, $this->classroom(), self::normalize($data)),
                         'برنامه ذخیره و جلسه‌ها ساخته شد.',
                     )),
+                $this->addExamScheduleAction(),
             ])
             ->recordActions([
                 Action::make('editSchedule')
@@ -148,6 +152,70 @@ class SchedulesRelationManager extends RelationManager
                     ->visible(fn (): bool => $this->canManage())
                     ->action(fn (ClassSchedule $record, SessionPlanner $planner) => $planner->deleteSchedule($record)),
             ]);
+    }
+
+    private function addExamScheduleAction(): Action
+    {
+        return Action::make('addExamSchedule')
+            ->label('افزودن برنامه امتحانی')
+            ->icon(Heroicon::OutlinedClipboardDocumentList)
+            ->color('gray')
+            ->authorize('update', $this->classroom())
+            ->modalWidth('3xl')
+            ->modalDescription('برای هر امتحان یک جلسه اضافه کنید. پس از ثبت، جلسه‌ها در تقویم همین کلاس دیده می‌شوند.')
+            ->modalSubmitActionLabel('ثبت جلسه‌های امتحانی')
+            ->schema([
+                Repeater::make('sessions')
+                    ->label('جلسه‌های امتحانی')
+                    ->addActionLabel('افزودن جلسهٔ امتحانی')
+                    ->minItems(1)
+                    ->maxItems(30)
+                    ->defaultItems(1)
+                    ->reorderable(false)
+                    ->columns(2)
+                    ->schema([
+                        DatePicker::make('date')
+                            ->label('تاریخ')
+                            ->jalali()
+                            ->required(),
+                        Select::make('subject_id')
+                            ->label('درس')
+                            ->options(fn (): array => Subject::options())
+                            ->searchable(),
+                        TimePicker::make('start_time')
+                            ->label('ساعت شروع')
+                            ->seconds(false)
+                            ->rules(['date_format:H:i,H:i:s'])
+                            ->required(),
+                        TimePicker::make('end_time')
+                            ->label('ساعت پایان')
+                            ->seconds(false)
+                            ->rules(['date_format:H:i,H:i:s'])
+                            ->after('start_time')
+                            ->required(),
+                        Select::make('teacher_ids')
+                            ->label('مدرس‌ها / مراقبان')
+                            ->multiple()
+                            ->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($this->classroom())),
+                        TextInput::make('location')
+                            ->label('مکان')
+                            ->helperText('خالی یعنی مکان خود کلاس.')
+                            ->maxLength(255),
+                        Textarea::make('note')
+                            ->label('توضیحات')
+                            ->rows(2)
+                            ->maxLength(2000)
+                            ->columnSpanFull(),
+                    ]),
+            ])
+            ->action(function (array $data, SessionPlanner $planner): void {
+                Gate::authorize('update', $this->classroom());
+
+                SessionActions::attempt(
+                    fn () => $planner->addExamSessions($this->classroom(), $data['sessions']),
+                    'جلسه‌های امتحانی ثبت شدند.',
+                );
+            });
     }
 
     /**
