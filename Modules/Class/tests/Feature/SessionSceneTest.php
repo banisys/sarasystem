@@ -9,9 +9,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewClassSession;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewExamSession;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
@@ -119,6 +121,25 @@ class SessionSceneTest extends TestCase
 
         $this->actingInPanel($this->admin(), $this->west);
         $this->get(ClassSessionResource::getUrl('view', ['record' => $theirs->id], tenant: $this->west))->assertNotFound();
+    }
+
+    public function test_the_exam_room_shows_invigilators_and_the_exams_attendance(): void
+    {
+        $exam = $this->classSession();
+        $exam->update(['kind' => SessionKind::Exam]);
+        $invigilator = User::factory()->create(['name' => 'مراقب شعبهٔ دیگر']);
+        $exam->teachers()->attach($invigilator);
+        $student = $this->attendee('فراگیر امتحان');
+        $this->record($exam, $student, AttendanceStatus::Absent);
+
+        $scene = app(SessionScene::class)->for($exam);
+        $this->assertSame([[$invigilator->name, 'مراقب']], $this->people($scene['teachers']));
+        $this->assertSame([['name' => $student->name, 'status' => 'absent', 'label' => 'غایب']], $scene['seats']);
+        $this->assertTrue($scene['statuses']['absent']['marker']);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(ViewExamSession::class, ['record' => $exam->id])
+            ->assertSee(['نمای سه‌بعدی', 'نمای جلسهٔ امتحانی', $invigilator->name.' · مراقب', $student->name.' · غایب']);
     }
 
     public function test_the_view_is_only_for_who_may_see_the_class_or_take_its_attendance(): void

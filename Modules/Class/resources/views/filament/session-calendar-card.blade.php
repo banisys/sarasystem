@@ -1,5 +1,11 @@
 {{-- A session on the day / week timeline; $roomy adds the place; $showsClassroom / $showsTeacher its class and teacher; a learner's calendar adds their attendance. --}}
 <span class="flex items-center gap-1 font-semibold">
+    @if ($session['is_exam'])
+        <span class="inline-flex shrink-0 items-center gap-0.5 rounded bg-fuchsia-700 px-1 text-[10px] font-semibold text-white dark:bg-fuchsia-300 dark:text-fuchsia-950">
+            <x-filament::icon icon="heroicon-m-clipboard-document-list" class="size-3" />
+            امتحانی
+        </span>
+    @endif
     <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['title'] }}</span>
     @if ($session['tone'] === 'live')
         <span class="relative flex size-3 shrink-0" title="در حال برگزاری">
@@ -11,7 +17,7 @@
 <span class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 opacity-80">
     <span class="tabular-nums">{{ $session['time'] }}</span>
     @include('class::filament.session-calendar-mode', ['mode' => $session['mode']])
-    @if ($session['kind'])
+    @if ($session['kind'] && ! $session['is_exam'])
         <span class="rounded bg-white/70 px-1 text-[10px] font-medium dark:bg-black/30">{{ $session['kind'] }}</span>
     @endif
     @if ($session['was_moved'])

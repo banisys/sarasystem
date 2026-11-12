@@ -85,6 +85,34 @@ class SessionPageTest extends TestCase
         $this->get(ClassSessionResource::getUrl('view', ['record' => $theirs->id], tenant: $this->west))->assertNotFound();
     }
 
+    public function test_an_exam_has_its_own_details_page_and_the_old_link_redirects(): void
+    {
+        $exam = $this->classSession(['kind' => SessionKind::Exam, 'note' => 'همراه داشتن کارت ورود به جلسه']);
+        $invigilator = User::factory()->create(['name' => 'آزاده شریفی']);
+        $exam->teachers()->attach($invigilator);
+        $this->actingInPanel($this->admin(), $this->west);
+
+        $url = ClassSessionResource::getUrl('view-exam', ['record' => $exam], tenant: $this->west);
+        $this->get($url)->assertOk()
+            ->assertSee(['جلسهٔ امتحانی', 'مراقبان', $invigilator->name, 'همراه داشتن کارت ورود به جلسه', 'حضور و غیاب'])
+            ->assertDontSee('مطالب و تکلیف');
+        $this->get(ClassSessionResource::getUrl('view', ['record' => $exam], tenant: $this->west))->assertRedirect($url);
+    }
+
+    public function test_the_exam_page_rejects_regular_sessions_and_exams_from_other_tenants(): void
+    {
+        $regular = $this->classSession(['kind' => SessionKind::Regular]);
+        $theirs = Tenant::factory()->create()->execute(fn (): ClassSession => ClassSession::factory()->create([
+            'classroom_id' => Classroom::factory()->for(Tenant::current())->create()->id,
+            'kind' => SessionKind::Exam,
+        ]));
+
+        $this->actingInPanel($this->admin(), $this->west);
+        foreach ([$regular, $theirs] as $record) {
+            $this->get(ClassSessionResource::getUrl('view-exam', ['record' => $record], tenant: $this->west))->assertNotFound();
+        }
+    }
+
     public function test_the_super_admin_can_impersonate_a_session_teacher_and_return_to_the_session(): void
     {
         $teacher = User::factory()->create(['name' => 'مدرس جلسه']);

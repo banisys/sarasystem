@@ -259,6 +259,7 @@ class SessionCalendar
             'location' => $session->location,
             'tone' => self::tone($session),
             'tone_label' => self::toneLabels()[self::tone($session)],
+            'is_exam' => $session->kind === SessionKind::Exam,
             'kind' => $session->kind === SessionKind::Regular ? null : $session->kind->getLabel(),
             'was_moved' => $session->wasMoved(),
             'has_homework' => $session->homework !== null,
@@ -391,6 +392,7 @@ class SessionCalendar
                 'is_friday' => $date->dayOfWeek === Weekday::Friday->value,
                 'holiday' => $this->holidayOn($date, $holidays),
                 'count' => $sessions->count(),
+                'has_exam' => $sessions->contains(fn (ClassSession $session): bool => $session->kind === SessionKind::Exam),
                 'tones' => $sessions->countBy(fn (ClassSession $session): string => self::tone($session))->all(),
             ];
         }

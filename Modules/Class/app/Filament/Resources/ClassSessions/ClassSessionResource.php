@@ -2,17 +2,20 @@
 
 namespace Modules\Class\Filament\Resources\ClassSessions;
 
+use App\Models\Tenant;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\LearnerSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ListClassSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewClassSession;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewExamSession;
 use Modules\Class\Filament\Resources\ClassSessions\Tables\ClassSessionsTable;
 use Modules\Class\Models\ClassSession;
 use UnitEnum;
@@ -65,6 +68,11 @@ class ClassSessionResource extends Resource
         return $schema->components(SessionActions::detailsEntries())->columns(1);
     }
 
+    public static function detailsUrl(ClassSession $session, ?Tenant $tenant = null): string
+    {
+        return static::getUrl($session->kind === SessionKind::Exam ? 'view-exam' : 'view', ['record' => $session], tenant: $tenant);
+    }
+
     public static function table(Table $table): Table
     {
         return ClassSessionsTable::configure($table);
@@ -76,6 +84,7 @@ class ClassSessionResource extends Resource
             'index' => ListClassSessions::route('/'),
             'teacher' => TeacherSessions::route('/teachers/{user}'),
             'learner' => LearnerSessions::route('/learners/{user}'),
+            'view-exam' => ViewExamSession::route('/exams/{record}'),
             'view' => ViewClassSession::route('/{record}'),
         ];
     }

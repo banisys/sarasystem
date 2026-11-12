@@ -37,7 +37,7 @@ class SessionExamSource implements ExamContextSource
             $session->starts_at, $session->ends_at,
             app(MyClasses::class)->canSee($user, $session)
                 ? route('my-classes.session', $session)
-                : ClassSessionResource::getUrl('view', ['record' => $session, 'tenant' => $session->tenant]),
+                : ClassSessionResource::detailsUrl($session, $session->tenant),
             $canManage, $canParticipate,
         );
     }

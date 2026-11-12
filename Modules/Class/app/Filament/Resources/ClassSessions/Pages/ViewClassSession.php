@@ -4,6 +4,7 @@ namespace Modules\Class\Filament\Resources\ClassSessions\Pages;
 
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
@@ -26,14 +27,23 @@ class ViewClassSession extends ViewRecord
      */
     public static function authorizeResourceAccess(): void {}
 
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        if (! $this->isExamPage() && $this->session()->kind === SessionKind::Exam) {
+            $this->redirect(ClassSessionResource::detailsUrl($this->session()));
+        }
+    }
+
     public function hydrate(): void
     {
-        abort_unless(ClassSessionResource::canView($this->getRecord()), 403);
+        $this->authorizeAccess();
     }
 
     public function getTitle(): string
     {
-        return ($this->session()->subject?->title ?? 'جلسه').' · '.SessionActions::when($this->session());
+        return $this->getHeading().' · '.SessionActions::when($this->session());
     }
 
     /**
@@ -58,13 +68,13 @@ class ViewClassSession extends ViewRecord
         $classroom = $this->session()->classroom;
 
         return $classroom !== null && ClassroomResource::canView($classroom)
-            ? [ClassroomResource::getUrl('sessions', ['record' => $classroom]) => $classroom->title, 'جلسه']
-            : ['جلسه'];
+            ? [ClassroomResource::getUrl('sessions', ['record' => $classroom]) => $classroom->title, $this->pageLabel()]
+            : [$this->pageLabel()];
     }
 
     protected function getHeaderActions(): array
     {
-        $actions = SessionActions::pageActions();
+        $actions = SessionActions::pageActions(exam: $this->isExamPage());
         if (Module::isEnabled('Exam')) {
             $url = app(SessionExamSource::class)->link($this->session(), auth()->user());
             if ($url !== null) {
@@ -75,7 +85,17 @@ class ViewClassSession extends ViewRecord
         return $actions;
     }
 
-    private function session(): ClassSession
+    protected function pageLabel(): string
+    {
+        return 'جلسه';
+    }
+
+    protected function isExamPage(): bool
+    {
+        return false;
+    }
+
+    protected function session(): ClassSession
     {
         /** @var ClassSession */
         return $this->getRecord();

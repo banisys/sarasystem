@@ -14,6 +14,7 @@
         'held' => 'bg-success-500',
         'cancelled' => 'bg-danger-400',
     ];
+    $examMarker = 'absolute start-0.5 top-0.5 size-1.5 rotate-45 rounded-[1px] bg-fuchsia-700 ring-1 ring-white dark:bg-fuchsia-300 dark:ring-gray-900';
     $openedClasses = 'border-2! border-dashed! border-gray-900! dark:border-white!';
     // Which tone colours a day of the year view when it has several.
     $tonePriority = ['live', 'pending', 'scheduled', 'held', 'cancelled'];
@@ -113,10 +114,10 @@
                                 @endforeach
 
                                 @foreach ($day['sessions'] as $session)
-                                    <a href="{{ $sessionUrl($session['id']) }}" target="_blank" rel="noopener"
+                                    <a href="{{ $sessionUrl($session['id'], $session['is_exam']) }}" target="_blank" rel="noopener"
                                         x-on:click="openedSession = {{ $session['id'] }}"
                                         x-bind:class="openedSession === {{ $session['id'] }} && '{{ $openedClasses }}'"
-                                        title="{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
+                                        title="{{ $session['title'] }} · {{ $session['time'] }}{{ $session['is_exam'] ? ' · امتحانی' : '' }} · {{ $session['tone_label'] }}"
                                         class="absolute inset-x-1 z-10 flex min-h-7 flex-col overflow-hidden rounded-md border-s-4 px-2 py-1 text-start text-xs shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}"
                                         style="top: {{ $session['top'] }}%; height: {{ $session['height'] }}%">
                                         @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'showsClassroom' => $calendar['shows_classroom'], 'showsTeacher' => $calendar['shows_teacher']])
@@ -154,7 +155,7 @@
                                     $tone = collect($tonePriority)->first(fn (string $tone): bool => isset($day['tones'][$tone]));
                                 @endphp
                                 <button type="button" wire:click="showSessions('day', '{{ $day['date'] }}')"
-                                    title="{{ $day['count'] ? $day['count'].' جلسه' : '' }}{{ $day['holiday'] ? ' · '.$day['holiday'] : '' }}"
+                                    title="{{ $day['count'] ? $day['count'].' جلسه' : '' }}{{ $day['has_exam'] ? ' · جلسهٔ امتحانی' : '' }}{{ $day['holiday'] ? ' · '.$day['holiday'] : '' }}"
                                     aria-current="{{ $day['date'] === $selected ? 'date' : 'false' }}"
                                     @class([
                                         'relative flex aspect-square flex-col items-center justify-center rounded-md tabular-nums transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:bg-white/10',
@@ -165,6 +166,9 @@
                                         'text-gray-700 dark:text-gray-200' => ! $day['is_friday'] && ! $day['holiday'] && $day['date'] !== $selected,
                                     ])>
                                     {{ $day['day_number'] }}
+                                    @if ($day['has_exam'])
+                                        <span aria-hidden="true" class="{{ $examMarker }}"></span>
+                                    @endif
                                     @if ($tone)
                                         <span class="absolute bottom-0.5 size-1.5 rounded-full {{ $dotClasses[$tone] }}"></span>
                                     @endif
@@ -210,11 +214,17 @@
                                     @endif
                                 </div>
                                 @foreach (array_slice($day['sessions'], 0, 3) as $session)
-                                    <a href="{{ $sessionUrl($session['id']) }}" target="_blank" rel="noopener"
+                                    <a href="{{ $sessionUrl($session['id'], $session['is_exam']) }}" target="_blank" rel="noopener"
                                         x-on:click="openedSession = {{ $session['id'] }}"
                                         x-bind:class="openedSession === {{ $session['id'] }} && '{{ $openedClasses }}'"
-                                        title="{{ $calendar['shows_classroom'] ? $session['classroom'].' · ' : '' }}{{ $session['title'] }} · {{ $session['time'] }} · {{ $session['tone_label'] }}"
+                                        title="{{ $calendar['shows_classroom'] ? $session['classroom'].' · ' : '' }}{{ $session['title'] }} · {{ $session['time'] }}{{ $session['is_exam'] ? ' · امتحانی' : '' }} · {{ $session['tone_label'] }}"
                                         class="flex items-center gap-1 truncate rounded border-s-4 px-1.5 py-0.5 text-start text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}">
+                                        @if ($session['is_exam'])
+                                            <span class="flex shrink-0 rounded bg-fuchsia-700 p-0.5 text-white dark:bg-fuchsia-300 dark:text-fuchsia-950">
+                                                <x-filament::icon icon="heroicon-m-clipboard-document-list" class="size-3" />
+                                                <span class="sr-only">امتحانی</span>
+                                            </span>
+                                        @endif
                                         @include('class::filament.session-calendar-mode', ['mode' => $session['mode']])
                                         <span class="shrink-0 font-semibold tabular-nums">{{ \Illuminate\Support\Str::before($session['time'], '–') }}</span>
                                         <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $calendar['shows_classroom'] ? $session['classroom'] : $session['title'] }}</span>
@@ -253,13 +263,16 @@
                                     @endphp
                                     @if ($day['count'] > 0)
                                         <button type="button" wire:click="showSessions('day', '{{ $day['date'] }}')"
-                                            title="{{ collect($day['tones'])->map(fn (int $count, string $tone): string => $tones[$tone].' '.$count)->join('، ') }}{{ $day['holiday'] ? ' · '.$day['holiday'] : '' }}"
+                                            title="{{ collect($day['tones'])->map(fn (int $count, string $tone): string => $tones[$tone].' '.$count)->join('، ') }}{{ $day['has_exam'] ? ' · جلسهٔ امتحانی' : '' }}{{ $day['holiday'] ? ' · '.$day['holiday'] : '' }}"
                                             @class([
                                                 'relative grid aspect-square place-items-center rounded text-sm font-semibold tabular-nums text-white transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
                                                 $dotClasses[$tone],
                                                 'ring-2 ring-gray-950 ring-offset-1 dark:ring-white dark:ring-offset-gray-900' => $day['is_today'],
                                             ])>
                                             {{ $day['day_number'] }}
+                                            @if ($day['has_exam'])
+                                                <span aria-hidden="true" class="{{ $examMarker }}"></span>
+                                            @endif
                                             @if ($day['count'] > 1)
                                                 <span class="absolute -top-1 -end-1 grid size-3.5 place-items-center rounded-full bg-gray-950 text-[9px] text-white dark:bg-white dark:text-gray-950">{{ $day['count'] }}</span>
                                             @endif
@@ -290,6 +303,10 @@
                     <span class="font-semibold text-gray-950 dark:text-white">{{ $calendar['totals'][$tone] }}</span>
                 </span>
             @endforeach
+            <span class="inline-flex items-center gap-1.5">
+                <span aria-hidden="true" class="size-1.5 rotate-45 rounded-[1px] bg-fuchsia-700 dark:bg-fuchsia-300"></span>
+                جلسهٔ امتحانی
+            </span>
             <span class="inline-flex items-center gap-1.5">
                 <span class="size-2.5 rounded-sm bg-gray-200 dark:bg-white/15"></span>
                 تعطیل

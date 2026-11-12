@@ -53,7 +53,7 @@ trait ShowsSessionCalendar
                 'current' => $this->currentView(),
                 'tones' => SessionCalendar::toneLabels(),
                 'canAddSessions' => $this->canAddSessions(),
-                'sessionUrl' => fn (int $session): string => ClassSessionResource::getUrl('view', ['record' => $session]),
+                'sessionUrl' => fn (int $session, bool $isExam): string => ClassSessionResource::getUrl($isExam ? 'view-exam' : 'view', ['record' => $session]),
                 // A page renders the action modals itself; a relation manager without its table doesn't.
                 'rendersModals' => ! $this instanceof Page,
             ])

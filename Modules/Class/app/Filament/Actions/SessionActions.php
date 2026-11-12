@@ -159,7 +159,7 @@ class SessionActions
             ->label('جزئیات')
             ->icon(Heroicon::OutlinedEye)
             ->color('gray')
-            ->url(fn (ClassSession $record): string => ClassSessionResource::getUrl('view', ['record' => $record]))
+            ->url(fn (ClassSession $record): string => ClassSessionResource::detailsUrl($record))
             ->openUrlInNewTab();
     }
 
@@ -169,11 +169,11 @@ class SessionActions
      *
      * @return list<Section|Grid>
      */
-    public static function detailsEntries(): array
+    public static function detailsEntries(bool $exam = false): array
     {
         return [
-            Section::make('مشخصات جلسه')
-                ->description(fn (ClassSession $record): ?string => self::lastChange('آخرین تغییر زمان، وضعیت یا مدرس‌ها', $record->changedBy, $record->changed_at))
+            Section::make($exam ? 'مشخصات جلسهٔ امتحانی' : 'مشخصات جلسه')
+                ->description(fn (ClassSession $record): ?string => self::lastChange($exam ? 'آخرین تغییر زمان یا وضعیت' : 'آخرین تغییر زمان، وضعیت یا مدرس‌ها', $record->changedBy, $record->changed_at))
                 ->extraAttributes(['class' => 'classroom-details-section'])
                 ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
                 ->schema([
@@ -181,7 +181,7 @@ class SessionActions
                         ->label('وضعیت')
                         ->badge()
                         ->helperText(fn (ClassSession $record): ?string => match (SessionCalendar::tone($record)) {
-                            'pending' => 'زمان جلسه گذشته و حضور و غیاب یا مطالب آن ثبت نشده است.',
+                            'pending' => $exam ? 'زمان جلسه گذشته و حضور و غیاب ثبت نشده است.' : 'زمان جلسه گذشته و حضور و غیاب یا مطالب آن ثبت نشده است.',
                             'live' => 'هم‌اکنون در حال برگزاری است.',
                             default => $record->cancel_reason !== null ? 'دلیل لغو: '.$record->cancel_reason : null,
                         }),
@@ -190,7 +190,7 @@ class SessionActions
                         ->state(fn (ClassSession $record): string => self::when($record))
                         ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null),
                     TextEntry::make('teacher')
-                        ->label('مدرس‌ها')
+                        ->label($exam ? 'مراقبان' : 'مدرس‌ها')
                         ->state(fn (ClassSession $record): ?string => $record->teacherNames())
                         ->placeholder('—'),
                     TextEntry::make('location')
@@ -222,9 +222,18 @@ class SessionActions
                         ->color(fn (ClassSession $record): string => self::canEnterOnline($record) ? 'primary' : 'gray')
                         ->visible(fn (ClassSession $record): bool => app(OnlineRooms::class)->forSession($record) !== null)
                         ->columnSpanFull(),
+                    ...($exam ? [
+                        TextEntry::make('exam_note')
+                            ->label('توضیحات')
+                            ->state(fn (ClassSession $record): ?string => $record->note)
+                            ->formatStateUsing(fn (string $state): HtmlString => new HtmlString(nl2br(e($state))))
+                            ->visible(fn (ClassSession $record): bool => filled($record->note))
+                            ->columnSpanFull(),
+                    ] : []),
                 ]),
-            Grid::make(['default' => 1, 'lg' => 3])->schema([
+            Grid::make(['default' => 1, 'lg' => $exam ? 1 : 3])->schema([
                 Section::make('مطالب و تکلیف')
+                    ->hidden($exam)
                     ->description(function (ClassSession $record): ?string {
                         $graded = $record->homeworkSubmissions()->whereNotNull('graded_at')->with('gradedBy')->latest('graded_at')->first();
 
@@ -271,7 +280,15 @@ class SessionActions
                         View::make('class::filament.session-attendance')
                             ->viewData(fn (ClassSession $record): array => ['rows' => self::attendanceRows($record)]),
                         View::make('class::filament.session-scene')
-                            ->viewData(fn (ClassSession $record, SessionScene $scene): array => ['scene' => $scene->for($record), 'title' => ($record->subject?->title ?? 'جلسه').' · '.self::when($record)])
+                            ->viewData(fn (ClassSession $record, SessionScene $scene): array => [
+                                'scene' => $scene->for($record),
+                                'title' => implode(' · ', array_filter([
+                                    $exam ? 'جلسهٔ امتحانی' : null,
+                                    $record->subject?->title ?? ($exam ? null : 'جلسه'),
+                                    self::when($record),
+                                ])),
+                                'isExam' => $exam,
+                            ])
                             ->visible(fn (ClassSession $record, SessionScene $scene): bool => ($user = auth()->user()) instanceof User && $scene->canSee($user, $record)),
                     ]),
             ]),
@@ -312,7 +329,7 @@ class SessionActions
                 ->tooltip('ورود با این کاربر')
                 ->modalHeading('ورود با حساب '.$user->name)
                 ->action(function (Component $livewire) use ($session, $user): void {
-                    Impersonation::start(auth()->user(), $user, ClassSessionResource::getUrl('view', ['record' => $session]));
+                    Impersonation::start(auth()->user(), $user, ClassSessionResource::detailsUrl($session));
 
                     $panel = Filament::getPanel('admin');
                     $livewire->redirect($user->canAccessPanel($panel) ? url($panel->getPath()) : route('dashboard'));
@@ -340,15 +357,14 @@ class SessionActions
      *
      * @return list<Action|ActionGroup>
      */
-    public static function pageActions(): array
+    public static function pageActions(bool $exam = false): array
     {
         return [
             self::attendance()->color('primary'),
-            self::content()->color('gray'),
-            self::grading()->color('gray'),
+            ...($exam ? [] : [self::content()->color('gray'), self::grading()->color('gray')]),
             ActionGroup::make([
                 self::move(),
-                self::substitute(),
+                ...($exam ? [] : [self::substitute()]),
                 self::cancel(),
                 self::restore(),
                 self::delete()->after(fn (ClassSession $record, Page $livewire) => $livewire->redirect(ClassroomResource::getUrl('sessions', ['record' => $record->classroom_id]))),

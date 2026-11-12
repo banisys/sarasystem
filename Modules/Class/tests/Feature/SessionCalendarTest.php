@@ -7,6 +7,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
@@ -135,6 +136,8 @@ class SessionCalendarTest extends TestCase
     public function test_a_session_links_to_its_page_in_a_new_tab_and_marks_itself_opened(): void
     {
         $session = $this->classSession('2026-10-30 10:00');
+        $exam = $this->classSession('2026-10-30 13:00');
+        $exam->update(['kind' => SessionKind::Exam]);
         $elsewhere = ClassSession::factory()->create(['classroom_id' => Classroom::factory()->for($this->west)->create()->id, 'starts_at' => '2026-10-30 12:00', 'ends_at' => '2026-10-30 13:00']);
 
         $this->actingInPanel($this->admin(), $this->west);
@@ -143,6 +146,8 @@ class SessionCalendarTest extends TestCase
         foreach (['month', 'week', 'day'] as $view) {
             $calendar->call('showSessions', $view, '2026-10-30')
                 ->assertSeeHtml('href="'.ClassSessionResource::getUrl('view', ['record' => $session]).'" target="_blank"')
+                ->assertSeeHtml('href="'.ClassSessionResource::getUrl('view-exam', ['record' => $exam]).'" target="_blank"')
+                ->assertDontSeeHtml('href="'.ClassSessionResource::getUrl('view', ['record' => $exam]).'"')
                 ->assertSeeHtml('x-on:click="openedSession = '.$session->id.'"')
                 ->assertSeeHtml('border-dashed!')
                 ->assertDontSeeHtml(ClassSessionResource::getUrl('view', ['record' => $elsewhere]));

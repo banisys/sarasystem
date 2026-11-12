@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
@@ -16,8 +17,8 @@ use Nwidart\Modules\Facades\Module;
 
 /**
  * What the 3D view of a session shows (ADR 0049): a seat per person on the
- * session's attendance list, in the list's order, with their status; who
- * teaches it standing at the front, and the class's other staff
+ * session's attendance list, in the list's order, with their status; its
+ * teachers or invigilators at the front, and the class's other staff
  * (supervisors, supporters, …) at the back, each in their class role's
  * colour and named by it. Seats aren't recorded, so a seat means nothing
  * beyond its person.
@@ -42,6 +43,8 @@ class SessionScene
 
     /** Who teaches the session without a class role in it (a substitute from outside the class). */
     public const TEACHER_COLOR = '#6366f1';
+
+    private const INVIGILATOR_COLOR = '#7c3aed';
 
     /**
      * Colours of the class roles that aren't attendee roles, in the order
@@ -109,7 +112,7 @@ class SessionScene
                 ->groupBy('role')
                 ->map(fn (Collection $group, string $role): array => ['label' => $role, 'color' => $group->first()['color'], 'count' => $group->count()])
                 // In the roles' order, which their colours follow.
-                ->sortBy(fn (array $role): int|false => array_search($role['color'], self::ROLE_COLORS, true))
+                ->sortBy(fn (array $role): int|false => $role['color'] === self::INVIGILATOR_COLOR ? -1 : array_search($role['color'], self::ROLE_COLORS, true))
                 ->values()
                 ->all(),
             'statuses' => collect(self::LOOKS)
@@ -123,8 +126,9 @@ class SessionScene
      * Who teaches the session (its teachers or their substitutes), at the
      * front, and the other members of the class on its day whose class role
      * isn't an attendee role (supervisors, supporters, …), at the back.
-     * Everyone is named and coloured by their class role; someone teaching
-     * without one is «مدرس». Not at the back: those replaced in this
+     * Staff are named and coloured by their class role; a teacher without one
+     * is «مدرس», and an exam's assigned invigilators are «مراقب».
+     * Not at the back: those replaced in this
      * session, and the teachers of the class's other sessions, who aren't
      * in this one.
      *
@@ -150,15 +154,18 @@ class SessionScene
             ? ['name' => $user->name, 'role' => $members[$user->getKey()]->classRole->title, 'color' => $colors[$members[$user->getKey()]->class_role_id] ?? self::TEACHER_COLOR]
             : ['name' => $user->name, 'role' => 'مدرس', 'color' => self::TEACHER_COLOR];
 
-        $teaching = array_map(fn (array $row): User => $row['substitute'] ?? $row['teacher'], $session->teaching());
-        $inSession = collect($session->teaching())->flatMap(fn (array $row): array => array_filter([$row['teacher']->getKey(), $row['substitute']?->getKey()]));
+        $assignments = $session->teaching();
+        $teaching = array_map(fn (array $row): User => $row['substitute'] ?? $row['teacher'], $assignments);
+        $inSession = collect($assignments)->flatMap(fn (array $row): array => array_filter([$row['teacher']->getKey(), $row['substitute']?->getKey()]));
         $otherTeachers = DB::table(ClassSession::TEACHERS_TABLE)
             ->whereIn('session_id', ClassSession::withoutTenantScope()->select('id')->where('classroom_id', $session->classroom_id)->whereKeyNot($session->getKey()))
             ->pluck('teacher_id');
         $away = $inSession->merge($otherTeachers)->map(fn (mixed $id): int => (int) $id)->unique()->all();
 
         return [
-            'teachers' => array_map($person, $teaching),
+            'teachers' => array_map($session->kind === SessionKind::Exam
+                ? fn (User $user): array => ['name' => $user->name, 'role' => 'مراقب', 'color' => self::INVIGILATOR_COLOR]
+                : $person, $teaching),
             'staff' => $members->reject(fn (ClassMember $member): bool => in_array($member->user_id, $away, true))
                 ->map(fn (ClassMember $member): array => $person($member->user))
                 ->values()

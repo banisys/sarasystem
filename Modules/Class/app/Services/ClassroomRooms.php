@@ -76,7 +76,7 @@ class ClassroomRooms implements RoomSource
                     'subject' => $live->subject?->title,
                     'teacher' => $live->teacherNames(),
                     'time' => $live->starts_at->format('H:i').'–'.$live->ends_at->format('H:i'),
-                    'url' => $canOpen ? ClassSessionResource::getUrl('view', ['record' => $live]) : null,
+                    'url' => $canOpen ? ClassSessionResource::detailsUrl($live) : null,
                 ],
                 'next' => $next?->starts_at->format('H:i'),
             ];

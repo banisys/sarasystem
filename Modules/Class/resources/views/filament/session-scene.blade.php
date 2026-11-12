@@ -1,5 +1,5 @@
 {{-- The session's 3D view, full page with every control (ADR 0049). Its script loads only when the button is pressed. --}}
-@if ($scene['seats'] !== [])
+@if ($isExam || $scene['seats'] !== [])
     @php
         $toggleOn = 'ring-2 ring-primary-500 bg-primary-50! text-primary-700! dark:bg-primary-500/20! dark:text-primary-200!';
     @endphp
@@ -40,7 +40,7 @@
         class="flex flex-col gap-3"
     >
         <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="text-sm font-medium text-gray-950 dark:text-white">نمای کلاس</span>
+            <span class="text-sm font-medium text-gray-950 dark:text-white">{{ $isExam ? 'نمای جلسهٔ امتحانی' : 'نمای کلاس' }}</span>
 
             <x-filament::button x-on:click="show()" x-bind:disabled="state === 'loading'" color="gray" size="sm" icon="heroicon-m-cube">
                 <span x-text="state === 'loading' ? 'در حال بارگذاری…' : 'نمای سه‌بعدی'">نمای سه‌بعدی</span>
