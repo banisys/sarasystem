@@ -13,7 +13,7 @@ Exam sessions share records, scheduling and attendance with teaching sessions. S
 ## Decision
 Use `class-sessions/exams/{id}` in the admin panel. It accepts only exam sessions. The calendar and details actions link directly there; authorized requests for an exam at `class-sessions/{id}` redirect there. The dedicated page shows the schedule, location, invigilators, notes and attendance, with the session's existing scheduling actions and optional online exam integration.
 
-Reuse the Campus 3D room and attendance data. It shows assigned invigilators in purple at the front and the exam's attendee statuses on their seats. It follows the same authorization and cancellation rules as the regular session scene; seating is symbolic.
+Reuse the Campus 3D room and attendance data. It shows assigned invigilators in purple at the front and the exam's attendee statuses on their seats. Other class staff, such as supporters, do not appear in the exam room. It follows the same authorization and cancellation rules as the regular session scene. Seating is symbolic until an editor saves a plan ([ADR 0087](0087-exam-seating.md)).
 
 ## Consequences
 Both pages use the same session records and write operations. Planning and attendance work with Campus and Exam disabled. Existing links to teaching sessions still open the teaching session page.

@@ -22,6 +22,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Forms\Components\ViewField;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -46,6 +47,7 @@ use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\PlanTopic;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
+use Modules\Class\Services\ExamSeating;
 use Modules\Class\Services\HomeworkBook;
 use Modules\Class\Services\Online\OnlineEntry;
 use Modules\Class\Services\Online\OnlineRooms;
@@ -271,6 +273,8 @@ class SessionActions
                             ->visible(fn (ClassSession $record): bool => filled($record->note)),
                     ]),
                 Section::make('حضور و غیاب')
+                    ->key('sessionAttendance')
+                    ->headerActions($exam ? [self::seatLayout()] : [])
                     ->description(function (ClassSession $record): ?string {
                         $last = $record->attendances()->with('recordedBy')->latest('recorded_at')->first();
 
@@ -297,6 +301,31 @@ class SessionActions
                 ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
                 ->schema(fn (ClassSession $record): array => self::peopleEntries($record)),
         ];
+    }
+
+    private static function seatLayout(): Action
+    {
+        return Action::make('seatLayout')
+            ->label('چیدمان صندلی‌ها')
+            ->icon(Heroicon::OutlinedTableCells)
+            ->color('gray')
+            ->authorize(fn (ClassSession $record, ExamSeating $seating): bool => ($user = auth()->user()) instanceof User && $seating->canEdit($user, $record))
+            ->modalWidth('7xl')
+            ->modalSubmitActionLabel('ذخیرهٔ چیدمان')
+            ->fillForm(fn (ClassSession $record, ExamSeating $seating): array => ['layout' => $seating->draft($record)])
+            ->schema(fn (ClassSession $record, AttendanceRegister $attendance): array => [
+                ViewField::make('layout')
+                    ->hiddenLabel()
+                    ->view('class::filament.exam-seat-layout', [
+                        'attendees' => $attendance->attendees($record)->map(fn (User $user): array => ['id' => $user->id, 'name' => $user->name])->all(),
+                        'maxRows' => ExamSeating::MAX_ROWS,
+                        'maxColumns' => ExamSeating::MAX_COLUMNS,
+                    ]),
+            ])
+            ->action(fn (array $data, ClassSession $record, ExamSeating $seating) => self::attempt(
+                fn () => $seating->save($record, auth()->user(), $data['layout'] ?? null),
+                'چیدمان صندلی‌ها ذخیره شد.',
+            ));
     }
 
     /**

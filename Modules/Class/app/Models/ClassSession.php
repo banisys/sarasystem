@@ -313,6 +313,7 @@ class ClassSession extends Model implements HasMedia
     {
         return [
             'covered_topic_ids' => 'array',
+            'seat_layout' => 'array',
             'homework_due_on' => 'date',
             'homework_max_score' => 'integer',
             'content_recorded_at' => 'datetime',

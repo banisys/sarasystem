@@ -2,6 +2,7 @@
 @if ($isExam || $scene['seats'] !== [])
     @php
         $toggleOn = 'ring-2 ring-primary-500 bg-primary-50! text-primary-700! dark:bg-primary-500/20! dark:text-primary-200!';
+        $seatPositions = $scene['layout'] === null ? null : array_flip(array_filter($scene['layout']['seats'], fn ($index) => $index !== null));
     @endphp
     <div
         wire:key="session-scene-{{ md5(json_encode($scene)) }}"
@@ -108,7 +109,14 @@
                                 {{ $role['label'] }} {{ $role['count'] }}
                             </span>
                         @endforeach
-                        <span class="text-gray-400 dark:text-gray-500">جای نفرها نمادین است. کشیدن: چرخش · چرخ موس یا دو انگشت: زوم · کلیک راست یا کلیدهای جهت: جابه‌جایی · کلیک روی صندلی: نام</span>
+                        <span class="text-gray-400 dark:text-gray-500">
+                            @if ($seatPositions === null)
+                                جای نفرها نمادین است.
+                            @else
+                                چیدمان ذخیره‌شده · بدون صندلی: {{ count($scene['seats']) - count($seatPositions) }}
+                            @endif
+                            کشیدن: چرخش · چرخ موس یا دو انگشت: زوم · کلیک راست یا کلیدهای جهت: جابه‌جایی · کلیک روی صندلی: نام
+                        </span>
                     </div>
                 </div>
             </div>
@@ -120,10 +128,13 @@
 
         {{-- The same people for screen readers and where the 3D view can't open. --}}
         <ul x-cloak x-bind:class="state === 'failed' ? 'grid grid-cols-1 gap-1 text-sm sm:grid-cols-2' : 'sr-only'">
-            @foreach ($scene['seats'] as $seat)
+            @foreach ($scene['seats'] as $index => $seat)
                 <li class="inline-flex items-center gap-1.5">
                     <span class="size-2.5 shrink-0 rounded-full" style="background-color: {{ $scene['statuses'][$seat['status']]['color'] }}"></span>
                     {{ $seat['name'] }} · {{ $seat['label'] }}
+                    @if ($seatPositions !== null)
+                        · {{ isset($seatPositions[$index]) ? 'صندلی '.($seatPositions[$index] + 1) : 'بدون صندلی' }}
+                    @endif
                 </li>
             @endforeach
             @foreach ([...$scene['teachers'], ...$scene['staff']] as $person)

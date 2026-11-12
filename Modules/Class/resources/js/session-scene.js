@@ -70,9 +70,10 @@ export function mountSessionScene(element, tooltip, data) {
 function buildRoom(data) {
     const group = new Group();
     const palette = data.virtual ? COLORS.virtual : COLORS.room;
-    const seats = data.seats;
-    const columns = Math.max(2, Math.min(14, Math.ceil(Math.sqrt(seats.length * 1.4))));
-    const rows = Math.ceil(seats.length / columns);
+    const layout = data.layout;
+    const seats = layout ? layout.seats.map((index) => index === null ? null : data.seats[index]) : data.seats;
+    const columns = layout?.columns ?? Math.max(2, Math.min(14, Math.ceil(Math.sqrt(seats.length * 1.4))));
+    const rows = layout?.rows ?? Math.ceil(seats.length / columns);
     const width = columns * SEAT_WIDTH + 2;
     const depth = rows * SEAT_DEPTH + 4.5;
     const wallHeight = 3.2;
@@ -144,14 +145,15 @@ function buildRoom(data) {
     const positions = seats.map((seat, index) => {
         const column = index % columns;
         const row = Math.floor(index / columns);
-        const inRow = row === rows - 1 ? seats.length - row * columns : columns;
+        const inRow = !layout && row === rows - 1 ? seats.length - row * columns : columns;
 
         return {
             // The first seat is at the front on the right, as the class faces the board.
             x: ((inRow - 1) / 2 - column) * SEAT_WIDTH,
             z: frontZ + row * SEAT_DEPTH,
-            look: data.statuses[seat.status],
+            look: seat ? data.statuses[seat.status] : { seated: false, marker: false, color: COLORS.chair },
             seat,
+            number: layout ? index + 1 : null,
         };
     });
 
@@ -182,10 +184,13 @@ function buildRoom(data) {
     }
     instanced(new CylinderGeometry(0.22, 0.22, 0.06, 12), positions.filter(({ look }) => look.marker), ({ x, z }) => [x, 0.79, z - 0.4], ({ look }) => look.color);
 
-    for (const { x, z, seat, look } of positions) {
+    const seatNumber = new Intl.NumberFormat('fa-IR', { useGrouping: false });
+    for (const { x, z, seat, look, number } of positions) {
+        if (!seat) continue;
+
         targets.push({
             position: new Vector3(x, look.seated ? 1.55 : 1, z + 0.13),
-            text: `${seat.name} · ${seat.label}`,
+            text: `${number === null ? '' : `صندلی ${seatNumber.format(number)} · `}${seat.name} · ${seat.label}`,
         });
     }
 

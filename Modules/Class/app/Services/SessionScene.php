@@ -18,10 +18,9 @@ use Nwidart\Modules\Facades\Module;
 /**
  * What the 3D view of a session shows (ADR 0049): a seat per person on the
  * session's attendance list, in the list's order, with their status; its
- * teachers or invigilators at the front, and the class's other staff
- * (supervisors, supporters, …) at the back, each in their class role's
- * colour and named by it. Seats aren't recorded, so a seat means nothing
- * beyond its person.
+ * teachers or invigilators at the front. Teaching sessions also show the
+ * class's other staff at the back. Seats aren't recorded, so a seat means
+ * nothing beyond its person.
  */
 class SessionScene
 {
@@ -53,7 +52,7 @@ class SessionScene
      */
     private const ROLE_COLORS = [self::TEACHER_COLOR, '#0ea5e9', '#ec4899', '#14b8a6', '#a855f7', '#f97316', '#84cc16'];
 
-    public function __construct(private AttendanceRegister $register, private SessionAccess $access) {}
+    public function __construct(private AttendanceRegister $register, private SessionAccess $access, private ExamSeating $seating) {}
 
     /**
      * It names people and their attendance: for those who may see the class
@@ -74,6 +73,7 @@ class SessionScene
      *     virtual: bool,
      *     teachers: list<array{name: string, role: string, color: string}>,
      *     seats: list<array{name: string, status: string, label: string}>,
+     *     layout: array{rows: int, columns: int, seats: list<int|null>}|null,
      *     staff: list<array{name: string, role: string, color: string}>,
      *     roles: list<array{label: string, color: string, count: int}>,
      *     statuses: array<string, array{label: string, color: string, seated: bool, marker: bool, count: int}>,
@@ -82,8 +82,9 @@ class SessionScene
     public function for(ClassSession $session): array
     {
         $recorded = $session->attendances()->get()->keyBy('user_id');
+        $attendees = $this->register->attendees($session)->values();
 
-        $seats = $this->register->attendees($session)->map(function (User $user) use ($recorded): array {
+        $seats = $attendees->map(function (User $user) use ($recorded): array {
             $attendance = $recorded[$user->getKey()] ?? null;
             $status = $attendance?->status;
 
@@ -96,7 +97,14 @@ class SessionScene
                     default => $status->getLabel(),
                 },
             ];
-        })->values();
+        });
+
+        $attendeeIds = $attendees->modelKeys();
+        $layout = $this->seating->current($session, $attendeeIds);
+        if ($layout !== null) {
+            $indices = array_flip($attendeeIds);
+            $layout['seats'] = array_map(fn (?int $id): ?int => $id === null ? null : $indices[$id], $layout['seats']);
+        }
 
         $counts = $seats->countBy('status');
         $labels = [
@@ -108,11 +116,12 @@ class SessionScene
             'virtual' => $session->classroom?->mode === ClassMode::Online,
             ...($people = $this->people($session)),
             'seats' => $seats->all(),
+            'layout' => $layout,
             'roles' => collect([...$people['teachers'], ...$people['staff']])
                 ->groupBy('role')
                 ->map(fn (Collection $group, string $role): array => ['label' => $role, 'color' => $group->first()['color'], 'count' => $group->count()])
                 // In the roles' order, which their colours follow.
-                ->sortBy(fn (array $role): int|false => $role['color'] === self::INVIGILATOR_COLOR ? -1 : array_search($role['color'], self::ROLE_COLORS, true))
+                ->sortBy(fn (array $role): int|false => array_search($role['color'], self::ROLE_COLORS, true))
                 ->values()
                 ->all(),
             'statuses' => collect(self::LOOKS)
@@ -123,19 +132,25 @@ class SessionScene
     }
 
     /**
-     * Who teaches the session (its teachers or their substitutes), at the
-     * front, and the other members of the class on its day whose class role
-     * isn't an attendee role (supervisors, supporters, …), at the back.
-     * Staff are named and coloured by their class role; a teacher without one
-     * is «مدرس», and an exam's assigned invigilators are «مراقب».
-     * Not at the back: those replaced in this
-     * session, and the teachers of the class's other sessions, who aren't
-     * in this one.
+     * Exams show only their assigned invigilators. Teaching sessions show
+     * their teachers (or substitutes) at the front and the class's other
+     * staff at the back, with their class roles and colours. Teachers who
+     * are replaced or only teach other sessions are left out.
      *
      * @return array{teachers: list<array{name: string, role: string, color: string}>, staff: list<array{name: string, role: string, color: string}>}
      */
     private function people(ClassSession $session): array
     {
+        $assignments = $session->teaching();
+        $teaching = array_map(fn (array $row): User => $row['substitute'] ?? $row['teacher'], $assignments);
+
+        if ($session->kind === SessionKind::Exam) {
+            return [
+                'teachers' => array_map(fn (User $user): array => ['name' => $user->name, 'role' => 'مراقب', 'color' => self::INVIGILATOR_COLOR], $teaching),
+                'staff' => [],
+            ];
+        }
+
         $day = $session->starts_at->toDateString();
         $colors = ClassRole::definedRoles()->where('is_attendee', false)->pluck('id')->values()
             ->mapWithKeys(fn (int $id, int $index): array => [$id => self::ROLE_COLORS[$index % count(self::ROLE_COLORS)]]);
@@ -154,8 +169,6 @@ class SessionScene
             ? ['name' => $user->name, 'role' => $members[$user->getKey()]->classRole->title, 'color' => $colors[$members[$user->getKey()]->class_role_id] ?? self::TEACHER_COLOR]
             : ['name' => $user->name, 'role' => 'مدرس', 'color' => self::TEACHER_COLOR];
 
-        $assignments = $session->teaching();
-        $teaching = array_map(fn (array $row): User => $row['substitute'] ?? $row['teacher'], $assignments);
         $inSession = collect($assignments)->flatMap(fn (array $row): array => array_filter([$row['teacher']->getKey(), $row['substitute']?->getKey()]));
         $otherTeachers = DB::table(ClassSession::TEACHERS_TABLE)
             ->whereIn('session_id', ClassSession::withoutTenantScope()->select('id')->where('classroom_id', $session->classroom_id)->whereKeyNot($session->getKey()))
@@ -163,9 +176,7 @@ class SessionScene
         $away = $inSession->merge($otherTeachers)->map(fn (mixed $id): int => (int) $id)->unique()->all();
 
         return [
-            'teachers' => array_map($session->kind === SessionKind::Exam
-                ? fn (User $user): array => ['name' => $user->name, 'role' => 'مراقب', 'color' => self::INVIGILATOR_COLOR]
-                : $person, $teaching),
+            'teachers' => array_map($person, $teaching),
             'staff' => $members->reject(fn (ClassMember $member): bool => in_array($member->user_id, $away, true))
                 ->map(fn (ClassMember $member): array => $person($member->user))
                 ->values()
