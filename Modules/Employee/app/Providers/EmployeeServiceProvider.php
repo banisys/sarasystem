@@ -7,6 +7,7 @@ use App\Campus\StaffPeople;
 use App\Contract\ContractParties;
 use App\CustomFields\CustomForms;
 use App\Documents\DocumentHolders;
+use App\Support\EmployeeDirectory;
 use App\Workflow\WorkflowSubjects;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ use Modules\Employee\ContractParties\EmployeeContractParty;
 use Modules\Employee\Documents\EmployeeDocumentHolder;
 use Modules\Employee\Forms\JobApplicationForm;
 use Modules\Employee\Services\EmployeePeople;
+use Modules\Employee\Services\OrganizationEmployeeDirectory;
 use Modules\Employee\Workflow\JobApplicationSubject;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -45,6 +47,7 @@ class EmployeeServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         StaffPeople::register('employees', fn (): EmployeePeople => new EmployeePeople);
+        $this->app->bind(EmployeeDirectory::class, OrganizationEmployeeDirectory::class);
 
         // The screens' permissions for the default roles (ADR 0039).
         app(DefaultRoles::class)->grant([

@@ -160,7 +160,7 @@ class SchedulesRelationManager extends RelationManager
             ->label('افزودن برنامه امتحانی')
             ->icon(Heroicon::OutlinedClipboardDocumentList)
             ->color('gray')
-            ->authorize('update', $this->classroom())
+            ->authorize(fn (): bool => $this->canManage())
             ->modalWidth('3xl')
             ->modalDescription('برای هر امتحان یک جلسه اضافه کنید. پس از ثبت، جلسه‌ها در تقویم همین کلاس دیده می‌شوند.')
             ->modalSubmitActionLabel('ثبت جلسه‌های امتحانی')
@@ -194,9 +194,13 @@ class SchedulesRelationManager extends RelationManager
                             ->after('start_time')
                             ->required(),
                         Select::make('teacher_ids')
-                            ->label('مدرس‌ها / مراقبان')
+                            ->label('مراقبان')
+                            ->helperText('کارکنان همهٔ '.config('sarasystem.tenant_plural_label').' را می‌توانید با نام جست‌وجو کنید.')
                             ->multiple()
-                            ->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($this->classroom())),
+                            ->searchable()
+                            ->options(fn (SessionPlanner $planner): array => $this->examInvigilatorOptions($planner))
+                            ->getSearchResultsUsing(fn (string $search, SessionPlanner $planner): array => $this->examInvigilatorOptions($planner, $search))
+                            ->getOptionLabelsUsing(fn (array $values, SessionPlanner $planner): array => $this->examInvigilatorOptions($planner, selected: $values)),
                         TextInput::make('location')
                             ->label('مکان')
                             ->helperText('خالی یعنی مکان خود کلاس.')
@@ -216,6 +220,17 @@ class SchedulesRelationManager extends RelationManager
                     'جلسه‌های امتحانی ثبت شدند.',
                 );
             });
+    }
+
+    /**
+     * @param  list<int|string>|null  $selected
+     * @return array<int, string>
+     */
+    private function examInvigilatorOptions(SessionPlanner $planner, string $search = '', ?array $selected = null): array
+    {
+        Gate::authorize('update', $this->classroom());
+
+        return $planner->invigilatorOptions($search, $selected);
     }
 
     /**

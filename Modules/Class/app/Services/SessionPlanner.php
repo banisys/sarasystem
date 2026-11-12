@@ -5,6 +5,7 @@ namespace Modules\Class\Services;
 use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\EmployeeDirectory;
 use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -215,7 +216,13 @@ class SessionPlanner
     {
         [$start, $end] = self::interval($data['date'], $data['start_time'], $data['end_time']);
         $teacherIds = self::ids($data['teacher_ids'] ?? []);
-        $this->checkTeachers($classroom, $teacherIds);
+        if (in_array($data['kind'], [SessionKind::Exam, SessionKind::Exam->value], true)) {
+            if ($teacherIds !== [] && $this->invigilators()->whereKey($teacherIds)->count() !== count($teacherIds)) {
+                throw new ClassException('مراقب باید از فهرست کارکنان انتخاب شود.');
+            }
+        } else {
+            $this->checkTeachers($classroom, $teacherIds);
+        }
         $location = filled($data['location'] ?? null) ? trim($data['location']) : ($classroom->mode->meetsInPerson() ? $classroom->location : null);
 
         $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $classroom, $teacherIds, $location);
@@ -416,6 +423,30 @@ class SessionPlanner
             ->unique('user_id')
             ->mapWithKeys(fn (ClassMember $member): array => [$member->user_id => $member->user->name.' ('.$member->classRole->title.')'])
             ->all();
+    }
+
+    /**
+     * @param  list<int|string>|null  $selected
+     * @return array<int, string>
+     */
+    public function invigilatorOptions(string $search = '', ?array $selected = null): array
+    {
+        $query = $this->invigilators();
+
+        if ($selected !== null) {
+            return $query->whereKey($selected)->pluck('name', 'id')->all();
+        }
+
+        return $query->whereLike('name', '%'.trim($search).'%')
+            ->orderBy('name')->orderBy('id')->limit(50)->pluck('name', 'id')->all();
+    }
+
+    /** @return Builder<User> */
+    private function invigilators(): Builder
+    {
+        return app()->bound(EmployeeDirectory::class)
+            ? app(EmployeeDirectory::class)->users()
+            : User::query()->whereRaw('1 = 0');
     }
 
     /**

@@ -12,7 +12,7 @@ Class editors need to plan several exams with individual dates and times from th
 - Add dated exam sessions directly to the class calendar. This reuses the session lifecycle and supports different details for each sitting.
 
 ## Decision
-«افزودن برنامه امتحانی» records one or more individually dated `ClassSession` rows of kind `exam`. Each row has a Jalali date and start/end times. Subject, class staff, location and notes are optional. The class's location is used by default when it meets in person. The existing class, teacher and location clash checks apply, including between rows. A conflict rolls back the whole submission.
+«افزودن برنامه امتحانی» records one or more individually dated `ClassSession` rows of kind `exam`. Each row has a Jalali date and start/end times. Subject, invigilators, location and notes are optional. Invigilators can come from any branch ([ADR 0085](0085-exam-invigilators.md)). The class's location is used by default when it meets in person. The existing class, teacher and location clash checks apply, including between rows. A conflict rolls back the whole submission.
 
 Class editors manage the resulting sessions in «جلسه‌ها». The session is independent of teaching recurrence and can be scheduled on a holiday or outside the teaching schedule. When Exam is enabled, staff can attach an online exam from «آزمون‌های جلسه» under the existing rules in [ADR 0079](0079-exams-in-class-sessions.md).
 

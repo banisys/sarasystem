@@ -27,6 +27,8 @@ use Modules\Class\Models\Subject;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\ClassMembers;
 use Modules\Class\Services\SessionPlanner;
+use Modules\Employee\Models\Employee;
+use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -338,7 +340,7 @@ class ClassSchedulesTest extends TestCase
             ->mountAction($action)
             ->assertActionMounted($action)
             ->fillForm(['sessions' => [
-                ['date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00', 'subject_id' => $subject->id, 'teacher_ids' => [$this->teacher->id], 'note' => 'آزمون پایان دوره'],
+                ['date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00', 'subject_id' => $subject->id, 'note' => 'آزمون پایان دوره'],
                 ['date' => '2026-11-08', 'start_time' => '13:30', 'end_time' => '15:00', 'location' => 'سالن آزمون'],
             ]])
             ->callMountedAction()
@@ -351,7 +353,6 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame(SessionKind::Exam, $second->kind);
         $this->assertNull($first->schedule_id);
         $this->assertSame($subject->id, $first->subject_id);
-        $this->assertSame([$this->teacher->id], $first->teachers->modelKeys());
         $this->assertSame('کلاس ۱۰۱', $first->location);
         $this->assertSame('آزمون پایان دوره', $first->note);
         $this->assertSame('13:30–15:00', $second->starts_at->format('H:i').'–'.$second->ends_at->format('H:i'));
@@ -360,6 +361,32 @@ class ClassSchedulesTest extends TestCase
         Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
             ->call('showSessions', 'day', '2026-11-08')
             ->assertSee('امتحانی');
+    }
+
+    public function test_exam_schedule_accepts_an_employee_from_another_tenant_and_rejects_non_employees(): void
+    {
+        if (! Module::isEnabled('Employee')) {
+            $this->markTestSkipped('Employee is disabled.');
+        }
+
+        $employee = Employee::factory()->for($this->primary)->create();
+        $editor = User::factory()->create();
+        $this->roleWithPermissions('class_editor', ['ViewAny:Classroom', 'View:Classroom', 'Update:Classroom']);
+        $this->makeStaff($editor, $this->west);
+        $this->grantRole($editor, $this->west, 'class_editor');
+        $this->actingInPanel($editor, $this->west);
+        $action = TestAction::make('addExamSchedule')->table();
+        $slot = ['date' => '2026-11-06', 'start_time' => '10:00', 'end_time' => '11:00'];
+
+        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->callAction($action, data: ['sessions' => [[...$slot, 'teacher_ids' => [$this->teacher->id]]]])
+            ->assertHasActionErrors(['sessions.0.teacher_ids.0']);
+        $this->assertFalse($this->classroom->sessions()->exists());
+
+        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->callAction($action, data: ['sessions' => [[...$slot, 'teacher_ids' => [$employee->user_id]]]])
+            ->assertHasNoActionErrors();
+        $this->assertSame([$employee->user_id], $this->classroom->sessions()->sole()->teachers->modelKeys());
     }
 
     public function test_an_exam_schedule_clash_keeps_the_form_open_without_saving_any_exam_sessions(): void
