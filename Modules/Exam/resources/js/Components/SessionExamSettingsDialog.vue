@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import PanelIcon from '@/Components/PanelIcon.vue';
+import UiButton from '@/Components/Ui/UiButton.vue';
 import SessionExamFields from './SessionExamFields.vue';
 
 const props = defineProps({
@@ -25,16 +26,19 @@ function save() {
 
 <template>
     <div>
-        <button ref="trigger" type="button" title="ویرایش تنظیمات آزمون" aria-label="ویرایش تنظیمات آزمون" aria-haspopup="dialog"
-            class="grid size-10 place-items-center rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-50" @click="open">
+        <UiButton ref="trigger" variant="outline" aria-haspopup="dialog" @click="open">
             <PanelIcon name="pencil" class="size-5" />
-        </button>
+            ویرایش تنظیمات آزمون
+        </UiButton>
         <dialog ref="dialog" :aria-labelledby="`exam-settings-${exam.id}`"
             class="m-auto w-[calc(100%_-_2rem)] max-w-2xl rounded-2xl bg-white p-0 text-gray-900 shadow-xl backdrop:bg-black/45"
-            @cancel="form.processing && $event.preventDefault()" @close="trigger?.focus()">
+            @cancel="form.processing && $event.preventDefault()" @close="trigger?.$el.focus()">
             <form novalidate class="flex max-h-[85dvh] flex-col" @submit.prevent="save">
                 <header class="flex items-center justify-between gap-3 border-b border-gray-200 p-4">
-                    <h2 :id="`exam-settings-${exam.id}`" class="font-semibold">ویرایش تنظیمات آزمون</h2>
+                    <div class="min-w-0">
+                        <h2 :id="`exam-settings-${exam.id}`" class="font-semibold">ویرایش تنظیمات آزمون</h2>
+                        <p class="mt-1 wrap-break-word text-sm text-ui-muted">{{ exam.title }}</p>
+                    </div>
                     <button type="button" aria-label="بستن" :disabled="form.processing"
                         class="grid size-9 place-items-center rounded-lg hover:bg-gray-100" @click="dialog.close()">
                         <PanelIcon name="close" class="size-5" />

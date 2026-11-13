@@ -176,7 +176,7 @@ function remove(exam) {
             <article v-for="exam in exams" :key="exam.id" class="space-y-3 ui-surface p-4 sm:p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <h2 class="min-w-0 wrap-break-word font-semibold">{{ exam.title }}</h2>
-                    <div class="flex shrink-0 gap-2">
+                    <div class="flex max-w-full flex-wrap items-center gap-2">
                         <ExamPreview v-if="exam.preview_url" :exam="exam" />
                         <SessionExamSettingsDialog v-if="exam.settings" :exam="exam" :settings="settings_form"
                             :url="route('exams.context.settings.update', [...parameters(), exam.id])" />

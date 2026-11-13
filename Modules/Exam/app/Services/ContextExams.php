@@ -102,16 +102,21 @@ class ContextExams
         return $exam->assigned_by_id === $actor->id && ! $exam->is_published && $exam->attempts_count === 0;
     }
 
+    public function mayManageSettings(ExamContext $context, Exam $exam, User $actor): bool
+    {
+        return $context->canManage && ($exam->assigned_by_id === $actor->id
+            || Gate::forUser($actor)->allows('update', $exam));
+    }
+
     public function updateSettings(ExamContext $context, int $examId, User $actor, array $settings): void
     {
         abort_unless($context->canManage, 403);
 
         DB::transaction(function () use ($context, $examId, $actor, $settings): void {
             $exam = $this->query($context)->lockForUpdate()->findOrFail($examId);
-            abort_unless($exam->assigned_by_id === $actor->id, 403);
-            $exam->loadCount('attempts');
-            if (! $this->canEditDraft($exam, $actor)) {
-                throw ValidationException::withMessages(['settings' => 'تنظیمات فقط برای پیش‌نویس بدون شرکت‌کننده قابل ویرایش است.']);
+            abort_unless($this->mayManageSettings($context, $exam, $actor), 403);
+            if ($exam->attempts()->exists()) {
+                throw ValidationException::withMessages(['settings' => 'تنظیمات پس از اولین تلاش برای شرکت در آزمون قابل ویرایش نیست.']);
             }
 
             $exam->update(array_intersect_key($settings, SessionExamSettings::DEFAULTS));

@@ -71,7 +71,7 @@ class ContextExamController extends Controller
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->ends_at?->toIso8601String(),
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
-                'settings' => $host->canManage && $exams->canEditDraft($exam, $request->user())
+                'settings' => $exam->attempts_count === 0 && $exams->mayManageSettings($host, $exam, $request->user())
                     ? array_intersect_key($exam->attributesToArray(), SessionExamSettings::DEFAULTS)
                     : null,
                 'preview_url' => $host->canManage && $exam->question_snapshot !== null
@@ -109,8 +109,8 @@ class ContextExamController extends Controller
     public function updateSettings(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse
     {
         $host = $this->context($request, $type, $context, $contexts, manage: true);
-        abort_unless($exams->query($host)->whereKey($exam->id)->exists(), 404);
-        abort_unless($exam->assigned_by_id === $request->user()->id, 403);
+        $exam = $exams->query($host)->findOrFail($exam->id);
+        abort_unless($exams->mayManageSettings($host, $exam, $request->user()), 403);
         $settings = $request->validate(SessionExamSettings::rules(), attributes: SessionExamSettings::labels());
         $exams->updateSettings($host, $exam->id, $request->user(), $settings);
 

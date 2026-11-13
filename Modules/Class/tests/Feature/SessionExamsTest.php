@@ -553,7 +553,7 @@ class SessionExamsTest extends TestCase
         $this->assertSame($exam->question_snapshot, $updated->question_snapshot);
     }
 
-    public function test_only_the_author_can_edit_settings_of_an_unused_draft_in_this_session(): void
+    public function test_session_exam_settings_can_be_edited_before_the_first_attempt_by_the_author_or_an_exam_editor(): void
     {
         $exam = $this->generatePreviewDraft();
         $url = route('exams.context.settings.update', ['class-session', $this->session->id, $exam]);
@@ -572,9 +572,25 @@ class SessionExamsTest extends TestCase
 
         $this->asTeacher();
         $exam->update(['is_published' => true]);
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.is_published', true)
+            ->where('exams.0.settings.title', $exam->title));
+        $this->patch($url, array_replace($data, ['title' => 'عنوان پس از انتشار']))->assertRedirect($this->url());
+        $this->assertTrue($exam->refresh()->is_published);
+        $this->assertSame('عنوان پس از انتشار', $exam->title);
+
+        $this->roleWithPermissions('exam_editor', ['Update:Exam']);
+        $this->grantRole($substitute, $this->tenant, 'exam_editor');
+        $this->actingAs($substitute)->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.settings.title', 'عنوان پس از انتشار'));
+        $this->patch($url, $data)->assertRedirect($this->url());
+
+        ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create();
+        $this->asTeacher();
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.settings', null));
         $this->patch($url, $data)->assertSessionHasErrors('settings');
         $exam->update(['is_published' => false]);
-        ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create();
         $this->patch($url, $data)->assertSessionHasErrors('settings');
     }
 

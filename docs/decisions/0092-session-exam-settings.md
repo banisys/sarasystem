@@ -1,4 +1,4 @@
-# 0092 — Settings for session exam drafts
+# 0092 — Settings for session exams
 
 - **Date:** 2026-11-13
 - **Status:** accepted
@@ -13,7 +13,7 @@ Session exam authors need the rules from the admin exam form that apply to a ses
 ## Decision
 Expose title, instructions, duration, grace period, scores, pagination, negative marking, attempt limits, retake policy, result visibility and question/option shuffling. The time window and participants are inherited from the session and publication remains a separate action.
 
-Only the author may update settings on an unpublished exam with no attempts. Updates lock the exam row and leave its question snapshot intact. A manual question order can be served unchanged by keeping question shuffling off, as described in [ADR 0091](0091-preview-and-reorder-session-exams.md).
+The exam list offers a labeled settings button to session managers who either created the exam or already have permission to update it in the admin panel. They can edit a draft or a published exam until the first attempt starts. Updates lock the same exam row as attempt start and preserve the publication state and question snapshot. A manual question order can be served unchanged by keeping question shuffling off, as described in [ADR 0091](0091-preview-and-reorder-session-exams.md).
 
 ## Consequences
-Session authors can review questions and change the rules before publishing without access to the admin panel. Active and historical attempts keep the rules under which the exam was offered through the session workflow.
+Session authors can adjust the rules without access to the admin panel. Once a learner starts, the session workflow locks settings to protect active and historical attempts.
