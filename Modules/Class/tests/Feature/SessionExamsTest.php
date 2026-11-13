@@ -488,6 +488,30 @@ class SessionExamsTest extends TestCase
         return Exam::query()->whereNotNull('question_snapshot')->sole();
     }
 
+    public function test_preview_saves_question_weights_in_the_submitted_order_and_keeps_the_exam_scale(): void
+    {
+        $exam = $this->generatePreviewDraft();
+        $exam->update(['shuffle_questions' => true]);
+        $url = route('exams.context.preview', ['class-session', $this->session->id, $exam]);
+        $preview = $this->getJson($url)->assertJsonPath('total_score', 20)->json();
+        $data = ['order' => [0, 1], 'scores' => [6.25, 8], 'fix_order' => false, 'revision' => $preview['revision']];
+        $this->patchJson($url, array_replace($data, ['scores' => [6.25]]))->assertUnprocessable()->assertJsonValidationErrors('scores');
+        $this->patchJson($url, array_replace($data, ['scores' => [0, 8.123]]))->assertUnprocessable()->assertJsonValidationErrors(['scores.0', 'scores.1']);
+        $this->assertSame($exam->question_snapshot, $exam->fresh()->question_snapshot);
+
+        $response = $this->patchJson($url, $data)->assertOk()->assertJsonPath('shuffled', true);
+        $this->assertEquals([6.25, 8], array_column($exam->fresh()->question_snapshot, 'score'));
+        $data = ['order' => [1, 0], 'scores' => [9, 6.25], 'revision' => $response->json('revision'), 'fix_order' => true];
+        $this->patchJson($url, $data)->assertOk()->assertJsonPath('shuffled', false);
+        $this->getJson($url)->assertJsonPath('questions.0.score', 9)->assertJsonPath('questions.1.score', 6.25)->assertJsonPath('total_score', 20);
+        $this->assertEquals([1, 4], $this->bank->questions()->orderBy('score')->pluck('score')->all());
+
+        $this->patch(route('exams.context.publish', ['class-session', $this->session->id, $exam]), ['is_published' => true])->assertRedirect();
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertRedirect();
+        $this->assertSame([9.0, 6.25], $exam->attempts()->sole()->answers()->pluck('max_score')->all());
+    }
+
     public function test_session_exam_settings_are_saved_on_create_and_edit_without_changing_the_questions_or_session(): void
     {
         $this->asTeacher();

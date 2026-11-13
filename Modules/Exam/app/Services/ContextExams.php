@@ -120,38 +120,54 @@ class ContextExams
 
     public function questionRevision(Exam $exam): string
     {
-        return hash('sha256', json_encode($exam->question_snapshot, JSON_THROW_ON_ERROR));
+        return hash('sha256', json_encode([$exam->question_snapshot, $exam->total_score, $exam->shuffle_questions], JSON_THROW_ON_ERROR));
     }
 
-    /** @param list<int> $order */
-    public function reorder(ExamContext $context, int $examId, User $actor, array $order, string $revision): string
+    /**
+     * @param  list<int>  $order
+     * @param  list<float>|null  $scores  In the submitted order.
+     * @return array{revision: string, shuffled: bool}
+     */
+    public function updateQuestions(ExamContext $context, int $examId, User $actor, array $order, string $revision, ?array $scores, bool $fixOrder): array
     {
         abort_unless($context->canManage, 403);
 
-        return DB::transaction(function () use ($context, $examId, $actor, $order, $revision): string {
+        return DB::transaction(function () use ($context, $examId, $actor, $order, $revision, $scores, $fixOrder): array {
             $exam = $this->query($context)->whereNotNull('question_snapshot')->lockForUpdate()->findOrFail($examId);
             abort_unless($exam->assigned_by_id === $actor->id, 403);
 
             $exam->loadCount('attempts');
             if (! $this->canEditDraft($exam, $actor)) {
-                throw ValidationException::withMessages(['order' => 'ترتیب سؤال‌ها فقط برای پیش‌نویس بدون شرکت‌کننده قابل تغییر است.']);
+                throw ValidationException::withMessages(['order' => 'ترتیب و بارم سؤال‌ها فقط برای پیش‌نویس بدون شرکت‌کننده قابل تغییر است.']);
             }
 
             if ($revision !== $this->questionRevision($exam)) {
-                throw ValidationException::withMessages(['order' => 'ترتیب سؤال‌ها تغییر کرده است. پیش‌نمایش را دوباره باز کنید.']);
+                throw ValidationException::withMessages(['order' => 'پیش‌نمایش تغییر کرده است. آن را دوباره باز کنید.']);
             }
 
             $questions = $exam->question_snapshot;
             if (count($order) !== count($questions) || array_diff(array_keys($questions), $order) !== []) {
                 throw ValidationException::withMessages(['order' => 'ترتیب باید شامل همهٔ سؤال‌های آزمون، هر کدام یک‌بار، باشد.']);
             }
+            if ($scores !== null && count($scores) !== count($questions)) {
+                throw ValidationException::withMessages(['scores' => 'برای هر سؤال باید یک بارم ثبت شود.']);
+            }
+
+            $snapshot = [];
+            foreach ($order as $position => $index) {
+                $question = $questions[$index];
+                if ($scores !== null) {
+                    $question['score'] = (float) $scores[$position];
+                }
+                $snapshot[] = $question;
+            }
 
             $exam->forceFill([
-                'question_snapshot' => array_map(fn (int $index): array => $questions[$index], $order),
-                'shuffle_questions' => false,
+                'question_snapshot' => $snapshot,
+                'shuffle_questions' => ! $fixOrder && array_map('intval', $order) === array_keys($questions) && $exam->shuffle_questions,
             ])->save();
 
-            return $this->questionRevision($exam->refresh());
+            return ['revision' => $this->questionRevision($exam->refresh()), 'shuffled' => $exam->shuffle_questions];
         });
     }
 

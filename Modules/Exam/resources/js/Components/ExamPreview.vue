@@ -13,9 +13,19 @@ const dragged = ref(null);
 const error = ref('');
 const notice = ref('');
 const changed = ref(false);
+const orderChanged = ref(false);
+const totalScore = ref(null);
 const preview = useHttp();
-const reorder = useHttp({ order: [], revision: '' });
+const reorder = useHttp({ order: [], scores: [], revision: '', fix_order: false });
 const canMove = computed(() => editable.value && !reorder.processing);
+const validScores = computed(() => questions.value.every(({ score }) =>
+    score >= 0.25 && score <= 1000 && /^\d+(\.\d{1,2})?$/.test(String(score)),
+));
+const totalCents = computed(() => Math.round(totalScore.value * 100));
+const sumCents = computed(() => questions.value.reduce((sum, question) => sum + Math.round(Number(question.score) * 100), 0));
+const difference = computed(() => totalCents.value - sumCents.value);
+const formatScore = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 });
+const displayCents = (cents) => formatScore.format(cents / 100);
 let requestId = 0;
 
 async function open() {
@@ -26,6 +36,8 @@ async function open() {
     error.value = '';
     notice.value = '';
     changed.value = false;
+    orderChanged.value = false;
+    totalScore.value = null;
     dialog.value.showModal();
 
     try {
@@ -34,6 +46,7 @@ async function open() {
         questions.value = data.questions;
         editable.value = data.can_reorder;
         shuffled.value = data.shuffled;
+        totalScore.value = data.total_score;
         reorder.revision = data.revision;
     } catch {
         if (currentRequest === requestId) error.value = 'دریافت پیش‌نمایش ممکن نشد. دوباره تلاش کنید.';
@@ -51,12 +64,20 @@ function move(from, to) {
     if (!canMove.value || from === to || from < 0 || to < 0 || to >= questions.value.length) return;
     const [question] = questions.value.splice(from, 1);
     questions.value.splice(to, 0, question);
+    orderChanged.value = true;
+    markChanged();
+}
+
+function markChanged() {
     changed.value = true;
     notice.value = '';
 }
 
 function startDrag(event, index) {
-    if (!canMove.value) return;
+    if (!canMove.value || event.target.closest('input, button, label')) {
+        event.preventDefault();
+        return;
+    }
     dragged.value = index;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(index));
@@ -67,8 +88,11 @@ function drop(index) {
     dragged.value = null;
 }
 
-async function save() {
+async function save(fixOrder = false) {
+    if (!validScores.value) return;
     reorder.order = questions.value.map((question) => question.index);
+    reorder.scores = questions.value.map((question) => Number(question.score));
+    reorder.fix_order = fixOrder || orderChanged.value;
     error.value = '';
     try {
         const result = await reorder.patch(props.exam.preview_url, {
@@ -77,11 +101,12 @@ async function save() {
         if (!result) return;
         notice.value = result.message;
         changed.value = false;
-        shuffled.value = false;
+        orderChanged.value = false;
+        shuffled.value = result.shuffled;
         reorder.revision = result.revision;
         questions.value = questions.value.map((question, index) => ({ ...question, index }));
     } catch {
-        error.value = 'ذخیرهٔ ترتیب ممکن نشد. دوباره تلاش کنید.';
+        error.value = 'ذخیرهٔ تغییرات ممکن نشد. دوباره تلاش کنید.';
     }
 }
 </script>
@@ -110,7 +135,7 @@ async function save() {
                     <p v-if="preview.processing" class="text-sm text-gray-600" role="status">در حال دریافت سؤال‌ها…</p>
                     <p v-if="error" class="text-sm text-red-700" role="alert">{{ error }}</p>
                     <p v-if="editable && questions.length > 1" class="text-sm text-gray-600">برای تغییر ترتیب، سؤال‌ها را بکشید یا از فلش‌های کنارشان استفاده کنید.</p>
-                    <p v-if="shuffled" class="text-sm text-gray-600">ترتیب نمایش برای شرکت‌کنندگان تصادفی است. ذخیرهٔ ترتیب، نمایش را ثابت می‌کند.</p>
+                    <p v-if="shuffled" class="text-sm text-gray-600">ترتیب نمایش برای شرکت‌کنندگان تصادفی است. با ذخیرهٔ یک ترتیب دستی، نمایش ثابت می‌شود.</p>
                     <ol class="space-y-2">
                         <li v-for="(question, index) in questions" :key="question.index"
                             class="flex items-start gap-3 rounded-lg border border-gray-200 p-3"
@@ -123,7 +148,13 @@ async function save() {
                                 <ul v-if="question.options.length" class="list-disc space-y-1 ps-5 text-sm text-gray-700">
                                     <li v-for="(option, optionIndex) in question.options" :key="optionIndex" class="break-words">{{ option }}</li>
                                 </ul>
-                                <p class="text-xs text-gray-600">{{ question.type }} · {{ question.score }} نمره</p>
+                                <p class="text-xs text-gray-600">{{ question.type }}<template v-if="!editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
+                                <label v-if="editable" class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                    <span>بارم</span>
+                                    <input v-model="question.score" type="number" min="0.25" max="1000" step="0.01" inputmode="decimal" dir="ltr"
+                                        :aria-label="`بارم سؤال ${index + 1}`" :disabled="reorder.processing"
+                                        class="w-24 rounded-lg border border-gray-300 px-2 py-1 text-sm" @input="markChanged" />
+                                </label>
                             </div>
                             <div v-if="editable && questions.length > 1" class="flex shrink-0 gap-1">
                                 <button type="button" :disabled="!canMove || index === 0" :aria-label="`سؤال ${index + 1} به بالا`"
@@ -136,11 +167,26 @@ async function save() {
                         </li>
                     </ol>
                 </div>
-                <footer class="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 p-4">
-                    <span v-if="notice" role="status" class="me-auto text-sm text-emerald-700">{{ notice }}</span>
-                    <button type="button" :disabled="reorder.processing" class="text-sm text-gray-700" @click="dialog.close()">بستن</button>
-                    <button v-if="editable && questions.length > 1" type="button" :disabled="(!changed && !shuffled) || reorder.processing"
-                        class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" @click="save">ذخیرهٔ ترتیب</button>
+                <footer class="space-y-3 border-t border-gray-200 p-4">
+                    <div v-if="totalScore !== null" aria-live="polite" class="space-y-1 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                        <div class="flex flex-wrap gap-x-5 gap-y-1">
+                            <span>جمع بارم سؤال‌ها <strong>{{ validScores ? displayCents(sumCents) : '—' }}</strong></span>
+                            <span>نمرهٔ کل <strong>{{ displayCents(totalCents) }}</strong></span>
+                        </div>
+                        <p v-if="!validScores" class="text-red-700">بارم هر سؤال باید بین ۰٫۲۵ و ۱۰۰۰ و حداکثر با دو رقم اعشار باشد.</p>
+                        <p v-else-if="difference" class="text-gray-600">
+                            {{ displayCents(Math.abs(difference)) }} نمره {{ difference > 0 ? 'کمتر' : 'بیشتر' }} از نمرهٔ کل. نمرهٔ نهایی به مقیاس نمرهٔ کل تبدیل می‌شود.
+                        </p>
+                        <p v-else class="text-emerald-700">جمع بارم با نمرهٔ کل برابر است.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-end gap-3">
+                        <span v-if="notice" role="status" class="me-auto text-sm text-emerald-700">{{ notice }}</span>
+                        <button type="button" :disabled="reorder.processing" class="text-sm text-gray-700" @click="dialog.close()">بستن</button>
+                        <button v-if="editable && shuffled && questions.length > 1 && !orderChanged" type="button"
+                            :disabled="!validScores || reorder.processing" class="text-sm text-violet-700 disabled:opacity-50" @click="save(true)">ثابت‌کردن ترتیب</button>
+                        <button v-if="editable" type="button" :disabled="!changed || !validScores || reorder.processing"
+                            class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" @click="save()">ذخیرهٔ تغییرات</button>
+                    </div>
                 </footer>
             </div>
         </dialog>

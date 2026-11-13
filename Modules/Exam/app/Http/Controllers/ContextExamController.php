@@ -154,6 +154,7 @@ class ContextExamController extends Controller
                 'options' => array_column($question['options'] ?? [], 'text'),
             ]),
             'revision' => $exams->questionRevision($exam),
+            'total_score' => $exam->total_score,
             'can_reorder' => $exams->canEditDraft($exam, $request->user()),
             'shuffled' => $exam->shuffle_questions,
         ], headers: ['Cache-Control' => 'private, no-store']);
@@ -166,10 +167,13 @@ class ContextExamController extends Controller
             'revision' => ['required', 'string', 'size:64'],
             'order' => ['required', 'array', 'list', 'max:500'],
             'order.*' => ['required', 'integer', 'min:0', 'distinct'],
-        ], attributes: ['revision' => 'نسخهٔ پیش‌نمایش', 'order' => 'ترتیب سؤال‌ها', 'order.*' => 'جایگاه سؤال']);
-        $revision = $exams->reorder($host, $exam->id, $request->user(), $data['order'], $data['revision']);
+            'scores' => ['sometimes', 'required', 'array', 'list', 'max:500'],
+            'scores.*' => ['required', 'numeric', 'decimal:0,2', 'between:0.25,1000'],
+            'fix_order' => ['sometimes', 'required', 'boolean'],
+        ], attributes: ['revision' => 'نسخهٔ پیش‌نمایش', 'order' => 'ترتیب سؤال‌ها', 'order.*' => 'جایگاه سؤال', 'scores.*' => 'بارم سؤال']);
+        $updated = $exams->updateQuestions($host, $exam->id, $request->user(), $data['order'], $data['revision'], $data['scores'] ?? null, (bool) ($data['fix_order'] ?? true));
 
-        return response()->json(['message' => 'ترتیب سؤال‌ها ذخیره شد.', 'revision' => $revision]);
+        return response()->json($updated + ['message' => 'تغییرات سؤال‌ها ذخیره شد.']);
     }
 
     public function destroy(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse

@@ -15,3 +15,6 @@ Session managers can preview the question text, options and scores of generated 
 
 ## Consequences
 Existing bank-based exams without a snapshot have no fixed set to preview. Published exams and exams with attempts can still be previewed if they have a snapshot. A stale preview must be reopened before saving.
+
+## Amendment — question weights
+The same preview lets the author edit each draft question's weight within the question bank's score range, to two decimal places. Weights and order are saved together on the snapshot. Changing weights alone preserves the shuffle setting. The footer compares the live sum to the exam's configured total score. The two may differ because the grading flow scales the earned raw score to the configured total.
