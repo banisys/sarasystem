@@ -47,11 +47,11 @@ function leaveImpersonation() {
                 </DialogTrigger>
                 <DialogPortal>
                     <DialogOverlay class="fixed inset-0 z-40 bg-ui-plum/45" />
-                    <DialogContent class="fixed inset-y-0 start-0 z-50 w-80 max-w-[calc(100%-2rem)] bg-white shadow-xl outline-none" :aria-describedby="undefined">
+                    <DialogContent class="fixed inset-y-3 start-3 z-50 w-72 max-w-[calc(100%-1.5rem)] overflow-hidden rounded-ui border border-ui-line bg-white shadow-xl outline-none" :aria-describedby="undefined">
                         <DialogTitle class="sr-only">منوی پنل کاربری</DialogTitle>
                         <PanelNavigation @navigate="menuOpen = false">
                             <template #close>
-                                <DialogClose class="ui-button border-ui-line bg-white px-3" aria-label="بستن منو">
+                                <DialogClose class="ui-button border-transparent bg-white px-2 text-ui-muted hover:bg-ui-canvas" aria-label="بستن منو">
                                     <PanelIcon name="close" class="size-5" />
                                 </DialogClose>
                             </template>
@@ -64,11 +64,11 @@ function leaveImpersonation() {
             </Link>
         </header>
 
-        <div class="lg:flex">
-            <aside class="hidden h-dvh w-64 shrink-0 border-e border-ui-line bg-white lg:sticky lg:top-0 lg:block">
+        <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:flex lg:items-start lg:gap-6 lg:px-8 lg:py-8">
+            <aside class="hidden h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 overflow-hidden rounded-ui border border-ui-line bg-white lg:sticky lg:top-8 lg:block xl:w-70">
                 <PanelNavigation />
             </aside>
-            <main class="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <main class="min-w-0 flex-1">
                 <div class="mx-auto max-w-6xl">
                     <slot />
                 </div>

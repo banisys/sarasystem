@@ -1,4 +1,3 @@
-import '@fontsource-variable/vazirmatn';
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { ConfigProvider } from 'reka-ui';

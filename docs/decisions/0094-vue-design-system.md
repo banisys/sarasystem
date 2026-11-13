@@ -15,7 +15,7 @@ The public site and user panel share Vue, Inertia and Tailwind. They need consis
 
 ## Decision
 
-- [app.css](../../resources/css/app.css) defines the shared canvas, surface, text and field styles. Vite bundles the Vazirmatn variable font locally for Inertia.
+- [app.css](../../resources/css/app.css) defines the shared canvas, surface, text and field styles. The public site and user panel use Shabnam Light from the same local font files as the admin panel.
 - Use the existing [public layout](../../resources/js/Layouts/PublicLayout.vue) for roomier pages and tenant colour, and the [user layout](../../resources/js/Layouts/AppLayout.vue) for the compact product interface. Choose the more contrasting of white and black for text on the tenant colour. Tint or shade the hover background away from the selected foreground.
 - Shared Vue controls live under [Components/Ui](../../resources/js/Components/Ui). Use Inertia links for navigation, Reka UI for the modal mobile menu and native form controls for ordinary input. Keep the existing Jalali and mobile verification components.
 - Apply the design to the public layouts and content surfaces, the preregistration form and the My Classes calendar first. The Filament theme has its own CSS entry.

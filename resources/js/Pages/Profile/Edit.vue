@@ -77,7 +77,7 @@ const inputClass =
     <Head title="حساب کاربری" />
 
     <AppLayout>
-        <div class="mx-auto max-w-2xl space-y-6">
+        <div class="mx-auto max-w-4xl space-y-6">
             <p v-if="status" class="rounded-lg bg-green-50 p-3 text-sm text-green-700">{{ status }}</p>
 
             <!-- Account -->

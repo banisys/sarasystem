@@ -3,8 +3,19 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+@font-face {
+    font-family: 'Shabnam';
+    src:
+        url('../fonts/Shabnam-Light.woff2') format('woff2'),
+        url('../fonts/Shabnam-Light.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-    --font-sans: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Shabnam', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
 
     /* Accent of the public site (ADR 0062): violet until .site-brand gives it the tenant's colour. */
     --color-brand-50: var(--color-violet-50);

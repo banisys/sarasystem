@@ -12,10 +12,10 @@ After logging in, a teacher came to an empty dashboard (a greeting and the tenan
 - **A module offers the panel's home** — a core hook `UserPanel::homeUsing()`; `/dashboard` redirects to the first URL a module gives. Every path into the panel (login, tenant picker, switch, the brand link) goes through `/dashboard`, so they all land there.
 
 ## Decision
-- [AppLayout.vue](../../resources/js/Layouts/AppLayout.vue) is a side menu at the start of the page (the right in Persian): app name, the current tenant with a switch icon, the modules' links with icons and the current one marked, and at the bottom the admin-panel link (if allowed), the profile (the user's name) and «خروج». Below `lg` it is a top bar with a button that slides the menu in. Plain Tailwind, inline icons ([PanelIcon.vue](../../resources/js/Components/PanelIcon.vue)), no new package.
-- Restyled the same day: an app mark with «پنل کاربری», the tenant as a card (a link to the tenant picker when there are others), section headings «منو» / «مدیریت», a soft active state with a bar on its edge, and the user as a card (name, mobile) with a logout icon; Escape closes the drawer.
+- [AppLayout.vue](../../resources/js/Layouts/AppLayout.vue) displays a standalone, bordered navigation card at the start of the content area. [PanelNavigation.vue](../../resources/js/Layouts/PanelNavigation.vue) shows the user's name and contact above the navigation rows, with «اطلاعات کاربری» among the destinations and «خروج از حساب کاربری» anchored at the bottom. A blue edge marks the active row. The tenant selector and authorized admin link use the same row layout.
+- Below `lg`, the top bar opens the menu in a Reka UI dialog ([ADR 0094](0094-vue-design-system.md)). Escape closes it and returns focus to the trigger.
 - Links from `UserPanel::navigationUsing()` take an optional `icon` (a name known to PanelIcon; unknown names get a default).
-- `UserPanel::homeUsing(name, fn (User, Tenant): ?string)`: the first provider giving a URL is the panel's home. `/dashboard` redirects there; the shared prop `panelHome` carries it, so the menu drops «داشبورد» and the brand links to it.
+- `UserPanel::homeUsing(name, fn (User, Tenant): ?string)`: the first provider giving a URL is the panel's home. `/dashboard` redirects there; the shared prop `panelHome` carries it, so the menu drops «داشبورد» and the mobile brand links to the module home.
 - Class registers its home: whoever has classes (teaches a session or is a member) opens on `/my-classes`, the week calendar. That includes learners; a guardian without classes of their own still gets the dashboard, now with a card per menu link.
 
 ## Consequences
