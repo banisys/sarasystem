@@ -42,6 +42,7 @@ use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Services\ContextExams;
 use Modules\Exam\Support\ExamContexts;
+use Modules\Exam\Support\QuestionLibrary;
 use Modules\Student\Enums\Gender;
 use Modules\Student\Enums\Nationality;
 use Modules\Student\Enums\PreregistrationStatus;
@@ -388,27 +389,30 @@ class BranchOperations extends Scenario
                     Mission::make('session-exam', 'آزمون مستقل جلسه')
                         ->actor($officer, $asOfficer)
                         ->steps([
-                            'در شعبه پونک، از «آزمون ← بانک‌های سؤال» بانک «تمرین مکالمه» بسازید؛ یک سؤال تشریحی فعال با متن «خودتان را به انگلیسی معرفی کنید.» و نمره ۴ به آن اضافه کنید.',
-                            'از «آزمون‌ها» آزمون منتشرشده «تمرین مکالمه» با یک سؤال از همین بانک بسازید؛ نمره کل ۲۰، نمره قبولی ۱۲ و دفعات شرکت ۱ باشد. برای نسخهٔ آماده نیازی به انتخاب شرکت‌کننده نیست.',
-                            'جلسهٔ امروز Conversation B2 را باز کنید، «آزمون‌های جلسه» را بزنید و آزمون آماده را به جلسه اضافه کنید. نسخهٔ جلسه مستقل است و شرکت‌کنندگان از اعضای کلاس در روز جلسه تعیین می‌شوند؛ مدرس و جایگزین نیز همین صفحه را در «کلاس‌های من» دارند.',
-                            'اختیاری: تا پیش از شروع اولین شرکت‌کننده، می‌توانید با «حذف آزمون» نسخه‌ای را که خودتان به جلسه اضافه کرده‌اید حذف کنید. آزمون آماده در فهرست «آزمون‌ها» می‌ماند. اگر حذف را امتحان کردید، نسخه را دوباره به جلسه اضافه کنید.',
-                            'اختیاری: یکی از زبان‌آموزان در زمان جلسه از همین دکمه وارد آزمون شود و پاسخ دهد؛ مدرس در «نتایج و تصحیح ← پاسخ‌ها و تصحیح» نمرهٔ پاسخ تشریحی را ثبت کند. فراگیر تنها نتیجهٔ خودش را طبق تنظیم نمایش نتیجه می‌بیند.',
-                            '«توقف انتشار» دسترسی شرکت‌کنندگان را می‌بندد و پاسخ‌ها را نگه می‌دارد. زمان آزمون هنگام افزودن از جلسه کپی می‌شود؛ جابه‌جایی بعدی جلسه آن را تغییر نمی‌دهد. در صورت نیاز، زمان نسخهٔ جلسه را از بخش «آزمون‌ها» ویرایش کنید.',
+                            'در پنل کاربری شعبه پونک «بانک سؤال» را باز کنید و بانک «تمرین مکالمه» را بسازید. اگر می‌خواهید همکاران همین شعبه از بانک استفاده کنند، آن را عمومی کنید.',
+                            'یک سؤال تشریحی فعال با متن «خودتان را به انگلیسی معرفی کنید.» و بارم ۴ به بانک اضافه کنید. سؤال هم تنظیم اشتراک جداگانه دارد؛ سؤال خصوصی در بانک عمومی برای همکاران نمایش داده نمی‌شود.',
+                            'جلسهٔ امروز Conversation B2 را باز کنید و وارد «آزمون‌های جلسه» شوید. عنوان «تمرین مکالمه»، مدت ۱۰ دقیقه، نمرهٔ کل ۲۰ و نمرهٔ قبولی ۱۲ را وارد کنید. بانک خودتان را با تعداد یک سؤال انتخاب کنید و «ساخت پیش‌نویس آزمون» را بزنید.',
+                            '«انتشار آزمون» را بزنید. شرکت‌کنندگان از اعضای کلاس در روز جلسه تعیین می‌شوند. تا پیش از شروع اولین شرکت‌کننده، می‌توانید آزمونی را که ساخته‌اید حذف کنید و دوباره بسازید.',
+                            'اختیاری: یکی از زبان‌آموزان در زمان جلسه وارد آزمون شود و پاسخ دهد. مدرس در «نتایج و تصحیح ← پاسخ‌ها و تصحیح» نمرهٔ پاسخ تشریحی را ثبت کند.',
                         ])
                         ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
                         ->perform(function (TutorialRun $run): void {
                             self::branch($run, 1)->execute(function () use ($run): void {
-                                $bank = QuestionBank::query()->create(['title' => 'تمرین مکالمه']);
-                                $question = Question::query()->create(['type' => 'descriptive', 'body' => 'خودتان را به انگلیسی معرفی کنید.', 'score' => 4, 'is_active' => true]);
-                                $question->banks()->attach($bank);
-                                $exam = Exam::query()->create(['title' => 'تمرین مکالمه', 'is_published' => true, 'duration_minutes' => 10, 'total_score' => 20, 'passing_score' => 12, 'max_attempts' => 1]);
-                                $exam->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 1]);
                                 $officer = self::officer($run, 1);
+                                $bank = new QuestionBank(['title' => 'تمرین مکالمه']);
+                                $bank->forceFill(['owner_id' => $officer->id])->save();
+                                $question = new Question(['type' => 'descriptive', 'body' => 'خودتان را به انگلیسی معرفی کنید.', 'score' => 4, 'is_active' => true]);
+                                $question->forceFill(['owner_id' => $officer->id])->save();
+                                $question->banks()->attach($bank);
                                 $context = app(ExamContexts::class)->resolve('class-session', self::substituted($run)->id, $officer);
-                                app(ContextExams::class)->assign($context, $exam->id, $officer);
+                                $exam = app(ContextExams::class)->generate($context, [
+                                    'title' => 'تمرین مکالمه', 'duration_minutes' => 10, 'total_score' => 20, 'passing_score' => 12,
+                                    'banks' => [['bank_id' => $bank->id, 'question_count' => 1]],
+                                ], $officer, app(QuestionLibrary::class));
+                                $exam->update(['is_published' => true]);
                             });
                         })
-                        ->doneWhen(fn (TutorialRun $run): bool => $run->made(Exam::class)->where('context_type', 'class-session')->where('context_id', self::substituted($run)?->id)->exists()),
+                        ->doneWhen(fn (TutorialRun $run): bool => $run->made(Exam::class)->where('context_type', 'class-session')->where('context_id', self::substituted($run)?->id)->where('is_published', true)->exists()),
                 ] : []),
                 Mission::make('move', 'جابه‌جایی جلسه')
                     ->actor($officer, $asOfficer)

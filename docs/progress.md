@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-13 — Added personal question banks and all three question types to the user panel, with independent sharing within the current tenant. The session page generates an unpublished exam from a fixed draw of eligible questions, replacing new template assignments ([ADR 0089](decisions/0089-shared-question-library-and-session-exam-generation.md)). Updated the daily operations tutorial and applied the local migration. All 756 tests and the Vite build passed. Chrome displayed the library at desktop and mobile widths and verified the replacement on session 512.
 - 2026-11-13 — Added «حذف آزمون» to the session exam page ([ADR 0088](decisions/0088-delete-unused-session-exams.md)). Session managers can remove copies they assigned before the first attempt starts. Copies without a recorded assigner require the existing exam delete permission. Updated the daily operations tutorial and applied the local migration. All 748 tests, Pint and the Vite build passed.
 - 2026-11-12 — Increased the gap above the exam action row to 40 px and measured it in the browser on exam 515.
 - 2026-11-12 — Increased the gap above the exam action row from 16 to 24 px. Verified on exam 515 in the browser and built the Vite assets.

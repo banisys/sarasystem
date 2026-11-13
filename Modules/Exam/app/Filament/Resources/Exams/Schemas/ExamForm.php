@@ -56,6 +56,7 @@ class ExamForm
                             ->helperText('فقط آزمون منتشرشده به شرکت‌کنندگان نشان داده می‌شود.'),
                     ]),
                 Section::make('سؤال‌ها')
+                    ->hidden(fn (?Exam $record): bool => $record?->question_snapshot !== null)
                     ->description('هنگام شروع هر آزمون، از هر بانک به تعداد گفته‌شده سؤال فعال برداشته می‌شود.')
                     ->schema([
                         Repeater::make('sections')

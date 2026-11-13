@@ -287,7 +287,7 @@ Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperat
 | **D. تغییرهای روزمره** ||||
 | 15 | «مدرس جایگزین» on today's session | officer 1 | a substituted session |
 | 16 | The substitute takes attendance (one late 10 minutes) | substitute | attendance recorded by him |
-| 16a (Exam on) | Prepared «تمرین مکالمه» exam with one written question; assign an independent copy to today's session; optional learner entry and teacher grading | officer 1 | an exam made in the run points to the substituted session |
+| 16a (Exam on) | Create a personal «تمرین مکالمه» bank in the user panel, add a written question and generate and publish an exam for today’s session; optional learner entry and teacher grading | officer 1 | a published exam made in the run points to the substituted session |
 | 17 | «جابه‌جایی» of the second session to five days from today, «اتاق ۳» | officer 1 | a moved session |
 | 18 | «لغو جلسه» of the third with a reason, and a make-up in three days | officer 1 | cancelled + make-up session |
 | 19 | A learner leaves («تاریخ خروج» today) | officer 1 | member with a leave date |

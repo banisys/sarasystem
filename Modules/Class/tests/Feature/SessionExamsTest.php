@@ -18,6 +18,7 @@ use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Support\ExamContexts;
 use Nwidart\Modules\Facades\Module;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -34,6 +35,8 @@ class SessionExamsTest extends TestCase
     private ClassSession $session;
 
     private Exam $template;
+
+    private QuestionBank $bank;
 
     private ClassMember $membership;
 
@@ -56,20 +59,19 @@ class SessionExamsTest extends TestCase
         ]);
         $this->membership = ClassMember::factory()->for($classroom)->for($this->learner, 'user')
             ->for(ClassRole::factory()->for($this->tenant)->attendee())->create(['joined_on' => today()->subDay()]);
-        $bank = QuestionBank::factory()->for($this->tenant)->create();
-        Question::factory()->for($this->tenant)->descriptive()->create(['score' => 4, 'model_answer' => 'راه‌حل نمونه'])->banks()->attach($bank);
+        $this->bank = QuestionBank::factory()->for($this->tenant)->create(['owner_id' => $this->teacher->id]);
+        Question::factory()->for($this->tenant)->descriptive()->create(['owner_id' => $this->teacher->id, 'score' => 4, 'model_answer' => 'راه‌حل نمونه'])->banks()->attach($this->bank);
         $this->template = Exam::factory()->for($this->tenant)->create(['max_attempts' => 1, 'total_score' => 20]);
-        $this->template->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 1]);
+        $this->template->sections()->create(['question_bank_id' => $this->bank->id, 'question_count' => 1]);
     }
 
-    public function test_assigning_copies_the_exam_and_is_repeat_safe_with_independent_results_per_session(): void
+    public function test_generating_exams_creates_independent_attempts_per_session(): void
     {
         $this->template->participantUsers()->attach($this->teacher);
         $first = $this->assign();
-        $this->assign();
         $this->assertSame(1, Exam::query()->whereNotNull('context_type')->count());
         $this->assertSame(0, $first->participantUsers()->count());
-        $this->assertSame(1, $first->sections()->count());
+        $this->assertCount(1, $first->question_snapshot);
         $this->assertTrue($first->starts_at->equalTo($this->session->starts_at));
         $this->assertTrue($first->ends_at->equalTo($this->session->ends_at));
 
@@ -93,7 +95,7 @@ class SessionExamsTest extends TestCase
         $exam = $this->assign();
         $this->asLearner();
         $this->get(route('exams.index'))->assertInertia(fn (AssertableInertia $page) => $page->has('exams', 1)->where('exams.0.id', $exam->id));
-        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('context.can_manage', false)->where('results', null)->has('templates', 0));
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('context.can_manage', false)->where('results', null)->has('banks', 0));
         $this->get(route('my-classes.session', $this->session))->assertInertia(fn (AssertableInertia $page) => $page->where('session.exams_url', $this->url()));
         $exam->participantUsers()->attach($this->learner);
         $this->membership->update(['left_on' => today()->subDay()]);
@@ -105,16 +107,15 @@ class SessionExamsTest extends TestCase
         $this->get(route('exams.show', $exam))->assertOk();
     }
 
-    public function test_the_assigner_can_delete_an_unused_copy_and_assign_the_template_again(): void
+    public function test_the_author_can_delete_an_unused_exam_and_generate_another(): void
     {
         $exam = $this->assign();
-        $section = $exam->sections()->sole();
         $delete = $this->deleteUrl($exam);
         $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('exams.0.delete_url', $delete));
 
         $this->delete($delete)->assertRedirect($this->url())->assertSessionHas('status', 'آزمون از این جلسه حذف شد.');
         $this->assertModelMissing($exam);
-        $this->assertModelMissing($section);
+        $this->assertModelExists($this->bank);
         $this->assertModelExists($this->template);
         $this->assertNotSame($exam->id, $this->assign()->id);
     }
@@ -135,7 +136,7 @@ class SessionExamsTest extends TestCase
         $this->assertSame(1, $attempt->answers()->count());
     }
 
-    public function test_a_session_manager_cannot_claim_or_delete_another_users_copy(): void
+    public function test_a_session_manager_cannot_delete_another_users_exam(): void
     {
         $exam = $this->assign();
         $substitute = User::factory()->create();
@@ -143,7 +144,6 @@ class SessionExamsTest extends TestCase
         $this->session->teachers()->updateExistingPivot($this->teacher->id, ['substitute_id' => $substitute->id]);
         $this->actingAs($substitute)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->tenant->id]);
 
-        $this->post($this->url(), ['template_id' => $this->template->id])->assertRedirect($this->url());
         $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
             ->where('context.can_manage', true)->where('exams.0.delete_url', null));
         $this->delete($this->deleteUrl($exam))->assertForbidden();
@@ -180,7 +180,7 @@ class SessionExamsTest extends TestCase
     {
         $exam = $this->assign();
         $this->asLearner();
-        $this->post($this->url(), ['template_id' => $this->template->id])->assertForbidden();
+        $this->post($this->url(), $this->payload())->assertForbidden();
         $this->patch(route('exams.context.publish', ['class-session', $this->session->id, $exam]), ['is_published' => false])->assertForbidden();
         $this->delete($this->deleteUrl($exam))->assertForbidden();
         $attempt = ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create();
@@ -189,15 +189,16 @@ class SessionExamsTest extends TestCase
         $this->assertTrue($exam->fresh()->is_published);
     }
 
-    public function test_foreign_sessions_templates_and_attempts_are_rejected(): void
+    public function test_foreign_sessions_banks_and_attempts_are_rejected(): void
     {
         $exam = $this->assign();
         $foreignTenant = Tenant::factory()->create();
         $foreignTemplate = Exam::factory()->for($foreignTenant)->create();
         $foreignSession = ClassSession::factory()->for(Classroom::factory()->for($foreignTenant))->taughtBy($this->teacher)->create();
-        $this->post($this->url(), ['template_id' => $foreignTemplate->id])->assertSessionHasErrors('template_id');
+        $foreignBank = QuestionBank::factory()->for($foreignTenant)->create(['owner_id' => $this->teacher->id, 'is_shared' => true]);
+        $this->post($this->url(), $this->payload($foreignBank))->assertSessionHasErrors('banks.0.bank_id');
         $this->get($this->url($foreignSession))->assertNotFound();
-        $this->post($this->url($foreignSession), ['template_id' => $this->template->id])->assertNotFound();
+        $this->post($this->url($foreignSession), $this->payload())->assertNotFound();
         $foreignAttempt = ExamAttempt::factory()->for($foreignTemplate)->create();
         $this->get(route('exams.context.review', ['class-session', $this->session->id, $foreignAttempt]))->assertNotFound();
         $unrelated = ExamAttempt::factory()->for($this->template)->create();
@@ -281,7 +282,7 @@ class SessionExamsTest extends TestCase
         $this->grantRole($outsider, $this->tenant, 'teacher');
         $this->actingAs($outsider)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->tenant->id]);
         $this->get($this->url())->assertNotFound();
-        $this->post($this->url(), ['template_id' => $this->template->id])->assertNotFound();
+        $this->post($this->url(), $this->payload())->assertNotFound();
     }
 
     public function test_substitutes_can_manage_but_cannot_change_unrelated_exams(): void
@@ -298,23 +299,86 @@ class SessionExamsTest extends TestCase
         $this->assertFalse($exam->fresh()->is_published);
     }
 
-    public function test_drafts_and_invalid_template_ids_are_not_assignable(): void
+    public function test_generation_uses_only_accessible_active_questions_and_freezes_the_draw(): void
+    {
+        $colleague = User::factory()->create();
+        $sharedBank = QuestionBank::factory()->for($this->tenant)->create(['owner_id' => $colleague->id, 'is_shared' => true]);
+        $privateBank = QuestionBank::factory()->for($this->tenant)->create(['owner_id' => $colleague->id]);
+        $shared = Question::factory()->for($this->tenant)->create(['owner_id' => $colleague->id, 'is_shared' => true]);
+        $private = Question::factory()->for($this->tenant)->create(['owner_id' => $colleague->id]);
+        $inactive = Question::factory()->for($this->tenant)->inactive()->create(['owner_id' => $colleague->id, 'is_shared' => true]);
+        $sharedBank->questions()->attach([$shared->id, $private->id, $inactive->id]);
+
+        $this->asTeacher();
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('banks', 2)->missing('templates'));
+        $this->post($this->url(), $this->payload($privateBank))->assertSessionHasErrors('banks.0.bank_id');
+        $this->post($this->url(), $this->payload($sharedBank, 2))->assertSessionHasErrors('banks.0.question_count');
+        $this->assertSame(0, Exam::query()->whereNotNull('context_type')->count());
+
+        $data = $this->payload();
+        $data['banks'][] = ['bank_id' => $sharedBank->id, 'question_count' => 1];
+        $this->post($this->url(), $data)->assertRedirect($this->url());
+        $exam = Exam::query()->whereNotNull('context_type')->sole();
+        $this->assertFalse($exam->is_published);
+        $this->assertNull($exam->template_exam_id);
+        $this->assertSame($shared->body, $exam->question_snapshot[1]['body']);
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertNotFound();
+
+        $this->asTeacher();
+        $this->patch(route('exams.context.publish', ['class-session', $this->session->id, $exam]), ['is_published' => true])->assertRedirect();
+        $sharedBank->delete();
+        $shared->delete();
+
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertRedirect(route('exams.show', $exam));
+        $this->assertSame($shared->body, $exam->attempts()->sole()->answers()->get()[1]->question_body);
+        $this->get(route('exams.show', $exam))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exam.question_count', 2)->missing('exam.question_snapshot')->missing('attempt.questions.1.correct_option'));
+    }
+
+    public function test_legacy_template_selection_is_rejected(): void
     {
         $this->asTeacher();
-        $this->post($this->url(), [])->assertSessionHasErrors('template_id');
-        $this->post($this->url(), ['template_id' => 'invalid'])->assertSessionHasErrors('template_id');
-        $this->template->update(['is_published' => false]);
-        $this->post($this->url(), ['template_id' => $this->template->id])->assertSessionHasErrors('template_id');
+        $this->post($this->url(), ['template_id' => $this->template->id])->assertSessionHasErrors('banks');
         $this->assertSame(0, Exam::query()->whereNotNull('context_type')->count());
+    }
+
+    #[TestWith(['ناظر'])]
+    #[TestWith(['پشتیبان'])]
+    public function test_non_attendee_class_staff_can_manage_a_personal_library(string $roleTitle): void
+    {
+        $staff = User::factory()->create();
+        $this->grantRole($staff, $this->tenant, 'staff');
+        $role = ClassRole::factory()->for($this->tenant)->create(['title' => $roleTitle, 'is_attendee' => false]);
+        ClassMember::factory()->for($this->session->classroom)->for($staff, 'user')->for($role)
+            ->create(['joined_on' => today()]);
+        $this->actingAs($staff)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->tenant->id]);
+
+        $this->get(route('exams.library'))->assertInertia(fn (AssertableInertia $page) => $page->component('Exam::QuestionLibrary'));
+        $this->post(route('exams.library.banks.store'), ['title' => 'بانک کلاس', 'is_shared' => false])->assertRedirect();
+        $this->assertDatabaseHas('exam_question_banks', ['owner_id' => $staff->id, 'tenant_id' => $this->tenant->id]);
+    }
+
+    private function payload(?QuestionBank $bank = null, int $count = 1): array
+    {
+        return [
+            'title' => 'تمرین مکالمه', 'duration_minutes' => 10, 'total_score' => 20, 'passing_score' => 12,
+            'banks' => [['bank_id' => ($bank ?? $this->bank)->id, 'question_count' => $count]],
+        ];
     }
 
     private function assign(?ClassSession $session = null): Exam
     {
         $session ??= $this->session;
         $this->asTeacher();
-        $this->post($this->url($session), ['template_id' => $this->template->id])->assertRedirect($this->url($session));
+        $this->post($this->url($session), $this->payload())->assertRedirect($this->url($session));
 
-        return Exam::query()->where('context_type', 'class-session')->where('context_id', $session->id)->sole();
+        $exam = Exam::query()->where('context_type', 'class-session')->where('context_id', $session->id)->sole();
+        $this->patch(route('exams.context.publish', ['class-session', $session->id, $exam]), ['is_published' => true])->assertRedirect();
+
+        return $exam->refresh();
     }
 
     private function url(?ClassSession $session = null): string

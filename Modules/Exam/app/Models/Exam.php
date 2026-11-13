@@ -34,6 +34,8 @@ class Exam extends Model
     /** @use HasFactory<ExamFactory> */
     use BelongsToTenant, HasFactory;
 
+    protected $hidden = ['question_snapshot'];
+
     protected static function newFactory(): ExamFactory
     {
         return ExamFactory::new();
@@ -129,7 +131,9 @@ class Exam extends Model
 
     public function questionCount(): int
     {
-        return (int) $this->sections->sum('question_count');
+        return $this->question_snapshot === null
+            ? (int) $this->sections->sum('question_count')
+            : count($this->question_snapshot);
     }
 
     protected function casts(): array
@@ -149,6 +153,7 @@ class Exam extends Model
             'shuffle_options' => 'boolean',
             'negative_marking' => 'integer',
             'result_visibility' => ResultVisibility::class,
+            'question_snapshot' => 'array',
         ];
     }
 }

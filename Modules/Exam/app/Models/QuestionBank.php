@@ -33,4 +33,9 @@ class QuestionBank extends Model
     {
         return $this->belongsToMany(Question::class, 'exam_bank_question');
     }
+
+    protected function casts(): array
+    {
+        return ['is_shared' => 'boolean'];
+    }
 }

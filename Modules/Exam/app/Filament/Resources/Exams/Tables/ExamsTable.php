@@ -41,6 +41,9 @@ class ExamsTable
                     ->sortable(),
                 TextColumn::make('sections_sum_question_count')
                     ->label('تعداد سؤال')
+                    ->state(fn (Exam $record): int => $record->question_snapshot === null
+                        ? (int) $record->sections_sum_question_count
+                        : count($record->question_snapshot))
                     ->placeholder('0'),
                 TextColumn::make('participants')
                     ->label('شرکت‌کنندگان')

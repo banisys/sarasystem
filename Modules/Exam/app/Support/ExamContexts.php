@@ -31,6 +31,17 @@ class ExamContexts
         }
     }
 
+    public function hasTeachingStaff(User $user): bool
+    {
+        foreach ($this->sources as $source) {
+            if ($source->hasTeachingStaff($user)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function url(string $type, int $id): string
     {
         return route('exams.context', ['type' => $type, 'context' => $id]);

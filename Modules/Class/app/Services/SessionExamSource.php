@@ -52,6 +52,15 @@ class SessionExamSource implements ExamContextSource
                 ->where(fn (Builder $members) => $members->whereNull('left_on')->orWhereRaw('left_on >= class_sessions.starts_at::date')));
     }
 
+    public function hasTeachingStaff(User $user): bool
+    {
+        return ClassMember::query()->where('user_id', $user->id)->current()
+            ->where(fn (Builder $members) => $members->whereNull('joined_on')->orWhereDate('joined_on', '<=', today()))
+            ->whereHas('classRole', fn (Builder $roles) => $roles->where('is_attendee', false))
+            ->exists()
+            || ClassSession::query()->takingPlace()->withTeacher($user)->exists();
+    }
+
     public function link(ClassSession $session, User $user): ?string
     {
         return $this->resolve($session->getKey(), $user) === null

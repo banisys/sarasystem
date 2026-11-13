@@ -6,10 +6,12 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Models\Question;
+use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Support\ExamContext;
+use Modules\Exam\Support\QuestionLibrary;
 
 class ContextExams
 {
@@ -18,35 +20,55 @@ class ContextExams
         return Exam::query()->where('context_type', $context->type)->where('context_id', $context->id);
     }
 
-    /** Copies settings and bank sections, never participants or past attempts. */
-    public function assign(ExamContext $context, int $templateId, User $actor): Exam
+    /**
+     * @param  array{title: string, duration_minutes: int, total_score: float, passing_score: float, banks: list<array{bank_id: int, question_count: int}>}  $data
+     */
+    public function generate(ExamContext $context, array $data, User $actor, QuestionLibrary $library): Exam
     {
         abort_unless($context->canManage, 403);
 
-        return DB::transaction(function () use ($context, $templateId, $actor): Exam {
-            $template = Exam::query()->published()->whereNull('context_type')->lockForUpdate()->find($templateId);
-            if ($template === null) {
-                throw ValidationException::withMessages(['template_id' => 'یک آزمون منتشرشده از همین '.config('sarasystem.tenant_label').' انتخاب کنید.']);
+        return DB::transaction(function () use ($context, $data, $actor, $library): Exam {
+            $banks = $library->banks($actor)->whereKey(array_column($data['banks'], 'bank_id'))
+                ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+
+            $drawn = collect();
+            foreach ($data['banks'] as $index => $selection) {
+                /** @var QuestionBank|null $bank */
+                $bank = $banks->get($selection['bank_id']);
+                if ($bank === null) {
+                    throw ValidationException::withMessages(["banks.{$index}.bank_id" => 'این بانک سؤال در دسترس شما نیست.']);
+                }
+
+                $questions = $bank->questions()->active()
+                    ->where(fn (Builder $query) => $library->visibleTo($query, $actor))
+                    ->whereNotIn('exam_questions.id', $drawn->keys())
+                    ->inRandomOrder()->limit($selection['question_count'])->get();
+
+                if ($questions->count() < $selection['question_count']) {
+                    throw ValidationException::withMessages(["banks.{$index}.question_count" => 'این بانک به تعداد درخواستی سؤال فعال و غیرتکراری ندارد.']);
+                }
+
+                foreach ($questions as $question) {
+                    $drawn->put($question->id, $question);
+                }
             }
 
-            if ($existing = $this->query($context)->where('template_exam_id', $templateId)->first()) {
-                return $existing;
-            }
-
-            $exam = $template->replicate()->unsetRelations();
+            $exam = new Exam;
             $exam->forceFill([
                 'context_type' => $context->type,
                 'context_id' => $context->id,
-                'template_exam_id' => $templateId,
-                'assigned_by_id' => $actor->id,
                 'tenant_id' => $context->tenantId,
-                'title' => Str::limit($template->title.' — '.$context->title, 255, ''),
+                'assigned_by_id' => $actor->id,
                 'starts_at' => $context->startsAt,
                 'ends_at' => $context->endsAt,
+                'title' => $data['title'],
+                'duration_minutes' => $data['duration_minutes'],
+                'total_score' => $data['total_score'],
+                'passing_score' => $data['passing_score'],
+                'question_snapshot' => $drawn->values()->map(fn (Question $question): array => $question->only([
+                    'type', 'body', 'options', 'accepted_answers', 'model_answer', 'score',
+                ]))->all(),
             ])->save();
-            foreach ($template->sections()->get() as $section) {
-                $exam->sections()->create($section->only(['question_bank_id', 'question_count', 'sort']));
-            }
 
             return $exam;
         });

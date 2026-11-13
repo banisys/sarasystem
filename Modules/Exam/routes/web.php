@@ -4,10 +4,21 @@ use Illuminate\Support\Facades\Route;
 use Modules\Exam\Http\Controllers\AttemptController;
 use Modules\Exam\Http\Controllers\ContextExamController;
 use Modules\Exam\Http\Controllers\ExamController;
+use Modules\Exam\Http\Controllers\QuestionLibraryController;
 
 // User-panel routes work inside the current tenant (docs/decisions/0002-tenancy-model.md).
 Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('exams')->name('exams.')->group(function () {
     Route::get('/', [ExamController::class, 'index'])->name('index');
+    Route::prefix('library')->name('library')->controller(QuestionLibraryController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::post('/banks', 'storeBank')->name('.banks.store');
+        Route::patch('/banks/{bank}', 'updateBank')->name('.banks.update');
+        Route::delete('/banks/{bank}', 'destroyBank')->name('.banks.destroy');
+        Route::post('/questions', 'storeQuestion')->name('.questions.store');
+        Route::patch('/questions/{question}', 'updateQuestion')->name('.questions.update');
+        Route::delete('/questions/{question}', 'destroyQuestion')->name('.questions.destroy');
+        Route::post('/questions/{question}/banks', 'addSharedQuestion')->name('.questions.banks.store');
+    });
     Route::get('/contexts/{type}/{context}', [ContextExamController::class, 'show'])->whereNumber('context')->name('context');
     Route::post('/contexts/{type}/{context}', [ContextExamController::class, 'store'])->whereNumber('context')->name('context.store');
     Route::patch('/contexts/{type}/{context}/exams/{exam}', [ContextExamController::class, 'publish'])->whereNumber('context')->name('context.publish');

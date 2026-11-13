@@ -11,6 +11,8 @@ interface ExamContextSource
 {
     public function resolve(int $id, User $user): ?ExamContext;
 
+    public function hasTeachingStaff(User $user): bool;
+
     /** A tenant-scoped, single-column query of contexts this user may participate in. */
     public function participantIds(User $user): Builder;
 }

@@ -126,9 +126,7 @@ class QuestionForm
     private static function exactlyOneBlank(): Closure
     {
         return function (string $attribute, mixed $value, Closure $fail): void {
-            $parts = explode(Question::BLANK_MARKER, (string) $value);
-
-            if (count($parts) !== 2 || str_ends_with($parts[0], '_') || str_starts_with($parts[1], '_') || blank(implode($parts))) {
+            if (! Question::hasExactlyOneBlank((string) $value)) {
                 $fail('در متن سؤال دقیقاً یک جای خالی با سه زیرخط (___) مشخص کنید.');
             }
         };

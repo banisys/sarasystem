@@ -26,6 +26,13 @@ class Question extends Model
 {
     public const BLANK_MARKER = '___';
 
+    public static function hasExactlyOneBlank(string $body): bool
+    {
+        $parts = explode(self::BLANK_MARKER, $body);
+
+        return count($parts) === 2 && ! str_ends_with($parts[0], '_') && ! str_starts_with($parts[1], '_') && filled(implode($parts));
+    }
+
     /** @use HasFactory<QuestionFactory> */
     use BelongsToTenant, HasFactory;
 
@@ -112,6 +119,7 @@ class Question extends Model
             'accepted_answers' => 'array',
             'score' => 'float',
             'is_active' => 'boolean',
+            'is_shared' => 'boolean',
         ];
     }
 }

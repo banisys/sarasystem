@@ -84,7 +84,8 @@ class BranchOperationsScenarioTest extends TestCase
         if (Module::isEnabled('Exam')) {
             $exam = $run->made(Exam::class)->where('context_type', 'class-session')->sole();
             $this->assertTrue($sessions->contains('id', $exam->context_id));
-            $this->assertSame(1, $exam->sections()->count());
+            $this->assertCount(1, $exam->question_snapshot);
+            $this->assertTrue($exam->is_published);
             $this->assertArrayHasKey('session-exam', $run->completed_missions);
         }
 

@@ -2,6 +2,8 @@
 
 namespace Modules\Exam\Http\Controllers;
 
+use App\Models\Tenant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -12,14 +14,16 @@ use Inertia\Response;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Services\ContextExams;
 use Modules\Exam\Services\ExamTaking;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
+use Modules\Exam\Support\QuestionLibrary;
 
 class ContextExamController extends Controller
 {
-    public function show(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams): Response
+    public function show(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): Response
     {
         $host = $this->context($request, $type, $context, $contexts);
         $query = $exams->query($host);
@@ -43,7 +47,14 @@ class ContextExamController extends Controller
 
         return Inertia::render('Exam::Context', [
             'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage],
-            'templates' => $host->canManage ? Exam::query()->published()->whereNull('context_type')->orderBy('title')->get(['id', 'title']) : [],
+            'library_url' => $host->canManage && $library->canAccess($request->user(), Tenant::current()) ? route('exams.library') : null,
+            'banks' => $host->canManage ? $library->banks($request->user())
+                ->withCount(['questions' => fn (Builder $query) => $query->active()
+                    ->where(fn (Builder $visible) => $library->visibleTo($visible, $request->user()))])
+                ->orderBy('title')->get()->map(fn (QuestionBank $bank): array => [
+                    'id' => $bank->id, 'title' => $bank->title, 'question_count' => $bank->questions_count,
+                    'is_mine' => $bank->owner_id === $request->user()->id,
+                ]) : [],
             'exams' => $records->map(fn (Exam $exam): array => [
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->ends_at?->toIso8601String(),
@@ -57,13 +68,26 @@ class ContextExamController extends Controller
         ]);
     }
 
-    public function store(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams): RedirectResponse
+    public function store(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): RedirectResponse
     {
         $host = $this->context($request, $type, $context, $contexts, manage: true);
-        $data = $request->validate(['template_id' => ['required', 'integer']]);
-        $exams->assign($host, (int) $data['template_id'], $request->user());
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'duration_minutes' => ['required', 'integer', 'between:1,1440'],
+            'total_score' => ['required', 'numeric', 'between:1,1000'],
+            'passing_score' => ['required', 'numeric', 'min:0', 'lte:total_score'],
+            'banks' => ['required', 'array', 'list', 'max:10'],
+            'banks.*' => ['required', 'array:bank_id,question_count'],
+            'banks.*.bank_id' => ['required', 'integer', 'distinct'],
+            'banks.*.question_count' => ['required', 'integer', 'between:1,50'],
+        ], attributes: [
+            'title' => 'عنوان', 'duration_minutes' => 'مدت آزمون', 'total_score' => 'نمرهٔ کل',
+            'passing_score' => 'نمرهٔ قبولی', 'banks' => 'بانک‌های سؤال', 'banks.*.bank_id' => 'بانک سؤال',
+            'banks.*.question_count' => 'تعداد سؤال',
+        ]);
+        $exams->generate($host, $data, $request->user(), $library);
 
-        return to_route('exams.context', [$type, $context])->with('status', 'آزمون مستقل جلسه آماده شد.');
+        return to_route('exams.context', [$type, $context])->with('status', 'پیش‌نویس آزمون جلسه ساخته شد.');
     }
 
     public function publish(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse

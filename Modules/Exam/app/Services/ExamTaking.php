@@ -275,6 +275,12 @@ class ExamTaking
      */
     private function drawQuestions(Exam $exam): SupportCollection
     {
+        if ($exam->question_snapshot !== null) {
+            $questions = collect($exam->question_snapshot)->map(fn (array $question): Question => new Question($question));
+
+            return $exam->shuffle_questions ? $questions->shuffle()->values() : $questions;
+        }
+
         $drawn = collect();
 
         foreach ($exam->sections()->with('questionBank')->get() as $section) {
