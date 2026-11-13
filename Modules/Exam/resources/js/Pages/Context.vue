@@ -184,7 +184,9 @@ function remove(exam) {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="ui-badge" :class="exam.is_published ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }}</span>
-                    <span class="text-sm text-ui-muted">از {{ formatDateTime(exam.starts_at) }} تا {{ formatDateTime(exam.ends_at) }}</span>
+                    <span v-if="exam.starts_at" class="text-sm text-ui-muted">از {{ formatDateTime(exam.starts_at) }}</span>
+                    <span v-if="exam.ends_at" class="text-sm text-ui-muted">تا {{ formatDateTime(exam.ends_at) }}</span>
+                    <span v-if="exam.allow_late_start" class="text-sm text-ui-muted">بدون مهلت پایانی برای شروع</span>
                 </div>
                 <p v-if="context.can_manage" class="text-sm text-gray-600">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
                 <div class="flex flex-wrap gap-4">

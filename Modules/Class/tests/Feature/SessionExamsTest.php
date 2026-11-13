@@ -90,6 +90,56 @@ class SessionExamsTest extends TestCase
         $this->assertSame(0, $this->template->attempts()->count());
     }
 
+    public function test_an_exam_can_reopen_after_the_session_with_the_full_attempt_duration(): void
+    {
+        $exam = $this->assign();
+        $settings = route('exams.context.settings.update', ['class-session', $this->session->id, $exam]);
+        $start = route('exams.attempt.start', $exam);
+        $this->travel(1)->days();
+
+        $this->asLearner();
+        $this->post($start)->assertSessionHasErrors('exam');
+        $this->assertFalse($exam->attempts()->exists());
+
+        $this->asTeacher();
+        $this->patch($settings, $this->payload() + ['allow_late_start' => 'invalid'])->assertSessionHasErrors('allow_late_start');
+        $this->patch($settings, $this->payload() + ['allow_late_start' => true])->assertRedirect($this->url());
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.settings.allow_late_start', true)->where('exams.0.ends_at', null));
+        $this->assertTrue($exam->refresh()->ends_at->equalTo($this->session->ends_at));
+
+        $this->patch($settings, $this->payload() + ['allow_late_start' => false])->assertRedirect($this->url());
+        $this->asLearner();
+        $this->post($start)->assertSessionHasErrors('exam');
+
+        $this->asTeacher();
+        $this->patch($settings, $this->payload() + ['allow_late_start' => true])->assertRedirect($this->url());
+        $this->asLearner();
+        $this->get(route('exams.index'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.is_open', true)->where('exams.0.ends_at', null));
+        $this->get(route('exams.show', $exam))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('blocked', null)->where('exam.allow_late_start', true)->where('exam.ends_at', null));
+        $this->post($start)->assertRedirect(route('exams.show', $exam))->assertSessionHasNoErrors();
+        $attempt = $exam->attempts()->sole();
+        $this->assertTrue($attempt->deadline_at->equalTo($attempt->started_at->copy()->addMinutes(10)));
+        $this->post(route('exams.attempt.submit', $exam), ['answers' => []])->assertRedirect();
+        $this->post($start)->assertSessionHasErrors('exam');
+    }
+
+    public function test_late_start_can_be_enabled_at_creation_and_respects_the_opening_time(): void
+    {
+        $this->session->update(['starts_at' => now()->addMinutes(10)]);
+        $this->asTeacher();
+        $this->post($this->url(), $this->payload() + ['allow_late_start' => true])->assertRedirect();
+        $exam = Exam::query()->whereNotNull('question_snapshot')->sole();
+        $this->assertTrue($exam->allow_late_start);
+        $this->patch(route('exams.context.publish', ['class-session', $this->session->id, $exam]), ['is_published' => true])->assertRedirect();
+
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertSessionHasErrors('exam');
+        $this->assertFalse($exam->attempts()->exists());
+    }
+
     public function test_membership_on_the_session_date_controls_listing_and_direct_access(): void
     {
         $exam = $this->assign();
@@ -561,7 +611,8 @@ class SessionExamsTest extends TestCase
         $otherSession = ClassSession::factory()->for($this->session->classroom)->taughtBy($this->teacher)->create();
         $this->patch(route('exams.context.settings.update', ['class-session', $otherSession->id, $exam]), $data)->assertNotFound();
         $foreign = Exam::factory()->for(Tenant::factory())->create();
-        $this->patch(route('exams.context.settings.update', ['class-session', $this->session->id, $foreign]), $data)->assertNotFound();
+        $this->patch(route('exams.context.settings.update', ['class-session', $this->session->id, $foreign]), $data + ['allow_late_start' => true])->assertNotFound();
+        $this->assertFalse($foreign->refresh()->allow_late_start);
 
         $substitute = User::factory()->create();
         $this->grantRole($substitute, $this->tenant, 'teacher');

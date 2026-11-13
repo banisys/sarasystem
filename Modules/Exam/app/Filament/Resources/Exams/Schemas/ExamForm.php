@@ -47,7 +47,9 @@ class ExamForm
                             ->seconds(false),
                         DateTimePicker::make('ends_at')
                             ->label('تا')
-                            ->helperText('خالی: بدون پایان. آزمونی که در جریان است در این زمان بسته می‌شود.')
+                            ->helperText(fn (?Exam $record): string => $record?->allow_late_start
+                                ? 'امکان شروع پس از پایان جلسه فعال است. این تاریخ فقط پس از غیرفعال کردن آن گزینه اعمال می‌شود.'
+                                : 'خالی: بدون پایان. آزمونی که در جریان است در این زمان بسته می‌شود.')
                             ->jalali()
                             ->seconds(false)
                             ->after('starts_at'),

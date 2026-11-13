@@ -118,13 +118,14 @@ class ExamTaking
             }
 
             $deadline = now()->addMinutes($exam->duration_minutes);
+            $participationEndsAt = $exam->participationEndsAt();
 
             $attempt = $exam->attempts()->create([
                 'tenant_id' => $exam->tenant_id,
                 'user_id' => $user->getKey(),
                 'status' => AttemptStatus::InProgress,
                 'started_at' => now(),
-                'deadline_at' => $exam->ends_at !== null && $exam->ends_at->lessThan($deadline) ? $exam->ends_at : $deadline,
+                'deadline_at' => $participationEndsAt?->min($deadline) ?? $deadline,
             ]);
 
             $questions->values()->each(fn (Question $question, int $index) => $attempt->answers()->create([

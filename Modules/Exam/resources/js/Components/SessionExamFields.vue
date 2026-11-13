@@ -29,6 +29,13 @@ const advanced = [
                 <input v-model="form[key]" type="number" :min="min" :max="max" :step="step" :class="field" />
             </label>
         </div>
+        <label class="flex items-start gap-2 rounded-lg border border-gray-200 p-3 text-sm">
+            <input v-model="form.allow_late_start" type="checkbox" class="mt-1" />
+            <span>
+                <span class="block font-medium">{{ settings.labels.allow_late_start }}</span>
+                <span class="mt-1 block text-ui-muted">برای شروع آزمون مهلت پایانی وجود ندارد. مدت پاسخ‌گویی از لحظهٔ شروع هر تلاش حساب می‌شود.</span>
+            </span>
+        </label>
         <details :open="expanded || undefined" class="rounded-lg border border-gray-200">
             <summary class="cursor-pointer px-3 py-3 text-sm font-medium text-violet-700">تنظیمات بیشتر</summary>
             <div class="space-y-4 border-t border-gray-200 p-3">

@@ -55,6 +55,7 @@ function start() {
                         <div><dt class="text-gray-500">نمره‌ی قبولی</dt><dd>{{ exam.passing_score }} از {{ exam.total_score }}</dd></div>
                         <div v-if="exam.starts_at"><dt class="text-gray-500">از</dt><dd>{{ formatDateTime(exam.starts_at) }}</dd></div>
                         <div v-if="exam.ends_at"><dt class="text-gray-500">تا</dt><dd>{{ formatDateTime(exam.ends_at) }}</dd></div>
+                        <div v-if="exam.allow_late_start"><dt class="text-gray-500">مهلت شروع</dt><dd>بدون مهلت پایانی</dd></div>
                         <div><dt class="text-gray-500">دفعات شرکت</dt><dd>{{ attemptsUsed }} از {{ exam.max_attempts }}</dd></div>
                         <div v-if="exam.negative_marking">
                             <dt class="text-gray-500">نمره‌ی منفی</dt>

@@ -38,6 +38,7 @@ defineProps({
                     <span>مدت: {{ exam.duration_minutes }} دقیقه</span>
                     <span v-if="exam.starts_at">از {{ formatDateTime(exam.starts_at) }}</span>
                     <span v-if="exam.ends_at">تا {{ formatDateTime(exam.ends_at) }}</span>
+                    <span v-if="exam.allow_late_start">بدون مهلت پایانی برای شروع</span>
                     <span v-if="exam.last_status" class="text-violet-700">{{ exam.last_status }}</span>
                 </div>
             </Link>

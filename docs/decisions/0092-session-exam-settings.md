@@ -11,7 +11,7 @@ Session exam authors need the rules from the admin exam form that apply to a ses
 - Share a session settings form between generation and draft editing, with a server allowlist of the applicable fields.
 
 ## Decision
-Expose title, instructions, duration, grace period, scores, pagination, negative marking, attempt limits, retake policy, result visibility and question/option shuffling. The time window and participants are inherited from the session and publication remains a separate action.
+Expose title, instructions, duration, grace period, scores, pagination, negative marking, attempt limits, retake policy, result visibility and question/option shuffling. The time window and participants are inherited from the session and publication remains a separate action. [ADR 0095](0095-session-exams-without-a-start-cutoff.md) adds an option to keep participation open after the saved end time.
 
 The exam list offers a labeled settings button to session managers who either created the exam or already have permission to update it in the admin panel. They can edit a draft or a published exam until the first attempt starts. Updates lock the same exam row as attempt start and preserve the publication state and question snapshot. A manual question order can be served unchanged by keeping question shuffling off, as described in [ADR 0091](0091-preview-and-reorder-session-exams.md).
 

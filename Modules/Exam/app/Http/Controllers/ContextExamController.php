@@ -69,7 +69,8 @@ class ContextExamController extends Controller
                 ]) : [],
             'exams' => $records->map(fn (Exam $exam): array => [
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
-                'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->ends_at?->toIso8601String(),
+                'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->participationEndsAt()?->toIso8601String(),
+                'allow_late_start' => $exam->allow_late_start,
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
                 'settings' => $exam->attempts_count === 0 && $exams->mayManageSettings($host, $exam, $request->user())
                     ? array_intersect_key($exam->attributesToArray(), SessionExamSettings::DEFAULTS)

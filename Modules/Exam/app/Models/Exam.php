@@ -25,7 +25,7 @@ use Modules\Exam\Support\ExamContexts;
  */
 #[Fillable([
     'tenant_id', 'title', 'description', 'is_published', 'starts_at', 'ends_at',
-    'duration_minutes', 'grace_minutes', 'total_score', 'passing_score',
+    'duration_minutes', 'allow_late_start', 'grace_minutes', 'total_score', 'passing_score',
     'max_attempts', 'retake_policy', 'questions_per_page', 'shuffle_questions',
     'shuffle_options', 'negative_marking', 'result_visibility',
 ])]
@@ -121,7 +121,12 @@ class Exam extends Model
 
     public function hasEnded(?Carbon $at = null): bool
     {
-        return $this->ends_at !== null && $this->ends_at->lessThanOrEqualTo($at ?? now());
+        return $this->participationEndsAt()?->lessThanOrEqualTo($at ?? now()) ?? false;
+    }
+
+    public function participationEndsAt(): ?Carbon
+    {
+        return $this->allow_late_start ? null : $this->ends_at;
     }
 
     public function isPassing(float $score): bool
@@ -142,6 +147,7 @@ class Exam extends Model
             'is_published' => 'boolean',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'allow_late_start' => 'boolean',
             'duration_minutes' => 'integer',
             'grace_minutes' => 'integer',
             'total_score' => 'float',

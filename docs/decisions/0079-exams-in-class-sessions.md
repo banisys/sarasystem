@@ -27,7 +27,7 @@ The user wants to use Exam in class sessions, and explicitly chose independent r
 
 ## Consequences
 - No new package, core hook or hard cross-module database dependency is needed. Disabling either module removes the integration while retaining data.
-- Times are copied once. Moving a session later does not reschedule its exam: authorized admins edit the session copy in «آزمون‌ها». This is explained on the page and in the tutorial. The exam duration is still capped by its end time, with its existing grace minutes.
+- Times are copied once. Moving a session later does not reschedule its exam: authorized admins edit the session copy in «آزمون‌ها». This is explained on the page and in the tutorial. The saved end time caps attempt duration by default. [ADR 0095](0095-session-exams-without-a-start-cutoff.md) adds a setting for late starts with the full attempt duration.
 - Unpublishing blocks even in-progress participant requests; it preserves saved answers. Cancelling the session also blocks entry. Neither action deletes results or automatically submits attempts.
 - Results remain local to Exam; no automatic transfer into School score books/report cards, no cross-session averages or notifications. Abandoned attempts still close lazily, including when a manager opens their review page.
 - The host reference intentionally has no foreign key: deletion leaves historical copies. Exam scoring settings still use the live session copy; bank edits affect future starts, not already-served questions.
