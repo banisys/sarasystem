@@ -24,6 +24,8 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('exams')->name('ex
     Route::get('/contexts/{type}/{context}/banks/{bank}/questions', [ContextExamController::class, 'bankQuestions'])
         ->whereNumber(['context', 'bank'])->name('context.bank-questions');
     Route::patch('/contexts/{type}/{context}/exams/{exam}', [ContextExamController::class, 'publish'])->whereNumber('context')->name('context.publish');
+    Route::patch('/contexts/{type}/{context}/exams/{exam}/settings', [ContextExamController::class, 'updateSettings'])
+        ->whereNumber('context')->name('context.settings.update');
     Route::get('/contexts/{type}/{context}/exams/{exam}/questions', [ContextExamController::class, 'preview'])->whereNumber('context')->name('context.preview');
     Route::patch('/contexts/{type}/{context}/exams/{exam}/questions', [ContextExamController::class, 'reorder'])->whereNumber('context')->name('context.reorder');
     Route::delete('/contexts/{type}/{context}/exams/{exam}', [ContextExamController::class, 'destroy'])->whereNumber('context')->name('context.destroy');

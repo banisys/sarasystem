@@ -4,11 +4,13 @@ import { Head, Link, useForm, useHttp, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import ExamPreview from '../Components/ExamPreview.vue';
+import SessionExamFields from '../Components/SessionExamFields.vue';
+import SessionExamSettingsDialog from '../Components/SessionExamSettingsDialog.vue';
 import { formatDateTime } from '../format.js';
 
-const props = defineProps({ context: Object, banks: Array, exams: Array, results: Object, library_url: String });
+const props = defineProps({ context: Object, banks: Array, exams: Array, results: Object, library_url: String, settings_form: Object });
 const bankRow = () => ({ bank_id: '', question_count: 1 });
-const generation = useForm({ title: '', duration_minutes: 30, total_score: 20, passing_score: 12, banks: [bankRow()] });
+const generation = useForm({ ...props.settings_form?.defaults, banks: [bankRow()] });
 const inputClass = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm';
 const bankFor = (id) => props.banks.find((bank) => bank.id === id);
 const dialog = ref(null);
@@ -96,20 +98,7 @@ function remove(exam) {
                     برای ساخت آزمون، در بانک خودتان سؤال فعال ثبت کنید یا از یک بانک عمومیِ دارای سؤال استفاده کنید.
                 </p>
                 <form v-else novalidate class="space-y-4" @submit.prevent="generate">
-                    <label class="block space-y-1 text-sm font-medium">
-                        <span>عنوان آزمون</span><input v-model="generation.title" :class="inputClass" />
-                    </label>
-                    <div class="grid gap-3 sm:grid-cols-3">
-                        <label class="space-y-1 text-sm font-medium">
-                            <span>مدت (دقیقه)</span><input v-model="generation.duration_minutes" type="number" min="1" :class="inputClass" />
-                        </label>
-                        <label class="space-y-1 text-sm font-medium">
-                            <span>نمرهٔ کل</span><input v-model="generation.total_score" type="number" min="1" step="0.01" :class="inputClass" />
-                        </label>
-                        <label class="space-y-1 text-sm font-medium">
-                            <span>نمرهٔ قبولی</span><input v-model="generation.passing_score" type="number" min="0" step="0.01" :class="inputClass" />
-                        </label>
-                    </div>
+                    <SessionExamFields :form="generation" :settings="settings_form" />
                     <div v-for="(row, index) in generation.banks" :key="index" class="grid items-end gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
                         <label class="space-y-1 text-sm font-medium">
                             <span>بانک سؤال</span>
@@ -184,7 +173,11 @@ function remove(exam) {
             <article v-for="exam in exams" :key="exam.id" class="space-y-3 rounded-2xl bg-white p-5 shadow-sm">
                 <div class="flex items-start justify-between gap-3">
                     <h2 class="font-semibold text-gray-900">{{ exam.title }}</h2>
-                    <ExamPreview v-if="exam.preview_url" :exam="exam" />
+                    <div class="flex shrink-0 gap-2">
+                        <ExamPreview v-if="exam.preview_url" :exam="exam" />
+                        <SessionExamSettingsDialog v-if="exam.settings" :exam="exam" :settings="settings_form"
+                            :url="route('exams.context.settings.update', [...parameters(), exam.id])" />
+                    </div>
                 </div>
                 <p class="text-sm text-gray-600">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }} · از {{ formatDateTime(exam.starts_at) }} تا {{ formatDateTime(exam.ends_at) }}</p>
                 <p v-if="context.can_manage" class="text-sm text-gray-600">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>

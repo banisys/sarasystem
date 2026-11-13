@@ -11,6 +11,7 @@ use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\QuestionLibrary;
+use Modules\Exam\Support\SessionExamSettings;
 
 class ContextExams
 {
@@ -20,7 +21,7 @@ class ContextExams
     }
 
     /**
-     * @param  array{title: string, duration_minutes: int, total_score: float, passing_score: float, banks: list<array{bank_id: int, question_count: int, question_ids?: list<int>}>}  $data
+     * @param  array{title: string, duration_minutes: int, total_score: float, passing_score: float, banks: list<array{bank_id: int, question_count: int, question_ids?: list<int>}>, ...}  $data
      */
     public function generate(ExamContext $context, array $data, User $actor, QuestionLibrary $library): Exam
     {
@@ -73,7 +74,7 @@ class ContextExams
             }
 
             ksort($selections);
-            $exam = new Exam;
+            $exam = new Exam(array_intersect_key($data, SessionExamSettings::DEFAULTS));
             $exam->forceFill([
                 'context_type' => $context->type,
                 'context_id' => $context->id,
@@ -81,10 +82,6 @@ class ContextExams
                 'assigned_by_id' => $actor->id,
                 'starts_at' => $context->startsAt,
                 'ends_at' => $context->endsAt,
-                'title' => $data['title'],
-                'duration_minutes' => $data['duration_minutes'],
-                'total_score' => $data['total_score'],
-                'passing_score' => $data['passing_score'],
                 'question_snapshot' => collect($selections)->collapse()->map(fn (Question $question): array => $question->only([
                     'type', 'body', 'options', 'accepted_answers', 'model_answer', 'score',
                 ]))->all(),
@@ -100,9 +97,25 @@ class ContextExams
             || ($exam->assigned_by_id === null && Gate::forUser($actor)->allows('delete', $exam)));
     }
 
-    public function canReorder(Exam $exam, User $actor): bool
+    public function canEditDraft(Exam $exam, User $actor): bool
     {
         return $exam->assigned_by_id === $actor->id && ! $exam->is_published && $exam->attempts_count === 0;
+    }
+
+    public function updateSettings(ExamContext $context, int $examId, User $actor, array $settings): void
+    {
+        abort_unless($context->canManage, 403);
+
+        DB::transaction(function () use ($context, $examId, $actor, $settings): void {
+            $exam = $this->query($context)->lockForUpdate()->findOrFail($examId);
+            abort_unless($exam->assigned_by_id === $actor->id, 403);
+            $exam->loadCount('attempts');
+            if (! $this->canEditDraft($exam, $actor)) {
+                throw ValidationException::withMessages(['settings' => 'تنظیمات فقط برای پیش‌نویس بدون شرکت‌کننده قابل ویرایش است.']);
+            }
+
+            $exam->update(array_intersect_key($settings, SessionExamSettings::DEFAULTS));
+        });
     }
 
     public function questionRevision(Exam $exam): string
@@ -120,7 +133,7 @@ class ContextExams
             abort_unless($exam->assigned_by_id === $actor->id, 403);
 
             $exam->loadCount('attempts');
-            if (! $this->canReorder($exam, $actor)) {
+            if (! $this->canEditDraft($exam, $actor)) {
                 throw ValidationException::withMessages(['order' => 'ترتیب سؤال‌ها فقط برای پیش‌نویس بدون شرکت‌کننده قابل تغییر است.']);
             }
 

@@ -488,6 +488,72 @@ class SessionExamsTest extends TestCase
         return Exam::query()->whereNotNull('question_snapshot')->sole();
     }
 
+    public function test_session_exam_settings_are_saved_on_create_and_edit_without_changing_the_questions_or_session(): void
+    {
+        $this->asTeacher();
+        $create = $this->payload() + [
+            'description' => 'راهنمای آزمون', 'grace_minutes' => 7, 'questions_per_page' => 2,
+            'negative_marking' => 3, 'max_attempts' => 2, 'retake_policy' => 'failed_only',
+            'result_visibility' => 'score', 'shuffle_questions' => true, 'shuffle_options' => true,
+        ];
+        $this->post($this->url(), $create + ['is_published' => true, 'starts_at' => now()->addWeek()])->assertRedirect();
+        $exam = Exam::query()->whereNotNull('question_snapshot')->sole();
+        $this->assertFalse($exam->is_published);
+        $this->assertTrue($exam->starts_at->equalTo($this->session->starts_at));
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.settings.description', 'راهنمای آزمون')
+            ->where('exams.0.settings.grace_minutes', 7)
+            ->where('exams.0.settings.questions_per_page', 2)
+            ->where('exams.0.settings.negative_marking', 3)
+            ->where('exams.0.settings.max_attempts', 2)
+            ->where('exams.0.settings.retake_policy', 'failed_only')
+            ->where('exams.0.settings.result_visibility', 'score')
+            ->where('exams.0.settings.shuffle_questions', true)
+            ->where('exams.0.settings.shuffle_options', true));
+
+        $url = route('exams.context.settings.update', ['class-session', $this->session->id, $exam]);
+        $edit = array_replace($create, [
+            'title' => 'عنوان تازه', 'description' => null, 'negative_marking' => null,
+            'shuffle_questions' => false, 'result_visibility' => 'pass_fail',
+        ]);
+        $this->patch($url, array_replace($edit, ['passing_score' => 21, 'grace_minutes' => 61, 'retake_policy' => 'unknown']))
+            ->assertSessionHasErrors(['passing_score', 'grace_minutes', 'retake_policy']);
+        $this->patch($url, $edit + ['context_id' => 999, 'question_snapshot' => []])->assertRedirect($this->url());
+        $updated = $exam->fresh();
+        $this->assertSame('عنوان تازه', $updated->title);
+        $this->assertNull($updated->description);
+        $this->assertNull($updated->negative_marking);
+        $this->assertFalse($updated->shuffle_questions);
+        $this->assertSame('pass_fail', $updated->result_visibility->value);
+        $this->assertSame($exam->context_id, $updated->context_id);
+        $this->assertSame($exam->question_snapshot, $updated->question_snapshot);
+    }
+
+    public function test_only_the_author_can_edit_settings_of_an_unused_draft_in_this_session(): void
+    {
+        $exam = $this->generatePreviewDraft();
+        $url = route('exams.context.settings.update', ['class-session', $this->session->id, $exam]);
+        $data = $this->payload();
+        $otherSession = ClassSession::factory()->for($this->session->classroom)->taughtBy($this->teacher)->create();
+        $this->patch(route('exams.context.settings.update', ['class-session', $otherSession->id, $exam]), $data)->assertNotFound();
+        $foreign = Exam::factory()->for(Tenant::factory())->create();
+        $this->patch(route('exams.context.settings.update', ['class-session', $this->session->id, $foreign]), $data)->assertNotFound();
+
+        $substitute = User::factory()->create();
+        $this->grantRole($substitute, $this->tenant, 'teacher');
+        $this->session->teachers()->updateExistingPivot($this->teacher->id, ['substitute_id' => $substitute->id]);
+        $this->actingAs($substitute)->patch($url, $data)->assertForbidden();
+        $this->asLearner();
+        $this->patch($url, $data)->assertForbidden();
+
+        $this->asTeacher();
+        $exam->update(['is_published' => true]);
+        $this->patch($url, $data)->assertSessionHasErrors('settings');
+        $exam->update(['is_published' => false]);
+        ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create();
+        $this->patch($url, $data)->assertSessionHasErrors('settings');
+    }
+
     private function assign(?ClassSession $session = null): Exam
     {
         $session ??= $this->session;

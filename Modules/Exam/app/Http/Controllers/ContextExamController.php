@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Exam\Enums\QuestionType;
+use Modules\Exam\Enums\ResultVisibility;
+use Modules\Exam\Enums\RetakePolicy;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
@@ -23,6 +25,7 @@ use Modules\Exam\Services\ExamTaking;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
 use Modules\Exam\Support\QuestionLibrary;
+use Modules\Exam\Support\SessionExamSettings;
 
 class ContextExamController extends Controller
 {
@@ -50,6 +53,12 @@ class ContextExamController extends Controller
 
         return Inertia::render('Exam::Context', [
             'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage],
+            'settings_form' => $host->canManage ? [
+                'defaults' => SessionExamSettings::DEFAULTS,
+                'labels' => SessionExamSettings::labels(),
+                'retake_policies' => collect(RetakePolicy::cases())->mapWithKeys(fn (RetakePolicy $policy): array => [$policy->value => $policy->getLabel()]),
+                'result_visibility' => collect(ResultVisibility::cases())->mapWithKeys(fn (ResultVisibility $visibility): array => [$visibility->value => $visibility->getLabel()]),
+            ] : null,
             'library_url' => $host->canManage && $library->canAccess($request->user(), Tenant::current()) ? route('exams.library') : null,
             'banks' => $host->canManage ? $library->banks($request->user())
                 ->withCount(['questions' => fn (Builder $query) => $query->active()
@@ -62,6 +71,9 @@ class ContextExamController extends Controller
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->ends_at?->toIso8601String(),
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
+                'settings' => $host->canManage && $exams->canEditDraft($exam, $request->user())
+                    ? array_intersect_key($exam->attributesToArray(), SessionExamSettings::DEFAULTS)
+                    : null,
                 'preview_url' => $host->canManage && $exam->question_snapshot !== null
                     ? route('exams.context.preview', [$type, $context, $exam])
                     : null,
@@ -77,26 +89,32 @@ class ContextExamController extends Controller
     public function store(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): RedirectResponse
     {
         $host = $this->context($request, $type, $context, $contexts, manage: true);
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'duration_minutes' => ['required', 'integer', 'between:1,1440'],
-            'total_score' => ['required', 'numeric', 'between:1,1000'],
-            'passing_score' => ['required', 'numeric', 'min:0', 'lte:total_score'],
+        $data = $request->validate(SessionExamSettings::rules() + [
             'banks' => ['required', 'array', 'list', 'max:10'],
             'banks.*' => ['required', 'array:bank_id,question_count,question_ids'],
             'banks.*.bank_id' => ['required', 'integer', 'distinct'],
             'banks.*.question_count' => ['required', 'integer', 'between:1,50'],
             'banks.*.question_ids' => ['sometimes', 'required', 'array', 'list', 'max:50'],
             'banks.*.question_ids.*' => ['required', 'integer', 'distinct'],
-        ], attributes: [
-            'title' => 'عنوان', 'duration_minutes' => 'مدت آزمون', 'total_score' => 'نمرهٔ کل',
-            'passing_score' => 'نمرهٔ قبولی', 'banks' => 'بانک‌های سؤال', 'banks.*.bank_id' => 'بانک سؤال',
+        ], attributes: SessionExamSettings::labels() + [
+            'banks' => 'بانک‌های سؤال', 'banks.*.bank_id' => 'بانک سؤال',
             'banks.*.question_count' => 'تعداد سؤال', 'banks.*.question_ids' => 'سؤال‌های انتخاب‌شده',
             'banks.*.question_ids.*' => 'سؤال انتخاب‌شده',
         ]);
         $exams->generate($host, $data, $request->user(), $library);
 
         return to_route('exams.context', [$type, $context])->with('status', 'پیش‌نویس آزمون جلسه ساخته شد.');
+    }
+
+    public function updateSettings(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse
+    {
+        $host = $this->context($request, $type, $context, $contexts, manage: true);
+        abort_unless($exams->query($host)->whereKey($exam->id)->exists(), 404);
+        abort_unless($exam->assigned_by_id === $request->user()->id, 403);
+        $settings = $request->validate(SessionExamSettings::rules(), attributes: SessionExamSettings::labels());
+        $exams->updateSettings($host, $exam->id, $request->user(), $settings);
+
+        return to_route('exams.context', [$type, $context])->with('status', 'تنظیمات آزمون ذخیره شد.');
     }
 
     public function bankQuestions(Request $request, string $type, int $context, int $bank, ExamContexts $contexts, QuestionLibrary $library): JsonResponse
@@ -136,7 +154,7 @@ class ContextExamController extends Controller
                 'options' => array_column($question['options'] ?? [], 'text'),
             ]),
             'revision' => $exams->questionRevision($exam),
-            'can_reorder' => $exams->canReorder($exam, $request->user()),
+            'can_reorder' => $exams->canEditDraft($exam, $request->user()),
             'shuffled' => $exam->shuffle_questions,
         ], headers: ['Cache-Control' => 'private, no-store']);
     }
