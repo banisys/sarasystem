@@ -20,6 +20,7 @@ The user wants to use Exam in class sessions, and explicitly chose independent r
 - Participants are class members with an attendee role whose joined/left dates include the session date (inclusive, null is unbounded). Membership is checked dynamically for lists, navigation, opening, start, autosave and submission. Explicit users/roles on a contextual exam cannot bypass this rule; their fields are hidden in its admin form.
 - Cancelled/deleted sessions and unregistered/disabled hosts fail closed. Guardians have no acting-as-child exam link or access. Existing results are retained when a session disappears or an exam is unpublished; global authorized exam administrators can still inspect them.
 - The context page shows paginated attempts to its managers only. A separate review page shows answers and permits manual grading of written answers after submission, with bounds validation, grader attribution and a transaction/attempt lock. Choice scores and answers from another attempt cannot be submitted as grades. Participant results continue to honor the existing result-visibility setting.
+- The person who assigned a copy can delete it from the context page while they manage the session and it has no attempts. [ADR 0088](0088-delete-unused-session-exams.md) covers legacy copies and the lock shared with attempt start.
 - The daily-operations tutorial includes an optional Exam mission with a state check and automatic completion/reset. The system-map manifest records the Class → Exam connection.
 
 ## Consequences

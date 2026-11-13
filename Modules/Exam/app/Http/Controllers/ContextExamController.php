@@ -48,6 +48,9 @@ class ContextExamController extends Controller
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->ends_at?->toIso8601String(),
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
+                'delete_url' => $exam->attempts_count === 0 && $exams->canDelete($host, $exam, $request->user())
+                    ? route('exams.context.destroy', [$type, $context, $exam])
+                    : null,
                 'take_url' => $host->canParticipate && $exam->is_published ? route('exams.show', $exam) : null,
             ]),
             'results' => $results,
@@ -58,7 +61,7 @@ class ContextExamController extends Controller
     {
         $host = $this->context($request, $type, $context, $contexts, manage: true);
         $data = $request->validate(['template_id' => ['required', 'integer']]);
-        $exams->assign($host, (int) $data['template_id']);
+        $exams->assign($host, (int) $data['template_id'], $request->user());
 
         return to_route('exams.context', [$type, $context])->with('status', 'آزمون مستقل جلسه آماده شد.');
     }
@@ -71,6 +74,14 @@ class ContextExamController extends Controller
         $exam->update(['is_published' => $data['is_published']]);
 
         return to_route('exams.context', [$type, $context])->with('status', 'وضعیت انتشار آزمون تغییر کرد.');
+    }
+
+    public function destroy(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse
+    {
+        $host = $this->context($request, $type, $context, $contexts);
+        $exams->delete($host, $exam->id, $request->user());
+
+        return to_route('exams.context', [$type, $context])->with('status', 'آزمون از این جلسه حذف شد.');
     }
 
     public function review(Request $request, string $type, int $context, ExamAttempt $attempt, ExamContexts $contexts, ContextExams $exams, ExamTaking $taking): Response

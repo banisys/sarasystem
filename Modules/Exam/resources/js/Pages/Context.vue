@@ -6,6 +6,7 @@ import { formatDateTime } from '../format.js';
 const props = defineProps({ context: Object, templates: Array, exams: Array, results: Object });
 const assignment = useForm({ template_id: '' });
 const publication = useForm({ is_published: false });
+const deletion = useForm({});
 const parameters = () => [props.context.type, props.context.id];
 function assign() {
     assignment.post(route('exams.context.store', parameters()), { preserveScroll: true, onSuccess: () => assignment.reset() });
@@ -13,6 +14,11 @@ function assign() {
 function publish(exam) {
     publication.is_published = !exam.is_published;
     publication.patch(route('exams.context.publish', [...parameters(), exam.id]), { preserveScroll: true });
+}
+function remove(exam) {
+    if (window.confirm(`«${exam.title}» از این جلسه حذف شود؟`)) {
+        deletion.delete(exam.delete_url, { preserveScroll: true });
+    }
 }
 </script>
 
@@ -42,10 +48,12 @@ function publish(exam) {
                 <p v-if="context.can_manage" class="text-sm text-gray-600">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
                 <div class="flex flex-wrap gap-4">
                     <Link v-if="exam.take_url" :href="exam.take_url" class="text-sm font-medium text-violet-700">ورود به آزمون و مشاهدهٔ نتیجه</Link>
-                    <button v-if="context.can_manage" :disabled="publication.processing" class="text-sm text-gray-700 underline disabled:opacity-50" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</button>
+                    <button v-if="context.can_manage" :disabled="publication.processing || deletion.processing" class="text-sm text-gray-700 underline disabled:opacity-50" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</button>
+                    <button v-if="exam.delete_url" type="button" :disabled="deletion.processing || publication.processing" class="text-sm font-medium text-red-700 underline disabled:opacity-50" @click="remove(exam)">حذف آزمون</button>
                 </div>
             </article>
             <p v-for="(error, key) in publication.errors" :key="key" class="text-sm text-red-600" role="alert">{{ error }}</p>
+            <p v-if="deletion.errors.delete_exam" class="text-sm text-red-600" role="alert">{{ deletion.errors.delete_exam }}</p>
             <section v-if="results" class="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
                 <h2 class="font-semibold text-gray-900">نتایج و تصحیح</h2>
                 <p v-if="!results.data.length" class="text-sm text-gray-600">هنوز کسی در آزمون شرکت نکرده است.</p>

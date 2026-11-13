@@ -105,12 +105,84 @@ class SessionExamsTest extends TestCase
         $this->get(route('exams.show', $exam))->assertOk();
     }
 
+    public function test_the_assigner_can_delete_an_unused_copy_and_assign_the_template_again(): void
+    {
+        $exam = $this->assign();
+        $section = $exam->sections()->sole();
+        $delete = $this->deleteUrl($exam);
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('exams.0.delete_url', $delete));
+
+        $this->delete($delete)->assertRedirect($this->url())->assertSessionHas('status', 'آزمون از این جلسه حذف شد.');
+        $this->assertModelMissing($exam);
+        $this->assertModelMissing($section);
+        $this->assertModelExists($this->template);
+        $this->assertNotSame($exam->id, $this->assign()->id);
+    }
+
+    public function test_a_started_attempt_blocks_deletion_even_before_submission(): void
+    {
+        $exam = $this->assign();
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertRedirect();
+        $attempt = $exam->attempts()->sole();
+
+        $this->asTeacher();
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('exams.0.delete_url', null));
+        $this->from($this->url())->delete($this->deleteUrl($exam))->assertRedirect($this->url())
+            ->assertSessionHasErrors(['delete_exam' => 'حذف ممکن نیست؛ دست‌کم یک نفر این آزمون را شروع کرده است.']);
+        $this->assertModelExists($exam);
+        $this->assertModelExists($attempt);
+        $this->assertSame(1, $attempt->answers()->count());
+    }
+
+    public function test_a_session_manager_cannot_claim_or_delete_another_users_copy(): void
+    {
+        $exam = $this->assign();
+        $substitute = User::factory()->create();
+        $this->grantRole($substitute, $this->tenant, 'teacher');
+        $this->session->teachers()->updateExistingPivot($this->teacher->id, ['substitute_id' => $substitute->id]);
+        $this->actingAs($substitute)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->tenant->id]);
+
+        $this->post($this->url(), ['template_id' => $this->template->id])->assertRedirect($this->url());
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('context.can_manage', true)->where('exams.0.delete_url', null));
+        $this->delete($this->deleteUrl($exam))->assertForbidden();
+        $this->assertSame($this->teacher->id, $exam->fresh()->assigned_by_id);
+    }
+
+    public function test_copies_without_an_assigner_require_the_existing_exam_delete_permission(): void
+    {
+        $exam = $this->assign();
+        $exam->forceFill(['assigned_by_id' => null])->save();
+        $delete = $this->deleteUrl($exam);
+        $this->delete($delete)->assertForbidden();
+
+        $admin = User::factory()->superAdmin()->create();
+        $this->actingAs($admin)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->tenant->id]);
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('exams.0.delete_url', $delete));
+        $this->delete($delete)->assertRedirect($this->url());
+        $this->assertModelMissing($exam);
+    }
+
+    public function test_deletion_cannot_target_an_exam_outside_its_session_or_tenant(): void
+    {
+        $otherSession = ClassSession::factory()->for($this->session->classroom)->taughtBy($this->teacher)->create();
+        $otherCopy = $this->assign($otherSession);
+        $foreign = Exam::factory()->for(Tenant::factory())->create();
+
+        foreach ([$otherCopy, $this->template, $foreign] as $exam) {
+            $this->delete($this->deleteUrl($exam))->assertNotFound();
+            $this->assertModelExists($exam);
+        }
+    }
+
     public function test_a_learner_cannot_assign_publish_review_or_grade(): void
     {
         $exam = $this->assign();
         $this->asLearner();
         $this->post($this->url(), ['template_id' => $this->template->id])->assertForbidden();
         $this->patch(route('exams.context.publish', ['class-session', $this->session->id, $exam]), ['is_published' => false])->assertForbidden();
+        $this->delete($this->deleteUrl($exam))->assertForbidden();
         $attempt = ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create();
         $this->get(route('exams.context.review', ['class-session', $this->session->id, $attempt]))->assertForbidden();
         $this->post(route('exams.context.grade', ['class-session', $this->session->id, $attempt]), ['scores' => []])->assertForbidden();
@@ -248,6 +320,11 @@ class SessionExamsTest extends TestCase
     private function url(?ClassSession $session = null): string
     {
         return route('exams.context', ['class-session', ($session ?? $this->session)->id]);
+    }
+
+    private function deleteUrl(Exam $exam): string
+    {
+        return route('exams.context.destroy', ['class-session', $this->session->id, $exam]);
     }
 
     private function asTeacher(): void

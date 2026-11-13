@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-13 — Added «حذف آزمون» to the session exam page ([ADR 0088](decisions/0088-delete-unused-session-exams.md)). Session managers can remove copies they assigned before the first attempt starts. Copies without a recorded assigner require the existing exam delete permission. Updated the daily operations tutorial and applied the local migration. All 748 tests, Pint and the Vite build passed.
 - 2026-11-12 — Increased the gap above the exam action row to 40 px and measured it in the browser on exam 515.
 - 2026-11-12 — Increased the gap above the exam action row from 16 to 24 px. Verified on exam 515 in the browser and built the Vite assets.
 - 2026-11-12 — Grouped the exam session controls below the title with distinct icons and colours, prioritised time, location and status, and updated the daily operations tutorial. Verified exam 515 in the browser at desktop and mobile widths, including the attendance and seating dialogs and keyboard focus after closing the 3D room. The 41 targeted tests, Pint and Vite build passed.
