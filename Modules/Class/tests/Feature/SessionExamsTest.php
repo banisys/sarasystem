@@ -345,6 +345,64 @@ class SessionExamsTest extends TestCase
         $this->assertSame(0, Exam::query()->whereNotNull('context_type')->count());
     }
 
+    public function test_question_picker_lists_only_eligible_questions_for_session_managers(): void
+    {
+        $colleague = User::factory()->create();
+        $publicBank = QuestionBank::factory()->for($this->tenant)->create(['owner_id' => $colleague->id, 'is_shared' => true]);
+        $privateBank = QuestionBank::factory()->for($this->tenant)->create(['owner_id' => $colleague->id]);
+        $foreignBank = QuestionBank::factory()->for(Tenant::factory())->create(['owner_id' => $this->teacher->id, 'is_shared' => true]);
+        $public = Question::factory()->for($this->tenant)->create(['owner_id' => $colleague->id, 'is_shared' => true]);
+        $private = Question::factory()->for($this->tenant)->create(['owner_id' => $colleague->id]);
+        $inactive = Question::factory()->for($this->tenant)->inactive()->create(['owner_id' => $colleague->id, 'is_shared' => true]);
+        $publicBank->questions()->attach([$public->id, $private->id, $inactive->id]);
+
+        $url = fn (QuestionBank $bank): string => route('exams.context.bank-questions', ['class-session', $this->session->id, $bank]);
+        $this->asTeacher();
+        $this->getJson($url($publicBank))->assertOk()->assertExactJson(['questions' => [[
+            'id' => $public->id, 'body' => $public->body, 'type' => $public->type->getLabel(), 'score' => $public->score,
+        ]]]);
+        $this->getJson($url($privateBank))->assertNotFound();
+        $this->getJson($url($foreignBank))->assertNotFound();
+        $this->asLearner();
+        $this->getJson($url($publicBank))->assertForbidden();
+    }
+
+    public function test_generation_keeps_manual_choices_and_reserves_them_before_the_random_draw(): void
+    {
+        $manual = $this->bank->questions()->sole();
+        $random = Question::factory()->for($this->tenant)->create(['owner_id' => $this->teacher->id]);
+        $this->bank->questions()->attach($random);
+        $secondBank = QuestionBank::factory()->for($this->tenant)->create(['owner_id' => $this->teacher->id]);
+        $secondBank->questions()->attach($manual);
+        $data = $this->payload();
+        $data['banks'][] = ['bank_id' => $secondBank->id, 'question_count' => 1, 'question_ids' => [$manual->id]];
+
+        $this->asTeacher();
+        $this->post($this->url(), $data)->assertRedirect($this->url());
+        $exam = Exam::query()->whereNotNull('context_type')->sole();
+        $this->assertSame([$random->body, $manual->body], array_column($exam->question_snapshot, 'body'));
+    }
+
+    public function test_generation_rejects_stale_or_unrelated_manual_questions_and_duplicate_choices(): void
+    {
+        $manual = $this->bank->questions()->sole();
+        $other = Question::factory()->for($this->tenant)->create(['owner_id' => $this->teacher->id]);
+        $secondBank = QuestionBank::factory()->for($this->tenant)->create(['owner_id' => $this->teacher->id]);
+        $secondBank->questions()->attach([$manual->id, $other->id]);
+
+        $this->asTeacher();
+        $data = $this->payload();
+        $data['banks'][0]['question_ids'] = [$other->id];
+        $this->post($this->url(), $data)->assertSessionHasErrors('banks.0.question_ids');
+        $data['banks'][0]['question_ids'] = [$manual->id];
+        $duplicate = $data;
+        $duplicate['banks'][] = ['bank_id' => $secondBank->id, 'question_count' => 1, 'question_ids' => [$manual->id]];
+        $this->post($this->url(), $duplicate)->assertSessionHasErrors('banks.1.question_ids.0');
+        $manual->update(['is_active' => false]);
+        $this->post($this->url(), $data)->assertSessionHasErrors('banks.0.question_ids');
+        $this->assertSame(0, Exam::query()->whereNotNull('context_type')->count());
+    }
+
     #[TestWith(['ناظر'])]
     #[TestWith(['پشتیبان'])]
     public function test_non_attendee_class_staff_can_manage_a_personal_library(string $roleTitle): void

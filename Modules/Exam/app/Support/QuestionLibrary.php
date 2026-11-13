@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 
@@ -29,6 +30,12 @@ class QuestionLibrary
     public function questions(User $user): Builder
     {
         return Question::query()->where(fn (Builder $query) => $this->visibleTo($query, $user));
+    }
+
+    /** @return BelongsToMany<Question, QuestionBank> */
+    public function availableQuestions(QuestionBank $bank, User $user): BelongsToMany
+    {
+        return $bank->questions()->active()->where(fn (Builder $query) => $this->visibleTo($query, $user));
     }
 
     public function visibleTo(Builder $query, User $user): void

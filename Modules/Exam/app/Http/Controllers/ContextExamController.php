@@ -4,6 +4,7 @@ namespace Modules\Exam\Http\Controllers;
 
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -14,6 +15,7 @@ use Inertia\Response;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Services\ContextExams;
 use Modules\Exam\Services\ExamTaking;
@@ -77,17 +79,35 @@ class ContextExamController extends Controller
             'total_score' => ['required', 'numeric', 'between:1,1000'],
             'passing_score' => ['required', 'numeric', 'min:0', 'lte:total_score'],
             'banks' => ['required', 'array', 'list', 'max:10'],
-            'banks.*' => ['required', 'array:bank_id,question_count'],
+            'banks.*' => ['required', 'array:bank_id,question_count,question_ids'],
             'banks.*.bank_id' => ['required', 'integer', 'distinct'],
             'banks.*.question_count' => ['required', 'integer', 'between:1,50'],
+            'banks.*.question_ids' => ['sometimes', 'required', 'array', 'list', 'max:50'],
+            'banks.*.question_ids.*' => ['required', 'integer', 'distinct'],
         ], attributes: [
             'title' => 'عنوان', 'duration_minutes' => 'مدت آزمون', 'total_score' => 'نمرهٔ کل',
             'passing_score' => 'نمرهٔ قبولی', 'banks' => 'بانک‌های سؤال', 'banks.*.bank_id' => 'بانک سؤال',
-            'banks.*.question_count' => 'تعداد سؤال',
+            'banks.*.question_count' => 'تعداد سؤال', 'banks.*.question_ids' => 'سؤال‌های انتخاب‌شده',
+            'banks.*.question_ids.*' => 'سؤال انتخاب‌شده',
         ]);
         $exams->generate($host, $data, $request->user(), $library);
 
         return to_route('exams.context', [$type, $context])->with('status', 'پیش‌نویس آزمون جلسه ساخته شد.');
+    }
+
+    public function bankQuestions(Request $request, string $type, int $context, int $bank, ExamContexts $contexts, QuestionLibrary $library): JsonResponse
+    {
+        $this->context($request, $type, $context, $contexts, manage: true);
+        $actor = $request->user();
+        $record = $library->banks($actor)->findOrFail($bank);
+        $questions = $library->availableQuestions($record, $actor)->orderBy('exam_questions.id')
+            ->get(['exam_questions.id', 'body', 'type', 'score'])
+            ->map(fn (Question $question): array => [
+                'id' => $question->id, 'body' => $question->body,
+                'type' => $question->type->getLabel(), 'score' => $question->score,
+            ]);
+
+        return response()->json(['questions' => $questions], headers: ['Cache-Control' => 'private, no-store']);
     }
 
     public function publish(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse
