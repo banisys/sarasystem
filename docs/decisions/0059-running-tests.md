@@ -30,7 +30,7 @@ We measured on the dev machine (i7-13620H laptop: 6 performance and 4 efficiency
 - **Trim the data in the slowest tests** — possible later; not measured.
 
 ## Decision
-- While working, run only the tests of what the change touches. Run the whole suite once at the end of a task only if it changes something shared ([conventions.md → Testing](../conventions.md#testing)).
+- Check small appearance-only changes in the affected UI, with a build or targeted tests as needed. For behavior changes, run the affected tests while working. Run the whole suite once at the end for changes to shared infrastructure or behavior across modules ([conventions.md → Testing](../conventions.md#testing)).
 - Run the whole suite with `--parallel --processes=8`.
 - `DefaultRoles::install()` makes the missing permissions in one `insertOrIgnore` statement and reads them back in one query.
 - The `pgsql` service runs with `max_locks_per_transaction=256`, so a run with more processes no longer fails.
@@ -39,6 +39,7 @@ Result, measured the same way on 583 tests: `Modules/Tutorial/tests` 19 s, whole
 
 ## Consequences
 - **Amended 2026-11-09:** a commit alone does not require the whole suite. Module-only changes run affected tests; changes to shared code still require one final whole-suite run.
+- **Amended 2026-11-11:** small appearance-only changes use focused verification even when they touch shared presentation code.
 - A bug outside the affected tests may show up only in a later whole-suite run. This is the accepted tradeoff for faster module-only work.
 - `DefaultRoles::install()` makes permissions without model events, so nothing that listens for a new `Permission` hears them. Nothing does today, and the tutorial must not record them anyway.
 - `max_locks_per_transaction` also applies to the local application database. Production settings are separate and not affected by this file.

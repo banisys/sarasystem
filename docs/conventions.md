@@ -74,8 +74,9 @@ Some clients pay per feature, so an installation must work with any module disab
 ## Testing
 - PHPUnit; tests live in `tests/Feature`, `tests/Unit` and `Modules/{Name}/tests`.
 - **Which tests to run ([ADR 0059](decisions/0059-running-tests.md)):**
-  - While working, run only what the change touches: `php artisan test --compact Modules/{Name}/tests`, a file, or `--filter`. If the change affects a screen or service another module uses, add that module's tests. If it affects a tutorial mission, add `Modules/Tutorial/tests`.
-  - Run the whole suite once at the end of a task only if it changes something shared (`app/`, `tests/` helpers, config, core hooks, or what several modules use). A commit alone does not require the whole suite; a module-only change runs only the affected tests.
+  - For small appearance-only changes, check the affected UI once in the browser. Run a build when needed to see the change or a targeted test if it covers the result.
+  - For behavior changes, run only the affected tests while working. Use `php artisan test --compact Modules/{Name}/tests`, a file, or `--filter`. If the change affects a tutorial mission, add `Modules/Tutorial/tests`.
+  - Run the whole suite once at the end for changes to shared infrastructure (such as test helpers, config or core hooks) or behavior across modules. A commit alone does not require the whole suite.
 - The whole suite runs in parallel with `php artisan test --parallel --processes=8` (`brianium/paratest`). More processes gave no real gain on the dev machine. Each process gets its own database (`testing_test_1`, `testing_test_2`, …, created and migrated automatically). Single files or `--filter` runs stay sequential.
 - Before adding expensive work to a `setUp()`, check its cost: it is paid once per test. A slow helper or service used in `setUp()` is usually better fixed at its source.
 - Tests run on PostgreSQL, in the `testing` database of the `pgsql` container (`phpunit.xml`), with `RefreshDatabase`. The database is created by `docker/pgsql/create-testing-database.sql` when the volume is first initialised; on an existing volume, create it with `CREATE DATABASE testing`.
@@ -85,4 +86,4 @@ Some clients pay per feature, so an installation must work with any module disab
 ## Git
 - Default branch: `main`. _(TODO: branch naming for features.)_
 - Commit messages: [Conventional Commits](https://www.conventionalcommits.org/) in English, e.g. `feat(school): add classroom resource`, `docs: record tenancy ADR`, `chore: add docker compose`.
-- Agents commit finished and verified work on `main` without asking, keep unrelated work in separate commits, and tell the user what they committed. They don't push unless asked.
+- Agents leave small edits uncommitted until related changes form a meaningful, verified batch or the user asks for a commit. They commit substantial finished work and ready batches on `main` without asking and tell the user what they committed. Unrelated edits stay separate. Agents don't push unless asked.
