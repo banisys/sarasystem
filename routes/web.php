@@ -39,13 +39,13 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::put('/profile/mobile', [ProfileController::class, 'updateMobile'])->name('profile.mobile');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
-    Route::get('/tenants/select', [SwitchTenantController::class, 'show'])->name('tenants.select');
-    Route::post('/tenants/{tenant:slug}/switch', [SwitchTenantController::class, 'store'])->name('tenants.switch');
+    Route::get('/profile/tenants/select', [SwitchTenantController::class, 'show'])->name('tenants.select');
+    Route::post('/profile/tenants/{tenant:slug}/switch', [SwitchTenantController::class, 'store'])->name('tenants.switch');
 
     Route::middleware(EnsureTenantSelected::class)->group(function () {
         // The panel opens on a module's page when one is offered, e.g. a
         // teacher's calendar (ADR 0069); otherwise on the dashboard.
-        Route::get('/dashboard', function (Request $request): RedirectResponse|Response {
+        Route::get('/profile/dashboard', function (Request $request): RedirectResponse|Response {
             $home = UserPanel::home($request->user(), Tenant::current());
 
             return $home !== null ? redirect($home) : Inertia::render('Dashboard');

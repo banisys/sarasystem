@@ -43,7 +43,7 @@ class QuestionLibraryTest extends TestCase
 
         $colleague = $this->instructor($tenant);
         $destination = QuestionBank::factory()->for($tenant)->create(['owner_id' => $colleague->id]);
-        $this->get(route('exams.library', ['bank' => $bank->id]))->assertInertia(fn (AssertableInertia $page) => $page
+        $this->get("/profile/exams/library?bank={$bank->id}")->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Exam::QuestionLibrary')->where('questions.data.0.model_answer', 'My name is Ali.')
             ->where('questions.data.0.is_mine', false));
         $this->patch(route('exams.library.banks.update', $bank), ['title' => 'تغییر'])->assertNotFound();

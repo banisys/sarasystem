@@ -103,10 +103,10 @@ class PasswordLoginTest extends TestCase
 
         $this->post('/login', ['identifier' => '0084575948', 'password' => 'password']);
 
-        $this->get('/dashboard')->assertRedirect(route('tenants.select'));
+        $this->get('/profile/dashboard')->assertRedirect(route('tenants.select'));
 
         $this->post(route('tenants.switch', $second->slug))->assertRedirect(route('dashboard'));
-        $this->get('/dashboard')->assertOk()
+        $this->get('/profile/dashboard')->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard')->where('tenant.current.id', $second->id));
     }
 

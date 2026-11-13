@@ -64,7 +64,7 @@ The engine's rules ([ADR 0040](decisions/0040-step-by-step-tutorial.md)) shape w
   - *SMS codes* (2, 4: signing a contract, signing in with a code). With the `log` driver the step tells where to read the code (`storage/logs/sms.log`). A tutorial-only helper that shows the last code sent to a tutorial account would be friendlier.
   - *Scheduled tasks* (4: contract reminders). Not taught as waiting; the mission shows the list filter «پایان نزدیک» instead.
   - *Uploaded files stay on disk after a reset.* Accepted for now.
-  - *Inertia pages have no auto-fill* (the public forms, «کلاس‌های من», `/exams`, `/contracts`): `perform()` covers them, and «پر کردن خودکار» for Vue forms is a later engine task.
+  - *Inertia pages have no auto-fill* (the public forms, «کلاس‌های من», `/profile/exams`, `/profile/contracts`): `perform()` covers them, and «پر کردن خودکار» for Vue forms is a later engine task.
 
 ---
 
@@ -72,7 +72,7 @@ The engine's rules ([ADR 0040](decisions/0040-step-by-step-tutorial.md)) shape w
 
 Implemented; see [LanguageInstitute](../Modules/Tutorial/app/Scenarios/LanguageInstitute.php) and ADR 0040 for its 20 missions: a branch and a registrar; hiring the instructor through «همکاری با ما» with documents and a contract; admitting a learner through preregistration; a term, a class, members, a session and attendance.
 
-Possible additions later: the instructor signing her contract in `/contracts`, and the learner seeing the session in «کلاس‌های من».
+Possible additions later: the instructor signing her contract in `/profile/contracts`, and the learner seeing the session in «کلاس‌های من».
 
 ---
 
@@ -199,7 +199,7 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 | 12 | Hire into the branch as «کارمند»; the contract is issued and an SMS sent | you | employee from the application, contract issued |
 | **C. پرونده‌ی کارمند** ||||
 | 13 | Employee page → «مدارک»: «گواهی سلامت» expiring next month, approved | you | approved document with an expiry |
-| 14 | Sign the contract in `/contracts` with the SMS code | employee | signed electronically |
+| 14 | Sign the contract in `/profile/contracts` with the SMS code | employee | signed electronically |
 | 15 | «الحاقیه» (numbered `…/1`), «صدور», «ثبت امضای کاغذی» | you | amendment signed on paper |
 | 16 | «تمدید» and «صدور» | you | renewal issued |
 | 17 | A second contract ending in 20 days, issued; the «پایان نزدیک» filter | you | issued contract ending within 30 days |
@@ -235,12 +235,12 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 | 7 | Class «امنیت اطلاعات - گروه ۱» in «واحد فروش», mode «آنلاین» with «بستر کلاس آنلاین» «لینک» and a meeting link (ADR 0073), capacity 10 | training manager | «کلاس‌ها» | online classroom |
 | 8 | Add the 5 trainees («فراگیر»), the trainer and yourself as «ناظر دوره» | training manager | tab «اعضا» | members by role |
 | 9 | Daily schedule for three days with the trainer | training manager | tab «برنامه» | 3 sessions |
-| 10 | As the trainer: open the session in «کلاس‌های من», take attendance (one «با تأخیر» 10 minutes), record content and a file | trainer | `/my-classes` | attendance + content |
+| 10 | As the trainer: open the session in «کلاس‌های من», take attendance (one «با تأخیر» 10 minutes), record content and a file | trainer | `/profile/my-classes` | attendance + content |
 | **C. آزمون پایان دوره** |||||
 | 11 | Question bank «امنیت اطلاعات» with 5 choice questions (one with negative marking) | training manager | exam screens | bank + 5 questions |
 | 12 | Exam «آزمون پایان دوره»: 5 questions from the bank, for the class's trainees by role «فراگیر» in «واحد فروش», 20 minutes, one retake, results shown after the window | training manager | «آزمون‌ها» | exam with participants and rules |
-| 13 | As a trainee: take the exam; leave one unanswered; submit | trainee | `/exams` | attempt submitted |
-| 14 | As another trainee: start and let the time run out (or submit after the grace minutes) | trainee | `/exams` | timed-out attempt (or merge into 13) |
+| 13 | As a trainee: take the exam; leave one unanswered; submit | trainee | `/profile/exams` | attempt submitted |
+| 14 | As another trainee: start and let the time run out (or submit after the grace minutes) | trainee | `/profile/exams` | timed-out attempt (or merge into 13) |
 | 15 | Results: see scores and, as a trainee, the result once allowed | training manager | «نتایج آزمون‌ها» | attempts graded |
 | **D. جمع‌بندی** |||||
 | 16 | Close the course: set the trainees' leave date, deactivate the class | training manager | class | members left, class inactive |

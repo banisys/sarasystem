@@ -160,7 +160,7 @@ function leaveImpersonation() {
 
                 <!-- The account: profile and logout. -->
                 <div class="border-t border-gray-100 p-3">
-                    <div class="flex items-center gap-1 rounded-xl p-1.5" :class="isActive(route('profile.edit')) ? 'bg-violet-50' : 'hover:bg-gray-50'">
+                    <div class="flex items-center gap-1 rounded-xl p-1.5" :class="page.component === 'Profile/Edit' ? 'bg-violet-50' : 'hover:bg-gray-50'">
                         <Link :href="route('profile.edit')" class="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1" title="پروفایل">
                             <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-700">
                                 {{ user?.name?.trim()?.charAt(0) }}

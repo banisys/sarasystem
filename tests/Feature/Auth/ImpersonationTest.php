@@ -75,7 +75,7 @@ class ImpersonationTest extends TestCase
         $this->actingAs($this->admin);
         Impersonation::start($this->admin, $this->teacher);
 
-        $this->get('/dashboard')
+        $this->get('/profile/dashboard')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('auth.user.id', $this->teacher->id)

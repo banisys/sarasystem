@@ -95,7 +95,7 @@ class TenantHomeTest extends TestCase
     {
         $reserved = Tenant::reservedSlugs();
 
-        foreach (['cpadmin', 'login', 'dashboard', 'profile', 'tenants', 'build', 'up'] as $slug) {
+        foreach (['cpadmin', 'login', 'profile', 'build', 'up'] as $slug) {
             $this->assertContains($slug, $reserved);
         }
         $this->assertNotContains('west', $reserved);

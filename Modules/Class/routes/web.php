@@ -16,7 +16,7 @@ Route::middleware(['auth', 'auth.session'])->get('/online-classes/sessions/{sess
     ->name('class.online.enter');
 
 // «کلاس‌های من» in the user panel, inside the current tenant (docs/decisions/0026-my-classes.md).
-Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('my-classes')->name('my-classes.')->group(function () {
+Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/my-classes')->name('my-classes.')->group(function () {
     Route::get('/', [MyClassController::class, 'index'])->name('index');
     Route::get('/sessions/{session}', [MyClassController::class, 'show'])->name('session');
     Route::post('/sessions/{session}/attendance', [MyClassController::class, 'attendance'])->name('attendance');

@@ -25,6 +25,8 @@ Nothing is copied from `../LMS` as-is. Port only on the user's request, one name
 _(TODO: formatter/linter, naming rules, file naming.)_
 
 ## Patterns we use
+- Define user-panel routes under `/profile` and generate links and form actions from route names ([ADR 0093](decisions/0093-user-panel-url-prefix.md)).
+
 - Display hierarchical paths with directional chevron icons between labels, as in [Tree Select](decisions/0081-admin-tree-select.md). In admin Blade views, reuse `<x-hierarchy-path-separator />` and keep labels as separate segments so a slash in a label stays visible.
 
 - Admin forms use server-side validation and Persian field labels/messages. Keep native browser validation disabled (`novalidate`) through the panel defaults; custom raw HTML input forms in the panel must set it too. Do not remove server validation or enable browser bubbles on new forms ([ADR 0037](decisions/0037-admin-server-side-validation.md)).

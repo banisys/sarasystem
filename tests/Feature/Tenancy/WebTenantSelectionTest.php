@@ -38,7 +38,7 @@ class WebTenantSelectionTest extends TestCase
                 ->where('tenant.current', null)
                 ->has('tenant.available', 2));
 
-        $this->post("/tenants/{$tenantB->slug}/switch")->assertRedirect();
+        $this->post("/profile/tenants/{$tenantB->slug}/switch")->assertRedirect();
 
         $this->get('/')->assertInertia(fn (AssertableInertia $page) => $page->where('tenant.current.id', $tenantB->id));
     }
@@ -49,7 +49,7 @@ class WebTenantSelectionTest extends TestCase
         $user = User::factory()->create();
         $this->grantRole($user, $own, 'student');
 
-        $this->actingAs($user)->post("/tenants/{$other->slug}/switch")->assertForbidden();
+        $this->actingAs($user)->post("/profile/tenants/{$other->slug}/switch")->assertForbidden();
     }
 
     public function test_a_stale_tenant_in_the_session_is_dropped(): void
