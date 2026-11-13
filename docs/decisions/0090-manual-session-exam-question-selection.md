@@ -17,3 +17,5 @@ The server rechecks bank membership, question visibility, active status and coun
 
 ## Consequences
 Closing the picker without confirming leaves the row as it was. The list is fetched only for a session manager, and it contains question summaries without answer keys. A selection that became unavailable before saving must be reviewed again.
+
+After generation, the draft's saved question order can be reviewed and changed as described in [ADR 0091](0091-preview-and-reorder-session-exams.md).

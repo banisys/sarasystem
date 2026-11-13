@@ -427,6 +427,67 @@ class SessionExamsTest extends TestCase
         ];
     }
 
+    public function test_the_author_can_preview_and_reorder_a_draft_and_participants_receive_the_saved_order(): void
+    {
+        $exam = $this->generatePreviewDraft();
+        $url = route('exams.context.preview', ['class-session', $this->session->id, $exam]);
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('exams.0.preview_url', $url));
+        $preview = $this->getJson($url)->assertOk()->assertJsonPath('can_reorder', true)->assertJsonCount(2, 'questions')->json();
+        $this->assertArrayNotHasKey('model_answer', $preview['questions'][0]);
+        $this->assertSame($exam->question_snapshot[0]['body'], $preview['questions'][0]['body']);
+        $this->patchJson($url, ['order' => [0, 2], 'revision' => $preview['revision']])->assertUnprocessable()->assertJsonValidationErrors('order');
+
+        $response = $this->patchJson($url, ['order' => [1, 0], 'revision' => $preview['revision']])->assertOk();
+        $this->assertNotSame($preview['revision'], $response->json('revision'));
+        $this->assertSame(array_reverse($exam->question_snapshot), $exam->fresh()->question_snapshot);
+        $this->patchJson($url, ['order' => [1, 0], 'revision' => $preview['revision']])->assertUnprocessable()->assertJsonValidationErrors('order');
+
+        $this->patch(route('exams.context.publish', ['class-session', $this->session->id, $exam]), ['is_published' => true])->assertRedirect();
+        $this->getJson($url)->assertJsonPath('can_reorder', false);
+        $this->patchJson($url, ['order' => [1, 0], 'revision' => $response->json('revision')])->assertUnprocessable();
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertRedirect();
+        $this->assertSame(array_reverse(array_column($exam->question_snapshot, 'body')), $exam->attempts()->sole()->answers()->pluck('question_body')->all());
+    }
+
+    public function test_preview_is_scoped_to_the_session_and_only_the_author_can_reorder(): void
+    {
+        $exam = $this->generatePreviewDraft();
+        $url = route('exams.context.preview', ['class-session', $this->session->id, $exam]);
+        $revision = $this->getJson($url)->json('revision');
+        $otherSession = ClassSession::factory()->for($this->session->classroom)->taughtBy($this->teacher)->create();
+        $this->getJson(route('exams.context.preview', ['class-session', $otherSession->id, $exam]))->assertNotFound();
+
+        $foreignExam = Exam::factory()->for(Tenant::factory())->create();
+        $this->getJson(route('exams.context.preview', ['class-session', $this->session->id, $foreignExam]))->assertNotFound();
+
+        $substitute = User::factory()->create();
+        $this->grantRole($substitute, $this->tenant, 'teacher');
+        $this->session->teachers()->updateExistingPivot($this->teacher->id, ['substitute_id' => $substitute->id]);
+        $this->actingAs($substitute);
+        $this->getJson($url)->assertOk()->assertJsonPath('can_reorder', false);
+        $this->patchJson($url, ['order' => [1, 0], 'revision' => $revision])->assertForbidden();
+
+        $this->asLearner();
+        $this->getJson($url)->assertForbidden();
+        $this->patchJson($url, ['order' => [1, 0], 'revision' => $revision])->assertForbidden();
+
+        $this->asTeacher();
+        ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create();
+        $this->getJson($url)->assertJsonPath('can_reorder', false);
+        $this->patchJson($url, ['order' => [1, 0], 'revision' => $revision])->assertUnprocessable();
+        $this->assertSame($exam->question_snapshot, $exam->fresh()->question_snapshot);
+    }
+
+    private function generatePreviewDraft(): Exam
+    {
+        $this->bank->questions()->attach(Question::factory()->for($this->tenant)->create(['owner_id' => $this->teacher->id]));
+        $this->asTeacher();
+        $this->post($this->url(), $this->payload(count: 2))->assertRedirect($this->url());
+
+        return Exam::query()->whereNotNull('question_snapshot')->sole();
+    }
+
     private function assign(?ClassSession $session = null): Exam
     {
         $session ??= $this->session;

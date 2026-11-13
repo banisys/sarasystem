@@ -100,6 +100,48 @@ class ContextExams
             || ($exam->assigned_by_id === null && Gate::forUser($actor)->allows('delete', $exam)));
     }
 
+    public function canReorder(Exam $exam, User $actor): bool
+    {
+        return $exam->assigned_by_id === $actor->id && ! $exam->is_published && $exam->attempts_count === 0;
+    }
+
+    public function questionRevision(Exam $exam): string
+    {
+        return hash('sha256', json_encode($exam->question_snapshot, JSON_THROW_ON_ERROR));
+    }
+
+    /** @param list<int> $order */
+    public function reorder(ExamContext $context, int $examId, User $actor, array $order, string $revision): string
+    {
+        abort_unless($context->canManage, 403);
+
+        return DB::transaction(function () use ($context, $examId, $actor, $order, $revision): string {
+            $exam = $this->query($context)->whereNotNull('question_snapshot')->lockForUpdate()->findOrFail($examId);
+            abort_unless($exam->assigned_by_id === $actor->id, 403);
+
+            $exam->loadCount('attempts');
+            if (! $this->canReorder($exam, $actor)) {
+                throw ValidationException::withMessages(['order' => 'ترتیب سؤال‌ها فقط برای پیش‌نویس بدون شرکت‌کننده قابل تغییر است.']);
+            }
+
+            if ($revision !== $this->questionRevision($exam)) {
+                throw ValidationException::withMessages(['order' => 'ترتیب سؤال‌ها تغییر کرده است. پیش‌نمایش را دوباره باز کنید.']);
+            }
+
+            $questions = $exam->question_snapshot;
+            if (count($order) !== count($questions) || array_diff(array_keys($questions), $order) !== []) {
+                throw ValidationException::withMessages(['order' => 'ترتیب باید شامل همهٔ سؤال‌های آزمون، هر کدام یک‌بار، باشد.']);
+            }
+
+            $exam->forceFill([
+                'question_snapshot' => array_map(fn (int $index): array => $questions[$index], $order),
+                'shuffle_questions' => false,
+            ])->save();
+
+            return $this->questionRevision($exam->refresh());
+        });
+    }
+
     public function delete(ExamContext $context, int $examId, User $actor): void
     {
         abort_unless($context->canManage, 403);

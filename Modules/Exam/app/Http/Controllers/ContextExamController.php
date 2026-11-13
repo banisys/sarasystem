@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Exam\Enums\QuestionType;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
@@ -61,6 +62,9 @@ class ContextExamController extends Controller
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->ends_at?->toIso8601String(),
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
+                'preview_url' => $host->canManage && $exam->question_snapshot !== null
+                    ? route('exams.context.preview', [$type, $context, $exam])
+                    : null,
                 'delete_url' => $exam->attempts_count === 0 && $exams->canDelete($host, $exam, $request->user())
                     ? route('exams.context.destroy', [$type, $context, $exam])
                     : null,
@@ -118,6 +122,36 @@ class ContextExamController extends Controller
         $exam->update(['is_published' => $data['is_published']]);
 
         return to_route('exams.context', [$type, $context])->with('status', 'وضعیت انتشار آزمون تغییر کرد.');
+    }
+
+    public function preview(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): JsonResponse
+    {
+        $host = $this->context($request, $type, $context, $contexts, manage: true);
+        $exam = $exams->query($host)->whereNotNull('question_snapshot')->withCount('attempts')->findOrFail($exam->id);
+
+        return response()->json([
+            'questions' => collect($exam->question_snapshot)->map(fn (array $question, int $index): array => [
+                'index' => $index, 'body' => $question['body'], 'score' => $question['score'],
+                'type' => QuestionType::from($question['type'])->getLabel(),
+                'options' => array_column($question['options'] ?? [], 'text'),
+            ]),
+            'revision' => $exams->questionRevision($exam),
+            'can_reorder' => $exams->canReorder($exam, $request->user()),
+            'shuffled' => $exam->shuffle_questions,
+        ], headers: ['Cache-Control' => 'private, no-store']);
+    }
+
+    public function reorder(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): JsonResponse
+    {
+        $host = $this->context($request, $type, $context, $contexts, manage: true);
+        $data = $request->validate([
+            'revision' => ['required', 'string', 'size:64'],
+            'order' => ['required', 'array', 'list', 'max:500'],
+            'order.*' => ['required', 'integer', 'min:0', 'distinct'],
+        ], attributes: ['revision' => 'نسخهٔ پیش‌نمایش', 'order' => 'ترتیب سؤال‌ها', 'order.*' => 'جایگاه سؤال']);
+        $revision = $exams->reorder($host, $exam->id, $request->user(), $data['order'], $data['revision']);
+
+        return response()->json(['message' => 'ترتیب سؤال‌ها ذخیره شد.', 'revision' => $revision]);
     }
 
     public function destroy(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse

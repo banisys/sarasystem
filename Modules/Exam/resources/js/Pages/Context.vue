@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { Head, Link, useForm, useHttp, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
+import ExamPreview from '../Components/ExamPreview.vue';
 import { formatDateTime } from '../format.js';
 
 const props = defineProps({ context: Object, banks: Array, exams: Array, results: Object, library_url: String });
@@ -181,7 +182,10 @@ function remove(exam) {
             </section>
             <p v-if="!exams.length" class="rounded-2xl bg-white p-5 text-gray-600">آزمونی برای این جلسه ثبت نشده است.</p>
             <article v-for="exam in exams" :key="exam.id" class="space-y-3 rounded-2xl bg-white p-5 shadow-sm">
-                <h2 class="font-semibold text-gray-900">{{ exam.title }}</h2>
+                <div class="flex items-start justify-between gap-3">
+                    <h2 class="font-semibold text-gray-900">{{ exam.title }}</h2>
+                    <ExamPreview v-if="exam.preview_url" :exam="exam" />
+                </div>
                 <p class="text-sm text-gray-600">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }} · از {{ formatDateTime(exam.starts_at) }} تا {{ formatDateTime(exam.ends_at) }}</p>
                 <p v-if="context.can_manage" class="text-sm text-gray-600">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
                 <div class="flex flex-wrap gap-4">
