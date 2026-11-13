@@ -22,4 +22,4 @@ The public site and user panel share Vue, Inertia and Tailwind. They need consis
 
 ## Consequences
 
-Other Vue screens inherit the font and their shared layout. They can adopt the controls and styles as their content is redesigned. Tutorial steps and route names for the initial screens still match the existing flows.
+The user panel uses [UiPageHeader](../../resources/js/Components/Ui/UiPageHeader.vue) for page titles, context and related actions. Lists use keyboard-focusable cards and explain empty states. The class session groups teaching tasks, and the timed exam keeps progress and save status visible below the mobile header. Account and contract code forms move focus to the code field after sending. Grade entry and report cards use responsive rows and tables.

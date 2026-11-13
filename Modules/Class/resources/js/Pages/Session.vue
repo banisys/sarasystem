@@ -1,5 +1,8 @@
 <script setup>
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import UiButton from '@/Components/Ui/UiButton.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import FilePicker from '@/Components/FilePicker.vue';
 import JalaliDateInput from '@/Components/JalaliDateInput.vue';
@@ -27,9 +30,9 @@ const props = defineProps({
 });
 
 const flash = computed(() => usePage().props.flash.status);
-const fieldBase = 'rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200';
-const field = `${fieldBase} w-full`;
-const primaryButton = 'inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-violet-700 disabled:opacity-50';
+const fieldBase = 'ui-field mt-0';
+const field = fieldBase;
+const primaryButton = 'ui-button border-transparent bg-brand-600 text-brand-contrast hover:bg-brand-action-hover';
 // Stay on the tab and keep what was typed after a save.
 const keep = { preserveScroll: true, preserveState: true };
 
@@ -152,25 +155,23 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
     <Head :title="session.class" />
 
     <AppLayout>
-        <Link v-if="session.exams_url" :href="session.exams_url" class="mb-4 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700">آزمون‌های جلسه</Link>
         <div class="space-y-5">
-            <Link :href="route('my-classes.index', ward ? { for: ward.id } : {})" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-violet-700">
-                <PanelIcon name="back" class="size-4" />
-                {{ ward ? `کلاس‌های ${ward.name}` : 'کلاس‌های من' }}
-            </Link>
+            <UiPageHeader
+                :title="session.class"
+                :description="session.subject"
+                icon="calendar"
+                :back-href="route('my-classes.index', ward ? { for: ward.id } : {})"
+                :back-label="ward ? `کلاس‌های ${ward.name}` : 'کلاس‌های من'"
+            >
+                <template v-if="session.exams_url" #actions>
+                    <UiButton :href="session.exams_url" variant="outline">آزمون‌های جلسه</UiButton>
+                </template>
+            </UiPageHeader>
+            <UiNotice v-if="flash" tone="success">{{ flash }}</UiNotice>
 
-            <div v-if="flash" class="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
-                <PanelIcon name="check" class="size-5 shrink-0" />
-                {{ flash }}
-            </div>
-
-            <!-- The session at a glance. -->
-            <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-                <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 p-5">
-                    <div class="min-w-0">
-                        <h1 class="text-xl font-bold text-gray-900" dir="auto">{{ session.class }}</h1>
-                        <p v-if="session.subject" class="mt-0.5 text-gray-600">{{ session.subject }}</p>
-                    </div>
+            <section class="ui-surface overflow-hidden" aria-label="جزئیات جلسه">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ui-line px-4 py-3">
+                    <h2 class="font-semibold">جزئیات جلسه</h2>
                     <div class="flex flex-wrap gap-2 text-xs">
                         <span v-if="session.kind_label !== 'عادی'" class="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700 ring-1 ring-sky-200">{{ session.kind_label }}</span>
                         <span class="rounded-full px-3 py-1 font-medium ring-1" :class="statusBadge[session.status]">{{ session.status_label }}</span>
@@ -236,14 +237,13 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </section>
 
             <!-- Tabs for staff. -->
-            <nav v-if="showTabs" class="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 shadow-sm ring-1 ring-gray-100" role="tablist">
+            <nav v-if="showTabs" class="ui-surface flex flex-wrap gap-1 p-2" aria-label="بخش‌های جلسه">
                 <button
                     v-for="item in tabs"
                     :key="item.key"
                     type="button"
-                    role="tab"
-                    :aria-selected="tab === item.key"
-                    class="flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm transition"
+                    :aria-pressed="tab === item.key"
+                    class="ui-button border-transparent"
                     :class="tab === item.key ? 'bg-violet-600 font-medium text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
                     @click="tab = item.key"
                 >
@@ -258,7 +258,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </nav>
 
             <!-- Attendance -->
-            <form v-if="attendance && (!showTabs || tab === 'attendance')" class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100" @submit.prevent="saveAttendance">
+            <form v-if="attendance && (!showTabs || tab === 'attendance')" class="ui-surface" @submit.prevent="saveAttendance">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-4">
                     <div class="flex flex-wrap gap-2 text-xs">
                         <span v-for="status in attendanceCounts" :key="status.value" class="rounded-full px-3 py-1 font-medium" :class="statusTone[status.value].chip">
@@ -279,14 +279,13 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                             <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-700">{{ initial(row.name) }}</span>
                             <span class="font-medium text-gray-900">{{ row.name }}</span>
                         </div>
-                        <div class="flex overflow-hidden rounded-lg ring-1 ring-gray-200" role="radiogroup" :aria-label="`حضور ${row.name}`">
+                        <div class="flex max-w-full flex-wrap gap-1 rounded-ui border border-ui-line p-1" role="group" :aria-label="`حضور ${row.name}`">
                             <button
                                 v-for="status in statuses"
                                 :key="status.value"
                                 type="button"
-                                role="radio"
-                                :aria-checked="row.status === status.value"
-                                class="px-3 py-2 text-sm transition"
+                                :aria-pressed="row.status === status.value"
+                                class="ui-button border-transparent px-3"
                                 :class="row.status === status.value ? statusTone[status.value].on : 'bg-white text-gray-600 hover:bg-gray-50'"
                                 @click="row.status = status.value"
                             >
@@ -300,9 +299,10 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                             min="1"
                             max="600"
                             placeholder="چند دقیقه؟"
-                            :class="[fieldBase, 'w-28']"
+                            :aria-label="`دقیقهٔ تأخیر ${row.name}`"
+                            :class="[fieldBase, 'max-w-28']"
                         />
-                        <input v-model="row.note" type="text" maxlength="255" placeholder="توضیح (اختیاری)" :class="[fieldBase, 'min-w-40 flex-1 basis-40']" />
+                        <input v-model="row.note" type="text" maxlength="255" placeholder="توضیح (اختیاری)" :aria-label="`توضیح حضور ${row.name}`" :class="[fieldBase, 'min-w-40 flex-1 basis-40']" />
                         <p v-if="attendanceForm.errors[`rows.${index}.late_minutes`]" class="w-full text-xs text-red-600">{{ attendanceForm.errors[`rows.${index}.late_minutes`] }}</p>
                     </li>
                 </ul>
@@ -317,7 +317,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </form>
 
             <!-- Content: the form for who may record it… -->
-            <form v-if="contentForm && (!showTabs || tab === 'content')" class="space-y-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100" @submit.prevent="saveContent">
+            <form v-if="contentForm && (!showTabs || tab === 'content')" class="space-y-6 ui-surface p-4 sm:p-5" @submit.prevent="saveContent">
                 <div v-if="!session.content && session.planned_topics.length" class="rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-900">
                     <span class="font-medium">طبق طرح درس، این جلسه:</span> {{ session.planned_topics.join('، ') }}
                 </div>
@@ -411,7 +411,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </form>
 
             <!-- …or what was recorded, to read. -->
-            <section v-if="!contentForm && (!showTabs || tab === 'content')" class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+            <section v-if="!contentForm && (!showTabs || tab === 'content')" class="space-y-4 ui-surface p-4 sm:p-5">
                 <h2 class="flex items-center gap-2 font-semibold text-gray-900">
                     <PanelIcon name="book" class="size-5 text-violet-600" />
                     مطالب جلسه
@@ -423,7 +423,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                             <span dir="auto">{{ topic }}</span>
                         </span>
                     </div>
-                    <p v-if="session.content.summary" class="whitespace-pre-line text-sm leading-7 text-gray-700">{{ session.content.summary }}</p>
+                    <p v-if="session.content.summary" class="whitespace-pre-line wrap-break-word text-sm leading-7 text-gray-700">{{ session.content.summary }}</p>
                 </template>
                 <p v-else-if="session.planned_topics.length" class="text-sm text-gray-600">طبق طرح درس: {{ session.planned_topics.join('، ') }}</p>
                 <p v-else class="text-sm text-gray-500">هنوز ثبت نشده است.</p>
@@ -433,7 +433,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                         تکلیف
                         <span v-if="session.homework_due" class="rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-normal">مهلت: {{ session.homework_due }}</span>
                     </div>
-                    <p class="mt-2 whitespace-pre-line leading-7">{{ session.homework }}</p>
+                    <p class="mt-2 whitespace-pre-line wrap-break-word leading-7">{{ session.homework }}</p>
                 </div>
 
                 <div v-if="session.materials.length" class="flex flex-wrap gap-2">
@@ -452,7 +452,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </section>
 
             <!-- The person's own hand-in, or a ward's (read only). -->
-            <section v-if="session.homework && (mySubmission || canSubmit)" class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+            <section v-if="session.homework && (mySubmission || canSubmit)" class="space-y-4 ui-surface p-4 sm:p-5">
                 <h2 class="flex items-center gap-2 font-semibold text-gray-900">
                     <PanelIcon name="pencil" class="size-5 text-violet-600" />
                     {{ ward ? `تکلیف ${ward.name}` : 'تکلیف شما' }}
@@ -464,9 +464,9 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                     </p>
                     <div v-if="mySubmission.is_graded" class="rounded-xl bg-emerald-50 p-3 text-emerald-900 ring-1 ring-emerald-100">
                         <p v-if="mySubmission.score !== null">نمره: <strong class="text-lg">{{ mySubmission.score }}</strong> از {{ homeworkMaxScore }}</p>
-                        <p v-if="mySubmission.feedback" class="mt-1 whitespace-pre-line">بازخورد مدرس: {{ mySubmission.feedback }}</p>
+                        <p v-if="mySubmission.feedback" class="mt-1 whitespace-pre-line wrap-break-word">بازخورد مدرس: {{ mySubmission.feedback }}</p>
                     </div>
-                    <p v-if="!canSubmit && mySubmission.answer" class="whitespace-pre-line rounded-lg bg-gray-50 p-3">{{ mySubmission.answer }}</p>
+                    <p v-if="!canSubmit && mySubmission.answer" class="whitespace-pre-line wrap-break-word rounded-lg bg-gray-50 p-3">{{ mySubmission.answer }}</p>
                     <div v-if="!canSubmit && mySubmission.files.length" class="flex flex-wrap gap-2">
                         <a v-for="file in mySubmission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-violet-700 ring-1 ring-gray-200 hover:bg-violet-50">
                             <PanelIcon name="document" class="size-4" />
@@ -506,7 +506,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </section>
 
             <!-- Grading: who may (HomeworkBook::canGrade), at any time. -->
-            <form v-if="submissions && (!showTabs || tab === 'submissions')" class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100" @submit.prevent="saveGrades">
+            <form v-if="submissions && (!showTabs || tab === 'submissions')" class="ui-surface" @submit.prevent="saveGrades">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 p-4 text-sm">
                     <span class="text-gray-700">تحویل داده‌اند: <strong>{{ handedIn }}</strong> از {{ submissions.length }}</span>
                     <span class="text-gray-500">نمره از {{ homeworkMaxScore }}</span>
@@ -526,7 +526,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                             </span>
                         </div>
                         <template v-if="row.submission">
-                            <p v-if="row.submission.answer" class="whitespace-pre-line rounded-lg bg-gray-50 p-3 leading-7 text-gray-800">{{ row.submission.answer }}</p>
+                            <p v-if="row.submission.answer" class="whitespace-pre-line wrap-break-word rounded-lg bg-gray-50 p-3 leading-7 text-gray-800">{{ row.submission.answer }}</p>
                             <div v-if="row.submission.files.length" class="flex flex-wrap gap-2">
                                 <a v-for="file in row.submission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-3 py-1.5 text-violet-700 ring-1 ring-gray-200 hover:bg-violet-50">
                                     <PanelIcon name="document" class="size-4" />
@@ -534,8 +534,8 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                 </a>
                             </div>
                             <div class="flex flex-wrap gap-2">
-                                <input v-model="gradeOf(row.submission).score" type="number" min="0" :max="homeworkMaxScore" step="0.25" placeholder="نمره" :class="[fieldBase, 'w-28']" />
-                                <input v-model="gradeOf(row.submission).feedback" type="text" maxlength="1000" placeholder="بازخورد (اختیاری)" :class="[fieldBase, 'min-w-48 flex-1']" />
+                                <input v-model="gradeOf(row.submission).score" type="number" min="0" :max="homeworkMaxScore" step="0.25" placeholder="نمره" :aria-label="`نمرهٔ ${row.name}`" :class="[fieldBase, 'max-w-28']" />
+                                <input v-model="gradeOf(row.submission).feedback" type="text" maxlength="1000" placeholder="بازخورد (اختیاری)" :aria-label="`بازخورد برای ${row.name}`" :class="[fieldBase, 'min-w-48 flex-1']" />
                             </div>
                         </template>
                     </li>

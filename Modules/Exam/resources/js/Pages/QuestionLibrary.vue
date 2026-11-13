@@ -1,4 +1,6 @@
 <script setup>
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
 import { computed, ref } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -20,9 +22,9 @@ const correctIndex = computed({
     get: () => question.options.findIndex((option) => option.is_correct),
     set: (index) => question.options.forEach((option, optionIndex) => { option.is_correct = optionIndex === index; }),
 });
-const field = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm';
-const primary = 'rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50';
-const secondary = 'text-sm font-medium text-violet-700 hover:underline';
+const field = 'ui-field';
+const primary = 'ui-button border-transparent bg-brand-600 text-brand-contrast hover:bg-brand-action-hover';
+const secondary = 'inline-flex min-h-9 items-center text-sm font-medium text-brand-700 hover:underline';
 const libraryUrl = () => route('exams.library');
 
 function editBank(record = null) {
@@ -86,16 +88,22 @@ function removeOption(index) {
     <AppLayout>
         <Head title="بانک سؤال" />
         <div class="space-y-6">
-            <header class="space-y-2">
-                <h1 class="text-xl font-bold text-gray-900">بانک سؤال</h1>
-                <p class="text-sm text-gray-600">بانک و سؤال خصوصی فقط برای شما در پنل کاربری در دسترس است. همکاران مجاز همین شعبه می‌توانند از محتوای عمومی استفاده کنند.</p>
-            </header>
-            <p v-if="page.props.flash.status" class="rounded-xl bg-emerald-50 p-4 text-emerald-800" role="status">{{ page.props.flash.status }}</p>
+            <UiPageHeader
+                title="بانک سؤال"
+                description="همکاران مجاز همین شعبه می‌توانند از بانک‌ها و سؤال‌های عمومی استفاده کنند."
+                icon="book"
+            >
+                <template #actions>
+                    <a href="#bank-title" class="ui-button border-ui-line bg-white hover:bg-ui-canvas">{{ editingBank ? 'ویرایش بانک' : 'بانک جدید' }}</a>
+                    <a href="#question-body" class="ui-button border-ui-line bg-white hover:bg-ui-canvas">{{ editingQuestion ? 'ویرایش سؤال' : 'سؤال جدید' }}</a>
+                </template>
+            </UiPageHeader>
+            <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
             <p v-for="(error, key) in deletion.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
-            <section class="grid gap-5 rounded-2xl bg-white p-5 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-                <form class="space-y-3" novalidate @submit.prevent="saveBank">
+            <section class="ui-surface grid gap-5 p-4 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                <form class="min-w-0 space-y-3 rounded-ui bg-ui-canvas p-3 sm:p-4" novalidate @submit.prevent="saveBank">
                     <h2 class="font-semibold">{{ editingBank ? 'ویرایش بانک' : 'بانک جدید' }}</h2>
-                    <label class="block space-y-1 text-sm"><span>عنوان بانک</span><input id="bank-title" v-model="bank.title" :class="field" /></label>
+                    <label class="block space-y-1 text-sm"><span>عنوان بانک</span><input id="bank-title" class="scroll-mt-24" v-model="bank.title" :class="field" /></label>
                     <label class="block space-y-1 text-sm"><span>توضیحات</span><textarea v-model="bank.description" rows="2" :class="field" /></label>
                     <label class="flex items-center gap-2 text-sm"><input v-model="bank.is_shared" type="checkbox" /> عمومی در این شعبه</label>
                     <p v-for="(error, key) in bank.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
@@ -107,14 +115,14 @@ function removeOption(index) {
                 <div class="space-y-3">
                     <h2 class="font-semibold">بانک‌های من و بانک‌های عمومی</h2>
                     <p v-if="!banks.data.length" class="text-sm text-gray-600">هنوز بانکی در دسترس نیست.</p>
-                    <article v-for="record in banks.data" :key="record.id" class="space-y-2 rounded-lg border border-gray-200 p-3">
+                    <article v-for="record in banks.data" :key="record.id" :class="{ 'bg-brand-50/60': selectedBank?.id === record.id }" class="min-w-0 space-y-2 rounded-ui border border-ui-line p-3">
                         <div class="flex flex-wrap items-baseline justify-between gap-2">
                             <h3 class="font-medium">{{ record.title }}</h3>
                             <span class="text-xs text-gray-600">{{ record.is_mine ? 'بانک من · ' : '' }}{{ record.is_shared ? 'عمومی' : 'خصوصی' }} · {{ record.questions_count }} سؤال</span>
                         </div>
-                        <p v-if="record.description" class="whitespace-pre-wrap text-sm text-gray-600">{{ record.description }}</p>
+                        <p v-if="record.description" class="whitespace-pre-wrap wrap-break-word text-sm text-gray-600">{{ record.description }}</p>
                         <div class="flex flex-wrap gap-4">
-                            <Link :href="route('exams.library', { bank: record.id })" :class="secondary" preserve-scroll>سؤال‌های بانک</Link>
+                            <Link :href="route('exams.library', { bank: record.id })" :class="secondary" :aria-current="selectedBank?.id === record.id ? 'true' : undefined" preserve-scroll>{{ selectedBank?.id === record.id ? 'بانک انتخاب‌شده' : 'سؤال‌های بانک' }}</Link>
                             <button v-if="record.is_mine" type="button" :class="secondary" @click="editBank(record)">ویرایش</button>
                             <button v-if="record.is_mine" type="button" :disabled="deletion.processing" class="text-sm text-red-700" @click="remove('banks', record.id)">حذف</button>
                         </div>
@@ -125,8 +133,8 @@ function removeOption(index) {
                     </nav>
                 </div>
             </section>
-            <section class="grid gap-5 rounded-2xl bg-white p-5 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-                <form class="space-y-3" novalidate @submit.prevent="saveQuestion">
+            <section class="ui-surface grid gap-5 p-4 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                <form class="min-w-0 space-y-3 rounded-ui bg-ui-canvas p-3 sm:p-4" novalidate @submit.prevent="saveQuestion">
                     <h2 class="font-semibold">{{ editingQuestion ? 'ویرایش سؤال' : 'سؤال جدید' }}</h2>
                     <label class="block space-y-1 text-sm">
                         <span>نوع سؤال</span>
@@ -136,7 +144,7 @@ function removeOption(index) {
                     </label>
                     <label class="block space-y-1 text-sm">
                         <span>متن سؤال</span>
-                        <textarea id="question-body" v-model="question.body" rows="3" :class="field" />
+                        <textarea id="question-body" class="scroll-mt-24" v-model="question.body" rows="3" :class="field" />
                     </label>
                     <fieldset v-if="question.type === 'choice'" class="space-y-2">
                         <legend class="text-sm font-medium">گزینه‌ها و پاسخ درست</legend>
@@ -178,15 +186,15 @@ function removeOption(index) {
                         <Link v-if="selectedBank" :href="libraryUrl()" :class="secondary" preserve-scroll>همهٔ سؤال‌ها</Link>
                     </div>
                     <p v-if="!questions.data.length" class="text-sm text-gray-600">سؤالی برای نمایش وجود ندارد.</p>
-                    <article v-for="record in questions.data" :key="record.id" class="space-y-2 rounded-lg border border-gray-200 p-3">
-                        <p class="whitespace-pre-wrap text-sm font-medium">{{ record.body }}</p>
+                    <article v-for="record in questions.data" :key="record.id" class="min-w-0 space-y-2 rounded-ui border border-ui-line p-3">
+                        <p class="whitespace-pre-wrap wrap-break-word text-sm font-medium">{{ record.body }}</p>
                         <p class="text-xs text-gray-600">{{ types[record.type] }} · {{ record.score }} نمره · {{ record.is_mine ? 'سؤال من · ' : '' }}{{ record.is_shared ? 'عمومی' : 'خصوصی' }}{{ record.is_active ? '' : ' · غیرفعال' }}</p>
                         <details v-if="record.options || record.accepted_answers || record.model_answer" class="text-sm">
                             <summary class="cursor-pointer text-gray-700">پاسخ‌ها</summary>
                             <ul v-if="record.options" class="mt-2 list-disc space-y-1 ps-5">
                                 <li v-for="option in record.options" :key="option.key">{{ option.text }}{{ option.is_correct ? ' (درست)' : '' }}</li>
                             </ul>
-                            <p v-else class="mt-2 whitespace-pre-wrap">{{ record.accepted_answers?.join('، ') ?? record.model_answer }}</p>
+                            <p v-else class="mt-2 whitespace-pre-wrap wrap-break-word">{{ record.accepted_answers?.join('، ') ?? record.model_answer }}</p>
                         </details>
                         <div v-if="record.is_mine" class="flex gap-4">
                             <button type="button" :class="secondary" @click="editQuestion(record)">ویرایش</button>

@@ -1,5 +1,7 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import UiButton from '@/Components/Ui/UiButton.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
+import { Head } from '@inertiajs/vue3';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -16,16 +18,16 @@ defineProps({
 
     <AppLayout>
         <div class="mx-auto max-w-lg">
-            <section class="rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-gray-100">
+            <section class="ui-surface p-5 text-center sm:p-7">
                 <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
                     <PanelIcon name="video" class="size-6" />
                 </div>
                 <h1 class="mt-4 text-lg font-semibold text-gray-900">ورود به کلاس آنلاین ممکن نشد</h1>
                 <p v-if="$props.class" class="mt-1 text-sm text-gray-500">{{ $props.class }}<span v-if="time"> · {{ time }}</span></p>
-                <p class="mt-4 text-sm leading-7 text-gray-800">{{ message }}</p>
-                <Link :href="route('my-classes.index')" class="mt-6 inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-violet-700">
+                <UiNotice class="mt-4 text-start" tone="error">{{ message }}</UiNotice>
+                <UiButton :href="route('my-classes.index')" class="mt-6">
                     کلاس‌های من
-                </Link>
+                </UiButton>
             </section>
         </div>
     </AppLayout>

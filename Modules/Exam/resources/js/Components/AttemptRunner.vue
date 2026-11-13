@@ -1,6 +1,7 @@
 <script setup>
+import UiButton from '@/Components/Ui/UiButton.vue';
 import { router, useHttp } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatDuration } from '../format.js';
 
 const props = defineProps({
@@ -20,6 +21,13 @@ const submitting = ref(false);
 const perPage = Math.max(1, props.exam.questions_per_page);
 const pageCount = Math.max(1, Math.ceil(props.attempt.questions.length / perPage));
 const currentPage = ref(0);
+const pageHeading = ref(null);
+
+async function goToPage(page) {
+    currentPage.value = page;
+    await nextTick();
+    pageHeading.value?.focus();
+}
 const pageQuestions = computed(() => props.attempt.questions.slice(currentPage.value * perPage, (currentPage.value + 1) * perPage));
 const answeredCount = computed(() => Object.values(autosave.answers).filter((value) => value !== null && value !== '').length);
 
@@ -39,7 +47,7 @@ function tick() {
 function save() {
     clearTimeout(saveTimeout);
 
-    autosave.put(route('exams.attempt.save', props.exam.id), {
+    void autosave.put(route('exams.attempt.save', props.exam.id), {
         onSuccess: (response) => {
             savedAt.value = response.saved_at;
             saveFailed.value = false;
@@ -47,6 +55,8 @@ function save() {
         onError: () => {
             saveFailed.value = true;
         },
+    }).catch(() => {
+        saveFailed.value = true;
     });
 }
 
@@ -92,15 +102,21 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="space-y-4">
-        <div class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm">
-            <div class="text-sm text-gray-600">
-                {{ answeredCount }} از {{ attempt.questions.length }} سؤال پاسخ داده شده
-                <span v-if="saveFailed" class="ms-2 text-rose-600">ذخیره نشد؛ اتصال را بررسی کنید.</span>
-                <span v-else-if="autosave.processing" class="ms-2 text-gray-400">در حال ذخیره…</span>
-                <span v-else-if="savedAt" class="ms-2 text-emerald-600">ذخیره شد</span>
+        <div class="ui-surface sticky top-16 z-10 flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 lg:top-0">
+            <div class="min-w-0 flex-1 space-y-1.5 text-sm text-ui-muted">
+                <p class="font-semibold text-ui-ink">{{ answeredCount }} از {{ attempt.questions.length }} سؤال پاسخ داده شده</p>
+                <progress class="block h-1.5 w-full max-w-48 accent-brand-600" :value="answeredCount" :max="attempt.questions.length || 1" aria-label="پیشرفت پاسخ‌گویی" />
+                <div class="flex flex-wrap items-center gap-x-2 text-xs" role="status">
+                    <span v-if="saveFailed" class="text-rose-700">ذخیره نشد.</span>
+                    <span v-else-if="autosave.processing">در حال ذخیره…</span>
+                    <span v-else-if="savedAt" class="text-emerald-700">ذخیره شد</span>
+                    <button v-if="saveFailed" type="button" class="min-h-8 text-brand-700 underline" :disabled="autosave.processing || submitting" @click="save">تلاش دوباره</button>
+                </div>
             </div>
             <div
-                class="rounded-lg px-3 py-1 font-mono text-lg"
+                class="shrink-0 rounded-lg px-3 py-1 text-lg font-bold tabular-nums"
+                role="timer"
+                aria-label="زمان باقی‌مانده"
                 :class="secondsLeft < 60 ? 'bg-rose-50 text-rose-700' : 'bg-violet-50 text-violet-700'"
                 dir="ltr"
             >
@@ -108,13 +124,17 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
+        <h2 ref="pageHeading" tabindex="-1" class="scroll-mt-48 text-sm font-semibold text-ui-muted focus:outline-none lg:scroll-mt-28">
+            صفحهٔ {{ currentPage + 1 }} از {{ pageCount }}
+        </h2>
+
         <div
             v-for="(question, index) in pageQuestions"
             :key="question.id"
-            class="rounded-2xl bg-white p-5 shadow-sm"
+            class="ui-surface p-4 sm:p-5"
         >
-            <div class="flex items-start justify-between gap-3">
-                <p class="whitespace-pre-line font-medium text-gray-900">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+                <p class="min-w-0 flex-1 basis-48 whitespace-pre-line wrap-break-word font-medium leading-8 text-ui-ink">
                     <span class="text-violet-700">{{ currentPage * perPage + index + 1 }}.</span>
                     <template v-if="question.blank_parts">
                         {{ question.blank_parts[0] }}
@@ -122,7 +142,7 @@ onBeforeUnmount(() => {
                             v-model="autosave.answers[question.id]"
                             type="text"
                             :aria-label="`پاسخ جای خالی سؤال ${currentPage * perPage + index + 1}`"
-                            class="my-1 w-36 max-w-full rounded-lg border border-gray-300 px-2 py-1 focus:border-violet-500 focus:ring-violet-500"
+                            class="ui-field my-1 inline-block w-36 max-w-full"
                         />
                         {{ question.blank_parts[1] }}
                     </template>
@@ -161,39 +181,20 @@ onBeforeUnmount(() => {
                 v-else-if="!question.blank_parts"
                 v-model="autosave.answers[question.id]"
                 rows="5"
-                class="mt-4 w-full rounded-lg border-gray-300 focus:border-violet-500 focus:ring-violet-500"
+                class="ui-field mt-4"
+                :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`"
                 placeholder="پاسخ خود را بنویسید"
             />
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-                <button
-                    type="button"
-                    class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm disabled:opacity-40"
-                    :disabled="currentPage === 0"
-                    @click="currentPage--"
-                >
-                    قبلی
-                </button>
-                <span class="text-sm text-gray-600">صفحه‌ی {{ currentPage + 1 }} از {{ pageCount }}</span>
-                <button
-                    type="button"
-                    class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm disabled:opacity-40"
-                    :disabled="currentPage >= pageCount - 1"
-                    @click="currentPage++"
-                >
-                    بعدی
-                </button>
-            </div>
-            <button
-                type="button"
-                class="rounded-lg bg-violet-600 px-5 py-2 font-medium text-white hover:bg-violet-700 disabled:opacity-50"
-                :disabled="submitting"
-                @click="submit(true)"
-            >
-                پایان آزمون و ثبت پاسخ‌ها
-            </button>
+        <div class="ui-surface flex flex-wrap items-center justify-between gap-3 p-3">
+            <nav v-if="pageCount > 1" aria-label="صفحه‌های آزمون" class="flex flex-wrap items-center gap-2">
+                <UiButton variant="outline" :disabled="currentPage === 0 || submitting" @click="goToPage(currentPage - 1)">قبلی</UiButton>
+                <UiButton variant="outline" :disabled="currentPage >= pageCount - 1 || submitting" @click="goToPage(currentPage + 1)">بعدی</UiButton>
+            </nav>
+            <UiButton :disabled="submitting" @click="submit(true)">
+                {{ submitting ? 'در حال ثبت پاسخ‌ها…' : 'پایان آزمون و ثبت پاسخ‌ها' }}
+            </UiButton>
         </div>
     </div>
 </template>

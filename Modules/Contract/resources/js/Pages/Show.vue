@@ -1,6 +1,9 @@
 <script setup>
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, ref } from 'vue';
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import UiButton from '@/Components/Ui/UiButton.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -17,12 +20,15 @@ const sendCodeForm = useForm({});
 const signForm = useForm({ code: '', accept: false });
 const codeSent = ref(false);
 const secondsLeft = ref(0);
+const codeInput = ref(null);
 let timer = null;
 
 function sendCode() {
     sendCodeForm.post(route('contracts.code', props.contract.id), {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: async () => {
+            signForm.reset('code');
+            signForm.clearErrors('code');
             codeSent.value = true;
             clearInterval(timer);
             secondsLeft.value = props.resendAfterSeconds;
@@ -30,6 +36,8 @@ function sendCode() {
                 secondsLeft.value -= 1;
                 if (secondsLeft.value <= 0) clearInterval(timer);
             }, 1000);
+            await nextTick();
+            codeInput.value?.focus();
         },
     });
 }
@@ -46,8 +54,6 @@ function sign() {
 
 onBeforeUnmount(() => clearInterval(timer));
 
-const inputClass =
-    'mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-violet-500 focus:ring-violet-500 disabled:bg-gray-100';
 </script>
 
 <template>
@@ -55,17 +61,13 @@ const inputClass =
 
     <AppLayout>
         <div class="mx-auto max-w-3xl space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <Link :href="route('contracts.index')" class="text-sm text-violet-600 hover:text-violet-800">→ قراردادها</Link>
-                <a
-                    :href="route('contracts.pdf', contract.id)"
-                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
-                    دریافت PDF
-                </a>
-            </div>
+            <UiPageHeader :title="contract.title" :description="contract.status_label" icon="document" :back-href="route('contracts.index')" back-label="قراردادها">
+                <template #actions>
+                    <a :href="route('contracts.pdf', contract.id)" class="ui-button border-ui-line bg-white hover:bg-ui-canvas">دریافت PDF</a>
+                </template>
+            </UiPageHeader>
 
-            <p v-if="status" class="rounded-lg bg-green-50 p-3 text-sm text-green-700">{{ status }}</p>
+            <UiNotice v-if="status" tone="success">{{ status }}</UiNotice>
             <p v-if="contract.status === 'cancelled'" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
                 این قرارداد لغو شده است<span v-if="contract.cancellation_reason">: {{ contract.cancellation_reason }}</span>
             </p>
@@ -74,9 +76,9 @@ const inputClass =
             </p>
 
             <!-- The text is rendered on the server from the issued contract. -->
-            <article class="contract rounded-2xl bg-white p-6 leading-8 text-gray-800 shadow-sm" v-html="contract.html" />
+            <article class="contract ui-surface overflow-x-auto p-4 leading-8 text-gray-800 sm:p-6" v-html="contract.html" />
 
-            <section v-if="contract.can_sign" class="rounded-2xl bg-white p-6 shadow-sm">
+            <section v-if="contract.can_sign" class="ui-surface p-4 sm:p-6">
                 <h2 class="font-bold text-gray-900">امضای قرارداد</h2>
                 <p class="mt-1 text-sm text-gray-600">
                     برای امضا، متن را بخوانید و بپذیرید؛ کد امضا به موبایل
@@ -90,15 +92,15 @@ const inputClass =
                 </label>
                 <p v-if="signForm.errors.accept" class="mt-1 text-sm text-red-600">{{ signForm.errors.accept }}</p>
 
-                <button
+                <UiButton
                     v-if="!codeSent"
                     type="button"
                     :disabled="!signForm.accept || sendCodeForm.processing"
-                    class="mt-4 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50"
+                    class="mt-4"
                     @click="sendCode"
                 >
                     ارسال کد امضا
-                </button>
+                </UiButton>
                 <p v-if="sendCodeForm.errors.code" class="mt-1 text-sm text-red-600">{{ sendCodeForm.errors.code }}</p>
 
                 <form v-if="codeSent" class="mt-4 space-y-3" @submit.prevent="sign">
@@ -106,24 +108,26 @@ const inputClass =
                         <label for="sign-code" class="block text-sm font-medium text-gray-700">کد {{ codeLength }} رقمی پیامک‌شده</label>
                         <input
                             id="sign-code"
+                            ref="codeInput"
                             v-model="signForm.code"
                             type="text"
                             dir="ltr"
                             inputmode="numeric"
                             autocomplete="one-time-code"
                             :maxlength="codeLength"
-                            :class="inputClass"
+                            class="ui-field max-w-xs"
+                            :aria-invalid="!!signForm.errors.code"
+                            :aria-describedby="signForm.errors.code ? 'sign-code-error' : undefined"
                         />
-                        <p v-if="signForm.errors.code" class="mt-1 text-sm text-red-600">{{ signForm.errors.code }}</p>
+                        <p v-if="signForm.errors.code" id="sign-code-error" class="ui-field-error">{{ signForm.errors.code }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-4">
-                        <button
+                        <UiButton
                             type="submit"
-                            :disabled="!signForm.accept || signForm.processing"
-                            class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50"
+                            :disabled="!signForm.accept || !signForm.code || signForm.processing"
                         >
-                            امضا می‌کنم
-                        </button>
+                            {{ signForm.processing ? 'در حال ثبت امضا…' : 'امضا می‌کنم' }}
+                        </UiButton>
                         <button
                             type="button"
                             :disabled="secondsLeft > 0 || sendCodeForm.processing"

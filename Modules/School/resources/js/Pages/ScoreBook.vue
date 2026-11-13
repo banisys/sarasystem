@@ -1,5 +1,8 @@
 <script setup>
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
+import UiButton from '@/Components/Ui/UiButton.vue';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -32,28 +35,27 @@ function save() {
 
     <AppLayout>
         <div class="space-y-4">
-            <Link :href="route('school.scores.index')" class="text-sm text-violet-700 hover:underline">‹ دفتر نمره</Link>
-            <h1 class="text-xl font-bold text-gray-900">{{ classroom.title }} · {{ subject.title }}</h1>
+            <UiPageHeader :title="subject.title" :description="classroom.title" icon="book" :back-href="route('school.scores.index')" back-label="دفتر نمره" />
 
-            <div class="flex flex-wrap gap-2 text-sm">
-                <Link
+            <nav v-if="periods.length" class="ui-surface flex flex-wrap gap-2 p-3" aria-label="دوره‌های نمره‌دهی">
+                <UiButton
                     v-for="item in periods"
                     :key="item.id"
                     :href="route('school.scores.show', { classroom: classroom.id, subjectId: subject.id, period: item.id })"
-                    class="rounded-lg border px-3 py-1"
-                    :class="item.id === period?.id ? 'border-violet-600 bg-violet-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'"
+                    :variant="item.id === period?.id ? 'primary' : 'outline'"
+                    :aria-current="item.id === period?.id ? 'true' : undefined"
                 >
                     {{ item.title }}<span v-if="!item.is_open"> (بسته)</span>
-                </Link>
-            </div>
+                </UiButton>
+            </nav>
 
-            <p v-if="flash" class="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{{ flash }}</p>
-            <p v-if="refusal" class="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{{ refusal }}</p>
+            <UiNotice v-if="flash" tone="success">{{ flash }}</UiNotice>
+            <UiNotice v-if="refusal">{{ refusal }}</UiNotice>
 
-            <form v-if="period" class="space-y-2 rounded-2xl bg-white p-5 shadow-sm" @submit.prevent="save">
+            <form v-if="period" class="ui-surface space-y-3 p-4 sm:p-5" @submit.prevent="save">
                 <p v-if="!rows.length" class="text-sm text-gray-500">کسی در این کلاس نیست.</p>
-                <div v-for="(row, index) in form.rows" :key="row.user_id" class="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-2 text-sm">
-                    <span class="w-44 font-medium text-gray-900">{{ row.name }}</span>
+                <div v-for="(row, index) in form.rows" :key="row.user_id" class="grid items-center gap-x-3 gap-y-2 rounded-ui border border-ui-line p-3 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(7rem,0.7fr)_minmax(0,1.5fr)]">
+                    <span class="font-semibold text-ui-ink">{{ row.name }}</span>
                     <input
                         v-if="numeric"
                         v-model="row.score"
@@ -63,24 +65,24 @@ function save() {
                         step="0.25"
                         :placeholder="`از ${maxScore}`"
                         :disabled="!!refusal"
-                        class="w-24 rounded-lg border-gray-300 text-sm"
+                        :aria-label="`نمرهٔ ${row.name}`"
+                        :aria-invalid="!!form.errors[`rows.${index}.score`]"
+                        dir="ltr"
+                        class="ui-field mt-0"
                     />
-                    <select v-else v-model="row.level" :disabled="!!refusal" class="rounded-lg border-gray-300 text-sm">
+                    <select v-else v-model="row.level" :disabled="!!refusal" :aria-label="`ارزشیابی ${row.name}`" :aria-invalid="!!form.errors[`rows.${index}.level`]" class="ui-field mt-0">
                         <option value="">—</option>
                         <option v-for="level in levels" :key="level.value" :value="level.value">{{ level.label }}</option>
                     </select>
-                    <input v-model="row.note" type="text" maxlength="255" placeholder="توضیح" :disabled="!!refusal" class="min-w-0 flex-1 rounded-lg border-gray-300 text-sm" />
-                    <p v-if="form.errors[`rows.${index}.score`]" class="w-full text-xs text-red-600">{{ form.errors[`rows.${index}.score`] }}</p>
+                    <input v-model="row.note" type="text" maxlength="255" placeholder="توضیح" :disabled="!!refusal" :aria-label="`توضیح برای ${row.name}`" :aria-invalid="!!form.errors[`rows.${index}.note`]" class="ui-field mt-0" />
+                    <p v-for="field in ['score', 'level', 'note']" :key="field" v-show="form.errors[`rows.${index}.${field}`]" class="ui-field-error sm:col-span-3" role="alert">
+                        {{ form.errors[`rows.${index}.${field}`] }}
+                    </p>
                 </div>
-                <p v-if="form.errors.form" class="text-sm text-red-600">{{ form.errors.form }}</p>
-                <button
-                    v-if="!refusal && rows.length"
-                    type="submit"
-                    :disabled="form.processing"
-                    class="rounded-lg bg-violet-600 px-4 py-2 text-sm text-white hover:bg-violet-700 disabled:opacity-50"
-                >
-                    ذخیره‌ی نمره‌ها
-                </button>
+                <UiNotice v-if="form.errors.form" tone="error">{{ form.errors.form }}</UiNotice>
+                <UiButton v-if="!refusal && rows.length" type="submit" :disabled="form.processing">
+                    {{ form.processing ? 'در حال ذخیره…' : 'ذخیره‌ی نمره‌ها' }}
+                </UiButton>
             </form>
         </div>
     </AppLayout>

@@ -1,5 +1,8 @@
 <script setup>
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
+import UiButton from '@/Components/Ui/UiButton.vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import AttemptRunner from '../Components/AttemptRunner.vue';
@@ -31,29 +34,22 @@ function start() {
 
     <AppLayout>
         <div class="space-y-4">
-            <Link v-if="exam.context_url" :href="exam.context_url" class="text-sm text-violet-700">بازگشت به آزمون‌های جلسه</Link>
-            <div class="flex items-center justify-between gap-3">
-                <h1 class="text-xl font-bold text-gray-900">{{ exam.title }}</h1>
-                <Link :href="route('exams.index')" class="text-sm text-gray-500 hover:text-gray-800">همه‌ی آزمون‌ها</Link>
-            </div>
+            <UiPageHeader
+                :title="exam.title"
+                icon="clipboard"
+                :back-href="attempt ? null : exam.context_url || route('exams.index')"
+                :back-label="exam.context_url ? 'آزمون‌های جلسه' : 'همه‌ی آزمون‌ها'"
+            />
 
-            <p v-if="page.props.flash.status" class="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                {{ page.props.flash.status }}
-            </p>
-            <p
-                v-for="(message, key) in page.props.errors"
-                :key="key"
-                class="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700"
-            >
-                {{ message }}
-            </p>
+            <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
+            <UiNotice v-for="(message, key) in page.props.errors" :key="key" tone="error">{{ message }}</UiNotice>
 
             <AttemptRunner v-if="attempt" :key="attempt.id" :exam="exam" :attempt="attempt" />
 
             <template v-else>
-                <div class="rounded-2xl bg-white p-6 shadow-sm">
+                <div class="ui-surface p-4 sm:p-6">
                     <p v-if="exam.description" class="mb-4 whitespace-pre-line text-gray-700">{{ exam.description }}</p>
-                    <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+                    <dl class="grid grid-cols-2 gap-3 rounded-ui bg-ui-canvas p-3 text-sm leading-7 sm:grid-cols-3 sm:p-4">
                         <div><dt class="text-gray-500">تعداد سؤال</dt><dd>{{ exam.question_count }}</dd></div>
                         <div><dt class="text-gray-500">مدت</dt><dd>{{ exam.duration_minutes }} دقیقه</dd></div>
                         <div><dt class="text-gray-500">نمره‌ی قبولی</dt><dd>{{ exam.passing_score }} از {{ exam.total_score }}</dd></div>
@@ -67,20 +63,14 @@ function start() {
                     </dl>
 
                     <div class="mt-6">
-                        <p v-if="blocked" class="text-sm text-gray-600">{{ blocked }}</p>
-                        <button
-                            v-else
-                            type="button"
-                            class="rounded-lg bg-violet-600 px-5 py-2 font-medium text-white hover:bg-violet-700 disabled:opacity-50"
-                            :disabled="starting"
-                            @click="start"
-                        >
-                            {{ attemptsUsed ? 'شرکت دوباره' : 'شروع آزمون' }}
-                        </button>
+                        <UiNotice v-if="blocked">{{ blocked }}</UiNotice>
+                        <UiButton v-else :disabled="starting" @click="start">
+                            {{ starting ? 'در حال ورود…' : attemptsUsed ? 'شرکت دوباره' : 'شروع آزمون' }}
+                        </UiButton>
                     </div>
                 </div>
 
-                <div v-if="result" class="rounded-2xl bg-white p-6 shadow-sm">
+                <div v-if="result" class="ui-surface p-4 sm:p-6">
                     <h2 class="font-semibold text-gray-900">آخرین شرکت</h2>
                     <p class="mt-2 text-sm text-gray-600">
                         {{ formatDateTime(result.submitted_at) }}
@@ -100,11 +90,11 @@ function start() {
 
                     <ol v-if="result.answers.length" class="mt-6 space-y-3">
                         <li v-for="(answer, index) in result.answers" :key="answer.id" class="rounded-lg border border-gray-200 p-4">
-                            <p class="whitespace-pre-line font-medium text-gray-900">{{ index + 1 }}. {{ answer.body }}</p>
-                            <p class="mt-2 whitespace-pre-line text-sm">
+                            <p class="whitespace-pre-line wrap-break-word font-medium text-gray-900">{{ index + 1 }}. {{ answer.body }}</p>
+                            <p class="mt-2 whitespace-pre-line wrap-break-word text-sm">
                                 <span class="text-gray-500">پاسخ شما:</span> {{ answer.your_answer ?? 'بی‌پاسخ' }}
                             </p>
-                            <p v-if="answer.correct_answer" class="mt-1 whitespace-pre-wrap text-sm text-emerald-700">
+                            <p v-if="answer.correct_answer" class="mt-1 whitespace-pre-wrap wrap-break-word text-sm text-emerald-700">
                                 <span class="text-gray-500">{{ answer.type === 'descriptive' ? 'پاسخ نمونه:' : 'پاسخ درست:' }}</span> {{ answer.correct_answer }}
                             </p>
                             <p class="mt-1 text-xs text-gray-500">

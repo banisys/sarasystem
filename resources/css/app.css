@@ -89,4 +89,13 @@
     .ui-field-error {
         @apply mt-1.5 text-sm leading-6 text-rose-700;
     }
+
+    .ui-card-link {
+        @apply block rounded-ui border border-ui-line bg-white p-4 transition-colors sm:p-5;
+        @apply hover:border-brand-300 hover:bg-brand-50/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
+    }
+
+    .ui-badge {
+        @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+    }
 }

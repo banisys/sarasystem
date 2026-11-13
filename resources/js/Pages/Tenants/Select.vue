@@ -1,12 +1,22 @@
 <script setup>
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const tenant = computed(() => usePage().props.tenant);
 
+const switching = ref(null);
+
 function choose(slug) {
-    router.post(route('tenants.switch', slug));
+    if (switching.value) return;
+
+    switching.value = slug;
+    router.post(route('tenants.switch', slug), {}, {
+        onFinish: () => { switching.value = null; },
+    });
 }
 </script>
 
@@ -14,29 +24,31 @@ function choose(slug) {
     <Head :title="`انتخاب ${tenant.label}`" />
 
     <AppLayout>
-        <div class="mx-auto max-w-md rounded-2xl bg-white p-6 shadow-sm">
-            <h1 class="text-lg font-bold text-gray-900">انتخاب {{ tenant.label }}</h1>
+        <div class="mx-auto max-w-2xl space-y-4">
+            <UiPageHeader :title="`انتخاب ${tenant.label}`" icon="building" />
 
             <template v-if="tenant.available.length">
-                <p class="mt-1 text-sm text-gray-600">در کدام {{ tenant.label }} می‌خواهید کار کنید؟</p>
-
-                <ul class="mt-4 space-y-2">
+                <ul class="space-y-2" :aria-busy="!!switching">
                     <li v-for="item in tenant.available" :key="item.id">
                         <button
                             type="button"
-                            class="w-full rounded-lg border border-gray-200 px-4 py-3 text-right hover:border-violet-400 hover:bg-violet-50"
-                            :class="{ 'border-violet-500 bg-violet-50': tenant.current?.id === item.id }"
+                            class="ui-card-link flex w-full items-center gap-3 text-start disabled:opacity-60"
+                            :disabled="!!switching"
+                            :aria-current="tenant.current?.id === item.id ? 'true' : undefined"
                             @click="choose(item.slug)"
                         >
-                            {{ item.name }}
+                            <PanelIcon name="building" class="size-5 shrink-0 text-brand-700" />
+                            <span class="min-w-0 flex-1 wrap-break-word font-semibold">{{ item.name }}</span>
+                            <span v-if="switching === item.slug" class="text-xs text-ui-muted" role="status">در حال ورود…</span>
+                            <span v-else-if="tenant.current?.id === item.id" class="ui-badge bg-brand-50 text-brand-700">فعلی</span>
                         </button>
                     </li>
                 </ul>
             </template>
 
-            <p v-else class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+            <UiNotice v-else>
                 حساب شما هنوز به هیچ {{ tenant.label }}ی اضافه نشده است. با مدیر {{ tenant.label }} تماس بگیرید.
-            </p>
+            </UiNotice>
         </div>
     </AppLayout>
 </template>

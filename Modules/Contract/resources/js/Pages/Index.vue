@@ -1,4 +1,6 @@
 <script setup>
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import UiNotice from '@/Components/Ui/UiNotice.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -18,23 +20,23 @@ const statusClass = {
 
     <AppLayout>
         <div class="space-y-4">
-            <h1 class="text-xl font-bold text-gray-900">قراردادها</h1>
+            <UiPageHeader title="قراردادها" icon="document" />
 
-            <p v-if="!contracts.length" class="rounded-2xl bg-white p-6 text-gray-600 shadow-sm">قراردادی برای شما نیست.</p>
+            <UiNotice v-if="!contracts.length">قراردادی برای شما نیست.</UiNotice>
 
             <Link
                 v-for="contract in contracts"
                 :key="contract.id"
                 :href="route('contracts.show', contract.id)"
-                class="block rounded-2xl bg-white p-5 shadow-sm transition hover:shadow-md"
+                class="ui-card-link"
             >
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="font-semibold text-gray-900">{{ contract.title }}</h2>
-                    <span class="rounded-full px-3 py-1 text-xs" :class="statusClass[contract.status]">
+                    <h2 class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ contract.title }}</h2>
+                    <span class="ui-badge" :class="statusClass[contract.status]">
                         {{ contract.status_label }}
                     </span>
                 </div>
-                <div class="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
+                <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ui-muted">
                     <span v-if="contract.number">شماره: {{ contract.number }}</span>
                     <span v-if="contract.kind_line" class="text-violet-700">{{ contract.kind_line }}</span>
                     <span v-if="contract.starts_on">از {{ contract.starts_on }}</span>

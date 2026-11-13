@@ -83,7 +83,9 @@ function at(date, view = props.calendar.view) {
                     v-for="day in calendar.days"
                     :key="day.date"
                     :href="at(day.date, 'day')"
-                    class="ui-surface min-h-24 min-w-0 p-2 text-xs transition-colors hover:border-brand-500"
+                    :aria-current="day.is_today ? 'date' : undefined"
+                    :aria-label="day.label"
+                    class="ui-card-link min-h-24 min-w-0 p-2 text-xs sm:p-2"
                     :class="[day.is_today ? 'border-brand-500' : '', day.holiday ? 'bg-red-50/50' : '']"
                 >
                     <div class="font-semibold" :class="day.holiday ? 'text-red-600' : 'text-gray-700'">{{ day.day_number }}</div>
@@ -122,11 +124,11 @@ function at(date, view = props.calendar.view) {
                             v-for="session in day.sessions"
                             :key="session.id"
                             :href="route('my-classes.session', { session: session.id, ...forWard })"
-                            class="block min-w-0 rounded-ui border border-s-4 p-3.5 text-sm transition-colors hover:border-brand-500"
+                            class="block min-w-0 rounded-ui border border-s-4 p-3.5 text-sm transition-colors hover:border-brand-500 focus-visible:outline-2 focus-visible:outline-brand-600"
                             :class="statusClass[session.status]"
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                <span class="font-semibold text-ui-ink">{{ session.class }}</span>
+                                <span class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ session.class }}</span>
                                 <span class="inline-flex items-center gap-1.5 rounded-md bg-white px-2 py-1 font-semibold tabular-nums text-ui-muted"><PanelIcon name="clock" class="size-4" /><bdi dir="ltr">{{ session.time }}</bdi></span>
                             </div>
                             <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-ui-muted">
