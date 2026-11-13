@@ -33,17 +33,31 @@
                 this.scene?.dispose();
                 this.scene = null;
                 this.state = 'closed';
+                this.$nextTick(() => this.$refs.trigger?.focus());
             },
             destroy() {
                 this.scene?.dispose();
             },
         }"
-        class="flex flex-col gap-3"
+        @if ($isExam)
+            x-bind:class="state === 'failed' && 'basis-full'"
+        @endif
+        class="flex flex-col items-start gap-3"
     >
-        <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="text-sm font-medium text-gray-950 dark:text-white">{{ $isExam ? 'نمای جلسهٔ امتحانی' : 'نمای کلاس' }}</span>
+        <div class="flex w-full flex-wrap items-center justify-between gap-2">
+            @unless ($isExam)
+                <span class="text-sm font-medium text-gray-950 dark:text-white">نمای کلاس</span>
+            @endunless
 
-            <x-filament::button x-on:click="show()" x-bind:disabled="state === 'loading'" color="gray" size="sm" icon="heroicon-m-cube">
+            <x-filament::button
+                x-ref="trigger"
+                x-on:click="show()"
+                x-bind:disabled="state === 'loading'"
+                :color="$isExam ? \Filament\Support\Colors\Color::Violet : 'gray'"
+                :size="$isExam ? 'md' : 'sm'"
+                :outlined="$isExam"
+                icon="heroicon-m-cube"
+            >
                 <span x-text="state === 'loading' ? 'در حال بارگذاری…' : 'نمای سه‌بعدی'">نمای سه‌بعدی</span>
             </x-filament::button>
         </div>
@@ -54,6 +68,9 @@
                 x-cloak
                 x-show="state === 'open'"
                 x-trap.noscroll="state === 'open'"
+                @if ($isExam)
+                    x-on:keydown.escape.stop="hide()"
+                @endif
                 role="dialog"
                 aria-modal="true"
                 aria-label="نمای سه‌بعدی {{ $title }}"
@@ -122,7 +139,7 @@
             </div>
         </template>
 
-        <p x-cloak x-show="state === 'failed'" class="text-sm text-warning-600 dark:text-warning-400">
+        <p x-cloak x-show="state === 'failed'" role="status" class="text-sm text-warning-600 dark:text-warning-400">
             نمای سه‌بعدی در این مرورگر یا دستگاه باز نشد؛ فهرست زیر همان اطلاعات را دارد.
         </p>
 

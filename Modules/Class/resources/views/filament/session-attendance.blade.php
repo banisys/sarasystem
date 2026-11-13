@@ -5,9 +5,9 @@
 @endphp
 
 @if ($total === 0)
-    <p class="text-sm text-gray-500 dark:text-gray-400">ثبت نشده</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $isExam ? 'هنوز حضور و غیاب این جلسه ثبت نشده است.' : 'ثبت نشده' }}</p>
 @else
-    <div class="flex flex-col gap-3">
+    <div @class(['flex flex-col gap-3', 'max-w-xl' => $isExam])>
         <div class="flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
             @foreach ($rows as $row)
                 <span class="{{ $bars[$row['color']] }}" style="width: {{ round($row['count'] / $total * 100, 2) }}%"></span>

@@ -122,8 +122,8 @@ class SessionPageTest extends TestCase
         $url = ClassSessionResource::getUrl('view', ['record' => $session], tenant: $this->west);
 
         Livewire::test(ViewClassSession::class, ['record' => $session->id])
-            ->assertSee('افراد جلسه')
-            ->callAction(TestAction::make('impersonate')->schemaComponent('session_user_'.$teacher->id, 'infolist'))
+            ->assertDontSee('افراد جلسه')
+            ->callAction(TestAction::make('impersonate')->schemaComponent('teacher_'.$teacher->id, 'infolist'))
             ->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($teacher);
@@ -145,13 +145,13 @@ class SessionPageTest extends TestCase
 
         Livewire::test(ViewClassSession::class, ['record' => $session->id])
             ->assertDontSee('افراد جلسه')
-            ->assertActionDoesNotExist(TestAction::make('impersonate')->schemaComponent('session_user_'.$teacher->id, 'infolist'));
+            ->assertActionHidden(TestAction::make('impersonate')->schemaComponent('teacher_'.$teacher->id, 'infolist'));
 
         $this->assertAuthenticatedAs($viewer);
         $this->assertFalse(Impersonation::isActive());
     }
 
-    public function test_session_people_include_members_and_substitutes_but_not_other_tenants_users(): void
+    public function test_teacher_and_attendance_actions_are_scoped_to_the_session(): void
     {
         $session = $this->classSession();
         $teacher = User::factory()->create();
@@ -168,13 +168,34 @@ class SessionPageTest extends TestCase
         $this->actingInPanel($admin = $this->admin(), $this->west);
         $session->teachers()->attach($admin);
 
-        Livewire::test(ViewClassSession::class, ['record' => $session->id])
-            ->assertSee([$teacher->name, $substitute->name, $learner->name])
+        $page = Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertSee([$teacher->name, $substitute->name])
             ->assertDontSee($outsider->name)
-            ->assertActionVisible(TestAction::make('impersonate')->schemaComponent('session_user_'.$learner->id, 'infolist'))
-            ->assertActionVisible(TestAction::make('impersonate')->schemaComponent('session_user_'.$substitute->id, 'infolist'))
-            ->assertActionHidden(TestAction::make('impersonate')->schemaComponent('session_user_'.$admin->id, 'infolist'))
-            ->assertActionDoesNotExist(TestAction::make('impersonate')->schemaComponent('session_user_'.$outsider->id, 'infolist'));
+            ->assertActionVisible(TestAction::make('impersonate')->schemaComponent('teacher_'.$teacher->id, 'infolist'))
+            ->assertActionVisible(TestAction::make('impersonate')->schemaComponent('substitute_'.$teacher->id, 'infolist'))
+            ->assertActionHidden(TestAction::make('impersonate')->schemaComponent('teacher_'.$admin->id, 'infolist'))
+            ->mountAction('attendance');
+
+        $rows = $page->instance()->mountedActions[0]['data']['rows'];
+        $this->assertSame([$learner->id], array_column($rows, 'user_id'));
+        $key = array_key_first($rows);
+        $action = TestAction::make('impersonate')->schemaComponent("rows.{$key}.name");
+
+        $page->assertMountedActionModalSeeHtml('aria-label="ورود با این کاربر"')
+            ->assertActionVisible($action)
+            ->set("mountedActions.0.data.rows.{$key}.user_id", $outsider->id)
+            ->assertActionHidden($action)
+            ->set("mountedActions.0.data.rows.{$key}.user_id", $learner->id)
+            ->mountAction($action)
+            ->assertMountedActionModalSee('ورود با حساب '.$learner->name)
+            ->callMountedAction()
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($learner);
+        $this->assertDatabaseMissing('class_attendances', ['session_id' => $session->id]);
+        $this->post(route('impersonation.leave'))
+            ->assertRedirect(ClassSessionResource::getUrl('view', ['record' => $session], tenant: $this->west));
+        $this->assertAuthenticatedAs($admin);
     }
 
     public function test_who_may_open_it(): void

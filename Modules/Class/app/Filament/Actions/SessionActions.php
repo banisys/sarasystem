@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\Identifiers;
 use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonInterface;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Facades\Filament;
@@ -27,6 +28,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
@@ -173,32 +175,42 @@ class SessionActions
      */
     public static function detailsEntries(bool $exam = false): array
     {
+        $status = TextEntry::make('status')
+            ->label('وضعیت')
+            ->badge()
+            ->helperText(fn (ClassSession $record): ?string => match (SessionCalendar::tone($record)) {
+                'pending' => $exam ? 'زمان جلسه گذشته و حضور و غیاب ثبت نشده است.' : 'زمان جلسه گذشته و حضور و غیاب یا مطالب آن ثبت نشده است.',
+                'live' => 'هم‌اکنون در حال برگزاری است.',
+                default => $record->cancel_reason !== null ? 'دلیل لغو: '.$record->cancel_reason : null,
+            });
+        $time = TextEntry::make('starts_at')
+            ->label('زمان')
+            ->icon($exam ? Heroicon::OutlinedClock : null)
+            ->state(fn (ClassSession $record): string => self::when($record))
+            ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null);
+        if ($exam) {
+            $time->formatStateUsing(function (string $state): HtmlString {
+                [$date, $hours] = explode(' · ', $state, 2);
+
+                return new HtmlString(e($date).'<br><span class="whitespace-nowrap">'.e($hours).'</span>');
+            });
+        }
+
+        $location = TextEntry::make('location')
+            ->label('مکان')
+            ->icon($exam ? Heroicon::OutlinedMapPin : null)
+            ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
+            ->placeholder($exam ? 'مشخص نشده' : '—');
+        $staff = Group::make(fn (ClassSession $record): array => self::teacherEntries($record, $exam ? 'مراقبان' : 'مدرس‌ها'));
+
         return [
             Section::make($exam ? 'مشخصات جلسهٔ امتحانی' : 'مشخصات جلسه')
+                ->icon($exam ? Heroicon::OutlinedInformationCircle : null)
                 ->description(fn (ClassSession $record): ?string => self::lastChange($exam ? 'آخرین تغییر زمان یا وضعیت' : 'آخرین تغییر زمان، وضعیت یا مدرس‌ها', $record->changedBy, $record->changed_at))
                 ->extraAttributes(['class' => 'classroom-details-section'])
                 ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
                 ->schema([
-                    TextEntry::make('status')
-                        ->label('وضعیت')
-                        ->badge()
-                        ->helperText(fn (ClassSession $record): ?string => match (SessionCalendar::tone($record)) {
-                            'pending' => $exam ? 'زمان جلسه گذشته و حضور و غیاب ثبت نشده است.' : 'زمان جلسه گذشته و حضور و غیاب یا مطالب آن ثبت نشده است.',
-                            'live' => 'هم‌اکنون در حال برگزاری است.',
-                            default => $record->cancel_reason !== null ? 'دلیل لغو: '.$record->cancel_reason : null,
-                        }),
-                    TextEntry::make('starts_at')
-                        ->label('زمان')
-                        ->state(fn (ClassSession $record): string => self::when($record))
-                        ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null),
-                    TextEntry::make('teacher')
-                        ->label($exam ? 'مراقبان' : 'مدرس‌ها')
-                        ->state(fn (ClassSession $record): ?string => $record->teacherNames())
-                        ->placeholder('—'),
-                    TextEntry::make('location')
-                        ->label('مکان')
-                        ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
-                        ->placeholder('—'),
+                    ...($exam ? [$time, $location, $status, $staff] : [$status, $time, $staff, $location]),
                     TextEntry::make('mode')
                         ->label('نحوه‌ی برگزاری')
                         ->state(fn (ClassSession $record): ?ClassMode => $record->classroom?->mode)
@@ -211,6 +223,7 @@ class SessionActions
                         }),
                     TextEntry::make('kind')
                         ->label('نوع')
+                        ->hidden($exam)
                         ->badge()
                         ->color('gray'),
                     // The platform the session meets on, and the way in for
@@ -274,7 +287,7 @@ class SessionActions
                     ]),
                 Section::make('حضور و غیاب')
                     ->key('sessionAttendance')
-                    ->headerActions($exam ? [self::seatLayout()] : [])
+                    ->icon($exam ? Heroicon::OutlinedClipboardDocumentCheck : null)
                     ->description(function (ClassSession $record): ?string {
                         $last = $record->attendances()->with('recordedBy')->latest('recorded_at')->first();
 
@@ -282,24 +295,16 @@ class SessionActions
                     })
                     ->schema([
                         View::make('class::filament.session-attendance')
-                            ->viewData(fn (ClassSession $record): array => ['rows' => self::attendanceRows($record)]),
+                            ->viewData(fn (ClassSession $record): array => ['rows' => self::attendanceRows($record), 'isExam' => $exam]),
                         View::make('class::filament.session-scene')
                             ->viewData(fn (ClassSession $record, SessionScene $scene): array => [
                                 'scene' => $scene->for($record),
-                                'title' => implode(' · ', array_filter([
-                                    $exam ? 'جلسهٔ امتحانی' : null,
-                                    $record->subject?->title ?? ($exam ? null : 'جلسه'),
-                                    self::when($record),
-                                ])),
-                                'isExam' => $exam,
+                                'title' => ($record->subject?->title ?? 'جلسه').' · '.self::when($record),
+                                'isExam' => false,
                             ])
-                            ->visible(fn (ClassSession $record, SessionScene $scene): bool => ($user = auth()->user()) instanceof User && $scene->canSee($user, $record)),
+                            ->visible(fn (ClassSession $record, SessionScene $scene): bool => ! $exam && ($user = auth()->user()) instanceof User && $scene->canSee($user, $record)),
                     ]),
             ]),
-            Section::make('افراد جلسه')
-                ->visible(fn (): bool => auth()->user()?->isSuperAdmin() && ! Impersonation::isActive())
-                ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
-                ->schema(fn (ClassSession $record): array => self::peopleEntries($record)),
         ];
     }
 
@@ -308,7 +313,8 @@ class SessionActions
         return Action::make('seatLayout')
             ->label('چیدمان صندلی‌ها')
             ->icon(Heroicon::OutlinedTableCells)
-            ->color('gray')
+            ->color('info')
+            ->outlined()
             ->authorize(fn (ClassSession $record, ExamSeating $seating): bool => ($user = auth()->user()) instanceof User && $seating->canEdit($user, $record))
             ->modalWidth('7xl')
             ->modalSubmitActionLabel('ذخیرهٔ چیدمان')
@@ -328,42 +334,49 @@ class SessionActions
             ));
     }
 
-    /**
-     * Session participants and recorded actors, with the existing impersonation
-     * action. Building entries from the scoped session also restricts targets.
-     *
-     * @return list<TextEntry>
-     */
-    private static function peopleEntries(ClassSession $session): array
+    /** @return list<TextEntry> */
+    private static function teacherEntries(ClassSession $session, string $label): array
     {
-        $day = $session->starts_at->toDateString();
-        $members = $session->classroom?->members()
-            ->where(fn (Builder $query) => $query->whereNull('joined_on')->orWhereDate('joined_on', '<=', $day))
-            ->where(fn (Builder $query) => $query->whereNull('left_on')->orWhereDate('left_on', '>=', $day))
-            ->with('user')->get()->pluck('user') ?? collect();
-        $users = $members->concat($session->teachers)->concat($session->substitutes)
-            ->concat(app(AttendanceRegister::class)->attendees($session))
-            ->concat([$session->changedBy, $session->contentRecordedBy])
-            ->concat($session->attendances()->with('recordedBy')->get()->pluck('recordedBy'))
-            ->concat($session->homeworkSubmissions()->with(['user', 'gradedBy'])->get()->flatMap(fn (HomeworkSubmission $submission): array => [$submission->user, $submission->gradedBy]))
-            ->filter()->unique('id')->sortBy('name');
+        $entries = [];
 
-        return $users->map(fn (User $user): TextEntry => TextEntry::make('session_user_'.$user->getKey())
-            ->hiddenLabel()
-            ->state($user->name)
+        foreach ($session->teaching() as ['teacher' => $teacher, 'substitute' => $substitute]) {
+            $entries[] = self::teacherEntry('teacher_'.$teacher->id, $teacher, $session)
+                ->label($label)
+                ->hiddenLabel($entries !== []);
+
+            if ($substitute !== null) {
+                $entries[] = self::teacherEntry('substitute_'.$teacher->id, $substitute, $session)
+                    ->state('جایگزین: '.$substitute->name)
+                    ->hiddenLabel();
+            }
+        }
+
+        return $entries ?: [TextEntry::make('teacher')->label($label)->placeholder('—')];
+    }
+
+    private static function teacherEntry(string $key, User $teacher, ClassSession $session): TextEntry
+    {
+        return TextEntry::make($key)
+            ->state($teacher->name)
             ->extraAttributes(['class' => '[&_.fi-in-text-affixed-content]:flex-initial'])
-            ->suffixAction(UsersTable::impersonateAction()
-                ->record($user)
-                ->iconButton()
-                ->tooltip('ورود با این کاربر')
-                ->modalHeading('ورود با حساب '.$user->name)
-                ->action(function (Component $livewire) use ($session, $user): void {
-                    Impersonation::start(auth()->user(), $user, ClassSessionResource::detailsUrl($session));
+            ->suffixAction(self::impersonate($session, $teacher));
+    }
 
-                    $panel = Filament::getPanel('admin');
-                    $livewire->redirect($user->canAccessPanel($panel) ? url($panel->getPath()) : route('dashboard'));
-                })))
-            ->values()->all();
+    private static function impersonate(ClassSession $session, User|Closure $target): Action
+    {
+        return UsersTable::impersonateAction()
+            ->model(User::class)
+            ->record($target)
+            ->iconButton()
+            ->tooltip('ورود با این کاربر')
+            ->visible(fn (?User $record): bool => $record !== null && Impersonation::canImpersonate(auth()->user(), $record))
+            ->modalHeading(fn (User $record): string => 'ورود با حساب '.$record->name)
+            ->action(function (Component $livewire, User $record) use ($session): void {
+                Impersonation::start(auth()->user(), $record, ClassSessionResource::detailsUrl($session));
+
+                $panel = Filament::getPanel('admin');
+                $livewire->redirect($record->canAccessPanel($panel) ? url($panel->getPath()) : route('dashboard'));
+            });
     }
 
     /**
@@ -389,8 +402,8 @@ class SessionActions
     public static function pageActions(bool $exam = false): array
     {
         return [
-            self::attendance()->color('primary'),
-            ...($exam ? [] : [self::content()->color('gray'), self::grading()->color('gray')]),
+            self::attendance()->color($exam ? 'success' : 'primary'),
+            ...($exam ? [self::seatLayout()] : [self::content()->color('gray'), self::grading()->color('gray')]),
             ActionGroup::make([
                 self::move(),
                 ...($exam ? [] : [self::substitute()]),
@@ -469,23 +482,30 @@ class SessionActions
                     'note' => $recorded[$user->getKey()]->note ?? null,
                 ])->values()->all()];
             })
-            ->schema([
-                Repeater::make('rows')
-                    ->hiddenLabel()
-                    ->addable(false)
-                    ->deletable(false)
-                    ->reorderable(false)
-                    ->columns(12)
-                    ->schema([
-                        Hidden::make('user_id'),
-                        TextInput::make('name')->hiddenLabel()->disabled()->dehydrated(false)->columnSpan(3),
-                        ToggleButtons::make('status')->hiddenLabel()->options(AttendanceStatus::class)->inline()->required()->live()->columnSpan(5),
-                        TextInput::make('late_minutes')->hiddenLabel()->placeholder('دقیقه')->numeric()->minValue(1)->maxValue(600)
-                            ->visible(fn (Get $get): bool => $get('status') === AttendanceStatus::Late->value || $get('status') === AttendanceStatus::Late)
-                            ->columnSpan(1),
-                        TextInput::make('note')->hiddenLabel()->placeholder('توضیح')->maxLength(255)->columnSpan(3),
-                    ]),
-            ])
+            ->schema(function (ClassSession $record, AttendanceRegister $register): array {
+                $attendees = auth()->user()?->isSuperAdmin() && ! Impersonation::isActive()
+                    ? $register->attendees($record)->keyBy('id')
+                    : collect();
+
+                return [
+                    Repeater::make('rows')
+                        ->hiddenLabel()
+                        ->addable(false)
+                        ->deletable(false)
+                        ->reorderable(false)
+                        ->columns(12)
+                        ->schema([
+                            Hidden::make('user_id'),
+                            TextInput::make('name')->hiddenLabel()->disabled()->dehydrated(false)->columnSpan(3)
+                                ->suffixAction(self::impersonate($record, fn (Get $get): ?User => $attendees->get((int) $get('user_id'))), isInline: true),
+                            ToggleButtons::make('status')->hiddenLabel()->options(AttendanceStatus::class)->inline()->required()->live()->columnSpan(5),
+                            TextInput::make('late_minutes')->hiddenLabel()->placeholder('دقیقه')->numeric()->minValue(1)->maxValue(600)
+                                ->visible(fn (Get $get): bool => $get('status') === AttendanceStatus::Late->value || $get('status') === AttendanceStatus::Late)
+                                ->columnSpan(1),
+                            TextInput::make('note')->hiddenLabel()->placeholder('توضیح')->maxLength(255)->columnSpan(3),
+                        ]),
+                ];
+            })
             ->action(function (array $data, ClassSession $record, AttendanceRegister $register): void {
                 /** @var User $user */
                 $user = auth()->user();

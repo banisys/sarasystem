@@ -434,11 +434,15 @@ class SessionPlanner
         $query = $this->invigilators();
 
         if ($selected !== null) {
-            return $query->whereKey($selected)->pluck('name', 'id')->all();
+            $query->whereKey($selected);
+        } else {
+            $query->whereLike('name', '%'.trim($search).'%')->orderBy('name')->orderBy('id')->limit(50);
         }
 
-        return $query->whereLike('name', '%'.trim($search).'%')
-            ->orderBy('name')->orderBy('id')->limit(50)->pluck('name', 'id')->all();
+        return $query->get(['id', 'name', 'national_code'])
+            ->mapWithKeys(fn (User $user): array => [
+                $user->getKey() => $user->name.(filled($user->national_code) ? ' ('.$user->national_code.')' : ''),
+            ])->all();
     }
 
     /** @return Builder<User> */

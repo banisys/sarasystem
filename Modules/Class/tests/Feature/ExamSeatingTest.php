@@ -4,7 +4,6 @@ namespace Modules\Class\Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
-use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\AttendanceStatus;
@@ -57,8 +56,8 @@ class ExamSeatingTest extends TestCase
         $layout = ['rows' => 2, 'columns' => 2, 'seats' => [$second->id, null, $first->id, null]];
 
         $editor = Livewire::test(ViewExamSession::class, ['record' => $this->exam->id])
-            ->mountAction($this->action())
-            ->assertActionMounted($this->action());
+            ->mountAction('seatLayout')
+            ->assertActionMounted('seatLayout');
         $this->assertStringContainsString('چیدمان خودکار', $editor->effects['partials']['action-modals'] ?? $editor->html());
         $editor->fillForm(['layout' => $layout], 'mountedActionSchema0')
             ->callMountedAction()
@@ -77,7 +76,7 @@ class ExamSeatingTest extends TestCase
         $this->assertSame('absent', $scene['seats'][0]['status']);
 
         Livewire::test(ViewExamSession::class, ['record' => $exam->id])
-            ->mountAction($this->action())
+            ->mountAction('seatLayout')
             ->assertSchemaStateSet(['layout' => $layout], 'mountedActionSchema0');
     }
 
@@ -88,8 +87,8 @@ class ExamSeatingTest extends TestCase
 
         foreach ([[$student->id, $outsider->id], [$student->id, $student->id], [$student->id]] as $seats) {
             Livewire::test(ViewExamSession::class, ['record' => $this->exam->id])
-                ->callAction($this->action(), data: ['layout' => ['rows' => 1, 'columns' => 2, 'seats' => $seats]])
-                ->assertActionMounted($this->action());
+                ->callAction('seatLayout', data: ['layout' => ['rows' => 1, 'columns' => 2, 'seats' => $seats]])
+                ->assertActionMounted('seatLayout');
             $this->assertNull($this->exam->fresh()->seat_layout);
         }
     }
@@ -103,8 +102,8 @@ class ExamSeatingTest extends TestCase
 
         Livewire::test(ViewExamSession::class, ['record' => $this->exam->id])
             ->assertDontSee('چیدمان صندلی‌ها')
-            ->mountAction($this->action())
-            ->assertActionNotMounted($this->action());
+            ->mountAction('seatLayout')
+            ->assertActionNotMounted('seatLayout');
 
         $other = Tenant::factory()->create();
         $admin = User::factory()->create();
@@ -118,11 +117,6 @@ class ExamSeatingTest extends TestCase
         $this->exam->update(['status' => SessionStatus::Cancelled]);
 
         Livewire::test(ViewExamSession::class, ['record' => $this->exam->id])->assertDontSee('چیدمان صندلی‌ها');
-    }
-
-    private function action(): TestAction
-    {
-        return TestAction::make('seatLayout')->schemaComponent('sessionAttendance', 'infolist');
     }
 
     private function attendee(string $name): User

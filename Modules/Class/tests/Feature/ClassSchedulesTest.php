@@ -369,7 +369,9 @@ class ClassSchedulesTest extends TestCase
             $this->markTestSkipped('Employee is disabled.');
         }
 
-        $employee = Employee::factory()->for($this->primary)->create();
+        $employee = Employee::factory()->for($this->primary)
+            ->for(User::factory()->state(['name' => 'کارمند نمونه', 'national_code' => '0013542419']))
+            ->create();
         $editor = User::factory()->create();
         $this->roleWithPermissions('class_editor', ['ViewAny:Classroom', 'View:Classroom', 'Update:Classroom']);
         $this->makeStaff($editor, $this->west);
@@ -377,6 +379,9 @@ class ClassSchedulesTest extends TestCase
         $this->actingInPanel($editor, $this->west);
         $action = TestAction::make('addExamSchedule')->table();
         $slot = ['date' => '2026-11-06', 'start_time' => '10:00', 'end_time' => '11:00'];
+        $label = [$employee->user_id => 'کارمند نمونه (0013542419)'];
+        $this->assertSame($label, $this->planner->invigilatorOptions('کارمند نمونه'));
+        $this->assertSame($label, $this->planner->invigilatorOptions(selected: [$employee->user_id]));
 
         Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
             ->callAction($action, data: ['sessions' => [[...$slot, 'teacher_ids' => [$this->teacher->id]]]])
