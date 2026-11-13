@@ -11,7 +11,7 @@ class QuestionCategoryTree
     /** @var array<int, list<QuestionCategory>> */
     private array $children = [];
 
-    /** @var array<int, string> */
+    /** @var array<int, list<string>> */
     private array $paths = [];
 
     /** @var array<int, int|null> */
@@ -57,7 +57,7 @@ class QuestionCategoryTree
 
         $visible = [];
         foreach ($this->paths as $id => $path) {
-            if (mb_stripos($path, $search) === false) {
+            if (mb_stripos(implode(' / ', $path), $search) === false) {
                 continue;
             }
 
@@ -70,15 +70,8 @@ class QuestionCategoryTree
         return $visible;
     }
 
-    /** @return array<int, string> */
-    public function options(?int $excludingBranch = null): array
-    {
-        return $excludingBranch === null
-            ? $this->paths
-            : array_diff_key($this->paths, array_flip($this->branchIds($excludingBranch)));
-    }
-
-    public function label(?int $id): ?string
+    /** @return list<string>|null */
+    public function path(?int $id): ?array
     {
         return $this->paths[$id] ?? null;
     }
@@ -119,12 +112,13 @@ class QuestionCategoryTree
         return $ids;
     }
 
-    private function buildPaths(int $parentId = 0, string $prefix = ''): void
+    /** @param list<string> $ancestors */
+    private function buildPaths(int $parentId = 0, array $ancestors = []): void
     {
         foreach ($this->children[$parentId] ?? [] as $child) {
-            $path = $prefix.$child->title;
+            $path = [...$ancestors, $child->title];
             $this->paths[$child->id] = $path;
-            $this->buildPaths($child->id, $path.' / ');
+            $this->buildPaths($child->id, $path);
         }
     }
 }

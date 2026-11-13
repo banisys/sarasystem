@@ -96,9 +96,7 @@
                             <span x-show="pathIndex > 0">، </span>
                             <template x-for="(label, index) in path" x-bind:key="index">
                                 <span>
-                                    <span x-show="index > 0" aria-hidden="true" class="fi-tree-select-path-separator inline-block align-middle">
-                                        <x-filament::icon icon="heroicon-m-chevron-left" class="size-4" />
-                                    </span>
+                                    <x-hierarchy-path-separator x-show="index > 0" />
                                     <span x-text="label"></span>
                                 </span>
                             </template>

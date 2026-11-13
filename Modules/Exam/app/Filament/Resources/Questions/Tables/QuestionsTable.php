@@ -8,9 +8,11 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Indicator;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Enums\QuestionType;
 use Modules\Exam\Models\Question;
@@ -40,7 +42,11 @@ class QuestionsTable
                     ->badge(),
                 TextColumn::make('category_path')
                     ->label('دسته')
-                    ->state(fn (Question $record): ?string => $categories()->label($record->category_id))
+                    ->state(function (Question $record) use ($categories): ?Htmlable {
+                        $path = $categories()->path($record->category_id);
+
+                        return $path === null ? null : view('filament.components.hierarchy-paths', ['paths' => [$path]]);
+                    })
                     ->placeholder('بدون دسته')
                     ->wrap(),
                 TextColumn::make('tags.title')
@@ -67,7 +73,27 @@ class QuestionsTable
                     ->label('دسته و زیردسته‌ها')
                     ->multiple()
                     ->resetState(['values' => []])
-                    ->options(fn (): array => ['uncategorized' => 'بدون دسته'] + $categories()->options())
+                    ->indicateUsing(function (array $data) use ($categories): array {
+                        $paths = [];
+                        foreach ($data['values'] ?? [] as $value) {
+                            $path = match (true) {
+                                $value === 'uncategorized' => ['بدون دسته'],
+                                filter_var($value, FILTER_VALIDATE_INT) !== false => $categories()->path((int) $value),
+                                default => null,
+                            };
+
+                            if ($path !== null) {
+                                $paths[] = $path;
+                            }
+                        }
+
+                        return $paths === [] ? [] : [
+                            Indicator::make(view('filament.components.hierarchy-paths', [
+                                'label' => 'دسته و زیردسته‌ها',
+                                'paths' => $paths,
+                            ])),
+                        ];
+                    })
                     ->schema([
                         TreeSelect::make('values')
                             ->label('دسته و زیردسته‌ها')

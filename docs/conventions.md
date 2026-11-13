@@ -25,6 +25,8 @@ Nothing is copied from `../LMS` as-is. Port only on the user's request, one name
 _(TODO: formatter/linter, naming rules, file naming.)_
 
 ## Patterns we use
+- Display hierarchical paths with directional chevron icons between labels, as in [Tree Select](decisions/0081-admin-tree-select.md). In admin Blade views, reuse `<x-hierarchy-path-separator />` and keep labels as separate segments so a slash in a label stays visible.
+
 - Admin forms use server-side validation and Persian field labels/messages. Keep native browser validation disabled (`novalidate`) through the panel defaults; custom raw HTML input forms in the panel must set it too. Do not remove server validation or enable browser bubbles on new forms ([ADR 0037](decisions/0037-admin-server-side-validation.md)).
 
 - Page help ([ADR 0065](decisions/0065-page-help.md)): to give a panel page help, `use HasPageHelp` on the page and implement `pageHelpKey()` (fixed, e.g. `contract.contract-types`) and `defaultPageHelp()` (plain text). Add a page's help when the user asks for it. Keep the text true to what the code does, and update it when the page's behaviour changes.

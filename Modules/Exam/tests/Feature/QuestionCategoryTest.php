@@ -202,7 +202,8 @@ class QuestionCategoryTest extends TestCase
         $foreign = QuestionCategory::factory()->create();
 
         Livewire::test(ListQuestions::class)
-            ->assertSee('ریاضی / جبر / معادله')
+            ->assertSee('fi-hierarchy-path-separator')
+            ->assertSeeInOrder(['ریاضی', 'جبر', 'معادله'])
             ->filterTable('category', $root->id)
             ->assertCanSeeTableRecords([$rootQuestion, $deepQuestion])
             ->assertCanNotSeeTableRecords([$uncategorized, $otherQuestion])

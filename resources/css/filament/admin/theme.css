@@ -10,7 +10,9 @@
 @source '../../../../Modules/*/resources/views/filament/**/*';
 @source '../../../../Modules/*/resources/views/livewire/**/*';
 
-html[dir='ltr'] .fi-tree-select-path-separator {
+@source '../../../../resources/views/components/hierarchy-path-separator.blade.php';
+
+html[dir='ltr'] .fi-hierarchy-path-separator {
     rotate: 180deg;
 }
 
