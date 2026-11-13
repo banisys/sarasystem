@@ -11,7 +11,16 @@ import SessionExamFields from '../Components/SessionExamFields.vue';
 import SessionExamSettingsDialog from '../Components/SessionExamSettingsDialog.vue';
 import { formatDateTime } from '../format.js';
 
-const props = defineProps({ context: Object, banks: Array, exams: Array, results: Object, library_url: String, settings_form: Object });
+const props = defineProps({ context: Object, banks: Array, exams: Array, results: Object, settings_form: Object });
+const page = usePage();
+const tabs = computed(() => [
+    { key: 'exams', label: 'لیست آزمون‌های ساخته‌شده', icon: 'clipboard' },
+    ...(props.context.can_manage ? [{ key: 'create', label: 'ساخت آزمون از بانک سؤال', icon: 'book' }] : []),
+    ...(props.results ? [{ key: 'results', label: 'نتایج و تصحیح', icon: 'pencil' }] : []),
+]);
+const requestedTab = new URLSearchParams(page.url.split('?')[1]).get('tab');
+const tab = ref(tabs.value.some((item) => item.key === requestedTab) ? requestedTab : tabs.value[0].key);
+
 const bankRow = () => ({ bank_id: '', question_count: 1 });
 const generation = useForm({ ...props.settings_form?.defaults, banks: [bankRow()] });
 const inputClass = 'ui-field';
@@ -69,7 +78,13 @@ function applyQuestions() {
     dialog.value.close();
 }
 function generate() {
-    generation.post(route('exams.context.store', parameters()), { preserveScroll: true, onSuccess: () => generation.reset() });
+    generation.post(route('exams.context.store', parameters()), {
+        preserveScroll: true,
+        onSuccess: () => {
+            generation.reset();
+            tab.value = 'exams';
+        },
+    });
 }
 const publication = useForm({ is_published: false });
 const deletion = useForm({});
@@ -89,13 +104,31 @@ function remove(exam) {
     <AppLayout>
         <Head title="آزمون‌های جلسه" />
         <div class="space-y-6">
-            <UiPageHeader title="آزمون‌های جلسه" :description="context.title" icon="clipboard" :back-href="context.back_url" full-page-back back-label="بازگشت به جلسه" />
-            <UiNotice v-if="usePage().props.flash.status" tone="success">{{ usePage().props.flash.status }}</UiNotice>
-            <section v-if="context.can_manage" class="space-y-4 ui-surface p-4 sm:p-5">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="font-semibold">ساخت آزمون از بانک سؤال</h2>
-                    <UiButton v-if="library_url" :href="library_url" variant="outline">بانک سؤال</UiButton>
-                </div>
+            <UiPageHeader
+                title="آزمون‌های جلسه"
+                :description="context.title"
+                icon="clipboard"
+                tone="plum"
+                :back-href="context.back_url"
+                full-page-back
+                back-label="بازگشت به جلسه"
+            />
+            <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
+            <nav v-if="tabs.length > 1" class="ui-surface flex flex-wrap gap-1 p-2" aria-label="بخش‌های آزمون‌های جلسه">
+                <button
+                    v-for="item in tabs"
+                    :key="item.key"
+                    type="button"
+                    :aria-pressed="tab === item.key"
+                    class="ui-button border-transparent"
+                    :class="tab === item.key ? 'bg-violet-600 font-medium text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+                    @click="tab = item.key"
+                >
+                    <PanelIcon :name="item.icon" class="size-5" />
+                    {{ item.label }}
+                </button>
+            </nav>
+            <section v-if="context.can_manage" v-show="tab === 'create'" aria-label="ساخت آزمون از بانک سؤال" class="space-y-4 ui-surface p-4 sm:p-5">
                 <p v-if="!banks.some((bank) => bank.question_count > 0)" class="text-sm text-gray-600">
                     برای ساخت آزمون، در بانک خودتان سؤال فعال ثبت کنید یا از یک بانک عمومیِ دارای سؤال استفاده کنید.
                 </p>
@@ -172,33 +205,34 @@ function remove(exam) {
                     </div>
                 </dialog>
             </section>
-            <UiNotice v-if="!exams.length">آزمونی برای این جلسه ثبت نشده است.</UiNotice>
-            <article v-for="exam in exams" :key="exam.id" class="space-y-3 ui-surface p-4 sm:p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <h2 class="min-w-0 wrap-break-word font-semibold">{{ exam.title }}</h2>
-                    <div class="flex max-w-full flex-wrap items-center gap-2">
-                        <ExamPreview v-if="exam.preview_url" :exam="exam" />
-                        <SessionExamSettingsDialog v-if="exam.settings" :exam="exam" :settings="settings_form"
-                            :url="route('exams.context.settings.update', [...parameters(), exam.id])" />
+            <section v-show="tab === 'exams'" class="space-y-4" aria-label="لیست آزمون‌های ساخته‌شده">
+                <UiNotice v-if="!exams.length">آزمونی برای این جلسه ثبت نشده است.</UiNotice>
+                <article v-for="exam in exams" :key="exam.id" class="space-y-3 ui-surface p-4 sm:p-5">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <h2 class="min-w-0 wrap-break-word font-semibold">{{ exam.title }}</h2>
+                        <div class="flex max-w-full flex-wrap items-center gap-2">
+                            <ExamPreview v-if="exam.preview_url" :exam="exam" />
+                            <SessionExamSettingsDialog v-if="exam.settings" :exam="exam" :settings="settings_form"
+                                :url="route('exams.context.settings.update', [...parameters(), exam.id])" />
+                        </div>
                     </div>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="ui-badge" :class="exam.is_published ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }}</span>
-                    <span v-if="exam.starts_at" class="text-sm text-ui-muted">از {{ formatDateTime(exam.starts_at) }}</span>
-                    <span v-if="exam.ends_at" class="text-sm text-ui-muted">تا {{ formatDateTime(exam.ends_at) }}</span>
-                    <span v-if="exam.allow_late_start" class="text-sm text-ui-muted">بدون مهلت پایانی برای شروع</span>
-                </div>
-                <p v-if="context.can_manage" class="text-sm text-gray-600">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
-                <div class="flex flex-wrap gap-4">
-                    <UiButton v-if="exam.take_url" :href="exam.take_url">ورود به آزمون و مشاهدهٔ نتیجه</UiButton>
-                    <button v-if="context.can_manage" :disabled="publication.processing || deletion.processing" class="text-sm text-gray-700 underline disabled:opacity-50" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</button>
-                    <button v-if="exam.delete_url" type="button" :disabled="deletion.processing || publication.processing" class="text-sm font-medium text-red-700 underline disabled:opacity-50" @click="remove(exam)">حذف آزمون</button>
-                </div>
-            </article>
-            <p v-for="(error, key) in publication.errors" :key="key" class="text-sm text-red-600" role="alert">{{ error }}</p>
-            <p v-if="deletion.errors.delete_exam" class="text-sm text-red-600" role="alert">{{ deletion.errors.delete_exam }}</p>
-            <section v-if="results" class="space-y-4 ui-surface p-4 sm:p-5">
-                <h2 class="font-semibold text-gray-900">نتایج و تصحیح</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="ui-badge" :class="exam.is_published ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }}</span>
+                        <span v-if="exam.starts_at" class="text-sm text-ui-muted">از {{ formatDateTime(exam.starts_at) }}</span>
+                        <span v-if="exam.ends_at" class="text-sm text-ui-muted">تا {{ formatDateTime(exam.ends_at) }}</span>
+                        <span v-if="exam.allow_late_start" class="text-sm text-ui-muted">بدون مهلت پایانی برای شروع</span>
+                    </div>
+                    <p v-if="context.can_manage" class="text-sm text-gray-600">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
+                    <div class="flex flex-wrap gap-4">
+                        <UiButton v-if="exam.take_url" :href="exam.take_url">ورود به آزمون و مشاهدهٔ نتیجه</UiButton>
+                        <button v-if="context.can_manage" :disabled="publication.processing || deletion.processing" class="text-sm text-gray-700 underline disabled:opacity-50" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</button>
+                        <button v-if="exam.delete_url" type="button" :disabled="deletion.processing || publication.processing" class="text-sm font-medium text-red-700 underline disabled:opacity-50" @click="remove(exam)">حذف آزمون</button>
+                    </div>
+                </article>
+                <p v-for="(error, key) in publication.errors" :key="key" class="text-sm text-red-600" role="alert">{{ error }}</p>
+                <p v-if="deletion.errors.delete_exam" class="text-sm text-red-600" role="alert">{{ deletion.errors.delete_exam }}</p>
+            </section>
+            <section v-if="results" v-show="tab === 'results'" aria-label="نتایج و تصحیح" class="space-y-4 ui-surface p-4 sm:p-5">
                 <p v-if="!results.data.length" class="text-sm text-gray-600">هنوز کسی در آزمون شرکت نکرده است.</p>
                 <div v-for="attempt in results.data" :key="attempt.id" class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
                     <div><p class="font-medium">{{ attempt.name }}</p><p class="mt-1 text-sm text-gray-500">{{ attempt.exam }} · {{ attempt.status }}</p></div>
@@ -206,8 +240,8 @@ function remove(exam) {
                     <UiButton :href="attempt.url" variant="outline">پاسخ‌ها و تصحیح</UiButton>
                 </div>
                 <nav v-if="results.prev_page_url || results.next_page_url" class="flex gap-6" aria-label="صفحه‌های نتایج">
-                    <Link v-if="results.prev_page_url" :href="results.prev_page_url" class="text-sm text-violet-700">قبلی</Link>
-                    <Link v-if="results.next_page_url" :href="results.next_page_url" class="text-sm text-violet-700">بعدی</Link>
+                    <Link v-if="results.prev_page_url" :href="results.prev_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700">قبلی</Link>
+                    <Link v-if="results.next_page_url" :href="results.next_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700">بعدی</Link>
                 </nav>
             </section>
         </div>

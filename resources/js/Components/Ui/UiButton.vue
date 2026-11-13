@@ -10,6 +10,7 @@ defineProps({
 const variants = {
     primary: 'border-transparent bg-brand-600 text-brand-contrast hover:bg-brand-action-hover',
     outline: 'border-ui-line bg-white text-ui-ink hover:bg-ui-canvas',
+    'outline-brand': 'border-brand-600 bg-white text-brand-700 hover:bg-brand-50',
     ghost: 'border-transparent text-ui-muted hover:bg-ui-canvas hover:text-ui-ink',
 };
 </script>

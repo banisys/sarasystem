@@ -420,7 +420,7 @@ class School extends Scenario
                     ->actor('معلم', fn (TutorialRun $run): ?User => self::teacher($run))
                     ->steps([
                         'با حساب معلم وارد شوید و در «کلاس‌های من» جلسه‌ی امروز را باز کنید.',
-                        '«امیر حسینی» را «غایب» بزنید و ثبت کنید.',
+                        'در زبانهٔ «حضور و غیاب»، «امیر حسینی» را «غایب» بزنید و ثبت کنید.',
                         'به ولی یک پیامک غیبت فرستاده می‌شود (در نصب آزمایشی در storage/logs/sms.log).',
                     ])
                     ->url(fn (): string => route('my-classes.index'))
@@ -448,7 +448,7 @@ class School extends Scenario
                     ->actor('دانش‌آموز', fn (TutorialRun $run): ?User => self::student($run)?->user)
                     ->steps([
                         'با حساب «امیر حسینی» وارد شوید (او با موبایل پدرش وارد می‌شود).',
-                        'در «کلاس‌های من» جلسه‌ی امروز را باز کنید و پاسخ تکلیف را بنویسید (یا فایلی بارگذاری کنید) و بفرستید.',
+                        'در «کلاس‌های من» جلسه‌ی امروز و زبانهٔ «مطالب و تکلیف» را باز کنید. پاسخ تکلیف را بنویسید (یا فایلی بارگذاری کنید) و بفرستید.',
                     ])
                     ->url(fn (): string => route('my-classes.index'))
                     ->perform(fn (TutorialRun $run): mixed => self::school($run)->execute(fn () => app(HomeworkBook::class)->submit(self::firstSession($run), self::student($run)->user, 'پاسخ تمرین‌ها: ۱) ۵- ۲) ۳')))
@@ -456,8 +456,8 @@ class School extends Scenario
                 Mission::make('homework-grade', 'نمره‌ی تکلیف')
                     ->actor('معلم', fn (TutorialRun $run): ?User => self::teacher($run))
                     ->steps([
-                        'با حساب معلم وارد شوید؛ در جلسه‌ی امروز تکلیف امیر را ببینید و نمره (مثلاً ۱۸ از ۲۰) و بازخورد بدهید.',
-                        'ولی هم در پنل کاربری خود «کلاس‌های امیر» را دارد: غیبت، تکلیف و نمره‌اش را می‌بیند.',
+                        'با حساب معلم وارد شوید؛ در جلسه‌ی امروز زبانهٔ «تکالیف دریافتی» را باز کنید، تکلیف امیر را ببینید و نمره (مثلاً ۱۸ از ۲۰) و بازخورد بدهید.',
+                        'ولی هم در پنل کاربری خود «کلاس‌های امیر» را دارد: غیبت را در «جزئیات جلسه» و تکلیف و نمره را در «مطالب و تکلیف» می‌بیند.',
                     ])
                     ->url(fn (): string => route('my-classes.index'))
                     ->perform(fn (TutorialRun $run): mixed => self::school($run)->execute(fn () => app(HomeworkBook::class)->grade(

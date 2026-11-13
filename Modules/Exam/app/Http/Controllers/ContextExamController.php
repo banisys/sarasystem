@@ -2,7 +2,6 @@
 
 namespace Modules\Exam\Http\Controllers;
 
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -59,7 +58,6 @@ class ContextExamController extends Controller
                 'retake_policies' => collect(RetakePolicy::cases())->mapWithKeys(fn (RetakePolicy $policy): array => [$policy->value => $policy->getLabel()]),
                 'result_visibility' => collect(ResultVisibility::cases())->mapWithKeys(fn (ResultVisibility $visibility): array => [$visibility->value => $visibility->getLabel()]),
             ] : null,
-            'library_url' => $host->canManage && $library->canAccess($request->user(), Tenant::current()) ? route('exams.library') : null,
             'banks' => $host->canManage ? $library->banks($request->user())
                 ->withCount(['questions' => fn (Builder $query) => $query->active()
                     ->where(fn (Builder $visible) => $library->visibleTo($visible, $request->user()))])
@@ -198,7 +196,7 @@ class ContextExamController extends Controller
             'name' => $attempt->user->name,
             'status' => $attempt->status->getLabel(),
             'can_grade' => ! $attempt->isInProgress(),
-            'back_url' => $contexts->url($type, $context),
+            'back_url' => $contexts->url($type, $context).'?tab=results',
             'save_url' => route('exams.context.grade', [$type, $context, $attempt]),
             'answers' => $attempt->answers()->get()->map(fn (AttemptAnswer $answer): array => [
                 'id' => $answer->id, 'body' => $answer->question_body,

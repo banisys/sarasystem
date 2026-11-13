@@ -19,9 +19,10 @@ This is step 5 of the classes plan ([ADR 0022](0022-classes.md)). Steps 2–4 bu
 - **Routes** `my-classes.*` (auth + tenant):
   - `GET /my-classes` (`Class::Index`): the calendar and the user's classes, with their roles and the online link.
   - `GET /my-classes/sessions/{session}` (`Class::Session`):
-    - details, the online link, what the session covered (or the plan's forecast), homework with its due date, material links (signed);
-    - the user's own attendance;
-    - the attendance and content forms for who may use them.
+    - «جزئیات جلسه» opens first with session details, the online link and the user's own attendance.
+    - «حضور و غیاب» shows the attendance form for staff who may use it.
+    - «مطالب و تکلیف» shows the content form or the session's topics, homework and signed material links. Learners submit homework here when eligible.
+    - «تکالیف دریافتی» follows for staff who may grade homework.
   - `POST …/attendance` and `POST …/content`: the same services as the admin actions. Their refusals come back as a `form` error. The content form takes the due date as a Jalali date (`JalaliDateInput`) and files directly.
 - **Service** [MyClasses](../../Modules/Class/app/Services/MyClasses.php): the user's sessions query, whether they may see a session, their role in it, and the calendar data.
 - **Header link** «کلاس‌های من» (`UserPanel::navigationUsing('classes')`) for users with a class membership or a session to teach in the tenant.

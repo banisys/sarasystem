@@ -42,14 +42,14 @@ const statusBadge = {
     cancelled: 'bg-red-50 text-red-700 ring-red-200',
 };
 
-// ── Tabs: only for whoever has a form besides the session's content.
+// ── Tabs
 const tabs = computed(() => [
+    { key: 'details', label: 'جزئیات جلسه', icon: 'document', badge: null },
     ...(props.attendance ? [{ key: 'attendance', label: 'حضور و غیاب', icon: 'users', badge: props.attendance.length }] : []),
-    { key: 'content', label: props.contentForm ? 'مطالب و تکلیف' : 'مطالب جلسه', icon: 'book', badge: null },
+    { key: 'content', label: 'مطالب و تکلیف', icon: 'book', badge: null },
     ...(props.submissions ? [{ key: 'submissions', label: 'تکالیف دریافتی', icon: 'clipboard', badge: `${handedIn.value}/${props.submissions.length}` }] : []),
 ]);
-const tab = ref(props.attendance ? 'attendance' : 'content');
-const showTabs = computed(() => tabs.value.length > 1);
+const tab = ref('details');
 
 // ── Attendance
 const attendanceForm = useForm({ rows: (props.attendance ?? []).map((row) => ({ ...row })) });
@@ -160,22 +160,42 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 :title="session.class"
                 :description="session.subject"
                 icon="calendar"
+                tone="plum"
                 :back-href="route('my-classes.index', ward ? { for: ward.id } : {})"
                 :back-label="ward ? `کلاس‌های ${ward.name}` : 'کلاس‌های من'"
-            >
-                <template v-if="session.exams_url" #actions>
-                    <UiButton :href="session.exams_url" variant="outline">آزمون‌های جلسه</UiButton>
-                </template>
-            </UiPageHeader>
+            />
             <UiNotice v-if="flash" tone="success">{{ flash }}</UiNotice>
 
-            <section class="ui-surface overflow-hidden" aria-label="جزئیات جلسه">
+            <nav class="ui-surface flex flex-wrap gap-1 p-2" aria-label="بخش‌های جلسه">
+                <button
+                    v-for="item in tabs"
+                    :key="item.key"
+                    type="button"
+                    :aria-pressed="tab === item.key"
+                    class="ui-button border-transparent"
+                    :class="tab === item.key ? 'bg-violet-600 font-medium text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+                    @click="tab = item.key"
+                >
+                    <PanelIcon :name="item.icon" class="size-5" />
+                    {{ item.label }}
+                    <span
+                        v-if="item.badge !== null"
+                        class="rounded-full px-2 py-0.5 text-xs"
+                        :class="tab === item.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
+                    >{{ item.badge }}</span>
+                </button>
+            </nav>
+
+            <section v-if="tab === 'details'" class="ui-surface overflow-hidden" aria-label="جزئیات جلسه">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ui-line px-4 py-3">
-                    <h2 class="font-semibold">جزئیات جلسه</h2>
                     <div class="flex flex-wrap gap-2 text-xs">
                         <span v-if="session.kind_label !== 'عادی'" class="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700 ring-1 ring-sky-200">{{ session.kind_label }}</span>
                         <span class="rounded-full px-3 py-1 font-medium ring-1" :class="statusBadge[session.status]">{{ session.status_label }}</span>
                     </div>
+                    <UiButton v-if="session.exams_url" :href="session.exams_url" variant="outline-brand" class="border-2">
+                        <PanelIcon name="clipboard" class="size-5" />
+                        آزمون‌های جلسه
+                    </UiButton>
                 </div>
 
                 <dl class="grid gap-px bg-gray-100 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
@@ -236,29 +256,8 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 </div>
             </section>
 
-            <!-- Tabs for staff. -->
-            <nav v-if="showTabs" class="ui-surface flex flex-wrap gap-1 p-2" aria-label="بخش‌های جلسه">
-                <button
-                    v-for="item in tabs"
-                    :key="item.key"
-                    type="button"
-                    :aria-pressed="tab === item.key"
-                    class="ui-button border-transparent"
-                    :class="tab === item.key ? 'bg-violet-600 font-medium text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
-                    @click="tab = item.key"
-                >
-                    <PanelIcon :name="item.icon" class="size-5" />
-                    {{ item.label }}
-                    <span
-                        v-if="item.badge !== null"
-                        class="rounded-full px-2 py-0.5 text-xs"
-                        :class="tab === item.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
-                    >{{ item.badge }}</span>
-                </button>
-            </nav>
-
             <!-- Attendance -->
-            <form v-if="attendance && (!showTabs || tab === 'attendance')" class="ui-surface" @submit.prevent="saveAttendance">
+            <form v-if="attendance && tab === 'attendance'" class="ui-surface" @submit.prevent="saveAttendance">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-4">
                     <div class="flex flex-wrap gap-2 text-xs">
                         <span v-for="status in attendanceCounts" :key="status.value" class="rounded-full px-3 py-1 font-medium" :class="statusTone[status.value].chip">
@@ -317,7 +316,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </form>
 
             <!-- Content: the form for who may record it… -->
-            <form v-if="contentForm && (!showTabs || tab === 'content')" class="space-y-6 ui-surface p-4 sm:p-5" @submit.prevent="saveContent">
+            <form v-if="contentForm && tab === 'content'" class="space-y-6 ui-surface p-4 sm:p-5" @submit.prevent="saveContent">
                 <div v-if="!session.content && session.planned_topics.length" class="rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-900">
                     <span class="font-medium">طبق طرح درس، این جلسه:</span> {{ session.planned_topics.join('، ') }}
                 </div>
@@ -411,7 +410,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </form>
 
             <!-- …or what was recorded, to read. -->
-            <section v-if="!contentForm && (!showTabs || tab === 'content')" class="space-y-4 ui-surface p-4 sm:p-5">
+            <section v-if="!contentForm && tab === 'content'" class="space-y-4 ui-surface p-4 sm:p-5">
                 <h2 class="flex items-center gap-2 font-semibold text-gray-900">
                     <PanelIcon name="book" class="size-5 text-violet-600" />
                     مطالب جلسه
@@ -452,7 +451,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </section>
 
             <!-- The person's own hand-in, or a ward's (read only). -->
-            <section v-if="session.homework && (mySubmission || canSubmit)" class="space-y-4 ui-surface p-4 sm:p-5">
+            <section v-if="tab === 'content' && session.homework && (mySubmission || canSubmit)" class="space-y-4 ui-surface p-4 sm:p-5">
                 <h2 class="flex items-center gap-2 font-semibold text-gray-900">
                     <PanelIcon name="pencil" class="size-5 text-violet-600" />
                     {{ ward ? `تکلیف ${ward.name}` : 'تکلیف شما' }}
@@ -506,7 +505,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             </section>
 
             <!-- Grading: who may (HomeworkBook::canGrade), at any time. -->
-            <form v-if="submissions && (!showTabs || tab === 'submissions')" class="ui-surface" @submit.prevent="saveGrades">
+            <form v-if="submissions && tab === 'submissions'" class="ui-surface" @submit.prevent="saveGrades">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 p-4 text-sm">
                     <span class="text-gray-700">تحویل داده‌اند: <strong>{{ handedIn }}</strong> از {{ submissions.length }}</span>
                     <span class="text-gray-500">نمره از {{ homeworkMaxScore }}</span>
