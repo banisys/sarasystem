@@ -3,21 +3,8 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
-/* Same font as the admin panel (resources/css/filament/admin/theme.css);
-   only the Light weight exists, used for all text. */
-@font-face {
-    font-family: 'Shabnam';
-    src:
-        url('../fonts/Shabnam-Light.woff2') format('woff2'),
-        url('../fonts/Shabnam-Light.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
 @theme {
-    --font-sans: Shabnam, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+    --font-sans: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif;
 
     /* Accent of the public site (ADR 0062): violet until .site-brand gives it the tenant's colour. */
     --color-brand-50: var(--color-violet-50);
@@ -32,6 +19,7 @@
     --color-brand-900: var(--color-violet-900);
     --color-brand-950: var(--color-violet-950);
     --color-brand-contrast: #fff;
+    --color-brand-action-hover: var(--color-brand-700);
 }
 
 /* PublicLayout.vue sets --brand and --brand-contrast on this element from the
@@ -49,4 +37,45 @@
     --color-brand-900: color-mix(in oklab, var(--brand) 55%, black);
     --color-brand-950: color-mix(in oklab, var(--brand) 40%, black);
     --color-brand-contrast: var(--brand-contrast);
+    --color-brand-action-hover: color-mix(in oklab, var(--brand) 86%, var(--brand-hover-mix) 14%);
+}
+
+@theme {
+    --color-ui-canvas: #f7f6f9;
+    --color-ui-paper: #fcfaf7;
+    --color-ui-ink: #241c32;
+    --color-ui-muted: #60586c;
+    --color-ui-line: #e6e0ec;
+    --color-ui-field: #82778f;
+    --color-ui-plum: #302044;
+    --radius-ui: 0.875rem;
+}
+
+
+@layer components {
+    .ui-button {
+        @apply inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-ui border px-4 text-sm font-semibold transition-colors;
+        @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ui-field disabled:pointer-events-none disabled:opacity-55;
+    }
+
+    .ui-surface {
+        @apply rounded-ui border border-ui-line bg-white;
+    }
+
+    .ui-field {
+        @apply mt-1.5 block min-h-11 w-full min-w-0 rounded-ui border border-ui-field bg-white px-3 py-2 text-base text-ui-ink;
+        @apply focus:outline-2 focus:outline-offset-1 focus:outline-ui-field disabled:bg-ui-canvas;
+    }
+
+    .ui-field[aria-invalid="true"] {
+        @apply border-rose-600;
+    }
+
+    .ui-label {
+        @apply block text-sm font-semibold text-ui-ink;
+    }
+
+    .ui-field-error {
+        @apply mt-1.5 text-sm leading-6 text-rose-700;
+    }
 }

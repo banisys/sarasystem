@@ -7,7 +7,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 |---|---|
 | Backend | Laravel 13, modular (`nwidart/laravel-modules`) |
 | Admin panel (staff) | Filament 5 + plugins (Shield, Impersonate, Settings, Tags, Media Library, Excel, Apex Charts, Jalali) |
-| Public site & user panel | Inertia.js + Vue 3 + Tailwind CSS |
+| Public site & user panel | Inertia.js + Vue 3 + Tailwind CSS + Reka UI |
 | Database | PostgreSQL |
 | PDF | `mpdf/mpdf` (RTL, Shabnam TTF in `resources/fonts`; [ADR 0020](decisions/0020-contracts.md)) |
 | Multi-tenancy | `spatie/laravel-multitenancy`, single DB, tenant = branch/unit ([ADR 0002](decisions/0002-tenancy-model.md)) |
@@ -79,7 +79,7 @@ Full list of packages and the reasoning: [ADR 0001](decisions/0001-tech-stack.md
 - Entry: [resources/js/app.js](../resources/js/app.js). Pages live in `resources/js/Pages/**`, are resolved by name and are lazy-loaded. The `ZiggyVue` plugin provides `route()`.
 - Shared props: [HandleInertiaRequests](../app/Http/Middleware/HandleInertiaRequests.php) shares `auth.user` (`id`, `name`, `email`). It is appended to the `web` middleware group in `bootstrap/app.php`.
 - Vite ([vite.config.js](../vite.config.js)): the Vue plugin, Tailwind 4 and the `ziggy-js` alias pointing to `vendor/tightenco/ziggy`. Heavy, rarely used scripts are entries of their own, imported at run time (`session-scene.js` and `building-scene.js`, sharing a chunk with three.js, ADR 0049, ADR 0051), so no other page loads them. The dev server listens on `0.0.0.0:VITE_PORT` (5174) inside the container.
-- Font: **Shabnam**, the same self-hosted font as the admin panel (`@font-face` + Tailwind `--font-sans` in `resources/css/app.css`).
+- [ADR 0094](decisions/0094-vue-design-system.md) defines the shared Vue design system. [app.css](../resources/css/app.css) contains the Tailwind tokens and uses self-hosted **Vazirmatn**. [Components/Ui](../resources/js/Components/Ui) holds shared controls. The public layout uses the tenant palette. The user layout uses the product palette and a Reka UI dialog for mobile navigation.
 - **Public site** ([ADR 0009](decisions/0009-tenant-home-pages.md), [ADR 0010](decisions/0010-site-pages.md), [PublicSiteController](../app/Http/Controllers/PublicSiteController.php), [app/PublicSite](../app/PublicSite)): `/` and a fallback route serve every public URL. `/{slug}/...` is a non-primary tenant's site, everything else the primary tenant's. Modules answer through tagged `PageResolver`s (the `Site` module's pages); otherwise `/` is the default home page ([Tenants/Home.vue](../resources/js/Pages/Tenants/Home.vue), or `Welcome` with no primary tenant) and anything else 404. Public pages use [PublicLayout.vue](../resources/js/Layouts/PublicLayout.vue) (static header/footer, `site` prop from `PublicSite::layoutProps()`; header links from modules in `site.navigation`, [NavMenu.vue](../resources/js/Components/Public/NavMenu.vue)). Everything inside the layout takes the tenant's colour through the `brand-*` Tailwind colours, so public components use those and not `violet-*` ([ADR 0062](decisions/0062-tenant-primary-color.md)).
 - Jalali dates in Vue forms ([ADR 0015](decisions/0015-jalali-date-input.md)): use [JalaliDateInput](../resources/js/Components/JalaliDateInput.vue) (`v-model` = `1370/01/05`, typed or picked from the calendar; no date library, built on `Intl`). The server validates and converts with [JalaliDate](../app/Rules/JalaliDate.php) (Persian digits allowed).
 

@@ -48,11 +48,11 @@ class TenantHomeTest extends TestCase
         Tenant::factory()->create(['slug' => 'plain']);
 
         $this->get('/girls')->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('site.tenant.color', ['primary' => '#ec4899', 'contrast' => '#ffffff']));
+            ->where('site.tenant.color', ['primary' => '#ec4899', 'contrast' => '#000000']));
         $this->get('/boys')->assertInertia(fn (AssertableInertia $page) => $page
             ->where('site.tenant.color', ['primary' => '#2563eb', 'contrast' => '#ffffff']));
         $this->get('/light')->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('site.tenant.color', ['primary' => '#fde047', 'contrast' => '#111827']));
+            ->where('site.tenant.color', ['primary' => '#fde047', 'contrast' => '#000000']));
         $this->get('/plain')->assertInertia(fn (AssertableInertia $page) => $page
             ->where('site.tenant.color', null));
     }

@@ -480,7 +480,7 @@ const linkButtonClass = 'text-sm font-medium text-brand-700 hover:text-brand-900
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="rounded-lg bg-brand-600 px-6 py-2.5 font-medium text-brand-contrast hover:bg-brand-700 disabled:opacity-60"
+                        class="rounded-lg bg-brand-600 px-6 py-2.5 font-medium text-brand-contrast hover:bg-brand-action-hover disabled:opacity-60"
                     >
                         {{ form.processing ? 'در حال ارسال…' : 'ثبت درخواست' }}
                     </button>

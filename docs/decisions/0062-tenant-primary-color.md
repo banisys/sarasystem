@@ -15,11 +15,11 @@ An organization's tenants can address different audiences, e.g. a girls' institu
 - `tenants.primary_color`: nullable `#rrggbb`, set in the tenant form with a colour picker, shown as a swatch in the list. Empty means the default colour.
 - `PublicSite::layoutProps()` passes `site.tenant.color` (`primary`, `contrast`). [PublicLayout.vue](../../resources/js/Layouts/PublicLayout.vue) sets it as `--brand` and `--brand-contrast` on its root with the class `site-brand`.
 - [app.css](../../resources/css/app.css) defines `brand-50` to `brand-950` and `brand-contrast`. They are violet by default, so pages outside the public layout look as before. Under `.site-brand` they are mixed from `--brand` with `color-mix`; `brand-600` is the chosen colour itself.
-- Text on the colour is white while its contrast is at least 3:1, otherwise near-black (`Tenant::primaryColorContrast()`). The lower button threshold keeps white text on common colours like pink.
-- A strip in the colour runs along the top of the header and footer, so a page without buttons still shows it.
+- `Tenant::primaryColorContrast()` chooses white or black for higher contrast on the tenant colour ([ADR 0094](0094-vue-design-system.md)).
+- The top strip and the site mark use the tenant colour, so pages without buttons still show it.
 
 ## Consequences
 - Anything rendered inside `PublicLayout` follows the tenant by using `brand-*` instead of `violet-*`. A new shared or public component must do the same.
 - The admin panel, the user panel and the login page keep their colours: they are not a tenant's site.
 - HTML written into a Site widget keeps its own colours.
-- A very light colour gives weak links on white, because only the text on the colour adapts. The form does not warn about this.
+- Use a dark brand shade or the normal text colour for links on light backgrounds.

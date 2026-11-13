@@ -21,12 +21,12 @@ const components = Object.fromEntries(
     <Head :title="page.title" />
 
     <PublicLayout>
-        <article class="rounded-2xl bg-white p-8 shadow-sm">
-            <h1 class="text-2xl font-bold text-gray-900">{{ page.title }}</h1>
+        <article class="ui-surface px-5 py-7 sm:px-10 sm:py-10">
+            <h1 class="text-3xl font-extrabold text-ui-ink sm:text-4xl">{{ page.title }}</h1>
 
-            <div v-if="widgets.length" class="mt-6 space-y-6">
+            <div v-if="widgets.length" class="mt-8 space-y-8">
                 <section v-for="(widget, index) in widgets" :key="index">
-                    <h2 v-if="widget.title" class="mb-3 text-xl font-bold text-gray-900">{{ widget.title }}</h2>
+                    <h2 v-if="widget.title" class="mb-3 text-xl font-bold text-ui-ink">{{ widget.title }}</h2>
                     <component :is="components[widget.component]" v-bind="widget.props" />
                 </section>
             </div>

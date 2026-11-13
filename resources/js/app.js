@@ -1,5 +1,7 @@
+import '@fontsource-variable/vazirmatn';
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
+import { ConfigProvider } from 'reka-ui';
 import { ZiggyVue } from 'ziggy-js';
 
 const appName = import.meta.env.VITE_APP_NAME || 'SaraSystem';
@@ -23,7 +25,9 @@ createInertiaApp({
         return loader();
     },
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
+        createApp({
+            render: () => h(ConfigProvider, { dir: document.documentElement.dir }, () => h(App, props)),
+        })
             .use(plugin)
             .use(ZiggyVue)
             .mount(el);

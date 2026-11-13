@@ -4,6 +4,8 @@ import { firstWeekday, format, monthLength, monthNames, parse, today, toPersianD
 
 // A Jalali date field (ADR 0015): type the date or pick it from the calendar.
 // The value is "1370/01/05", the format App\Rules\JalaliDate validates.
+defineOptions({ inheritAttrs: false });
+
 const model = defineModel({ type: String, default: '' });
 
 const props = defineProps({
@@ -98,6 +100,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-7
         <div class="relative">
             <input
                 :id="id"
+                v-bind="$attrs"
                 v-model="model"
                 type="text"
                 dir="ltr"
@@ -112,6 +115,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-7
                 class="absolute inset-y-0 left-0 mt-1 flex items-center px-3 text-gray-400 hover:text-brand-600"
                 tabindex="-1"
                 aria-label="انتخاب از تقویم"
+                :aria-expanded="isOpen"
                 @click="isOpen ? close() : open()"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5" aria-hidden="true">
@@ -121,7 +125,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-7
             </button>
         </div>
 
-        <div v-if="isOpen" class="absolute right-0 z-20 mt-2 w-72 rounded-xl border border-gray-200 bg-white p-3 shadow-lg" role="dialog" aria-label="تقویم">
+        <div v-if="isOpen" class="absolute start-0 z-20 mt-2 w-72 max-w-full rounded-ui border border-ui-line bg-white p-3 shadow-lg" role="dialog" aria-label="تقویم">
             <div class="flex items-center justify-between gap-1">
                 <button type="button" :class="navButtonClass" :disabled="isFirstMonth" aria-label="ماه قبل" @click="moveMonth(-1)">›</button>
                 <div class="flex gap-1">

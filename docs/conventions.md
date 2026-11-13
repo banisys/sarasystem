@@ -25,6 +25,8 @@ Nothing is copied from `../LMS` as-is. Port only on the user's request, one name
 _(TODO: formatter/linter, naming rules, file naming.)_
 
 ## Patterns we use
+- For Vue pages, reuse the shared controls and Tailwind tokens in [ADR 0094](decisions/0094-vue-design-system.md). Use logical spacing and positioning, and set explicitly left-to-right fields such as phone numbers with `dir="ltr"`.
+
 - Define user-panel routes under `/profile` and generate links and form actions from route names ([ADR 0093](decisions/0093-user-panel-url-prefix.md)).
 
 - Display hierarchical paths with directional chevron icons between labels, as in [Tree Select](decisions/0081-admin-tree-select.md). In admin Blade views, reuse `<x-hierarchy-path-separator />` and keep labels as separate segments so a slash in a label stays visible.

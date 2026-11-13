@@ -88,9 +88,8 @@ class Tenant extends BaseTenant
     }
 
     /**
-     * The colour of text on the tenant's primary colour (ADR 0062): white while
-     * it stays readable (WCAG 3:1, as for buttons), otherwise near-black.
-     * Null when the tenant has no colour of its own.
+     * Choose the higher contrast of white or black for text on the tenant's
+     * primary colour (ADR 0094). Null when the tenant has no colour of its own.
      */
     public function primaryColorContrast(): ?string
     {
@@ -104,7 +103,10 @@ class Tenant extends BaseTenant
                 : (($channel / 255 + 0.055) / 1.055) ** 2.4)
             ->pipe(fn ($channels): float => 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2]);
 
-        return 1.05 / ($luminance + 0.05) >= 3 ? '#ffffff' : '#111827';
+        $whiteContrast = 1.05 / ($luminance + 0.05);
+        $blackContrast = ($luminance + 0.05) / 0.05;
+
+        return $whiteContrast >= $blackContrast ? '#ffffff' : '#000000';
     }
 
     /**

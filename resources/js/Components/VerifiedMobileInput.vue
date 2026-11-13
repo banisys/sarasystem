@@ -1,6 +1,7 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import UiButton from '@/Components/Ui/UiButton.vue';
 
 // A mobile confirmed by an SMS code on a public form (App\Auth\GuestMobile):
 // send a code, type it back; the confirmed number is kept in the session
@@ -28,6 +29,7 @@ const verifiedMobile = ref(props.verification.verifiedMobile);
 const sendCodeForm = useForm({});
 const verifyForm = useForm({ code: '' });
 const codeSent = ref(false);
+const mobileError = computed(() => sendCodeForm.errors.mobile || verifyForm.errors.mobile || props.error);
 const secondsLeft = ref(0);
 let timer = null;
 
@@ -93,26 +95,27 @@ const linkButtonClass = 'text-sm font-medium text-brand-700 hover:text-brand-900
                 dir="ltr"
                 placeholder="09121234567"
                 :disabled="!!verifiedMobile || codeSent"
+                :aria-invalid="!!mobileError"
+                :aria-describedby="mobileError ? 'mobile-error' : undefined"
                 :class="[inputClass, 'max-w-xs disabled:bg-gray-100']"
             />
             <template v-if="verifiedMobile">
                 <span class="mt-3 text-sm text-green-700">✓ تأیید شد</span>
                 <button type="button" :class="[linkButtonClass, 'mt-3']" @click="changeMobile">تغییر شماره</button>
             </template>
-            <button
+            <UiButton
                 v-else-if="!codeSent"
+                variant="outline"
                 type="button"
                 :disabled="sendCodeForm.processing || !mobile"
-                class="mt-1 rounded-lg border border-brand-600 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+                class="mt-1.5"
                 @click="sendCode"
             >
                 ارسال کد تأیید
-            </button>
+            </UiButton>
         </div>
         <p v-if="!verifiedMobile && !codeSent" class="mt-1 text-xs text-gray-500">{{ hint }}</p>
-        <p v-if="sendCodeForm.errors.mobile || verifyForm.errors.mobile || error" :class="errorClass">
-            {{ sendCodeForm.errors.mobile || verifyForm.errors.mobile || error }}
-        </p>
+        <p v-if="mobileError" id="mobile-error" :class="errorClass">{{ mobileError }}</p>
 
         <div v-if="codeSent && !verifiedMobile" class="mt-3 rounded-lg bg-brand-50 p-3">
             <label for="code" :class="labelClass">کد پیامک‌شده به {{ mobile }}</label>
@@ -128,14 +131,13 @@ const linkButtonClass = 'text-sm font-medium text-brand-700 hover:text-brand-900
                     :class="[inputClass, 'max-w-40']"
                     @keydown.enter.prevent="verifyCode"
                 />
-                <button
-                    type="button"
+                <UiButton
                     :disabled="verifyForm.processing || !verifyForm.code"
-                    class="mt-1 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-brand-contrast hover:bg-brand-700 disabled:opacity-60"
+                    class="mt-1.5"
                     @click="verifyCode"
                 >
                     تأیید
-                </button>
+                </UiButton>
             </div>
             <p v-if="verifyForm.errors.code" :class="errorClass">{{ verifyForm.errors.code }}</p>
             <div class="mt-2 flex gap-4 text-sm">
