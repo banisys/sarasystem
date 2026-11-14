@@ -234,7 +234,7 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 | 6 | A class role «ناظر دوره» that takes attendance, limited to «کارشناس آموزش» | training manager | «کلاس‌ها → نقش‌های کلاس» | class role with the flags |
 | 7 | Class «امنیت اطلاعات - گروه ۱» in «واحد فروش», mode «آنلاین» with «بستر کلاس آنلاین» «لینک» and a meeting link (ADR 0073), capacity 10 | training manager | «کلاس‌ها» | online classroom |
 | 8 | Add the 5 trainees («فراگیر»), the trainer and yourself as «ناظر دوره» | training manager | tab «اعضا» | members by role |
-| 9 | Daily schedule for three days with the trainer | training manager | tab «برنامه» | 3 sessions |
+| 9 | Daily schedule for three days with the trainer | training manager | «برنامهٔ درسی» page | 3 sessions |
 | 10 | As the trainer: open the session in «کلاس‌های من», take attendance (one «با تأخیر» 10 minutes), record content and a file | trainer | `/profile/my-classes` | attendance + content |
 | **C. آزمون پایان دوره** |||||
 | 11 | Question bank «امنیت اطلاعات» with 5 choice questions (one with negative marking) | training manager | exam screens | bank + 5 questions |
@@ -281,7 +281,7 @@ Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperat
 | 10 | «Conversation B2» with capacity 1, the capacity refusal, capacity 2, both learners and the teacher | officer 1 | class with 2 attendees and the teacher |
 | 11 | Sub-class with one learner from the parent | officer 1 | sub-class with an attendee |
 | 12 | Weekly schedule: today, +2 and +4 days, four weeks, starting in ten minutes | officer 1 | weekly schedule with ≥ 3 sessions |
-| 12a | Exam schedule: add a sitting six days from today, 10:00 to 11:00, find it in «برنامهٔ امتحانی», and open its details | officer 1 | exam session for Conversation B2 |
+| 12a | Open «برنامهٔ امتحانی» from the class row, add a sitting six days from today, 10:00 to 11:00, and open its details | officer 1 | exam session for Conversation B2 |
 | 13 | «IELTS Prep» in تجریش, monthly «دومین» (tomorrow's weekday) for three months; the teacher clash is shown first | officer 2 | monthly schedule with a week of month |
 | 14 | Branch holiday a week from today; that day's session goes | officer 1 | branch holiday, no session on it |
 | **D. تغییرهای روزمره** ||||

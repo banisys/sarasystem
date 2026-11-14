@@ -39,7 +39,7 @@ It hands the plans out to future sessions once, in order (`ScheduleSessionsBuild
 - **Admin:**
   - «کلاس‌ها → طرح‌های درس» (primary tenant only): the plan with its topics in a repeater.
   - The schedule form has «طرح درس» (the chosen subject's plans and general ones).
-  - The «برنامه» tab shows the progress of each schedule's plan.
+  - The «برنامهٔ درسی» page shows the progress of each schedule's plan.
   - Session lists have a «مطالب» column: what was covered, or «برنامه: …» in grey.
   - Row action «مطالب جلسه»: topics finished (filled with the forecast), summary, homework, due date, files to add or remove.
   - Materials download at `/class-materials/{media}` (signed).

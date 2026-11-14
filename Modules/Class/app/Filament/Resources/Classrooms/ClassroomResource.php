@@ -7,6 +7,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Modules\Class\Filament\Resources\Classrooms\Pages\ClassExamSchedules;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassMembers;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
@@ -64,6 +65,7 @@ class ClassroomResource extends Resource
             'index' => ListClassrooms::route('/'),
             'members' => ClassMembers::route('/{record}/members'),
             'schedules' => ClassSchedules::route('/{record}/schedules'),
+            'exam-schedules' => ClassExamSchedules::route('/{record}/exam-schedules'),
             'sessions' => ClassSessions::route('/{record}/sessions'),
         ];
     }
