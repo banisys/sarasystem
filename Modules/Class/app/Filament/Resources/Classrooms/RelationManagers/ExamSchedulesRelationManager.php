@@ -3,6 +3,7 @@
 namespace Modules\Class\Filament\Resources\Classrooms\RelationManagers;
 
 use App\Models\Tenant;
+use App\Support\EmployeeDirectory;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -11,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Grid;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Modules\Class\Enums\SessionKind;
+use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\Classroom;
@@ -70,6 +73,7 @@ class ExamSchedulesRelationManager extends RelationManager
             ])
             ->headerActions([$this->addExamScheduleAction()])
             ->recordActions([
+                $this->editExamScheduleAction(),
                 Action::make('viewExam')
                     ->label('جزئیات')
                     ->icon(Heroicon::OutlinedEye)
@@ -96,44 +100,7 @@ class ExamSchedulesRelationManager extends RelationManager
                     ->defaultItems(1)
                     ->reorderable(false)
                     ->columns(2)
-                    ->schema([
-                        DatePicker::make('date')
-                            ->label('تاریخ')
-                            ->jalali()
-                            ->required(),
-                        Select::make('subject_id')
-                            ->label('درس')
-                            ->options(fn (): array => Subject::options())
-                            ->searchable(),
-                        TimePicker::make('start_time')
-                            ->label('ساعت شروع')
-                            ->seconds(false)
-                            ->rules(['date_format:H:i,H:i:s'])
-                            ->required(),
-                        TimePicker::make('end_time')
-                            ->label('ساعت پایان')
-                            ->seconds(false)
-                            ->rules(['date_format:H:i,H:i:s'])
-                            ->after('start_time')
-                            ->required(),
-                        Select::make('teacher_ids')
-                            ->label('مراقبان')
-                            ->helperText('کارکنان همهٔ '.config('sarasystem.tenant_plural_label').' را می‌توانید با نام جست‌وجو کنید.')
-                            ->multiple()
-                            ->searchable()
-                            ->options(fn (SessionPlanner $planner): array => $this->examInvigilatorOptions($planner))
-                            ->getSearchResultsUsing(fn (string $search, SessionPlanner $planner): array => $this->examInvigilatorOptions($planner, $search))
-                            ->getOptionLabelsUsing(fn (array $values, SessionPlanner $planner): array => $this->examInvigilatorOptions($planner, selected: $values)),
-                        TextInput::make('location')
-                            ->label('مکان')
-                            ->helperText('خالی یعنی مکان خود کلاس.')
-                            ->maxLength(255),
-                        Textarea::make('note')
-                            ->label('توضیحات')
-                            ->rows(2)
-                            ->maxLength(2000)
-                            ->columnSpanFull(),
-                    ]),
+                    ->schema($this->examFields()),
             ])
             ->action(function (array $data, SessionPlanner $planner): void {
                 Gate::authorize('update', $this->classroom());
@@ -145,6 +112,86 @@ class ExamSchedulesRelationManager extends RelationManager
 
                 $this->resetPage();
             });
+    }
+
+    private function editExamScheduleAction(): Action
+    {
+        return Action::make('editExamSchedule')
+            ->label('ویرایش')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->authorize(fn (): bool => Gate::allows('update', $this->classroom()))
+            ->visible(fn (ClassSession $record): bool => $record->status !== SessionStatus::Cancelled)
+            ->modalHeading('ویرایش برنامهٔ امتحانی')
+            ->modalWidth('3xl')
+            ->modalDescription(fn (ClassSession $record): string => $record->status === SessionStatus::Scheduled && $record->starts_at->isFuture()
+                ? 'تغییر زمان جلسه را در تقویم کلاس می‌بینید. زمان آزمون آنلاینِ متصل، تنظیم جداگانه‌ای دارد.'
+                : 'برای جلسه‌ای که شروع شده، می‌توانید درس، مراقبان، مکان و توضیحات را اصلاح کنید.')
+            ->fillForm(fn (ClassSession $record): array => [
+                ...$record->only(['subject_id', 'location', 'note']),
+                'date' => $record->starts_at->toDateString(),
+                'start_time' => $record->starts_at->format('H:i'),
+                'end_time' => $record->ends_at->format('H:i'),
+                'teacher_ids' => $record->teachers->modelKeys(),
+            ])
+            ->schema(fn (ClassSession $record): array => [Grid::make(2)->schema($this->examFields($record))])
+            ->action(function (ClassSession $record, array $data, SessionPlanner $planner): void {
+                Gate::authorize('update', $this->classroom());
+
+                SessionActions::attempt(
+                    fn () => $planner->updateExamSession($this->classroom(), $record, $data),
+                    'برنامهٔ امتحانی به‌روز شد.',
+                );
+            });
+    }
+
+    /** @return list<DatePicker|Select|TimePicker|TextInput|Textarea> */
+    private function examFields(?ClassSession $session = null): array
+    {
+        $canChangeTime = $session === null || ($session->status === SessionStatus::Scheduled && $session->starts_at->isFuture());
+
+        return [
+            DatePicker::make('date')
+                ->label('تاریخ')
+                ->disabled(! $canChangeTime)
+                ->jalali()
+                ->required(),
+            Select::make('subject_id')
+                ->label('درس')
+                ->options(fn (): array => Subject::options($session?->subject_id))
+                ->searchable(),
+            TimePicker::make('start_time')
+                ->label('ساعت شروع')
+                ->disabled(! $canChangeTime)
+                ->seconds(false)
+                ->rules(['date_format:H:i,H:i:s'])
+                ->required(),
+            TimePicker::make('end_time')
+                ->label('ساعت پایان')
+                ->disabled(! $canChangeTime)
+                ->seconds(false)
+                ->rules(['date_format:H:i,H:i:s'])
+                ->after('start_time')
+                ->required(),
+            Select::make('teacher_ids')
+                ->label('مراقبان')
+                ->hidden($session !== null && ! app()->bound(EmployeeDirectory::class))
+                ->helperText('کارکنان همهٔ '.config('sarasystem.tenant_plural_label').' را می‌توانید با نام جست‌وجو کنید.')
+                ->multiple()
+                ->searchable()
+                ->options(fn (SessionPlanner $planner): array => $this->examInvigilatorOptions($planner))
+                ->getSearchResultsUsing(fn (string $search, SessionPlanner $planner): array => $this->examInvigilatorOptions($planner, $search))
+                ->getOptionLabelsUsing(fn (array $values, SessionPlanner $planner): array => $this->examInvigilatorOptions($planner, selected: $values)
+                    + ($session?->teachers->whereIn('id', $values)->pluck('name', 'id')->all() ?? [])),
+            TextInput::make('location')
+                ->label('مکان')
+                ->helperText('خالی یعنی مکان خود کلاس.')
+                ->maxLength(255),
+            Textarea::make('note')
+                ->label('توضیحات')
+                ->rows(2)
+                ->maxLength(2000)
+                ->columnSpanFull(),
+        ];
     }
 
     /**

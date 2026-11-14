@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-14 — Added editing from the class exam schedule ([ADR 0097](decisions/0097-edit-class-exam-sessions.md)). Verified editing an upcoming session, rejecting clashes, correcting past details and restricting edits to class editors. Updated the daily operations tutorial and verified the edit action on all nine local «نهم الف» sessions.
 - 2026-11-14 — Split teaching and exam schedule management into separate row actions and pages ([ADR 0096](decisions/0096-separate-class-schedule-pages.md)). Updated tutorial links and verified both actions and all nine existing exam sessions on the local «نهم الف» class.
 - 2026-11-14 — Added the class's paginated exam schedule below its teaching schedules, with invigilators, status and a link to each exam session. Updated the daily operations tutorial. Verified all nine local «نهم الف» entries in the rendered page and ran the Class and Tutorial tests and Pint.
 - 2026-11-14 — Added an opt-in setting to start a session exam after the saved end time, with the full duration per attempt ([ADR 0095](decisions/0095-session-exams-without-a-start-cutoff.md)). Updated the daily operations tutorial and applied the local migration. All 766 tests, Pint and the Vite build passed. The form was not checked in an authenticated browser.

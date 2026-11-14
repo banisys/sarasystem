@@ -195,12 +195,76 @@ class SessionPlanner
             $classroom = Classroom::query()->lockForUpdate()->findOrFail($classroom->getKey());
 
             foreach ($sessions as $session) {
-                $subjectId = $session['subject_id'] ?? null;
-                if (filled($subjectId) && ! Subject::definedSubjects()->whereKey($subjectId)->exists()) {
-                    throw new ClassException('درس انتخاب‌شده پیدا نشد.');
-                }
-
+                $this->checkExamSubject($session['subject_id'] ?? null);
                 $this->addSession($classroom, [...$session, 'kind' => SessionKind::Exam]);
+            }
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ClassException
+     */
+    public function updateExamSession(Classroom $classroom, ClassSession $session, array $data): void
+    {
+        DB::transaction(function () use ($classroom, $session, $data): void {
+            $classroom = Classroom::query()->lockForUpdate()->findOrFail($classroom->getKey());
+            $session = $classroom->sessions()->where('kind', SessionKind::Exam)->lockForUpdate()->findOrFail($session->getKey());
+            if ($session->status === SessionStatus::Cancelled) {
+                throw new ClassException('برای ویرایش، ابتدا جلسهٔ لغوشده را بازگردانید.');
+            }
+
+            $subjectId = $data['subject_id'] ?? null;
+            $this->checkExamSubject($subjectId);
+            $location = $this->sessionLocation($classroom, $data['location'] ?? null);
+            $start = $session->starts_at->toImmutable();
+            $end = $session->ends_at->toImmutable();
+            if (array_key_exists('date', $data)) {
+                [$start, $end] = self::interval(
+                    $data['date'],
+                    $data['start_time'] === $start->format('H:i') ? $start->format('H:i:s') : $data['start_time'],
+                    $data['end_time'] === $end->format('H:i') ? $end->format('H:i:s') : $data['end_time'],
+                );
+            }
+            $startChanged = $start->ne($session->starts_at);
+            $timeChanged = $startChanged || $end->ne($session->ends_at);
+            if ($timeChanged && ($session->status !== SessionStatus::Scheduled || $session->starts_at->lte(now()) || $start->lte(now()))) {
+                throw new ClassException('تغییر زمان فقط برای جلسه‌ای ممکن است که هنوز شروع نشده باشد و زمان تازه هم در آینده باشد.');
+            }
+
+            $current = $session->teachers()->get()->mapWithKeys(fn (User $teacher): array => [
+                $teacher->getKey() => $teacher->pivot->substitute_id ?? $teacher->getKey(),
+            ])->all();
+            $invigilatorIds = isset($data['teacher_ids']) ? self::ids($data['teacher_ids']) : array_keys($current);
+            $added = array_values(array_diff($invigilatorIds, array_keys($current)));
+            $this->checkInvigilators($added);
+            $actualIds = array_map(fn (int $id): int => $current[$id] ?? $id, $invigilatorIds);
+            if (count($actualIds) !== count(array_unique($actualIds))) {
+                throw new ClassException('هر نفر فقط یک بار می‌تواند مراقب جلسه باشد.');
+            }
+
+            $staffChanged = $added !== [] || array_diff(array_keys($current), $invigilatorIds) !== [];
+            if ($timeChanged || $location !== $session->location || $staffChanged) {
+                $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $classroom, $actualIds, $location, exceptSessionId: $session->getKey());
+            }
+
+            $session->fill([
+                'subject_id' => $subjectId,
+                'starts_at' => $start,
+                'ends_at' => $end,
+                'location' => $location,
+                'note' => $data['note'] ?? null,
+            ]);
+            if ($session->isDirty() || $staffChanged) {
+                $session->update([
+                    'original_starts_at' => $session->original_starts_at ?? ($startChanged ? $session->getOriginal('starts_at') : null),
+                    'is_modified' => true,
+                    ...self::changedNow(),
+                ]);
+                if ($staffChanged) {
+                    $session->teachers()->sync($invigilatorIds);
+                }
             }
         });
     }
@@ -217,13 +281,11 @@ class SessionPlanner
         [$start, $end] = self::interval($data['date'], $data['start_time'], $data['end_time']);
         $teacherIds = self::ids($data['teacher_ids'] ?? []);
         if (in_array($data['kind'], [SessionKind::Exam, SessionKind::Exam->value], true)) {
-            if ($teacherIds !== [] && $this->invigilators()->whereKey($teacherIds)->count() !== count($teacherIds)) {
-                throw new ClassException('مراقب باید از فهرست کارکنان انتخاب شود.');
-            }
+            $this->checkInvigilators($teacherIds);
         } else {
             $this->checkTeachers($classroom, $teacherIds);
         }
-        $location = filled($data['location'] ?? null) ? trim($data['location']) : ($classroom->mode->meetsInPerson() ? $classroom->location : null);
+        $location = $this->sessionLocation($classroom, $data['location'] ?? null);
 
         $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $classroom, $teacherIds, $location);
 
@@ -451,6 +513,26 @@ class SessionPlanner
         return app()->bound(EmployeeDirectory::class)
             ? app(EmployeeDirectory::class)->users()
             : User::query()->whereRaw('1 = 0');
+    }
+
+    /** @param list<int> $ids */
+    private function checkInvigilators(array $ids): void
+    {
+        if ($ids !== [] && $this->invigilators()->whereKey($ids)->count() !== count($ids)) {
+            throw new ClassException('مراقب باید از فهرست کارکنان انتخاب شود.');
+        }
+    }
+
+    private function checkExamSubject(int|string|null $subjectId): void
+    {
+        if (filled($subjectId) && ! Subject::definedSubjects()->whereKey($subjectId)->exists()) {
+            throw new ClassException('درس انتخاب‌شده پیدا نشد.');
+        }
+    }
+
+    private function sessionLocation(Classroom $classroom, ?string $location): ?string
+    {
+        return filled($location) ? trim($location) : ($classroom->mode->meetsInPerson() ? $classroom->location : null);
     }
 
     /**

@@ -206,7 +206,7 @@ class SessionActions
         return [
             Section::make($exam ? 'مشخصات جلسهٔ امتحانی' : 'مشخصات جلسه')
                 ->icon($exam ? Heroicon::OutlinedInformationCircle : null)
-                ->description(fn (ClassSession $record): ?string => self::lastChange($exam ? 'آخرین تغییر زمان یا وضعیت' : 'آخرین تغییر زمان، وضعیت یا مدرس‌ها', $record->changedBy, $record->changed_at))
+                ->description(fn (ClassSession $record): ?string => self::lastChange($exam ? 'آخرین تغییر جلسهٔ امتحانی' : 'آخرین تغییر زمان، وضعیت یا مدرس‌ها', $record->changedBy, $record->changed_at))
                 ->extraAttributes(['class' => 'classroom-details-section'])
                 ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
                 ->schema([
