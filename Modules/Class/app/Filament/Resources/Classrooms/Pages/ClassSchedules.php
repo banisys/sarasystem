@@ -3,8 +3,10 @@
 namespace Modules\Class\Filament\Resources\Classrooms\Pages;
 
 use Filament\Actions\Action;
+use Filament\Resources\RelationManagers\RelationGroup;
 use Filament\Support\Icons\Heroicon;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
+use Modules\Class\Filament\Resources\Classrooms\RelationManagers\ExamSchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
 
 class ClassSchedules extends ClassroomSectionPage
@@ -24,6 +26,16 @@ class ClassSchedules extends ClassroomSectionPage
     protected static function manager(): string
     {
         return SchedulesRelationManager::class;
+    }
+
+    protected function getAllRelationManagers(): array
+    {
+        return [
+            RelationGroup::make('برنامه', [
+                static::manager(),
+                ExamSchedulesRelationManager::class,
+            ]),
+        ];
     }
 
     protected static function sectionTitle(): string

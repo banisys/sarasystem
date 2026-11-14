@@ -14,6 +14,7 @@ use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
+use Modules\Class\Filament\Resources\Classrooms\RelationManagers\ExamSchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
@@ -329,6 +330,8 @@ class ClassSchedulesTest extends TestCase
         $subject = Subject::factory()->for($this->primary)->create();
         $this->actingInPanel($editor, $this->west);
         $action = TestAction::make('addExamSchedule')->table();
+        $examList = Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->assertSee('جلسهٔ امتحانی ثبت نشده است');
 
         $this->get(ClassroomResource::getUrl('schedules', ['record' => $this->classroom], tenant: $this->west))
             ->assertOk()
@@ -345,6 +348,7 @@ class ClassSchedulesTest extends TestCase
             ]])
             ->callMountedAction()
             ->assertHasNoActionErrors()
+            ->assertDispatched('class-exam-schedule-added')
             ->assertNotified('جلسه‌های امتحانی ثبت شدند.');
 
         [$first, $second] = $this->classroom->sessions()->orderBy('starts_at')->get()->all();
@@ -358,9 +362,47 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame('13:30–15:00', $second->starts_at->format('H:i').'–'.$second->ends_at->format('H:i'));
         $this->assertSame('سالن آزمون', $second->location);
         $this->assertFalse($this->classroom->schedules()->exists());
+        $examList->dispatch('class-exam-schedule-added')->assertCanSeeTableRecords([$second, $first], inOrder: true);
         Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
             ->call('showSessions', 'day', '2026-11-08')
             ->assertSee('امتحانی');
+    }
+
+    public function test_class_schedules_lists_only_its_exam_sessions_with_invigilators_and_details_links(): void
+    {
+        $viewer = User::factory()->create();
+        $this->roleWithPermissions('class_viewer', ['ViewAny:Classroom', 'View:Classroom']);
+        $this->makeStaff($viewer, $this->west);
+        $this->grantRole($viewer, $this->west, 'class_viewer');
+        $past = ClassSession::factory()->for($this->classroom)->taughtBy($this->teacher)->create([
+            'kind' => SessionKind::Exam,
+            'starts_at' => '2026-10-28 10:00:00',
+            'ends_at' => '2026-10-28 11:00:00',
+            'location' => 'سالن امتحان',
+        ]);
+        $future = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
+        $regular = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Regular]);
+        $otherClass = ClassSession::factory()->for(Classroom::factory()->for($this->west))->create(['kind' => SessionKind::Exam]);
+        $foreignClass = Classroom::factory()->for($this->primary)->create();
+        $otherBranch = ClassSession::factory()->for($foreignClass)->create(['kind' => SessionKind::Exam]);
+        $this->actingInPanel($viewer, $this->west);
+
+        Livewire::withoutLazyLoading();
+        $this->get(ClassroomResource::getUrl('schedules', ['record' => $this->classroom], tenant: $this->west))
+            ->assertOk()
+            ->assertSee('برنامهٔ درسی')
+            ->assertSee('برنامهٔ امتحانی')
+            ->assertSee($this->teacher->name)
+            ->assertSee('گذشته، ثبت‌نشده')
+            ->assertSee('سالن امتحان')
+            ->assertSee(ClassSessionResource::detailsUrl($past, $this->west));
+
+        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
+            ->assertCanSeeTableRecords([$future, $past], inOrder: true)
+            ->assertCanNotSeeTableRecords([$regular, $otherClass, $otherBranch]);
+
+        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $foreignClass, 'pageClass' => ClassSchedules::class])
+            ->assertForbidden();
     }
 
     public function test_exam_schedule_accepts_an_employee_from_another_tenant_and_rejects_non_employees(): void

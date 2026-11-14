@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-14 — Added the class's paginated exam schedule below its teaching schedules, with invigilators, status and a link to each exam session. Updated the daily operations tutorial. Verified all nine local «نهم الف» entries in the rendered page and ran the Class and Tutorial tests and Pint.
 - 2026-11-14 — Added an opt-in setting to start a session exam after the saved end time, with the full duration per attempt ([ADR 0095](decisions/0095-session-exams-without-a-start-cutoff.md)). Updated the daily operations tutorial and applied the local migration. All 766 tests, Pint and the Vite build passed. The form was not checked in an authenticated browser.
 - 2026-11-14 — Added a labeled settings button to the session exam list. Authors and session managers with exam update permission can edit a published or draft exam until the first attempt. Updated the daily operations tutorial and [ADR 0092](decisions/0092-session-exam-settings.md). All 62 targeted tests, Pint and the Vite build passed. The in-app browser returned 404, so the dialog was not verified interactively.
 - 2026-11-13 — Increased the «آزمون‌های جلسه» button border to 2 px.

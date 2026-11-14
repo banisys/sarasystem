@@ -61,6 +61,7 @@ class SchedulesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->heading('برنامهٔ درسی')
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['subject', 'teachers', 'teachingPlan'])->withCount(['sessions' => fn (Builder $sessions) => $sessions->upcoming()->takingPlace()]))
             ->columns([
                 TextColumn::make('frequency')
@@ -162,7 +163,7 @@ class SchedulesRelationManager extends RelationManager
             ->color('gray')
             ->authorize(fn (): bool => $this->canManage())
             ->modalWidth('3xl')
-            ->modalDescription('برای هر امتحان یک جلسه اضافه کنید. پس از ثبت، جلسه‌ها در تقویم همین کلاس دیده می‌شوند.')
+            ->modalDescription('برای هر امتحان یک جلسه اضافه کنید. جلسه‌های ثبت‌شده در فهرست برنامهٔ امتحانی و تقویم همین کلاس دیده می‌شوند.')
             ->modalSubmitActionLabel('ثبت جلسه‌های امتحانی')
             ->schema([
                 Repeater::make('sessions')
@@ -219,6 +220,8 @@ class SchedulesRelationManager extends RelationManager
                     fn () => $planner->addExamSessions($this->classroom(), $data['sessions']),
                     'جلسه‌های امتحانی ثبت شدند.',
                 );
+
+                $this->dispatch('class-exam-schedule-added')->to(ExamSchedulesRelationManager::class);
             });
     }
 
