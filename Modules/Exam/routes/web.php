@@ -11,9 +11,11 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/exams')->
     Route::get('/', [ExamController::class, 'index'])->name('index');
     Route::prefix('library')->name('library')->controller(QuestionLibraryController::class)->group(function () {
         Route::get('/', 'index');
+        Route::get('/banks/{bank}', 'bankQuestions')->whereNumber('bank')->name('.banks.show');
         Route::post('/banks', 'storeBank')->name('.banks.store');
         Route::patch('/banks/{bank}', 'updateBank')->name('.banks.update');
         Route::delete('/banks/{bank}', 'destroyBank')->name('.banks.destroy');
+        Route::get('/questions', 'questions')->name('.questions');
         Route::post('/questions', 'storeQuestion')->name('.questions.store');
         Route::patch('/questions/{question}', 'updateQuestion')->name('.questions.update');
         Route::delete('/questions/{question}', 'destroyQuestion')->name('.questions.destroy');

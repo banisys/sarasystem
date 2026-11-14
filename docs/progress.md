@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-14 — Split the question library into a bank table, a bank creation and editing dialog, and dedicated question pages ([ADR 0098](decisions/0098-separate-question-bank-and-question-pages.md)). Updated the daily operations tutorial. Chrome verified bank creation, validation and navigation. All 84 Exam and Tutorial tests, Pint and the Vite build passed.
 - 2026-11-14 — Added editing from the class exam schedule ([ADR 0097](decisions/0097-edit-class-exam-sessions.md)). Verified editing an upcoming session, rejecting clashes, correcting past details and restricting edits to class editors. Updated the daily operations tutorial and verified the edit action on all nine local «نهم الف» sessions.
 - 2026-11-14 — Split teaching and exam schedule management into separate row actions and pages ([ADR 0096](decisions/0096-separate-class-schedule-pages.md)). Updated tutorial links and verified both actions and all nine existing exam sessions on the local «نهم الف» class.
 - 2026-11-14 — Added the class's paginated exam schedule below its teaching schedules, with invigilators, status and a link to each exam session. Updated the daily operations tutorial. Verified all nine local «نهم الف» entries in the rendered page and ran the Class and Tutorial tests and Pint.

@@ -21,3 +21,5 @@ Teaching staff need to author and share question banks and questions from the us
 Old standalone exams and existing session copies keep drawing from their bank sections. Existing administrative questions and banks have no personal owner and do not appear in the user library. Authorized admin catalog access stays as before. A generated exam continues to use its saved question set after a source is edited, deleted or made private.
 
 Manual selection per bank is covered by [ADR 0090](0090-manual-session-exam-question-selection.md).
+
+The bank table, bank dialog and dedicated question pages are covered by [ADR 0098](0098-separate-question-bank-and-question-pages.md).

@@ -24,18 +24,19 @@ class QuestionLibraryController extends Controller
 {
     public function __construct(private readonly QuestionLibrary $library) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $actor = $this->actor($request);
         $bankId = $request->integer('bank');
-        $bank = $bankId > 0 ? $this->library->banks($actor)->findOrFail($bankId) : null;
+        if ($bankId > 0) {
+            $bank = $this->library->banks($actor)->findOrFail($bankId);
+
+            return to_route('exams.library.banks.show', ['bank' => $bank, 'questions_page' => $request->query('questions_page')]);
+        }
+
         $banks = $this->library->banks($actor)
             ->withCount(['questions' => fn (Builder $query) => $query->where(fn (Builder $visible) => $this->library->visibleTo($visible, $actor))])
-            ->latest('id')->paginate(15, pageName: 'banks_page')->withQueryString();
-        $questions = $this->library->questions($actor)
-            ->when($bank, fn (Builder $query) => $query->whereHas('banks', fn (Builder $banks) => $banks->whereKey($bank->id)))
-            ->with(['banks' => fn ($query) => $query->where('owner_id', $actor->id)])
-            ->latest('id')->paginate(15, pageName: 'questions_page')->withQueryString();
+            ->latest('id')->paginate(15, pageName: 'banks_page');
 
         return Inertia::render('Exam::QuestionLibrary', [
             'banks' => $banks->through(fn (QuestionBank $record): array => [
@@ -43,6 +44,29 @@ class QuestionLibraryController extends Controller
                 'is_shared' => $record->is_shared, 'is_mine' => $record->owner_id === $actor->id,
                 'questions_count' => $record->questions_count,
             ]),
+        ]);
+    }
+
+    public function questions(Request $request): Response
+    {
+        return $this->questionList($this->actor($request));
+    }
+
+    public function bankQuestions(Request $request, int $bank): Response
+    {
+        $actor = $this->actor($request);
+
+        return $this->questionList($actor, $this->library->banks($actor)->findOrFail($bank));
+    }
+
+    private function questionList(User $actor, ?QuestionBank $bank = null): Response
+    {
+        $questions = $this->library->questions($actor)
+            ->when($bank, fn (Builder $query) => $query->whereHas('banks', fn (Builder $banks) => $banks->whereKey($bank->id)))
+            ->with(['banks' => fn ($query) => $query->where('owner_id', $actor->id)])
+            ->latest('id')->paginate(15, pageName: 'questions_page');
+
+        return Inertia::render('Exam::LibraryQuestions', [
             'questions' => $questions->through(fn (Question $question): array => [
                 'id' => $question->id, 'type' => $question->type->value, 'body' => $question->body,
                 'options' => $question->options, 'accepted_answers' => $question->accepted_answers,
@@ -51,7 +75,9 @@ class QuestionLibraryController extends Controller
                 'bank_ids' => $question->banks->modelKeys(),
             ]),
             'ownBanks' => QuestionBank::query()->where('owner_id', $actor->id)->orderBy('title')->get(['id', 'title']),
-            'selectedBank' => $bank?->only(['id', 'title']),
+            'selectedBank' => $bank === null ? null : [
+                'id' => $bank->id, 'title' => $bank->title, 'is_mine' => $bank->owner_id === $actor->id,
+            ],
             'types' => collect(QuestionType::cases())->mapWithKeys(fn (QuestionType $type): array => [$type->value => $type->getLabel()]),
         ]);
     }
@@ -87,39 +113,44 @@ class QuestionLibraryController extends Controller
             $locked->delete();
         });
 
-        return to_route('exams.library')->with('status', 'بانک حذف شد. سؤال‌های آن در فهرست سؤال‌ها باقی ماندند.');
+        return to_route('exams.library')->with('status', 'بانک حذف شد. سؤال‌های آن در «همهٔ سؤال‌ها» باقی ماندند.');
     }
 
     public function storeQuestion(Request $request): RedirectResponse
     {
         $actor = $this->actor($request);
+        $destination = $this->questionDestination($request, $actor);
         $question = new Question;
         $question->forceFill(['owner_id' => $actor->id]);
         $this->saveQuestion($request, $question, $actor);
 
-        return to_route('exams.library')->with('status', 'سؤال ساخته شد.');
+        return $destination->with('status', 'سؤال ساخته شد.');
     }
 
     public function updateQuestion(Request $request, Question $question): RedirectResponse
     {
         $actor = $this->actor($request);
         abort_unless($question->owner_id === $actor->id, 404);
+        $destination = $this->questionDestination($request, $actor);
         $this->saveQuestion($request, $question, $actor);
 
-        return to_route('exams.library')->with('status', 'سؤال ذخیره شد.');
+        return $destination->with('status', 'سؤال ذخیره شد.');
     }
 
     public function destroyQuestion(Request $request, Question $question): RedirectResponse
     {
-        abort_unless($question->owner_id === $this->actor($request)->id, 404);
+        $actor = $this->actor($request);
+        abort_unless($question->owner_id === $actor->id, 404);
+        $destination = $this->questionDestination($request, $actor);
         $question->delete();
 
-        return to_route('exams.library')->with('status', 'سؤال حذف شد.');
+        return $destination->with('status', 'سؤال حذف شد.');
     }
 
     public function addSharedQuestion(Request $request, Question $question): RedirectResponse
     {
         $actor = $this->actor($request);
+        $destination = $this->questionDestination($request, $actor);
         $data = $request->validate(['bank_id' => ['required', 'integer']], attributes: ['bank_id' => 'بانک سؤال']);
 
         DB::transaction(function () use ($data, $actor, $question): void {
@@ -128,7 +159,19 @@ class QuestionLibraryController extends Controller
             $bank->questions()->syncWithoutDetaching([$shared->id]);
         });
 
-        return to_route('exams.library')->with('status', 'سؤال به بانک شما اضافه شد.');
+        return $destination->with('status', 'سؤال به بانک شما اضافه شد.');
+    }
+
+    private function questionDestination(Request $request, User $actor): RedirectResponse
+    {
+        $bankId = $request->integer('return_bank');
+        if ($bankId > 0) {
+            $bank = $this->library->banks($actor)->findOrFail($bankId);
+
+            return to_route('exams.library.banks.show', $bank);
+        }
+
+        return to_route('exams.library.questions');
     }
 
     private function actor(Request $request): User

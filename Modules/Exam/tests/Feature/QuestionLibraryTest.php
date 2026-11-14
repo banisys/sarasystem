@@ -30,7 +30,8 @@ class QuestionLibraryTest extends TestCase
         $this->post(route('exams.library.questions.store'), [
             'type' => 'fill_in_the_blank', 'body' => 'My name is ___.', 'score' => 2,
             'is_active' => true, 'is_shared' => false, 'accepted_answers' => ['Ali'], 'bank_ids' => [$bank->id],
-        ])->assertRedirect(route('exams.library'));
+            'return_bank' => $bank->id,
+        ])->assertRedirect(route('exams.library.banks.show', $bank));
         $question = Question::query()->sole();
         $this->assertSame($owner->id, $question->owner_id);
         $this->assertSame([$bank->id], $question->banks()->get()->modelKeys());
@@ -43,8 +44,9 @@ class QuestionLibraryTest extends TestCase
 
         $colleague = $this->instructor($tenant);
         $destination = QuestionBank::factory()->for($tenant)->create(['owner_id' => $colleague->id]);
-        $this->get("/profile/exams/library?bank={$bank->id}")->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Exam::QuestionLibrary')->where('questions.data.0.model_answer', 'My name is Ali.')
+        $this->get(route('exams.library', ['bank' => $bank->id]))->assertRedirect(route('exams.library.banks.show', $bank));
+        $this->get(route('exams.library.banks.show', $bank))->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Exam::LibraryQuestions')->where('questions.data.0.model_answer', 'My name is Ali.')
             ->where('questions.data.0.is_mine', false));
         $this->patch(route('exams.library.banks.update', $bank), ['title' => 'تغییر'])->assertNotFound();
         $this->delete(route('exams.library.questions.destroy', $question))->assertNotFound();
@@ -55,6 +57,8 @@ class QuestionLibraryTest extends TestCase
         $this->delete(route('exams.library.banks.destroy', $bank))->assertRedirect();
         $this->assertModelMissing($bank);
         $this->assertModelExists($question);
+        $this->get(route('exams.library.questions'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Exam::LibraryQuestions')->where('selectedBank', null)->where('questions.data.0.id', $question->id));
         $this->delete(route('exams.library.questions.destroy', $question))->assertRedirect();
         $this->assertModelMissing($question);
     }
@@ -71,10 +75,12 @@ class QuestionLibraryTest extends TestCase
         $public->questions()->attach($question);
         $foreign = QuestionBank::factory()->for(Tenant::factory())->create(['owner_id' => $actor->id, 'is_shared' => true]);
 
-        $this->get(route('exams.library', ['bank' => $public->id]))->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('banks.data', 2)->has('questions.data', 0));
-        $this->get(route('exams.library', ['bank' => $private->id]))->assertNotFound();
-        $this->get(route('exams.library', ['bank' => $foreign->id]))->assertNotFound();
+        $this->get(route('exams.library'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Exam::QuestionLibrary')->has('banks.data', 2)->missing('questions'));
+        $this->get(route('exams.library.banks.show', $public))->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Exam::LibraryQuestions')->where('selectedBank.id', $public->id)->has('questions.data', 0)->missing('banks'));
+        $this->get(route('exams.library.banks.show', $private))->assertNotFound();
+        $this->get(route('exams.library.banks.show', $foreign))->assertNotFound();
         $this->post(route('exams.library.questions.banks.store', $question), ['bank_id' => $ownBank->id])->assertNotFound();
         $this->post(route('exams.library.questions.store'), [
             'type' => 'descriptive', 'body' => 'یک سؤال', 'score' => 1,
@@ -103,6 +109,7 @@ class QuestionLibraryTest extends TestCase
         $this->actingAs($learner)->withSession([ResolveCurrentTenant::SESSION_KEY => $tenant->id]);
 
         $this->get(route('exams.library'))->assertForbidden();
+        $this->get(route('exams.library.questions'))->assertForbidden();
         $this->post(route('exams.library.banks.store'), ['title' => 'بانک', 'is_shared' => true])->assertForbidden();
     }
 

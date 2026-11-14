@@ -19,7 +19,7 @@ The public site and user panel share Vue, Inertia and Tailwind. They need consis
 - Use the existing [public layout](../../resources/js/Layouts/PublicLayout.vue) for roomier pages and tenant colour, and the [user layout](../../resources/js/Layouts/AppLayout.vue) for the compact product interface. Choose the more contrasting of white and black for text on the tenant colour. Tint or shade the hover background away from the selected foreground.
 - Shared Vue controls live under [Components/Ui](../../resources/js/Components/Ui). Use Inertia links for navigation, Reka UI for the modal mobile menu and native form controls for ordinary input. Keep the existing Jalali and mobile verification components.
 - Apply the design to the public layouts and content surfaces, the preregistration form and the My Classes calendar first. The Filament theme has its own CSS entry.
-- The My Classes calendar, session detail and session exams headers share the dark plum background and light text.
+- The My Classes calendar, session detail, session exams and question library headers share the dark plum background and light text.
 
 ## Consequences
 
