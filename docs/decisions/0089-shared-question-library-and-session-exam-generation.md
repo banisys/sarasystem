@@ -23,3 +23,4 @@ Old standalone exams and existing session copies keep drawing from their bank se
 Manual selection per bank is covered by [ADR 0090](0090-manual-session-exam-question-selection.md).
 
 The bank table, bank dialog and dedicated question pages are covered by [ADR 0098](0098-separate-question-bank-and-question-pages.md).
+Bank editors can also create a question directly in a visible shared bank under [ADR 0099](0099-add-questions-from-bank-pages.md).

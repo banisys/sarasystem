@@ -78,7 +78,8 @@ class QuestionLibraryTest extends TestCase
         $this->get(route('exams.library'))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Exam::QuestionLibrary')->has('banks.data', 2)->missing('questions'));
         $this->get(route('exams.library.banks.show', $public))->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Exam::LibraryQuestions')->where('selectedBank.id', $public->id)->has('questions.data', 0)->missing('banks'));
+            ->component('Exam::LibraryQuestions')->where('selectedBank.id', $public->id)->where('selectedBank.can_add_question', false)
+            ->has('questions.data', 0)->missing('banks'));
         $this->get(route('exams.library.banks.show', $private))->assertNotFound();
         $this->get(route('exams.library.banks.show', $foreign))->assertNotFound();
         $this->post(route('exams.library.questions.banks.store', $question), ['bank_id' => $ownBank->id])->assertNotFound();
@@ -87,6 +88,34 @@ class QuestionLibraryTest extends TestCase
             'is_active' => true, 'is_shared' => false, 'bank_ids' => [$public->id, $foreign->id],
         ])->assertSessionHasErrors('bank_ids');
         $this->assertSame(0, $ownBank->questions()->count());
+    }
+
+    public function test_only_the_owner_or_a_bank_editor_can_add_a_question_from_a_bank_page(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->instructor($tenant);
+        $bank = QuestionBank::factory()->for($tenant)->create(['owner_id' => $owner->id, 'is_shared' => true]);
+        $colleague = $this->instructor($tenant);
+        $foreign = QuestionBank::factory()->for(Tenant::factory())->create(['owner_id' => $colleague->id, 'is_shared' => true]);
+        $payload = [
+            'type' => 'descriptive', 'body' => 'یک سؤال', 'score' => 1,
+            'is_active' => true, 'is_shared' => false, 'bank_ids' => [],
+        ];
+
+        $this->post(route('exams.library.banks.questions.store', $bank), $payload)->assertForbidden();
+        $this->assertSame(0, $bank->questions()->count());
+
+        $this->actingAs($owner);
+        $this->post(route('exams.library.banks.questions.store', $bank), $payload)->assertRedirect(route('exams.library.banks.show', $bank));
+        $this->assertSame($owner->id, $bank->questions()->sole()->owner_id);
+
+        $admin = User::factory()->superAdmin()->create();
+        $this->actingAs($admin);
+        $this->get(route('exams.library.banks.show', $bank))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('selectedBank.can_add_question', true));
+        $this->post(route('exams.library.banks.questions.store', $foreign), $payload)->assertNotFound();
+        $this->post(route('exams.library.banks.questions.store', $bank), $payload)->assertRedirect(route('exams.library.banks.show', $bank));
+        $this->assertSame($admin->id, $bank->questions()->latest('exam_questions.id')->firstOrFail()->owner_id);
     }
 
     #[TestWith(['choice', 'سؤال', ['options' => [['text' => 'الف', 'is_correct' => true], ['text' => 'ب', 'is_correct' => true]]], 'options'])]

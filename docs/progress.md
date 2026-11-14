@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-14 — Enabled the «افزودن سؤال» dialog for bank owners and staff with update permission on accessible banks ([ADR 0099](decisions/0099-add-questions-from-bank-pages.md)). Verified direct creation and a clean reopened form in Chrome on shared bank 10 as a non-owner administrator.
 - 2026-11-14 — Converted bank questions to a table and moved question editing and creation into a dialog. Updated the daily operations tutorial. Verified creating, prefilling, validating and saving a question in Chrome on bank 10. Seven targeted tests, Pint and the Vite build passed.
 - 2026-11-14 — Reduced the height, padding and icon size of the «بانک جدید» toolbar button. Vite build passed.
 - 2026-11-14 — Left-aligned the «بانک جدید» button in the RTL toolbar and gave it a brand-coloured outline and plus icon. Vite build passed.

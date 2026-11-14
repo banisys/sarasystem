@@ -12,6 +12,7 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/exams')->
     Route::prefix('library')->name('library')->controller(QuestionLibraryController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('/banks/{bank}', 'bankQuestions')->whereNumber('bank')->name('.banks.show');
+        Route::post('/banks/{bank}/questions', 'storeBankQuestion')->whereNumber('bank')->name('.banks.questions.store');
         Route::post('/banks', 'storeBank')->name('.banks.store');
         Route::patch('/banks/{bank}', 'updateBank')->name('.banks.update');
         Route::delete('/banks/{bank}', 'destroyBank')->name('.banks.destroy');

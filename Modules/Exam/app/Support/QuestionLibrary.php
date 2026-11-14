@@ -26,6 +26,11 @@ class QuestionLibrary
         return QuestionBank::query()->where(fn (Builder $query) => $this->visibleTo($query, $user));
     }
 
+    public function canAddQuestion(User $user, QuestionBank $bank): bool
+    {
+        return $bank->owner_id === $user->id || $user->can('update', $bank);
+    }
+
     /** @return Builder<Question> */
     public function questions(User $user): Builder
     {

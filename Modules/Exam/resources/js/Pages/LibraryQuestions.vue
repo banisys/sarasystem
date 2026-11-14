@@ -12,13 +12,16 @@ const page = usePage();
 const blankOptions = () => Array.from({ length: 4 }, (_, index) => ({ text: '', is_correct: index === 0 }));
 const question = useForm({
     type: 'choice', body: '', score: 1, is_active: true, is_shared: false,
-    bank_ids: defaultBankIds(), options: blankOptions(), accepted_answers: [''], model_answer: '',
+    bank_ids: [], options: blankOptions(), accepted_answers: [''], model_answer: '',
 });
 const deletion = useForm({});
 const sharing = useForm({ bank_id: '' });
 const dialog = ref(null);
 const editingQuestion = ref(null);
 const addingQuestion = ref(null);
+const availableBanks = computed(() => editingQuestion.value || !props.selectedBank
+    ? props.ownBanks
+    : props.ownBanks.filter((bank) => bank.id !== props.selectedBank.id));
 const correctIndex = computed({
     get: () => question.options.findIndex((option) => option.is_correct),
     set: (index) => question.options.forEach((option, optionIndex) => { option.is_correct = optionIndex === index; }),
@@ -28,13 +31,8 @@ const primary = 'ui-button border-transparent bg-brand-600 text-brand-contrast h
 const secondary = 'inline-flex min-h-9 items-center text-sm font-medium text-brand-700 hover:underline';
 const returnBank = () => ({ return_bank: props.selectedBank?.id ?? null });
 
-function defaultBankIds() {
-    return props.selectedBank?.is_mine ? [props.selectedBank.id] : [];
-}
-
 function openQuestion(record = null) {
     question.resetAndClearErrors();
-    question.bank_ids = defaultBankIds();
     editingQuestion.value = record?.id ?? null;
     if (record) {
         Object.assign(question, {
@@ -49,8 +47,16 @@ function openQuestion(record = null) {
 }
 function saveQuestion() {
     question.transform((data) => ({ ...data, ...returnBank() }));
-    const options = { preserveScroll: true, onSuccess: () => dialog.value?.close() };
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => {
+            question.resetAndClearErrors();
+            question.defaults();
+            dialog.value?.close();
+        },
+    };
     if (editingQuestion.value) question.patch(route('exams.library.questions.update', editingQuestion.value), options);
+    else if (props.selectedBank) question.post(route('exams.library.banks.questions.store', props.selectedBank.id), options);
     else question.post(route('exams.library.questions.store'), options);
 }
 function removeQuestion(id) {
@@ -95,10 +101,10 @@ function removeOption(index) {
             <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
             <p v-for="(error, key) in deletion.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
             <section class="ui-surface overflow-hidden" aria-label="سؤال‌ها">
-                <div v-if="!selectedBank || selectedBank.is_mine" class="flex justify-end border-b border-ui-line px-4 py-3">
+                <div v-if="!selectedBank || selectedBank.can_add_question" class="flex justify-end border-b border-ui-line px-4 py-3">
                     <UiButton variant="outline-brand" class="min-h-9 gap-1.5 px-3" aria-haspopup="dialog" @click="openQuestion()">
                         <PanelIcon name="plus" class="size-4" />
-                        سؤال جدید
+                        افزودن سؤال
                     </UiButton>
                 </div>
                 <div v-if="questions.data.length" class="overflow-x-auto">
@@ -160,7 +166,8 @@ function removeOption(index) {
 
             <dialog ref="dialog" aria-labelledby="question-dialog-title" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-2xl overflow-auto rounded-ui bg-white p-5 text-ui-ink shadow-xl backdrop:bg-black/50">
                 <form class="space-y-4" novalidate @submit.prevent="saveQuestion">
-                    <h2 id="question-dialog-title" class="text-lg font-bold">{{ editingQuestion ? 'ویرایش سؤال' : 'سؤال جدید' }}</h2>
+                    <h2 id="question-dialog-title" class="text-lg font-bold">{{ editingQuestion ? 'ویرایش سؤال' : 'افزودن سؤال' }}</h2>
+                    <p v-if="selectedBank && !editingQuestion" class="text-sm text-ui-muted">بانک مقصد: {{ selectedBank.title }}</p>
                     <label class="block space-y-1 text-sm">
                         <span>نوع سؤال</span>
                         <select v-model="question.type" :class="field">
@@ -191,9 +198,9 @@ function removeOption(index) {
                     </fieldset>
                     <label v-else class="block space-y-1 text-sm"><span>پاسخ نمونه (اختیاری)</span><textarea v-model="question.model_answer" rows="2" :class="field" /></label>
                     <label class="block space-y-1 text-sm"><span>بارم</span><input v-model="question.score" type="number" min="0.25" step="0.01" :class="field" /></label>
-                    <fieldset v-if="ownBanks.length" class="space-y-1">
-                        <legend class="mb-1 text-sm font-medium">بانک‌های من</legend>
-                        <label v-for="record in ownBanks" :key="record.id" class="flex items-center gap-2 text-sm">
+                    <fieldset v-if="availableBanks.length" class="space-y-1">
+                        <legend class="mb-1 text-sm font-medium">{{ selectedBank && !editingQuestion ? 'بانک‌های دیگر من' : 'بانک‌های من' }}</legend>
+                        <label v-for="record in availableBanks" :key="record.id" class="flex items-center gap-2 text-sm">
                             <input v-model="question.bank_ids" type="checkbox" :value="record.id" /> {{ record.title }}
                         </label>
                     </fieldset>

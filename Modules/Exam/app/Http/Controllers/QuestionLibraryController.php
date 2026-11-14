@@ -76,7 +76,8 @@ class QuestionLibraryController extends Controller
             ]),
             'ownBanks' => QuestionBank::query()->where('owner_id', $actor->id)->orderBy('title')->get(['id', 'title']),
             'selectedBank' => $bank === null ? null : [
-                'id' => $bank->id, 'title' => $bank->title, 'is_mine' => $bank->owner_id === $actor->id,
+                'id' => $bank->id, 'title' => $bank->title,
+                'can_add_question' => $this->library->canAddQuestion($actor, $bank),
             ],
             'types' => collect(QuestionType::cases())->mapWithKeys(fn (QuestionType $type): array => [$type->value => $type->getLabel()]),
         ]);
@@ -125,6 +126,19 @@ class QuestionLibraryController extends Controller
         $this->saveQuestion($request, $question, $actor);
 
         return $destination->with('status', 'سؤال ساخته شد.');
+    }
+
+    public function storeBankQuestion(Request $request, int $bank): RedirectResponse
+    {
+        $actor = $this->actor($request);
+        $destination = $this->library->banks($actor)->findOrFail($bank);
+        abort_unless($this->library->canAddQuestion($actor, $destination), 403);
+
+        $question = new Question;
+        $question->forceFill(['owner_id' => $actor->id]);
+        $this->saveQuestion($request, $question, $actor, $destination);
+
+        return to_route('exams.library.banks.show', $destination)->with('status', 'سؤال به بانک اضافه شد.');
     }
 
     public function updateQuestion(Request $request, Question $question): RedirectResponse
@@ -191,7 +205,7 @@ class QuestionLibraryController extends Controller
         ], attributes: ['title' => 'عنوان', 'description' => 'توضیحات', 'is_shared' => 'اشتراک‌گذاری']))->save();
     }
 
-    private function saveQuestion(Request $request, Question $question, User $actor): void
+    private function saveQuestion(Request $request, Question $question, User $actor, ?QuestionBank $destination = null): void
     {
         $data = $request->validate([
             'type' => ['required', Rule::enum(QuestionType::class)],
@@ -221,11 +235,18 @@ class QuestionLibraryController extends Controller
             throw ValidationException::withMessages(['options' => 'دقیقاً یک گزینه باید پاسخ درست باشد.']);
         }
 
-        DB::transaction(function () use ($question, $data, $actor): void {
-            $bankIds = QuestionBank::query()->where('owner_id', $actor->id)->whereKey($data['bank_ids'])
-                ->orderBy('id')->lockForUpdate()->pluck('id')->all();
-            if (count($bankIds) !== count($data['bank_ids'])) {
+        DB::transaction(function () use ($question, $data, $actor, $destination): void {
+            $selectedIds = $data['bank_ids'];
+            $bankIds = $destination === null ? $selectedIds : array_unique([...$selectedIds, $destination->id]);
+            $banks = QuestionBank::query()->whereKey($bankIds)->orderBy('id')->lockForUpdate()->get(['id', 'tenant_id', 'owner_id', 'is_shared']);
+            $ownedIds = $banks->where('owner_id', $actor->id)->modelKeys();
+            if (array_diff($selectedIds, $ownedIds) !== []) {
                 throw ValidationException::withMessages(['bank_ids' => 'سؤال را فقط می‌توانید به بانک‌های خودتان اضافه کنید.']);
+            }
+            if ($destination !== null) {
+                $bank = $banks->find($destination->id);
+                abort_unless($bank !== null && ($bank->owner_id === $actor->id || ($bank->owner_id !== null && $bank->is_shared)), 404);
+                abort_unless($this->library->canAddQuestion($actor, $bank), 403);
             }
 
             unset($data['bank_ids']);
