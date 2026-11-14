@@ -1,9 +1,11 @@
 <script setup>
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import UiNotice from '@/Components/Ui/UiNotice.vue';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PanelIcon from '@/Components/PanelIcon.vue';
+import UiButton from '@/Components/Ui/UiButton.vue';
 
 const props = defineProps({ questions: Object, ownBanks: Array, selectedBank: Object, types: Object });
 const page = usePage();
@@ -14,6 +16,7 @@ const question = useForm({
 });
 const deletion = useForm({});
 const sharing = useForm({ bank_id: '' });
+const dialog = ref(null);
 const editingQuestion = ref(null);
 const addingQuestion = ref(null);
 const correctIndex = computed({
@@ -29,8 +32,7 @@ function defaultBankIds() {
     return props.selectedBank?.is_mine ? [props.selectedBank.id] : [];
 }
 
-
-function editQuestion(record = null) {
+function openQuestion(record = null) {
     question.resetAndClearErrors();
     question.bank_ids = defaultBankIds();
     editingQuestion.value = record?.id ?? null;
@@ -42,12 +44,12 @@ function editQuestion(record = null) {
             accepted_answers: record.accepted_answers ? [...record.accepted_answers] : [''],
             model_answer: record.model_answer ?? '',
         });
-        nextTick(() => document.getElementById('question-body')?.focus());
     }
+    dialog.value.showModal();
 }
 function saveQuestion() {
     question.transform((data) => ({ ...data, ...returnBank() }));
-    const options = { preserveScroll: true, onSuccess: () => editQuestion() };
+    const options = { preserveScroll: true, onSuccess: () => dialog.value?.close() };
     if (editingQuestion.value) question.patch(route('exams.library.questions.update', editingQuestion.value), options);
     else question.post(route('exams.library.questions.store'), options);
 }
@@ -55,7 +57,6 @@ function removeQuestion(id) {
     if (!window.confirm('سؤال حذف شود؟')) return;
     deletion.transform(returnBank).delete(route('exams.library.questions.destroy', id), {
         preserveScroll: true,
-        onSuccess: () => { if (editingQuestion.value === id) editQuestion(); },
     });
 }
 function selectSharedQuestion(id) {
@@ -68,7 +69,7 @@ function addSharedQuestion(id) {
     });
 }
 watch(() => props.selectedBank?.id, () => {
-    editQuestion();
+    dialog.value?.close();
     addingQuestion.value = null;
     sharing.resetAndClearErrors();
     deletion.clearErrors();
@@ -93,9 +94,73 @@ function removeOption(index) {
             />
             <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
             <p v-for="(error, key) in deletion.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
-            <section class="ui-surface grid gap-5 p-4 sm:p-5" :class="{ 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]': !selectedBank || selectedBank.is_mine || editingQuestion }">
-                <form v-if="!selectedBank || selectedBank.is_mine || editingQuestion" class="min-w-0 space-y-3 rounded-ui bg-ui-canvas p-3 sm:p-4" novalidate @submit.prevent="saveQuestion">
-                    <h2 class="font-semibold">{{ editingQuestion ? 'ویرایش سؤال' : 'سؤال جدید' }}</h2>
+            <section class="ui-surface overflow-hidden" aria-label="سؤال‌ها">
+                <div v-if="!selectedBank || selectedBank.is_mine" class="flex justify-end border-b border-ui-line px-4 py-3">
+                    <UiButton variant="outline-brand" class="min-h-9 gap-1.5 px-3" aria-haspopup="dialog" @click="openQuestion()">
+                        <PanelIcon name="plus" class="size-4" />
+                        سؤال جدید
+                    </UiButton>
+                </div>
+                <div v-if="questions.data.length" class="overflow-x-auto">
+                    <table class="w-full divide-y divide-ui-line text-start text-sm">
+                        <thead class="bg-ui-canvas text-ui-muted">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-start">متن سؤال</th>
+                                <th scope="col" class="px-4 py-3 text-start whitespace-nowrap">نوع</th>
+                                <th scope="col" class="px-4 py-3 text-start">بارم</th>
+                                <th scope="col" class="px-4 py-3 text-start whitespace-nowrap">وضعیت</th>
+                                <th scope="col" class="px-4 py-3 text-start">اشتراک</th>
+                                <th scope="col" class="px-4 py-3 text-start">عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-ui-line">
+                            <tr v-for="record in questions.data" :key="record.id" class="align-top">
+                                <td class="min-w-56 space-y-2 px-4 py-3">
+                                    <p class="whitespace-pre-wrap wrap-break-word font-medium">{{ record.body }}</p>
+                                    <details v-if="record.options || record.accepted_answers || record.model_answer" class="text-sm">
+                                        <summary class="cursor-pointer text-gray-700">پاسخ‌ها</summary>
+                                        <ul v-if="record.options" class="mt-2 list-disc space-y-1 ps-5">
+                                            <li v-for="option in record.options" :key="option.key">{{ option.text }}{{ option.is_correct ? ' (درست)' : '' }}</li>
+                                        </ul>
+                                        <p v-else class="mt-2 whitespace-pre-wrap wrap-break-word">{{ record.accepted_answers?.join('، ') ?? record.model_answer }}</p>
+                                    </details>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">{{ types[record.type] }}</td>
+                                <td class="px-4 py-3 tabular-nums">{{ record.score }}</td>
+                                <td class="px-4 py-3">{{ record.is_active ? 'فعال' : 'غیرفعال' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">{{ record.is_shared ? 'عمومی' : 'خصوصی' }}</td>
+                                <td class="px-4 py-2">
+                                    <div v-if="record.is_mine" class="flex items-center gap-3 whitespace-nowrap">
+                                        <button type="button" :class="secondary" aria-haspopup="dialog" @click="openQuestion(record)">ویرایش</button>
+                                        <button type="button" :disabled="deletion.processing" class="text-red-700 hover:underline" @click="removeQuestion(record.id)">حذف</button>
+                                    </div>
+                                    <button v-else-if="ownBanks.length" type="button" :class="[secondary, 'whitespace-nowrap']" :aria-expanded="addingQuestion === record.id" @click="selectSharedQuestion(record.id)">افزودن به بانک من</button>
+                                    <form v-if="addingQuestion === record.id" class="space-y-2" novalidate @submit.prevent="addSharedQuestion(record.id)">
+                                        <label class="block space-y-1 text-sm">
+                                            <span>بانک مقصد</span>
+                                            <select v-model="sharing.bank_id" :class="field">
+                                                <option value="">انتخاب کنید</option>
+                                                <option v-for="ownBank in ownBanks" :key="ownBank.id" :value="ownBank.id">{{ ownBank.title }}</option>
+                                            </select>
+                                        </label>
+                                        <p v-for="(error, key) in sharing.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
+                                        <button :class="primary" :disabled="sharing.processing">افزودن سؤال</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p v-else class="p-4 text-sm text-ui-muted">سؤالی برای نمایش وجود ندارد.</p>
+                <nav v-if="questions.prev_page_url || questions.next_page_url" class="flex gap-4 border-t border-ui-line px-4 py-2" aria-label="صفحه‌های سؤال">
+                    <Link v-if="questions.prev_page_url" :href="questions.prev_page_url" :class="secondary">قبلی</Link>
+                    <Link v-if="questions.next_page_url" :href="questions.next_page_url" :class="secondary">بعدی</Link>
+                </nav>
+            </section>
+
+            <dialog ref="dialog" aria-labelledby="question-dialog-title" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-2xl overflow-auto rounded-ui bg-white p-5 text-ui-ink shadow-xl backdrop:bg-black/50">
+                <form class="space-y-4" novalidate @submit.prevent="saveQuestion">
+                    <h2 id="question-dialog-title" class="text-lg font-bold">{{ editingQuestion ? 'ویرایش سؤال' : 'سؤال جدید' }}</h2>
                     <label class="block space-y-1 text-sm">
                         <span>نوع سؤال</span>
                         <select v-model="question.type" :class="field">
@@ -104,7 +169,7 @@ function removeOption(index) {
                     </label>
                     <label class="block space-y-1 text-sm">
                         <span>متن سؤال</span>
-                        <textarea id="question-body" class="scroll-mt-24" v-model="question.body" rows="3" :class="field" />
+                        <textarea id="question-body" autofocus v-model="question.body" rows="3" :class="field" />
                     </label>
                     <fieldset v-if="question.type === 'choice'" class="space-y-2">
                         <legend class="text-sm font-medium">گزینه‌ها و پاسخ درست</legend>
@@ -136,49 +201,11 @@ function removeOption(index) {
                     <label class="flex items-center gap-2 text-sm"><input v-model="question.is_shared" type="checkbox" /> عمومی در این شعبه</label>
                     <p v-for="(error, key) in question.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
                     <div class="flex flex-wrap items-center gap-3">
-                        <button :class="primary" :disabled="question.processing">ذخیرهٔ سؤال</button>
-                        <button v-if="editingQuestion" type="button" :class="secondary" @click="editQuestion()">انصراف</button>
+                        <UiButton type="submit" :disabled="question.processing">ذخیرهٔ سؤال</UiButton>
+                        <UiButton variant="outline" @click="dialog.close()">انصراف</UiButton>
                     </div>
                 </form>
-                <div class="space-y-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <h2 class="font-semibold">{{ selectedBank ? 'سؤال‌های بانک' : 'سؤال‌های من و سؤال‌های عمومی' }}</h2>
-                        <Link v-if="selectedBank" :href="route('exams.library.questions')" :class="secondary" preserve-scroll>همهٔ سؤال‌ها</Link>
-                    </div>
-                    <p v-if="!questions.data.length" class="text-sm text-gray-600">سؤالی برای نمایش وجود ندارد.</p>
-                    <article v-for="record in questions.data" :key="record.id" class="min-w-0 space-y-2 rounded-ui border border-ui-line p-3">
-                        <p class="whitespace-pre-wrap wrap-break-word text-sm font-medium">{{ record.body }}</p>
-                        <p class="text-xs text-gray-600">{{ types[record.type] }} · {{ record.score }} نمره · {{ record.is_mine ? 'سؤال من · ' : '' }}{{ record.is_shared ? 'عمومی' : 'خصوصی' }}{{ record.is_active ? '' : ' · غیرفعال' }}</p>
-                        <details v-if="record.options || record.accepted_answers || record.model_answer" class="text-sm">
-                            <summary class="cursor-pointer text-gray-700">پاسخ‌ها</summary>
-                            <ul v-if="record.options" class="mt-2 list-disc space-y-1 ps-5">
-                                <li v-for="option in record.options" :key="option.key">{{ option.text }}{{ option.is_correct ? ' (درست)' : '' }}</li>
-                            </ul>
-                            <p v-else class="mt-2 whitespace-pre-wrap wrap-break-word">{{ record.accepted_answers?.join('، ') ?? record.model_answer }}</p>
-                        </details>
-                        <div v-if="record.is_mine" class="flex gap-4">
-                            <button type="button" :class="secondary" @click="editQuestion(record)">ویرایش</button>
-                            <button type="button" :disabled="deletion.processing" class="text-sm text-red-700" @click="removeQuestion(record.id)">حذف</button>
-                        </div>
-                        <button v-else-if="ownBanks.length" type="button" :class="secondary" @click="selectSharedQuestion(record.id)">افزودن به بانک من</button>
-                        <form v-if="addingQuestion === record.id" class="space-y-2" novalidate @submit.prevent="addSharedQuestion(record.id)">
-                            <label class="block space-y-1 text-sm">
-                                <span>بانک مقصد</span>
-                                <select v-model="sharing.bank_id" :class="field">
-                                    <option value="">انتخاب کنید</option>
-                                    <option v-for="ownBank in ownBanks" :key="ownBank.id" :value="ownBank.id">{{ ownBank.title }}</option>
-                                </select>
-                            </label>
-                            <p v-for="(error, key) in sharing.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
-                            <button :class="primary" :disabled="sharing.processing">افزودن سؤال</button>
-                        </form>
-                    </article>
-                    <nav v-if="questions.prev_page_url || questions.next_page_url" class="flex gap-4" aria-label="صفحه‌های سؤال">
-                        <Link v-if="questions.prev_page_url" :href="questions.prev_page_url" :class="secondary">قبلی</Link>
-                        <Link v-if="questions.next_page_url" :href="questions.next_page_url" :class="secondary">بعدی</Link>
-                    </nav>
-                </div>
-            </section>
+            </dialog>
         </div>
     </AppLayout>
 </template>

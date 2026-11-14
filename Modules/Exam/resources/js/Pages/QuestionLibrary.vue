@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import UiButton from '@/Components/Ui/UiButton.vue';
 import UiNotice from '@/Components/Ui/UiNotice.vue';
@@ -39,17 +40,18 @@ function removeBank(id) {
     <AppLayout>
         <Head title="بانک سؤال" />
         <div class="space-y-6">
-            <UiPageHeader title="بانک سؤال" icon="book" tone="plum">
-                <template #actions>
-                    <UiButton :href="route('exams.library.questions')" variant="outline">همهٔ سؤال‌ها</UiButton>
-                    <UiButton variant="outline" aria-haspopup="dialog" @click="openBank()">بانک جدید</UiButton>
-                </template>
-            </UiPageHeader>
+            <UiPageHeader title="بانک سؤال" icon="book" tone="plum" />
 
             <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
             <p v-for="(error, key) in deletion.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
 
             <section class="ui-surface overflow-hidden" aria-label="بانک‌های سؤال">
+                <div class="flex justify-end border-b border-ui-line px-4 py-3">
+                    <UiButton variant="outline-brand" class="min-h-9 gap-1.5 px-3" aria-haspopup="dialog" @click="openBank()">
+                        <PanelIcon name="plus" class="size-4" />
+                        بانک جدید
+                    </UiButton>
+                </div>
                 <div v-if="banks.data.length" class="overflow-x-auto">
                     <table class="w-full divide-y divide-ui-line text-start text-sm">
                         <thead class="bg-ui-canvas text-ui-muted">
