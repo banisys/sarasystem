@@ -2,8 +2,8 @@
 import PanelCard from '@/Components/Ui/PanelCard.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import { Head } from '@inertiajs/vue3';
-import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 // Why «ورود به کلاس آنلاین» didn't go into the room (ADR 0073).
@@ -18,14 +18,14 @@ defineProps({
     <Head title="ورود به کلاس آنلاین" />
 
     <AppLayout>
-        <div class="mx-auto max-w-lg">
+        <div class="mx-auto max-w-lg space-y-4">
+            <UiPageHeader
+                title="ورود به کلاس آنلاین ممکن نشد"
+                :description="$props.class && (time ? `${$props.class} · ${time}` : $props.class)"
+                icon="video"
+            />
             <PanelCard body-class="p-5 text-center sm:p-7">
-                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-50 panel-dark:bg-amber-950/45 text-amber-600 panel-dark:text-amber-300">
-                    <PanelIcon name="video" class="size-6" />
-                </div>
-                <h1 class="mt-4 text-lg font-semibold text-gray-900 panel-dark:text-ui-ink">ورود به کلاس آنلاین ممکن نشد</h1>
-                <p v-if="$props.class" class="mt-1 text-sm text-gray-500 panel-dark:text-ui-muted">{{ $props.class }}<span v-if="time"> · {{ time }}</span></p>
-                <PanelNotice class="mt-4 text-start" tone="error">{{ message }}</PanelNotice>
+                <PanelNotice class="text-start" tone="error">{{ message }}</PanelNotice>
                 <PanelButton :href="route('my-classes.index')" class="mt-6">
                     کلاس‌های من
                 </PanelButton>

@@ -74,7 +74,7 @@ function leaveImpersonation() {
             </ElDrawer>
 
             <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:flex lg:items-start lg:gap-6 lg:px-8 lg:py-8">
-                <PanelCard role="complementary" class="hidden h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 [--panel-card-overflow:hidden] lg:sticky lg:top-8 lg:block xl:w-70" body-class="h-full">
+                <PanelCard role="complementary" class="hidden! h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 [--panel-card-overflow:hidden] lg:sticky lg:top-8 lg:block! xl:w-70" body-class="h-full">
                     <PanelNavigation>
                         <template #appearance>
                             <PanelButton variant="ghost" class="panel-row-button" :aria-pressed="theme === 'dark'" @click="toggleTheme">

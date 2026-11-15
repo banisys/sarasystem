@@ -2,8 +2,8 @@
 import PanelCard from '@/Components/Ui/PanelCard.vue';
 import PanelCardLink from '@/Components/Ui/PanelCardLink.vue';
 import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
-import { ElCard, ElTag } from 'element-plus';
-import 'element-plus/es/components/card/style/css';
+import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import { ElTag } from 'element-plus';
 import 'element-plus/es/components/tag/style/css';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -53,43 +53,35 @@ function at(date, view = props.calendar.view) {
     <Head :title="title" />
 
     <AppLayout>
-        <div class="space-y-6">
-            <PanelCard class="[--panel-card-bg:var(--profile-header)] [--panel-card-color:white]"
-                body-class="flex flex-wrap items-center justify-between gap-5 px-5 py-6 sm:px-8 sm:py-8">
-                <div class="flex min-w-0 items-center gap-4">
-                    <span class="grid size-12 shrink-0 place-items-center rounded-ui bg-white/12">
-                        <PanelIcon name="calendar" class="size-6" />
-                    </span>
-                    <div class="min-w-0">
-                        <h1 class="wrap-break-word text-2xl font-extrabold sm:text-3xl">{{ title }}</h1>
-                        <h2 class="mt-1 text-sm text-white/85">{{ calendar.label }}</h2>
-                    </div>
-                </div>
-                <PanelButton :href="at(calendar.today)" variant="outline">امروز</PanelButton>
-            </PanelCard>
+        <div class="my-classes grid gap-4 sm:gap-5">
+            <UiPageHeader :title="title" :description="calendar.label" icon="calendar">
+                <template #actions>
+                    <PanelButton :href="at(calendar.today)" variant="outline" class="calendar-button">امروز</PanelButton>
+                </template>
+            </UiPageHeader>
 
-            <PanelCard role="navigation" aria-label="نمای تقویم و جابه‌جایی تاریخ" body-class="flex flex-wrap items-center justify-between gap-3 p-2.5">
-                <div class="flex flex-wrap gap-1 rounded-ui bg-ui-canvas p-1">
+            <PanelCard role="navigation" aria-label="نمای تقویم و جابه‌جایی تاریخ" body-class="grid gap-2.5 [--el-card-padding:0.75rem] sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+                <div class="grid grid-cols-3 gap-1 rounded-ui bg-ui-canvas p-1 sm:flex">
                     <PanelButton
                         v-for="item in views"
                         :key="item.value"
                         :href="at(calendar.date, item.value)"
                         :variant="item.value === calendar.view ? 'primary' : 'ghost'"
                         :aria-current="item.value === calendar.view ? 'true' : undefined"
-                        class="px-3 sm:px-4"
+                        class="calendar-button"
                     >
                         {{ item.label }}
                     </PanelButton>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <PanelButton :href="at(calendar.previous)" variant="outline">قبلی</PanelButton>
-                    <PanelButton :href="at(calendar.next)" variant="outline">بعدی</PanelButton>
+                <div class="grid grid-cols-2 gap-2 sm:flex">
+                    <PanelButton :href="at(calendar.previous)" variant="outline" class="calendar-button">قبلی</PanelButton>
+                    <PanelButton :href="at(calendar.next)" variant="outline" class="calendar-button">بعدی</PanelButton>
                 </div>
             </PanelCard>
 
             <!-- Month: a grid of the Jalali month, Saturday first. -->
-            <div v-if="calendar.view === 'month'" class="hidden grid-cols-7 gap-2 md:grid">
-                <div v-for="name in weekdays" :key="name" class="pb-1 text-center text-xs text-gray-500 panel-dark:text-ui-muted">{{ name }}</div>
+            <div v-if="calendar.view === 'month'" class="hidden grid-cols-7 gap-1.5 md:grid xl:gap-2">
+                <div v-for="name in weekdays" :key="name" class="truncate px-1 py-1.5 text-center text-xs font-semibold text-gray-500 panel-dark:text-ui-muted">{{ name }}</div>
                 <div v-for="blank in calendar.leading_blanks" :key="`blank-${blank}`" />
                 <PanelCardLink
                     v-for="day in calendar.days"
@@ -97,7 +89,7 @@ function at(date, view = props.calendar.view) {
                     :href="at(day.date, 'day')"
                     :aria-current="day.is_today ? 'date' : undefined"
                     :aria-label="day.label"
-                    body-class="min-h-24 p-2 text-xs"
+                    body-class="grid min-h-24 content-start gap-1 text-xs [--el-card-padding:0.5rem]"
                     :card-class="[day.is_today ? '[--panel-card-border:var(--color-brand-500)]' : '', day.holiday ? '[--panel-card-bg:var(--color-red-50)] panel-dark:[--panel-card-bg:var(--color-red-950)]' : '']"
                 >
                     <div class="font-semibold" :class="day.holiday ? 'text-red-600 panel-dark:text-red-300' : 'text-gray-700 panel-dark:text-ui-ink'">{{ day.day_number }}</div>
@@ -105,7 +97,7 @@ function at(date, view = props.calendar.view) {
                     <div
                         v-for="session in day.sessions"
                         :key="session.id"
-                        class="mt-1 truncate rounded border px-1"
+                        class="truncate rounded-md border px-1.5 py-1 leading-4"
                         :class="statusClass[session.status]"
                     >
                         {{ session.time.split('–')[0] }} {{ session.class }}
@@ -114,16 +106,16 @@ function at(date, view = props.calendar.view) {
             </div>
 
             <!-- Day and week (and month on small screens): one block per day. -->
-            <div class="space-y-3" :class="calendar.view === 'month' ? 'md:hidden' : ''">
+            <div class="grid gap-3" :class="calendar.view === 'month' ? 'md:hidden' : ''">
                 <PanelEmpty v-if="!visibleDays.length" description="جلسه‌ای در این بازه نیست." />
 
                 <PanelCard
                     v-for="day in visibleDays"
                     :key="day.date"
-                    body-class="p-4 sm:p-5"
+                    body-class="grid gap-2.5 [--el-card-padding:0.875rem] sm:[--el-card-padding:1rem]"
                     :class="day.is_today ? '[--panel-card-border:var(--color-brand-400)]' : ''"
                 >
-                    <div class="mb-3 flex flex-wrap items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <h3 class="font-semibold text-ui-ink">{{ day.label }}</h3>
                         <ElTag v-if="day.is_today" size="small" round>امروز</ElTag>
                         <ElTag v-if="day.holiday" type="danger" size="small" round>تعطیل: {{ day.holiday }}</ElTag>
@@ -131,19 +123,19 @@ function at(date, view = props.calendar.view) {
 
                     <p v-if="!day.sessions.length" class="text-sm text-gray-500 panel-dark:text-ui-muted">جلسه‌ای نیست.</p>
 
-                    <div class="grid gap-2 sm:grid-cols-2">
+                    <div v-else class="grid gap-2.5 xl:grid-cols-2">
                         <PanelCardLink
                             v-for="session in day.sessions"
                             :key="session.id"
                             :href="route('my-classes.session', { session: session.id, ...forWard })"
-                            body-class="p-3.5 text-sm"
+                            body-class="grid gap-2 text-sm [--el-card-padding:0.875rem]"
                             :card-class="sessionCardClass[session.status]"
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ session.class }}</span>
                                 <span class="inline-flex items-center gap-1.5 rounded-md bg-ui-surface px-2 py-1 font-semibold tabular-nums text-ui-muted"><PanelIcon name="clock" class="size-4" /><bdi dir="ltr">{{ session.time }}</bdi></span>
                             </div>
-                            <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-ui-muted">
+                            <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-ui-muted">
                                 <span v-if="session.subject">{{ session.subject }}</span>
                                 <span v-if="session.teacher">مدرس: {{ session.teacher }}</span>
                                 <span v-if="session.location">{{ session.location }}</span>
@@ -158,19 +150,26 @@ function at(date, view = props.calendar.view) {
                 </PanelCard>
             </div>
 
-            <section v-if="classes.length" class="space-y-2">
+            <section v-if="classes.length" class="grid gap-2.5">
                 <h2 class="text-xl font-bold text-ui-ink">کلاس‌ها</h2>
                 <div class="grid gap-2 sm:grid-cols-2">
-                    <ElCard v-for="item in classes" :key="item.id" shadow="never" class="text-sm">
+                    <PanelCard v-for="item in classes" :key="item.id" body-class="grid gap-1.5 text-sm [--el-card-padding:0.875rem] sm:[--el-card-padding:1rem]">
                         <div class="font-semibold text-ui-ink">{{ item.title }}</div>
-                        <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-ui-muted">
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-ui-muted">
                             <span>نقش: {{ item.roles }}</span>
                             <span>{{ item.mode }}</span>
                             <span v-if="item.online_platform">کلاس آنلاین: {{ item.online_platform }}</span>
                         </div>
-                    </ElCard>
+                    </PanelCard>
                 </div>
             </section>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.my-classes :deep(.el-button.calendar-button) {
+    min-height: 2.75rem;
+    padding-inline: 0.875rem;
+}
+</style>

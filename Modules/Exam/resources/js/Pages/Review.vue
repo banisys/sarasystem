@@ -1,4 +1,5 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import PanelCard from '@/Components/Ui/PanelCard.vue';
 import { ElForm, ElInput } from 'element-plus';
 import 'element-plus/es/components/form/style/css';
@@ -27,11 +28,14 @@ const form = useForm({ scores: Object.fromEntries(props.answers.filter(answer =>
                     <p v-if="!answer.requires_manual_grading" class="text-sm text-emerald-700 panel-dark:text-emerald-300">پاسخ درست: {{ answer.correct }} · نمره: {{ answer.score ?? '—' }} از {{ answer.max_score }}</p>
                     <template v-else>
                         <p v-if="answer.correct" class="whitespace-pre-wrap wrap-break-word text-sm text-emerald-700 panel-dark:text-emerald-300">پاسخ نمونه: {{ answer.correct }}</p>
-                        <label :for="`score-${answer.id}`" class="block text-sm">نمره از {{ answer.max_score }} (خالی: تصحیح‌نشده)</label>
-                        <ElInput :id="`score-${answer.id}`" v-model.number="form.scores[answer.id]" :disabled="!can_grade" type="number" step="0.01" min="0" :max="answer.max_score" dir="ltr" class="max-w-36"
-                            :aria-invalid="!!form.errors[`scores.${answer.id}`]"
-                            :aria-describedby="form.errors[`scores.${answer.id}`] ? `score-error-${answer.id}` : undefined" />
-                        <p v-if="form.errors[`scores.${answer.id}`]" :id="`score-error-${answer.id}`" class="ui-field-error" role="alert">{{ form.errors[`scores.${answer.id}`] }}</p>
+                        <PanelFormField :label="`نمره از ${answer.max_score} (خالی: تصحیح‌نشده)`" :for="`score-${answer.id}`" :error="form.errors[`scores.${answer.id}`]">
+                            <ElInput :id="`score-${answer.id}`" v-model.number="form.scores[answer.id]" :disabled="!can_grade" type="number" step="0.01" min="0" :max="answer.max_score" dir="ltr" class="max-w-36"
+                                :aria-invalid="!!form.errors[`scores.${answer.id}`]"
+                                :aria-describedby="form.errors[`scores.${answer.id}`] ? `score-error-${answer.id}` : undefined" />
+                            <template #error="{ error }">
+                                <div :id="`score-error-${answer.id}`" class="el-form-item__error" role="alert">{{ error }}</div>
+                            </template>
+                        </PanelFormField>
                     </template>
                 </PanelCard>
                 <template v-for="(error, key) in form.errors" :key="key">

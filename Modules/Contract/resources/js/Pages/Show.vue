@@ -1,4 +1,5 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import PanelCard from '@/Components/Ui/PanelCard.vue';
 import { ElCheckbox, ElForm, ElInput } from 'element-plus';
 import 'element-plus/es/components/checkbox/style/css';
@@ -110,8 +111,7 @@ onBeforeUnmount(() => clearInterval(timer));
                 <p v-if="sendCodeForm.errors.code" class="mt-1 text-sm text-red-600 panel-dark:text-red-300">{{ sendCodeForm.errors.code }}</p>
 
                 <ElForm v-if="codeSent" class="mt-4 space-y-3" @submit.prevent="sign">
-                    <div>
-                        <label for="sign-code" class="block text-sm font-medium text-gray-700 panel-dark:text-ui-ink">کد {{ codeLength }} رقمی پیامک‌شده</label>
+                    <PanelFormField :label="`کد ${codeLength} رقمی پیامک‌شده`" for="sign-code" :error="signForm.errors.code">
                         <ElInput
                             id="sign-code"
                             ref="codeInput"
@@ -120,12 +120,14 @@ onBeforeUnmount(() => clearInterval(timer));
                             dir="ltr"
                             inputmode="numeric"
                             autocomplete="one-time-code"
-                            :maxlength="codeLength" class="mt-1.5 max-w-xs"
+                            :maxlength="codeLength" class="max-w-xs"
                             :aria-invalid="!!signForm.errors.code"
                             :aria-describedby="signForm.errors.code ? 'sign-code-error' : undefined"
                         />
-                        <p v-if="signForm.errors.code" id="sign-code-error" class="ui-field-error">{{ signForm.errors.code }}</p>
-                    </div>
+                        <template #error="{ error }">
+                            <div id="sign-code-error" class="el-form-item__error" role="alert">{{ error }}</div>
+                        </template>
+                    </PanelFormField>
                     <div class="flex flex-wrap items-center gap-4">
                         <PanelButton
                             type="submit"

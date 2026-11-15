@@ -1,8 +1,9 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import {
-    ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElFormItem, ElInput, ElTable, ElTableColumn, ElTag,
+    ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElInput, ElTable, ElTableColumn, ElTag,
 } from 'element-plus';
 import 'element-plus/es/components/alert/style/css';
 import 'element-plus/es/components/button/style/css';
@@ -71,7 +72,7 @@ function goToBankPage(number) {
     <AppLayout>
         <Head title="بانک سؤال" />
         <div class="space-y-6">
-            <UiPageHeader title="بانک سؤال" icon="book" tone="brand" />
+            <UiPageHeader title="بانک سؤال" icon="book" />
 
             <ElAlert v-if="page.props.flash.status" :title="page.props.flash.status" type="success" :closable="false" show-icon />
 
@@ -132,16 +133,16 @@ function goToBankPage(number) {
                 :show-close="!bank.processing" :close-on-click-modal="false" :close-on-press-escape="!bank.processing"
                 @opened="titleInput?.focus()"
             >
-                <ElForm label-position="top" :model="bank" :disabled="bank.processing" novalidate @submit.prevent="saveBank">
-                    <ElFormItem label="عنوان بانک" prop="title" :error="bank.errors.title">
+                <ElForm class="grid gap-4" :model="bank" :disabled="bank.processing" novalidate @submit.prevent="saveBank">
+                    <PanelFormField label="عنوان بانک" prop="title" :error="bank.errors.title">
                         <ElInput ref="titleInput" v-model="bank.title" />
-                    </ElFormItem>
-                    <ElFormItem label="توضیحات" prop="description" :error="bank.errors.description">
+                    </PanelFormField>
+                    <PanelFormField label="توضیحات" prop="description" :error="bank.errors.description">
                         <ElInput v-model="bank.description" type="textarea" :rows="3" />
-                    </ElFormItem>
-                    <ElFormItem prop="is_shared" :error="bank.errors.is_shared">
+                    </PanelFormField>
+                    <PanelFormField prop="is_shared" :error="bank.errors.is_shared">
                         <ElCheckbox v-model="bank.is_shared">عمومی در این شعبه</ElCheckbox>
-                    </ElFormItem>
+                    </PanelFormField>
                     <div class="flex flex-wrap gap-2">
                         <ElButton type="primary" native-type="submit" :loading="bank.processing">ذخیرهٔ بانک</ElButton>
                         <ElButton @click="bankDialogOpen = false">انصراف</ElButton>

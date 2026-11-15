@@ -1,4 +1,5 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import { ElCheckbox, ElCheckboxGroup, ElForm, ElInput, ElOption, ElSelect, ElTable, ElTableColumn, ElTabPane, ElTabs, ElTag } from 'element-plus';
 import 'element-plus/es/components/checkbox-group/style/css';
 import 'element-plus/es/components/checkbox/style/css';
@@ -133,7 +134,6 @@ function remove() {
                 title="آزمون‌های جلسه"
                 :description="context.title"
                 icon="clipboard"
-                tone="brand"
                 :back-href="context.back_url"
                 full-page-back
                 back-label="بازگشت به جلسه"
@@ -182,18 +182,16 @@ function remove() {
                         <ElForm v-else novalidate class="space-y-4" @submit.prevent="generate">
                             <SessionExamFields :form="generation" :settings="settings_form" />
                             <div v-for="(row, index) in generation.banks" :key="index" class="grid items-end gap-3 rounded-ui bg-ui-canvas p-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
-                                <div class="min-w-0 space-y-1 text-sm font-medium">
-                                    <label :for="`exam-bank-${index}`">بانک سؤال</label>
+                                <PanelFormField label="بانک سؤال" :for="`exam-bank-${index}`">
                                     <ElSelect :id="`exam-bank-${index}`" v-model="row.bank_id" placeholder="انتخاب کنید" append-to="#profile-overlays" @change="delete row.question_ids">
                                         <ElOption v-for="bank in banks" :key="bank.id" :value="bank.id"
                                             :label="`${bank.title} · ${bank.is_mine ? 'بانک من' : 'عمومی'} · ${bank.question_count} سؤال`"
                                             :disabled="!bank.question_count || generation.banks.some((other) => other !== row && other.bank_id === bank.id)" />
                                     </ElSelect>
-                                </div>
-                                <label class="space-y-1 text-sm font-medium">
-                                    <span>تعداد سؤال</span>
+                                </PanelFormField>
+                                <PanelFormField label="تعداد سؤال">
                                     <ElInput v-model.number="row.question_count" type="number" min="1" :max="Math.min(bankFor(row.bank_id)?.question_count ?? 50, 50)" :readonly="!!row.question_ids" />
-                                </label>
+                                </PanelFormField>
                                 <div class="flex flex-wrap items-center gap-2 sm:col-span-2 xl:col-span-1">
                                     <PanelButton v-if="row.question_ids" variant="link" @click="delete row.question_ids">انتخاب تصادفی</PanelButton>
                                     <PanelButton v-if="generation.banks.length > 1" variant="danger-link" @click="generation.banks.splice(index, 1)">حذف بانک</PanelButton>

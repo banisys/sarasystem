@@ -1,10 +1,11 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import PanelCard from '@/Components/Ui/PanelCard.vue';
-import { ElDescriptions, ElDescriptionsItem } from 'element-plus';
+import { ElDescriptions, ElDescriptionsItem, ElForm, ElInput, ElTag } from 'element-plus';
 import 'element-plus/es/components/descriptions/style/css';
-import { ElForm, ElInput } from 'element-plus';
 import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
+import 'element-plus/es/components/tag/style/css';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
@@ -59,6 +60,16 @@ function sendMobileCode() {
         });
 }
 
+function submitMobile() {
+    if (codeSent.value) {
+        if (mobileForm.code && !mobileForm.processing) confirmMobile();
+
+        return;
+    }
+
+    if (mobile.value && !sendCodeForm.processing) sendMobileCode();
+}
+
 function confirmMobile() {
     mobileForm
         .transform((data) => ({ ...data, mobile: mobile.value }))
@@ -100,182 +111,193 @@ function savePassword() {
     <Head title="حساب کاربری" />
 
     <AppLayout>
-        <div class="mx-auto max-w-4xl space-y-5">
+        <div class="grid gap-4 sm:gap-5">
             <UiPageHeader title="اطلاعات کاربری" icon="user" />
             <PanelNotice v-if="status" tone="success">{{ status }}</PanelNotice>
 
             <!-- Account -->
-            <PanelCard body-class="p-4 sm:p-6">
-                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">اطلاعات حساب</h2>
-                <ElDescriptions class="mt-4" :column="2" direction="vertical">
+            <PanelCard body-class="grid gap-3 [--el-card-padding:1rem] sm:[--el-card-padding:1.5rem]">
+                <h2 class="text-base font-bold text-ui-ink">اطلاعات حساب</h2>
+                <ElDescriptions :column="2" direction="vertical" border>
                     <ElDescriptionsItem label="نام">{{ profile.name }}</ElDescriptionsItem>
                     <ElDescriptionsItem label="کد ملی"><bdi dir="ltr">{{ profile.nationalCode ?? '—' }}</bdi></ElDescriptionsItem>
                 </ElDescriptions>
-                <p class="mt-3 text-xs text-gray-500 panel-dark:text-ui-muted">برای تغییر نام یا کد ملی با مدیر تماس بگیرید.</p>
+                <p class="text-sm text-ui-muted">برای تغییر نام یا کد ملی با مدیر تماس بگیرید.</p>
             </PanelCard>
 
-            <!-- Mobile -->
-            <PanelCard body-class="p-4 sm:p-6">
-                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">شماره موبایل</h2>
-                <p class="mt-1 text-sm text-gray-600 panel-dark:text-ui-muted">
-                    شماره‌ی فعلی:
-                    <span dir="ltr">{{ profile.mobile ?? '—' }}</span>
-                    <span v-if="profile.mobile" :class="profile.mobileVerified ? 'text-green-600 panel-dark:text-green-300' : 'text-amber-600 panel-dark:text-amber-300'">
-                        ({{ profile.mobileVerified ? 'تأییدشده' : 'تأییدنشده' }})
-                    </span>
-                </p>
-
-                <div class="mt-4">
-                    <label for="mobile" class="ui-label">شماره‌ی جدید</label>
-                    <ElInput
-                        id="mobile"
-                        ref="mobileInput"
-                        v-model="mobile"
-                        type="tel"
-                        dir="ltr"
-                        autocomplete="tel-national"
-                        :disabled="codeSent || sendCodeForm.processing"
-                        :aria-invalid="!!mobileError"
-                        :aria-describedby="mobileError ? 'mobile-error' : undefined"
-                        @keydown.enter.prevent="mobile && !codeSent && !sendCodeForm.processing && sendMobileCode()"
-                    />
-                    <p v-if="mobileError" id="mobile-error" class="ui-field-error">
-                        {{ mobileError }}
-                    </p>
-                </div>
-
-                <PanelButton
-                    v-if="!codeSent"
-                    type="button"
-                    :disabled="!mobile || sendCodeForm.processing"
-                    class="mt-4"
-                    @click="sendMobileCode"
-                >
-                    ارسال کد تأیید
-                </PanelButton>
-
-                <ElForm v-else class="mt-4 space-y-3" @submit.prevent="confirmMobile">
-                    <div>
-                        <label for="mobile-code" class="ui-label">کد {{ codeLength }} رقمی پیامک‌شده</label>
-                        <ElInput
-                            id="mobile-code"
-                            :aria-invalid="!!mobileForm.errors.code"
-                            :aria-describedby="mobileForm.errors.code ? 'mobile-code-error' : undefined"
-                            ref="codeInput"
-                            v-model="mobileForm.code"
-                            type="text"
-                            dir="ltr"
-                            inputmode="numeric"
-                            autocomplete="one-time-code"
-                            :maxlength="codeLength"
-                        />
-                        <p v-if="mobileForm.errors.code" id="mobile-code-error" class="ui-field-error">{{ mobileForm.errors.code }}</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-4">
-                        <PanelButton
-                            type="submit"
-                            :disabled="!mobileForm.code || mobileForm.processing"
-                        >
-                            تأیید و ذخیره
-                        </PanelButton>
-                        <PanelButton type="button" variant="ghost" @click="changeMobile">
-                            تغییر شماره
-                        </PanelButton>
-                        <PanelButton
-                            type="button"
-                            :disabled="secondsLeft > 0 || sendCodeForm.processing"
-                            variant="link"
-                            @click="sendMobileCode"
-                        >
-                            {{ secondsLeft > 0 ? `ارسال دوباره تا ${secondsLeft} ثانیه` : 'ارسال دوباره' }}
-                        </PanelButton>
-                    </div>
-                </ElForm>
-            </PanelCard>
-
-            <!-- Email -->
-            <ElForm class="ui-surface p-4 sm:p-6" @submit.prevent="saveEmail">
-                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">ایمیل</h2>
-                <div class="mt-4">
-                    <label for="email" class="ui-label">ایمیل (اختیاری)</label>
-                    <ElInput
-                        id="email"
-                        v-model="emailForm.email"
-                        type="email"
-                        dir="ltr"
-                        autocomplete="email"
-                        :aria-invalid="!!emailForm.errors.email"
-                        :aria-describedby="emailForm.errors.email ? 'email-error' : undefined"
-                    />
-                    <p v-if="emailForm.errors.email" id="email-error" class="ui-field-error">{{ emailForm.errors.email }}</p>
-                </div>
-                <PanelButton
-                    type="submit"
-                    :disabled="emailForm.processing || !emailForm.isDirty"
-                    class="mt-4"
-                >
-                    ذخیره
-                </PanelButton>
-            </ElForm>
-
-            <!-- Password -->
-            <ElForm class="ui-surface p-4 sm:p-6" @submit.prevent="savePassword">
-                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">رمز عبور</h2>
-                <p v-if="!currentPasswordRequired" class="mt-1 text-sm text-gray-600 panel-dark:text-ui-muted">
-                    با کد پیامکی وارد شده‌اید؛ می‌توانید بدون رمز فعلی، رمز جدید تعیین کنید.
-                </p>
-
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div v-if="currentPasswordRequired" class="sm:col-span-2">
-                        <label for="current_password" class="ui-label">رمز فعلی</label>
-                        <ElInput
-                            id="current_password"
-                            :aria-invalid="!!passwordForm.errors.current_password"
-                            :aria-describedby="passwordForm.errors.current_password ? 'current_password-error' : undefined"
-                            v-model="passwordForm.current_password"
-                            type="password"
-                            dir="ltr"
-                            autocomplete="current-password"
-                        />
-                        <p v-if="passwordForm.errors.current_password" id="current_password-error" class="ui-field-error">
-                            {{ passwordForm.errors.current_password }}
+            <div class="grid gap-4 sm:gap-5 xl:grid-cols-2">
+                <!-- Mobile -->
+                <PanelCard body-class="grid content-start gap-4 [--el-card-padding:1rem] sm:[--el-card-padding:1.5rem]">
+                    <div class="grid gap-2">
+                        <h2 class="text-base font-bold text-ui-ink">شماره موبایل</h2>
+                        <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ui-muted">
+                            شماره‌ی فعلی:
+                            <bdi dir="ltr" class="font-semibold text-ui-ink">{{ profile.mobile ?? '—' }}</bdi>
+                            <ElTag v-if="profile.mobile" :type="profile.mobileVerified ? 'success' : 'warning'" size="small" round>
+                                {{ profile.mobileVerified ? 'تأییدشده' : 'تأییدنشده' }}
+                            </ElTag>
                         </p>
                     </div>
-                    <div>
-                        <label for="password" class="ui-label">رمز جدید</label>
-                        <ElInput
-                            id="password"
-                            :aria-invalid="!!passwordForm.errors.password"
-                            :aria-describedby="passwordForm.errors.password ? 'password-error' : undefined"
-                            v-model="passwordForm.password"
-                            type="password"
-                            dir="ltr"
-                            autocomplete="new-password"
-                        />
-                        <p v-if="passwordForm.errors.password" id="password-error" class="ui-field-error">{{ passwordForm.errors.password }}</p>
-                    </div>
-                    <div>
-                        <label for="password_confirmation" class="ui-label">تکرار رمز جدید</label>
-                        <ElInput
-                            id="password_confirmation"
-                            v-model="passwordForm.password_confirmation"
-                            type="password"
-                            dir="ltr"
-                            autocomplete="new-password"
-                        />
-                    </div>
-                </div>
 
-                <p class="mt-3 text-xs text-gray-500 panel-dark:text-ui-muted">با تغییر رمز، از همه‌ی دستگاه‌های دیگر خارج می‌شوید.</p>
+                    <ElForm label-position="top" novalidate class="grid gap-4" @submit.prevent="submitMobile">
+                        <PanelFormField label="شماره‌ی جدید" for="mobile" :error="mobileError">
+                            <ElInput
+                                id="mobile"
+                                ref="mobileInput"
+                                v-model="mobile"
+                                type="tel"
+                                dir="ltr"
+                                autocomplete="tel-national"
+                                :disabled="codeSent || sendCodeForm.processing"
+                                :aria-invalid="!!mobileError"
+                                :aria-describedby="mobileError ? 'mobile-error' : undefined"
+                            />
+                            <template #error="{ error }">
+                                <div id="mobile-error" class="el-form-item__error" role="alert">{{ error }}</div>
+                            </template>
+                        </PanelFormField>
 
-                <PanelButton
-                    type="submit"
-                    :disabled="passwordForm.processing"
-                    class="mt-4"
-                >
-                    تغییر رمز
-                </PanelButton>
-            </ElForm>
+                        <PanelButton
+                            v-if="!codeSent"
+                            type="submit"
+                            :disabled="!mobile || sendCodeForm.processing"
+                            class="justify-self-start"
+                        >
+                            ارسال کد تأیید
+                        </PanelButton>
+
+                        <PanelFormField v-if="codeSent" :label="`کد ${codeLength} رقمی پیامک‌شده`" for="mobile-code" :error="mobileForm.errors.code">
+                            <ElInput
+                                id="mobile-code"
+                                :aria-invalid="!!mobileForm.errors.code"
+                                :aria-describedby="mobileForm.errors.code ? 'mobile-code-error' : undefined"
+                                ref="codeInput"
+                                v-model="mobileForm.code"
+                                type="text"
+                                dir="ltr"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                :maxlength="codeLength"
+                            />
+                            <template #error="{ error }">
+                                <div id="mobile-code-error" class="el-form-item__error" role="alert">{{ error }}</div>
+                            </template>
+                        </PanelFormField>
+                        <div v-if="codeSent" class="flex flex-wrap items-center gap-2">
+                            <PanelButton
+                                type="submit"
+                                :disabled="!mobileForm.code || mobileForm.processing"
+                            >
+                                تأیید و ذخیره
+                            </PanelButton>
+                            <PanelButton type="button" variant="ghost" @click="changeMobile">
+                                تغییر شماره
+                            </PanelButton>
+                            <PanelButton
+                                type="button"
+                                :disabled="secondsLeft > 0 || sendCodeForm.processing"
+                                variant="link"
+                                @click="sendMobileCode"
+                            >
+                                {{ secondsLeft > 0 ? `ارسال دوباره تا ${secondsLeft} ثانیه` : 'ارسال دوباره' }}
+                            </PanelButton>
+                        </div>
+                    </ElForm>
+                </PanelCard>
+
+                <!-- Email -->
+                <PanelCard body-class="[--el-card-padding:1rem] sm:[--el-card-padding:1.5rem]">
+                    <ElForm label-position="top" novalidate class="grid gap-4" @submit.prevent="saveEmail">
+                        <div class="grid gap-2">
+                            <h2 class="text-base font-bold text-ui-ink">ایمیل</h2>
+                            <p class="text-sm text-ui-muted">آدرس ایمیل حساب خود را وارد یا به‌روزرسانی کنید.</p>
+                        </div>
+                        <PanelFormField label="ایمیل (اختیاری)" for="email" :error="emailForm.errors.email">
+                            <ElInput
+                                id="email"
+                                v-model="emailForm.email"
+                                type="email"
+                                dir="ltr"
+                                autocomplete="email"
+                                :aria-invalid="!!emailForm.errors.email"
+                                :aria-describedby="emailForm.errors.email ? 'email-error' : undefined"
+                            />
+                            <template #error="{ error }">
+                                <div id="email-error" class="el-form-item__error" role="alert">{{ error }}</div>
+                            </template>
+                        </PanelFormField>
+                        <PanelButton
+                            type="submit"
+                            :disabled="emailForm.processing || !emailForm.isDirty"
+                            class="justify-self-start"
+                        >
+                            ذخیره
+                        </PanelButton>
+                    </ElForm>
+                </PanelCard>
+            </div>
+
+            <!-- Password -->
+            <PanelCard body-class="[--el-card-padding:1rem] sm:[--el-card-padding:1.5rem]">
+                <ElForm label-position="top" novalidate class="grid gap-4" @submit.prevent="savePassword">
+                    <div class="grid gap-2">
+                        <h2 class="text-base font-bold text-ui-ink">رمز عبور</h2>
+                        <p v-if="!currentPasswordRequired" class="text-sm text-ui-muted">
+                            با کد پیامکی وارد شده‌اید؛ می‌توانید بدون رمز فعلی، رمز جدید تعیین کنید.
+                        </p>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <PanelFormField v-if="currentPasswordRequired" label="رمز فعلی" for="current_password" :error="passwordForm.errors.current_password" class="sm:col-start-1">
+                            <ElInput
+                                id="current_password"
+                                :aria-invalid="!!passwordForm.errors.current_password"
+                                :aria-describedby="passwordForm.errors.current_password ? 'current_password-error' : undefined"
+                                v-model="passwordForm.current_password"
+                                type="password"
+                                dir="ltr"
+                                autocomplete="current-password"
+                            />
+                            <template #error="{ error }">
+                                <div id="current_password-error" class="el-form-item__error" role="alert">{{ error }}</div>
+                            </template>
+                        </PanelFormField>
+                        <PanelFormField label="رمز جدید" for="password" :error="passwordForm.errors.password" class="sm:col-start-1">
+                            <ElInput
+                                id="password"
+                                :aria-invalid="!!passwordForm.errors.password"
+                                :aria-describedby="passwordForm.errors.password ? 'password-error' : undefined"
+                                v-model="passwordForm.password"
+                                type="password"
+                                dir="ltr"
+                                autocomplete="new-password"
+                            />
+                            <template #error="{ error }">
+                                <div id="password-error" class="el-form-item__error" role="alert">{{ error }}</div>
+                            </template>
+                        </PanelFormField>
+                        <PanelFormField label="تکرار رمز جدید" for="password_confirmation">
+                            <ElInput
+                                id="password_confirmation"
+                                v-model="passwordForm.password_confirmation"
+                                type="password"
+                                dir="ltr"
+                                autocomplete="new-password"
+                            />
+                        </PanelFormField>
+                    </div>
+
+                    <p class="text-sm text-ui-muted">با تغییر رمز، از همه‌ی دستگاه‌های دیگر خارج می‌شوید.</p>
+
+                    <PanelButton
+                        type="submit"
+                        :disabled="passwordForm.processing"
+                        class="justify-self-start"
+                    >
+                        تغییر رمز
+                    </PanelButton>
+                </ElForm>
+            </PanelCard>
         </div>
     </AppLayout>
 </template>

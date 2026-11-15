@@ -1,4 +1,5 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import { ElCheckbox, ElCollapse, ElCollapseItem, ElInput, ElOption, ElSelect } from 'element-plus';
 import 'element-plus/es/components/checkbox/style/css';
 import 'element-plus/es/components/select/style/css';
@@ -27,14 +28,13 @@ const advanced = [
 
 <template>
     <div class="space-y-4">
-        <label class="block space-y-1 text-sm font-medium">
-            <span>{{ settings.labels.title }}</span><ElInput v-model="form.title" maxlength="255" />
-        </label>
+        <PanelFormField :label="settings.labels.title">
+            <ElInput v-model="form.title" maxlength="255" />
+        </PanelFormField>
         <div class="grid gap-3 sm:grid-cols-3">
-            <label v-for="[key, min, max, step] in basic" :key="key" class="space-y-1 text-sm font-medium">
-                <span>{{ settings.labels[key] }}</span>
+            <PanelFormField v-for="[key, min, max, step] in basic" :key="key" :label="settings.labels[key]">
                 <ElInput v-model.number="form[key]" type="number" :min="min" :max="max" :step="step" />
-            </label>
+            </PanelFormField>
         </div>
         <div class="rounded-lg border border-ui-line p-3">
             <ElCheckbox v-model="form.allow_late_start" class="panel-wrap-option">
@@ -45,35 +45,30 @@ const advanced = [
         <ElCollapse v-model="openSections" class="panel-settings-collapse">
             <ElCollapseItem name="advanced" title="تنظیمات بیشتر">
                 <div class="space-y-4 p-3">
-                    <label class="block space-y-1 text-sm font-medium">
-                        <span>{{ settings.labels.description }}</span>
+                    <PanelFormField :label="settings.labels.description">
                         <ElInput type="textarea" v-model="form.description" :rows="3" maxlength="20000" />
-                    </label>
+                    </PanelFormField>
                     <div class="grid gap-3 sm:grid-cols-3">
-                        <label v-for="[key, min, max] in advanced" :key="key" class="space-y-1 text-sm font-medium">
-                            <span>{{ settings.labels[key] }}</span>
+                        <PanelFormField v-for="[key, min, max] in advanced" :key="key" :label="settings.labels[key]">
                             <ElInput v-model.number="form[key]" type="number" :min="min" :max="max" />
-                        </label>
+                        </PanelFormField>
                     </div>
                     <div class="grid gap-3 sm:grid-cols-2">
-                        <label class="space-y-1 text-sm font-medium">
-                            <span>{{ settings.labels.retake_policy }}</span>
+                        <PanelFormField :label="settings.labels.retake_policy">
                             <ElSelect v-model="form.retake_policy" :aria-label="settings.labels.retake_policy" append-to="#profile-overlays">
                                 <ElOption v-for="(label, value) in settings.retake_policies" :key="value" :value="value" :label="label" />
                             </ElSelect>
-                        </label>
-                        <label class="space-y-1 text-sm font-medium">
-                            <span>{{ settings.labels.result_visibility }}</span>
+                        </PanelFormField>
+                        <PanelFormField :label="settings.labels.result_visibility">
                             <ElSelect v-model="form.result_visibility" :aria-label="settings.labels.result_visibility" append-to="#profile-overlays">
                                 <ElOption v-for="(label, value) in settings.result_visibility" :key="value" :value="value" :label="label" />
                             </ElSelect>
-                        </label>
-                        <label class="space-y-1 text-sm font-medium sm:col-span-2">
-                            <span>{{ settings.labels.negative_marking }}</span>
+                        </PanelFormField>
+                        <PanelFormField :label="settings.labels.negative_marking" class="sm:col-span-2">
                             <ElSelect v-model="form.negative_marking" clearable :value-on-clear="null" placeholder="بدون نمرهٔ منفی" :aria-label="settings.labels.negative_marking" append-to="#profile-overlays">
                                 <ElOption v-for="count in [2, 3, 4, 5, 6]" :key="count" :value="count" :label="`هر ${count} پاسخ غلط، یک پاسخ درست را حذف کند`" />
                             </ElSelect>
-                        </label>
+                        </PanelFormField>
                     </div>
                     <div class="flex flex-wrap gap-4">
                         <ElCheckbox v-for="key in ['shuffle_questions', 'shuffle_options']" :key="key" v-model="form[key]">

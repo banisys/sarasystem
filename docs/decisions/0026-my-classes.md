@@ -31,5 +31,6 @@ This is step 5 of the classes plan ([ADR 0022](0022-classes.md)). Steps 2–4 bu
 ## Consequences
 - A teacher can do all of their session work without admin access. The admin-panel actions remain for staff and class editors.
 - The calendar loads one view's sessions per request; a month of a busy teacher is a few dozen rows.
+- The calendar uses compact month cells, inset day and session cards, and separate rows for the view and date controls on phones.
 - No homework submissions yet: learners see the homework and materials but don't hand anything in.
 - Parents see nothing until parents are linked to learners.

@@ -21,6 +21,18 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-15 — Shared the account settings label style across profile forms, including exam settings, question banks, classwork and contract signing. Tutorial steps still match.
+- 2026-11-15 — Set account field labels to 14 px with a muted color, a 6 px gap above their inputs, and a 4 px inset from the leading edge. Tutorial steps still match.
+- 2026-11-15 — Standardized the account settings fields on Element Plus form items, including labels and Laravel validation errors. Tutorial steps still match.
+- 2026-11-15 — Aligned account settings cards and form spacing, put mobile and email side by side on wide screens, and clarified the mobile verification badge. Fixed the desktop navigation card occupying space on mobile. Tutorial steps still match.
+- 2026-11-15 — Shared the My Classes patterned header across profile pages, using each theme's surface and text colors. Verified the calendar, account, tenant selector, question bank and bank detail in Chromium. The Vite build passed, and tutorial steps still match.
+- 2026-11-15 — Made the My Classes header pattern denser and fainter, and restored theme-aware surface, text and icon colors. Tutorial steps still match.
+- 2026-11-15 — Gave the My Classes header more vertical space and moved the book and pencil motifs closer together without shrinking them. Tutorial steps still match.
+- 2026-11-15 — Replaced the My Classes header's dot pattern with a subtle book and pencil illustration. The white background and tutorial steps still match.
+- 2026-11-15 — Set the My Classes header to white in both themes and retained its dot pattern. Tutorial steps still match.
+- 2026-11-15 — Replaced the solid My Classes header fill with a subtle teal dot pattern. Tutorial steps still match.
+- 2026-11-15 — Set filled teal buttons in the user panel to white text while keeping the existing fills. The tutorial steps still match.
+- 2026-11-15 — Fixed card padding, calendar gaps and control spacing on «کلاس‌های من», keeping the existing calendar palette. Verified desktop and mobile widths and light and dark themes in Chromium with sample calendar entries. The Vite build passed, and tutorial steps still match.
 - 2026-11-15 — Moved the remaining standard `/profile` UI to Element Plus, including navigation actions, page cards, tabs, results tables, pagination, file selection and the controls in the Jalali deadline picker ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)). Verified the account, question bank and session exam UI in Chromium, and used a class fixture to check the mobile layout, date selection and file selection and removal. The Vite build and all 770 tests passed. Tutorial labels and steps still match.
 - 2026-11-15 — Changed the `/profile` panel palette to teal (`#00b894`) in light and dark mode, including the active navigation, primary controls, and class and exam headers. Verified the account page and question bank in Chromium, checked that the public site keeps its own palette, and built the Vite assets. Tutorial missions still match.
 - 2026-11-15 — Added a dark theme to the user panel, with a desktop and mobile toggle, device defaults, and a browser preference ([ADR 0101](decisions/0101-user-panel-dark-theme.md)). Verified keyboard switching, reload persistence, calendar, account forms, question tables and dropdowns, the mobile drawer and public-site isolation in Chromium. The Vite build and all 770 tests passed. Added a tutorial reference note; missions are unchanged.

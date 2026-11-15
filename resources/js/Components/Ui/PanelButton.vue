@@ -21,8 +21,8 @@ const colors = { primary: 'primary', 'outline-brand': 'primary', link: 'primary'
         :type="colors[variant]"
         :plain="variant === 'outline-brand'"
         :text="variant === 'ghost'"
-        :link="variant === 'link' || variant === 'danger-link' || variant === 'header-link'"
-        :class="{ 'panel-header-link': variant === 'header-link', 'panel-nav-button': variant === 'navigation' }"
+        :link="variant === 'link' || variant === 'danger-link'"
+        :class="{ 'panel-nav-button': variant === 'navigation' }"
     >
         <slot />
     </ElButton>

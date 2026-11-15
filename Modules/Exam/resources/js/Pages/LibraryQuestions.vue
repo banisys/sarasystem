@@ -1,4 +1,5 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import PanelDialog from '@/Components/Ui/PanelDialog.vue';
 import PanelConfirm from '@/Components/Ui/PanelConfirm.vue';
 import { ElCheckbox, ElCheckboxGroup, ElCollapse, ElCollapseItem, ElForm, ElInput, ElOption, ElRadio, ElRadioGroup, ElSelect, ElTable, ElTableColumn, ElTag } from 'element-plus';
@@ -123,7 +124,6 @@ function removeOption(index) {
             <UiPageHeader
                 :title="selectedBank?.title ?? 'همهٔ سؤال‌ها'"
                 icon="book"
-                tone="brand"
                 :back-href="route('exams.library')"
                 back-label="بازگشت به بانک‌ها"
             />
@@ -172,12 +172,11 @@ function removeOption(index) {
                             </div>
                             <PanelButton v-else-if="ownBanks.length" variant="link" :aria-expanded="addingQuestion === row.id" @click="selectSharedQuestion(row.id)">افزودن به بانک من</PanelButton>
                             <ElForm v-if="addingQuestion === row.id" class="mt-1 space-y-2" novalidate @submit.prevent="addSharedQuestion(row.id)">
-                                <label class="block space-y-1 text-sm">
-                                    <span>بانک مقصد</span>
+                                <PanelFormField label="بانک مقصد">
                                     <ElSelect v-model="sharing.bank_id" aria-label="بانک مقصد" placeholder="انتخاب کنید" append-to="#profile-overlays">
                                         <ElOption v-for="ownBank in ownBanks" :key="ownBank.id" :value="ownBank.id" :label="ownBank.title" />
                                     </ElSelect>
-                                </label>
+                                </PanelFormField>
                                 <p v-for="(error, key) in sharing.errors" :key="key" class="ui-field-error" role="alert">{{ error }}</p>
                                 <PanelButton type="submit" :loading="sharing.processing">افزودن سؤال</PanelButton>
                             </ElForm>
@@ -194,16 +193,14 @@ function removeOption(index) {
                 :busy="question.processing" @opened="questionBody?.focus()">
                 <ElForm class="space-y-4" novalidate @submit.prevent="saveQuestion">
                     <p v-if="selectedBank && !editingQuestion" class="text-sm text-ui-muted">بانک مقصد: {{ selectedBank.title }}</p>
-                    <label class="block space-y-1 text-sm">
-                        <span>نوع سؤال</span>
+                    <PanelFormField label="نوع سؤال">
                         <ElSelect v-model="question.type" aria-label="نوع سؤال" append-to="#profile-overlays">
                             <ElOption v-for="(label, value) in types" :key="value" :value="value" :label="label" />
                         </ElSelect>
-                    </label>
-                    <label class="block space-y-1 text-sm">
-                        <span>متن سؤال</span>
+                    </PanelFormField>
+                    <PanelFormField label="متن سؤال" for="question-body">
                         <ElInput type="textarea" id="question-body" ref="questionBody" v-model="question.body" :rows="3" />
-                    </label>
+                    </PanelFormField>
                     <fieldset v-if="question.type === 'choice'" class="space-y-2">
                         <legend class="text-sm font-medium">گزینه‌ها و پاسخ درست</legend>
                         <ElRadioGroup v-model="correctIndex" aria-label="پاسخ درست" class="panel-option-stack">
@@ -224,8 +221,12 @@ function removeOption(index) {
                         </div>
                         <PanelButton v-if="question.accepted_answers.length < 10" variant="link" @click="question.accepted_answers.push('')">افزودن پاسخ</PanelButton>
                     </fieldset>
-                    <label v-else class="block space-y-1 text-sm"><span>پاسخ نمونه (اختیاری)</span><ElInput type="textarea" v-model="question.model_answer" :rows="2" /></label>
-                    <label class="block space-y-1 text-sm"><span>بارم</span><ElInput v-model.number="question.score" type="number" min="0.25" step="0.01" /></label>
+                    <PanelFormField v-else label="پاسخ نمونه (اختیاری)">
+                        <ElInput type="textarea" v-model="question.model_answer" :rows="2" />
+                    </PanelFormField>
+                    <PanelFormField label="بارم">
+                        <ElInput v-model.number="question.score" type="number" min="0.25" step="0.01" />
+                    </PanelFormField>
                     <fieldset v-if="availableBanks.length" class="space-y-1">
                         <legend class="mb-1 text-sm font-medium">{{ selectedBank && !editingQuestion ? 'بانک‌های دیگر من' : 'بانک‌های من' }}</legend>
                         <ElCheckboxGroup v-model="question.bank_ids" :aria-label="selectedBank && !editingQuestion ? 'بانک‌های دیگر من' : 'بانک‌های من'" class="panel-option-stack">

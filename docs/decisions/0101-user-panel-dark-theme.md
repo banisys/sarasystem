@@ -16,3 +16,5 @@ Use the third option. [AppLayout](../../resources/js/Layouts/AppLayout.vue) prov
 
 ## Consequences
 The public site, login, Filament admin and printable documents keep their own appearance. New user-panel components should use the shared colour tokens for surfaces and text, and the scoped Tailwind variant where a different dark accent is needed. The theme choice does not gate tutorial missions.
+
+Filled primary buttons use white labels on the teal accent in both modes.

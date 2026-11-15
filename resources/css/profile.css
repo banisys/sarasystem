@@ -14,7 +14,6 @@
     --color-brand-contrast: #002820;
     --color-brand-action-hover: color-mix(in srgb, var(--color-brand-600) 82%, white);
     --profile-action-active: color-mix(in srgb, var(--color-brand-600) 90%, black);
-    --profile-header: color-mix(in srgb, var(--color-brand-600) 44%, black);
 
     --el-color-primary: var(--color-brand-700);
     --el-color-primary-light-3: var(--color-brand-500);
@@ -48,7 +47,6 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
     --color-brand-400: var(--color-brand-600);
     --color-brand-500: var(--color-brand-600);
     --color-brand-700: color-mix(in srgb, var(--color-brand-600) 62%, white);
-    --profile-header: color-mix(in srgb, var(--color-brand-600) 22%, var(--color-ui-surface));
 
     --el-bg-color-page: var(--color-ui-canvas);
     --el-bg-color: var(--color-ui-surface);
@@ -112,11 +110,10 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
     --el-button-hover-link-text-color: var(--el-color-primary-dark-2);
 }
 
-/* The exact accent needs dark text; controls that use the accent as text use shade 700. */
 .profile-panel .el-button--primary:not(.is-plain, .is-link, .is-text, .is-dashed) {
-    --el-button-text-color: var(--color-brand-contrast);
-    --el-button-hover-text-color: var(--color-brand-contrast);
-    --el-button-active-text-color: var(--color-brand-contrast);
+    --el-button-text-color: white;
+    --el-button-hover-text-color: white;
+    --el-button-active-text-color: white;
     --el-button-bg-color: var(--color-brand-600);
     --el-button-border-color: var(--color-brand-600);
     --el-button-hover-bg-color: var(--color-brand-action-hover);
@@ -212,6 +209,24 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
 
 .profile-panel .el-drawer__body {
     overflow: hidden;
+}
+
+.profile-panel .panel-form-field {
+    margin-bottom: 0;
+}
+
+.profile-panel .panel-form-field > .el-form-item__label {
+    margin-bottom: 0.375rem;
+    margin-inline-start: 0.25rem;
+    text-align: start;
+}
+
+.profile-panel .panel-form-field > .el-form-item__label,
+.profile-panel .panel-field-label {
+    color: var(--color-ui-muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
 }
 
 .profile-panel .el-form-item__error {
@@ -337,13 +352,6 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
 
 .profile-panel .panel-jalali-days .el-button[aria-current="date"] {
     --el-button-border-color: var(--color-brand-700);
-}
-
-.profile-panel .panel-header-link {
-    --el-button-text-color: white;
-    --el-button-hover-link-text-color: white;
-    --el-button-active-color: white;
-    --el-button-outline-color: white;
 }
 
 .profile-panel .panel-account-avatar {

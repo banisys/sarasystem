@@ -138,8 +138,8 @@ async function save(fixOrder = false) {
                                 <li v-for="(option, optionIndex) in question.options" :key="optionIndex" class="break-words">{{ option }}</li>
                             </ul>
                             <p class="text-xs text-gray-600 panel-dark:text-ui-muted">{{ question.type }}<template v-if="!editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
-                            <label v-if="editable" class="inline-flex items-center gap-2 text-sm text-gray-700 panel-dark:text-ui-ink">
-                                <span>بارم</span>
+                            <label v-if="editable" class="inline-flex items-center gap-1.5">
+                                <span class="panel-field-label">بارم</span>
                                 <ElInput v-model.number="question.score" type="number" min="0.25" max="1000" step="0.01" inputmode="decimal" dir="ltr"
                                     :aria-label="`بارم سؤال ${index + 1}`" :disabled="reorder.processing"
                                     size="small" class="panel-inline-input" @input="markChanged" />

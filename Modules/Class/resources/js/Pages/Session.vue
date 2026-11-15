@@ -1,4 +1,5 @@
 <script setup>
+import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import { ElForm, ElInput, ElLink, ElProgress, ElTabPane, ElTabs, ElTag } from 'element-plus';
 import 'element-plus/es/components/progress/style/css';
 import 'element-plus/es/components/tabs/style/css';
@@ -166,7 +167,6 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 :title="session.class"
                 :description="session.subject"
                 icon="calendar"
-                tone="brand"
                 :back-href="route('my-classes.index', ward ? { for: ward.id } : {})"
                 :back-label="ward ? `کلاس‌های ${ward.name}` : 'کلاس‌های من'"
             />
@@ -347,27 +347,21 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                 </div>
                             </fieldset>
 
-                            <label class="block space-y-1.5">
-                                <span class="font-semibold text-gray-900 panel-dark:text-ui-ink">شرح مطالب</span>
+                            <PanelFormField label="شرح مطالب" :error="content.errors.summary">
                                 <ElInput type="textarea" v-model="content.summary" :rows="4" placeholder="در این جلسه چه گفته شد؟" />
-                                <p v-if="content.errors.summary" class="text-xs text-red-600 panel-dark:text-red-300">{{ content.errors.summary }}</p>
-                            </label>
+                            </PanelFormField>
 
                             <div class="space-y-3 rounded-xl bg-amber-50/60 panel-dark:bg-amber-950/30 p-4 ring-1 ring-amber-100 panel-dark:ring-amber-800/55">
-                                <label class="block space-y-1.5">
-                                    <span class="font-semibold text-gray-900 panel-dark:text-ui-ink">تکلیف</span>
+                                <PanelFormField label="تکلیف">
                                     <ElInput type="textarea" v-model="content.homework" :rows="3" placeholder="اگر تکلیفی دارد، اینجا بنویسید." />
-                                </label>
+                                </PanelFormField>
                                 <div v-if="content.homework" class="grid gap-3 sm:grid-cols-2">
-                                    <div class="space-y-1.5 text-sm">
-                                        <label for="homework_due_on" class="text-gray-700 panel-dark:text-ui-ink">مهلت تحویل</label>
+                                    <PanelFormField label="مهلت تحویل" for="homework_due_on" :error="content.errors.homework_due_on">
                                         <PanelJalaliDateInput id="homework_due_on" v-model="content.homework_due_on" />
-                                        <p v-if="content.errors.homework_due_on" class="text-xs text-red-600 panel-dark:text-red-300">{{ content.errors.homework_due_on }}</p>
-                                    </div>
-                                    <label class="block space-y-1.5 text-sm">
-                                        <span class="text-gray-700 panel-dark:text-ui-ink">نمره‌ی تکلیف از</span>
+                                    </PanelFormField>
+                                    <PanelFormField label="نمره‌ی تکلیف از">
                                         <ElInput v-model.number="content.homework_max_score" type="number" min="1" max="100" />
-                                    </label>
+                                    </PanelFormField>
                                 </div>
                             </div>
 
@@ -468,11 +462,9 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                             </div>
 
                             <ElForm v-if="canSubmit" class="space-y-4" @submit.prevent="submitHomework">
-                                <label class="block space-y-1.5 text-sm">
-                                    <span class="font-medium text-gray-800 panel-dark:text-ui-ink">پاسخ</span>
+                                <PanelFormField label="پاسخ" :error="handIn.errors.answer">
                                     <ElInput type="textarea" v-model="handIn.answer" :rows="5" placeholder="پاسخ خود را بنویسید…" />
-                                    <p v-if="handIn.errors.answer" class="text-xs text-red-600 panel-dark:text-red-300">{{ handIn.errors.answer }}</p>
-                                </label>
+                                </PanelFormField>
                                 <ul v-if="mySubmission?.files.length" class="space-y-1">
                                     <li
                                         v-for="file in mySubmission.files"
