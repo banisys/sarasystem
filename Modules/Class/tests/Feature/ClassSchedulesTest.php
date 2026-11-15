@@ -31,6 +31,9 @@ use Modules\Class\Services\ClassException;
 use Modules\Class\Services\ClassMembers;
 use Modules\Class\Services\SessionPlanner;
 use Modules\Employee\Models\Employee;
+use Modules\Exam\Models\Exam;
+use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\QuestionBank;
 use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
@@ -417,6 +420,67 @@ class ClassSchedulesTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_an_existing_exam_can_be_assigned_from_the_schedule_as_an_independent_copy(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $this->actingInPanel($admin, $this->west);
+        $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
+        $template = Exam::factory()->for($this->west)->create(['title' => 'آزمون پایان دوره']);
+        $bank = QuestionBank::factory()->for($this->west)->create();
+        $template->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 3, 'sort' => 0]);
+        $participant = User::factory()->create();
+        $template->participantUsers()->attach($participant);
+        ExamAttempt::factory()->for($template)->for($participant)->for($this->west)->create();
+
+        $action = TestAction::make('assignExam')->table($session);
+        $list = Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class]);
+        $list->callAction($action, data: ['template_id' => $template->id])
+            ->assertHasNoActionErrors()
+            ->assertNotified('آزمون به جلسه متصل شد.');
+
+        $copy = Exam::query()->where('context_type', 'class-session')->where('context_id', $session->id)->sole();
+        $this->assertSame($template->id, $copy->template_exam_id);
+        $this->assertSame($admin->id, $copy->assigned_by_id);
+        $this->assertTrue($copy->is_published);
+        $this->assertTrue($session->starts_at->eq($copy->starts_at));
+        $this->assertTrue($session->ends_at->eq($copy->ends_at));
+        $this->assertSame($bank->id, $copy->sections()->sole()->question_bank_id);
+        $this->assertSame(3, $copy->questionCount());
+        $this->assertFalse($copy->participantUsers()->exists());
+        $this->assertFalse($copy->attempts()->exists());
+        $this->assertSame(1, $template->attempts()->count());
+        $this->assertNull($template->fresh()->context_id);
+
+        $list->callAction($action, data: ['template_id' => $template->id])->assertHasNoActionErrors();
+        $this->assertSame($copy->id, Exam::query()->where('context_type', 'class-session')->where('context_id', $session->id)->sole()->id);
+    }
+
+    public function test_the_schedule_picker_excludes_foreign_and_session_exams_and_keeps_drafts_unpublished(): void
+    {
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
+        $cancelled = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam, 'status' => SessionStatus::Cancelled]);
+        $foreign = Exam::factory()->for($this->primary)->create(['title' => 'آزمون شعبهٔ دیگر']);
+        $existing = Exam::factory()->for($this->west)->create(['title' => 'آزمون از قبل متصل']);
+        $existing->forceFill(['context_type' => 'class-session', 'context_id' => $cancelled->id])->save();
+        $draft = Exam::factory()->draft()->for($this->west)->create(['title' => 'آزمون پیش‌نویس']);
+
+        $action = TestAction::make('assignExam')->table($session);
+        $list = Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+            ->assertActionHidden(TestAction::make('assignExam')->table($cancelled));
+
+        foreach ([$foreign, $existing] as $invalid) {
+            $list->callAction($action, data: ['template_id' => $invalid->id])
+                ->assertHasActionErrors(['template_id'])
+                ->call('unmountAction');
+        }
+
+        $list->callAction($action, data: ['template_id' => $draft->id])->assertHasNoActionErrors();
+        $copy = Exam::query()->where('context_id', $session->id)->sole();
+        $this->assertSame($draft->id, $copy->template_exam_id);
+        $this->assertFalse($copy->is_published);
+    }
+
     public function test_exam_schedule_accepts_an_employee_from_another_tenant_and_rejects_non_employees(): void
     {
         if (! Module::isEnabled('Employee')) {
@@ -560,7 +624,8 @@ class ClassSchedulesTest extends TestCase
         $exam = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
         Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
             ->assertActionHidden(TestAction::make('addExamSchedule')->table())
-            ->assertActionHidden(TestAction::make('editExamSchedule')->table($exam));
+            ->assertActionHidden(TestAction::make('editExamSchedule')->table($exam))
+            ->assertActionHidden(TestAction::make('assignExam')->table($exam));
 
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
         $this->get(ClassroomResource::getUrl('exam-schedules', ['record' => $foreignClass], tenant: $this->west))

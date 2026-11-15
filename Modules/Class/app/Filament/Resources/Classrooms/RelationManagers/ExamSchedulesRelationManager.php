@@ -3,6 +3,7 @@
 namespace Modules\Class\Filament\Resources\Classrooms\RelationManagers;
 
 use App\Models\Tenant;
+use App\Models\User;
 use App\Support\EmployeeDirectory;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -27,7 +28,12 @@ use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Subject;
 use Modules\Class\Services\SessionCalendar;
+use Modules\Class\Services\SessionExamSource;
 use Modules\Class\Services\SessionPlanner;
+use Modules\Exam\Filament\Resources\Exams\ExamResource;
+use Modules\Exam\Services\ContextExams;
+use Modules\Exam\Support\ExamContexts;
+use Nwidart\Modules\Facades\Module;
 
 class ExamSchedulesRelationManager extends RelationManager
 {
@@ -74,11 +80,70 @@ class ExamSchedulesRelationManager extends RelationManager
             ->headerActions([$this->addExamScheduleAction()])
             ->recordActions([
                 $this->editExamScheduleAction(),
+                ...(Module::isEnabled('Exam') ? [$this->assignExamAction()] : []),
                 Action::make('viewExam')
                     ->label('جزئیات')
                     ->icon(Heroicon::OutlinedEye)
                     ->url(fn (ClassSession $record): string => ClassSessionResource::detailsUrl($record)),
             ]);
+    }
+
+    private function assignExamAction(): Action
+    {
+        return Action::make('assignExam')
+            ->label('اتصال آزمون')
+            ->icon(Heroicon::OutlinedLink)
+            ->authorize(fn (): bool => $this->canAssignExam())
+            ->visible(fn (ClassSession $record): bool => $record->status !== SessionStatus::Cancelled)
+            ->modalHeading('اتصال آزمون به جلسهٔ امتحانی')
+            ->modalDescription('یک نسخهٔ مستقل با زمان و شرکت‌کنندگان همین جلسه ساخته می‌شود. وضعیت انتشار از آزمون انتخاب‌شده گرفته می‌شود.')
+            ->modalSubmitActionLabel('اتصال آزمون')
+            ->schema([
+                Select::make('template_id')
+                    ->label('آزمون')
+                    ->searchable()
+                    ->preload()
+                    ->options(fn (ContextExams $exams): array => $this->examTemplateOptions($exams))
+                    ->getSearchResultsUsing(fn (string $search, ContextExams $exams): array => $this->examTemplateOptions($exams, $search))
+                    ->getOptionLabelUsing(function (mixed $value, ContextExams $exams): ?string {
+                        $id = filter_var($value, FILTER_VALIDATE_INT);
+
+                        return $id === false ? null : $this->examTemplates($exams)->whereKey($id)->value('title');
+                    })
+                    ->noSearchResultsMessage('آزمون مستقلی با این عنوان پیدا نشد.')
+                    ->rules(['integer'])
+                    ->required(),
+            ])
+            ->successNotificationTitle('آزمون به جلسه متصل شد.')
+            ->action(function (ClassSession $record, array $data, ContextExams $exams, ExamContexts $contexts): void {
+                abort_unless($this->canAssignExam(), 403);
+                $actor = auth()->user();
+                abort_unless($actor instanceof User, 403);
+
+                $context = $contexts->resolve(SessionExamSource::TYPE, $record->id, $actor);
+                abort_if($context === null, 404);
+                $exams->assign($context, (int) $data['template_id'], $actor);
+            });
+    }
+
+    private function canAssignExam(): bool
+    {
+        return Module::isEnabled('Exam') && Gate::allows('update', $this->classroom()) && ExamResource::canViewAny();
+    }
+
+    private function examTemplates(ContextExams $exams): Builder
+    {
+        abort_unless($this->canAssignExam(), 403);
+
+        return $exams->templates($this->classroom()->tenant_id);
+    }
+
+    /** @return array<int, string> */
+    private function examTemplateOptions(ContextExams $exams, ?string $search = null): array
+    {
+        return $this->examTemplates($exams)
+            ->when(filled($search), fn (Builder $query): Builder => $query->whereLike('title', '%'.$search.'%'))
+            ->orderBy('title')->orderBy('id')->limit(50)->pluck('title', 'id')->all();
     }
 
     private function addExamScheduleAction(): Action

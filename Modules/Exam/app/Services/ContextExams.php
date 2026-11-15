@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\Question;
@@ -18,6 +19,46 @@ class ContextExams
     public function query(ExamContext $context): Builder
     {
         return Exam::query()->where('context_type', $context->type)->where('context_id', $context->id);
+    }
+
+    /** @return Builder<Exam> */
+    public function templates(int $tenantId): Builder
+    {
+        return Exam::query()->where('tenant_id', $tenantId)->whereNull('context_type');
+    }
+
+    public function assign(ExamContext $context, int $templateId, User $actor): Exam
+    {
+        abort_unless($context->canManage, 403);
+        Gate::forUser($actor)->authorize('viewAny', Exam::class);
+
+        return DB::transaction(function () use ($context, $templateId, $actor): Exam {
+            $template = $this->templates($context->tenantId)->lockForUpdate()->find($templateId);
+            if ($template === null) {
+                throw ValidationException::withMessages(['template_id' => 'یک آزمون مستقل از همین '.config('sarasystem.tenant_label').' انتخاب کنید.']);
+            }
+
+            if ($existing = $this->query($context)->where('template_exam_id', $templateId)->first()) {
+                return $existing;
+            }
+
+            $exam = $template->replicate()->unsetRelations();
+            $exam->forceFill([
+                'context_type' => $context->type,
+                'context_id' => $context->id,
+                'template_exam_id' => $templateId,
+                'assigned_by_id' => $actor->id,
+                'title' => Str::limit($template->title.' — '.$context->title, 255, ''),
+                'starts_at' => $context->startsAt,
+                'ends_at' => $context->endsAt,
+            ])->save();
+
+            foreach ($template->sections()->get() as $section) {
+                $exam->sections()->create($section->only(['question_bank_id', 'question_count', 'sort']));
+            }
+
+            return $exam;
+        });
     }
 
     /**
