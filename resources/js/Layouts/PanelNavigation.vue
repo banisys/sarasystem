@@ -1,6 +1,8 @@
 <script setup>
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { ElAvatar } from 'element-plus';
+import 'element-plus/es/components/avatar/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 
@@ -28,8 +30,6 @@ function isActive(url) {
     return samePath && current.searchParams.get('for') === target.searchParams.get('for');
 }
 
-const rowClass = 'flex min-h-12 w-full min-w-0 items-center gap-3 rounded-s-none rounded-e-lg border-s-2 border-transparent px-4 py-2 text-start text-sm text-ui-ink transition-colors hover:bg-slate-50 panel-dark:hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-700 aria-[current=page]:border-s-brand-600 aria-[current=page]:bg-brand-50 aria-[current=page]:font-semibold aria-[current=page]:text-brand-700';
-
 defineEmits(['navigate']);
 
 function logout() {
@@ -41,9 +41,9 @@ function logout() {
     <div class="flex h-full min-h-0 flex-col">
         <div class="flex items-center justify-between gap-2 border-b border-ui-line px-4 py-3.5">
             <div class="flex min-w-0 items-center gap-3">
-                <span class="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 panel-dark:bg-white/8 text-ui-ink">
+                <ElAvatar :size="32" class="shrink-0 panel-account-avatar">
                     <PanelIcon name="user" class="size-5" />
-                </span>
+                </ElAvatar>
                 <div class="min-w-0">
                     <p class="truncate text-sm font-semibold">{{ user?.name }}</p>
                     <bdi v-if="user?.mobile || user?.email" dir="ltr" class="block truncate text-xs text-ui-muted">
@@ -57,41 +57,45 @@ function logout() {
         <nav aria-label="منوی پنل کاربری" class="min-h-0 flex-1 overflow-y-auto px-4 py-2">
             <ul class="space-y-1">
                 <li v-if="tenant.current">
-                    <component
-                        :is="canSwitchTenant ? Link : 'div'"
-                        :href="canSwitchTenant ? route('tenants.select') : undefined"
-                        :class="rowClass"
-                        :aria-current="page.component === 'Tenants/Select' && canSwitchTenant ? 'page' : undefined"
-                        :title="canSwitchTenant ? `تغییر ${tenant.label}` : undefined"
-                        @click="canSwitchTenant && $emit('navigate')"
+                    <PanelButton
+                        v-if="canSwitchTenant"
+                        :href="route('tenants.select')"
+                        variant="navigation"
+                        :aria-current="page.component === 'Tenants/Select' ? 'page' : undefined"
+                        :title="`تغییر ${tenant.label}`"
+                        @click="$emit('navigate')"
                     >
                         <PanelIcon name="building" class="size-5 shrink-0" />
                         <span class="min-w-0 flex-1 truncate">{{ tenant.current.name }}</span>
-                        <PanelIcon v-if="canSwitchTenant" name="chevrons" class="size-4 shrink-0" />
-                    </component>
+                        <PanelIcon name="chevrons" class="size-4 shrink-0" />
+                    </PanelButton>
+                    <div v-else class="flex min-h-12 items-center gap-3 px-4 py-2 text-sm">
+                        <PanelIcon name="building" class="size-5 shrink-0" />
+                        <span class="min-w-0 truncate">{{ tenant.current.name }}</span>
+                    </div>
                 </li>
                 <li v-for="link in links" :key="link.url">
-                    <Link :href="link.url" :class="rowClass" :aria-current="isActive(link.url) ? 'page' : undefined" @click="$emit('navigate')">
+                    <PanelButton :href="link.url" variant="navigation" :aria-current="isActive(link.url) ? 'page' : undefined" @click="$emit('navigate')">
                         <PanelIcon :name="link.icon" class="size-5 shrink-0" />
                         <span class="min-w-0 wrap-break-word">{{ link.title }}</span>
-                    </Link>
+                    </PanelButton>
                 </li>
                 <li>
-                    <Link
+                    <PanelButton
                         :href="route('profile.edit')"
-                        :class="rowClass"
+                        variant="navigation"
                         :aria-current="page.component === 'Profile/Edit' ? 'page' : undefined"
                         @click="$emit('navigate')"
                     >
                         <PanelIcon name="user" class="size-5 shrink-0" />
                         اطلاعات کاربری
-                    </Link>
+                    </PanelButton>
                 </li>
                 <li v-if="page.props.auth.canAccessAdmin">
-                    <a href="/cpadmin" :class="rowClass">
+                    <PanelButton href="/cpadmin" full-page variant="navigation">
                         <PanelIcon name="squares" class="size-5 shrink-0" />
                         پنل مدیریت
-                    </a>
+                    </PanelButton>
                 </li>
             </ul>
         </nav>

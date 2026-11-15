@@ -3,6 +3,8 @@ import { ElForm, ElInput, ElOption, ElSelect } from 'element-plus';
 import 'element-plus/es/components/select/style/css';
 import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
+import PanelCard from '@/Components/Ui/PanelCard.vue';
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
@@ -41,7 +43,7 @@ function save() {
         <div class="space-y-4">
             <UiPageHeader :title="subject.title" :description="classroom.title" icon="book" :back-href="route('school.scores.index')" back-label="دفتر نمره" />
 
-            <nav v-if="periods.length" class="ui-surface flex flex-wrap gap-2 p-3" aria-label="دوره‌های نمره‌دهی">
+            <PanelCard v-if="periods.length" role="navigation" aria-label="دوره‌های نمره‌دهی" body-class="flex flex-wrap gap-2 p-3">
                 <PanelButton
                     v-for="item in periods"
                     :key="item.id"
@@ -51,13 +53,13 @@ function save() {
                 >
                     {{ item.title }}<span v-if="!item.is_open"> (بسته)</span>
                 </PanelButton>
-            </nav>
+            </PanelCard>
 
             <PanelNotice v-if="flash" tone="success">{{ flash }}</PanelNotice>
             <PanelNotice v-if="refusal">{{ refusal }}</PanelNotice>
 
             <ElForm v-if="period" class="ui-surface space-y-3 p-4 sm:p-5" @submit.prevent="save">
-                <p v-if="!rows.length" class="text-sm text-gray-500 panel-dark:text-ui-muted">کسی در این کلاس نیست.</p>
+                <PanelEmpty v-if="!rows.length" description="کسی در این کلاس نیست." />
                 <div v-for="(row, index) in form.rows" :key="row.user_id" class="grid items-center gap-x-3 gap-y-2 rounded-ui border border-ui-line p-3 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(7rem,0.7fr)_minmax(0,1.5fr)]">
                     <span class="font-semibold text-ui-ink">{{ row.name }}</span>
                     <ElInput

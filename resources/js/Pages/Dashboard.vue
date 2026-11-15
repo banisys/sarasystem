@@ -1,7 +1,7 @@
 <script setup>
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import { Head, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
@@ -34,7 +34,7 @@ const tenant = computed(() => page.props.tenant.current);
                     <PanelIcon name="back" class="size-4 shrink-0 rotate-180 text-ui-muted ltr:rotate-0" />
                 </PanelButton>
             </div>
-            <PanelNotice v-else>در این {{ page.props.tenant.label }} هنوز بخشی برای حساب شما در دسترس نیست.</PanelNotice>
+            <PanelEmpty v-else :description="`در این ${page.props.tenant.label} هنوز بخشی برای حساب شما در دسترس نیست.`" />
             <PanelButton :href="route('profile.edit')" variant="outline">اطلاعات کاربری</PanelButton>
         </div>
     </AppLayout>

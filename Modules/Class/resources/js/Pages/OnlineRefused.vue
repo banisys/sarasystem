@@ -1,4 +1,5 @@
 <script setup>
+import PanelCard from '@/Components/Ui/PanelCard.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { Head } from '@inertiajs/vue3';
@@ -18,7 +19,7 @@ defineProps({
 
     <AppLayout>
         <div class="mx-auto max-w-lg">
-            <section class="ui-surface p-5 text-center sm:p-7">
+            <PanelCard body-class="p-5 text-center sm:p-7">
                 <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-50 panel-dark:bg-amber-950/45 text-amber-600 panel-dark:text-amber-300">
                     <PanelIcon name="video" class="size-6" />
                 </div>
@@ -28,7 +29,7 @@ defineProps({
                 <PanelButton :href="route('my-classes.index')" class="mt-6">
                     کلاس‌های من
                 </PanelButton>
-            </section>
+            </PanelCard>
         </div>
     </AppLayout>
 </template>

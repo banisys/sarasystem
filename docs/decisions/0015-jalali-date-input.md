@@ -14,9 +14,9 @@ Filament has Jalali pickers (`ariaieboy/filament-jalali`), but the Inertia/Vue p
 ## Decision
 Own component: [resources/js/Components/JalaliDateInput.vue](../../resources/js/Components/JalaliDateInput.vue) with helpers in [resources/js/jalali.js](../../resources/js/jalali.js). Gregorian → Jalali uses `Intl.DateTimeFormat('…-u-ca-persian')`; Jalali → Gregorian starts from a close estimate and steps a day at a time until `Intl` agrees.
 
-The field stays a text input (people can still type, Persian digits allowed) with a calendar popup: month/year selects, Saturday-first grid, today marker, «امروز» / «پاک کردن». Its `v-model` is the same `1370/01/05` string, so the server keeps validating and converting with `App\Rules\JalaliDate`.
+The field stays a text input (people can still type, Persian digits allowed) with a calendar: month/year selects, Saturday-first grid, today marker, «امروز» / «پاک کردن». Its `v-model` is the same `1370/01/05` string, so the server keeps validating and converting with `App\Rules\JalaliDate`. The public field opens a popup; the [panel field](../../resources/js/Components/Ui/PanelJalaliDateInput.vue) uses an Element Plus dialog and the same date logic ([ADR 0100](0100-element-plus-for-user-panel.md)).
 
 ## Consequences
-- No new packages; one component for every Vue date field.
-- Date only: no time picker or date range yet; add them to this component when a page needs them.
+- No new date packages; both Vue fields share the picker logic.
+- Date only: no time picker or date range yet.
 - `minYear` / `maxYear` only limit what the calendar offers; the server rule is still the real check.

@@ -1,5 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import PanelButton from './PanelButton.vue';
+import PanelCard from './PanelCard.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 
 defineProps({
@@ -14,11 +15,11 @@ defineProps({
 </script>
 
 <template>
-    <header class="px-4 py-5 sm:px-6" :class="tone === 'brand' ? 'rounded-ui bg-[var(--profile-header)] text-white' : 'ui-surface'">
-        <component v-if="backHref" :is="fullPageBack ? 'a' : Link" :href="backHref" class="mb-3 inline-flex min-h-8 items-center gap-1.5 text-sm font-semibold hover:underline" :class="tone === 'brand' ? 'text-white' : 'text-brand-700'">
+    <PanelCard body-class="px-4 py-5 sm:px-6" :class="tone === 'brand' && '[--panel-card-bg:var(--profile-header)] [--panel-card-color:white]'">
+        <PanelButton v-if="backHref" :href="backHref" :full-page="fullPageBack" :variant="tone === 'brand' ? 'header-link' : 'link'" class="mb-3" size="small">
             <PanelIcon name="back" class="size-4 ltr:rotate-180" />
             {{ backLabel }}
-        </component>
+        </PanelButton>
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex min-w-0 items-start gap-3">
                 <span v-if="icon" class="grid size-10 shrink-0 place-items-center rounded-ui" :class="tone === 'brand' ? 'bg-white/12' : 'bg-brand-50 text-brand-700'">
@@ -33,5 +34,5 @@ defineProps({
                 <slot name="actions" />
             </div>
         </div>
-    </header>
+    </PanelCard>
 </template>

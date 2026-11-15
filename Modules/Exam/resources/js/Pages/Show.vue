@@ -1,4 +1,5 @@
 <script setup>
+import PanelCard from '@/Components/Ui/PanelCard.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
@@ -47,7 +48,7 @@ function start() {
             <AttemptRunner v-if="attempt" :key="attempt.id" :exam="exam" :attempt="attempt" />
 
             <template v-else>
-                <div class="ui-surface p-4 sm:p-6">
+                <PanelCard body-class="p-4 sm:p-6">
                     <p v-if="exam.description" class="mb-4 whitespace-pre-line text-gray-700 panel-dark:text-ui-ink">{{ exam.description }}</p>
                     <dl class="grid grid-cols-2 gap-3 rounded-ui bg-ui-canvas p-3 text-sm leading-7 sm:grid-cols-3 sm:p-4">
                         <div><dt class="text-gray-500 panel-dark:text-ui-muted">تعداد سؤال</dt><dd>{{ exam.question_count }}</dd></div>
@@ -69,9 +70,9 @@ function start() {
                             {{ starting ? 'در حال ورود…' : attemptsUsed ? 'شرکت دوباره' : 'شروع آزمون' }}
                         </PanelButton>
                     </div>
-                </div>
+                </PanelCard>
 
-                <div v-if="result" class="ui-surface p-4 sm:p-6">
+                <PanelCard v-if="result" body-class="p-4 sm:p-6">
                     <h2 class="font-semibold text-gray-900 panel-dark:text-ui-ink">آخرین شرکت</h2>
                     <p class="mt-2 text-sm text-gray-600 panel-dark:text-ui-muted">
                         {{ formatDateTime(result.submitted_at) }}
@@ -103,7 +104,7 @@ function start() {
                             </p>
                         </li>
                     </ol>
-                </div>
+                </PanelCard>
             </template>
         </div>
     </AppLayout>

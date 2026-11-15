@@ -1,9 +1,10 @@
 <script setup>
+import PanelCardLink from '@/Components/Ui/PanelCardLink.vue';
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import { ElTag } from 'element-plus';
 import 'element-plus/es/components/tag/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatDateTime } from '../format.js';
 
@@ -19,13 +20,12 @@ defineProps({
         <div class="space-y-4">
             <UiPageHeader title="آزمون‌ها" icon="clipboard" />
 
-            <PanelNotice v-if="!exams.length">آزمونی برای شما نیست.</PanelNotice>
+            <PanelEmpty v-if="!exams.length" description="آزمونی برای شما نیست." />
 
-            <Link
+            <PanelCardLink
                 v-for="exam in exams"
                 :key="exam.id"
                 :href="route('exams.show', exam.id)"
-                class="ui-card-link"
             >
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h2 class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ exam.title }}</h2>
@@ -40,7 +40,7 @@ defineProps({
                     <span v-if="exam.allow_late_start">بدون مهلت پایانی برای شروع</span>
                     <span v-if="exam.last_status" class="text-brand-700">{{ exam.last_status }}</span>
                 </div>
-            </Link>
+            </PanelCardLink>
         </div>
     </AppLayout>
 </template>

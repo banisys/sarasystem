@@ -1,10 +1,13 @@
 <script setup>
 import PanelDialog from '@/Components/Ui/PanelDialog.vue';
 import PanelConfirm from '@/Components/Ui/PanelConfirm.vue';
-import { ElCheckbox, ElCheckboxGroup, ElForm, ElInput, ElOption, ElRadio, ElRadioGroup, ElSelect, ElTable, ElTableColumn, ElTag } from 'element-plus';
+import { ElCheckbox, ElCheckboxGroup, ElCollapse, ElCollapseItem, ElForm, ElInput, ElOption, ElRadio, ElRadioGroup, ElSelect, ElTable, ElTableColumn, ElTag } from 'element-plus';
 import 'element-plus/es/components/checkbox/style/css';
 import 'element-plus/es/components/checkbox-group/style/css';
 import 'element-plus/es/components/select/style/css';
+import 'element-plus/es/components/collapse/style/css';
+import PanelCard from '@/Components/Ui/PanelCard.vue';
+import PanelPagination from '@/Components/Ui/PanelPagination.vue';
 import 'element-plus/es/components/radio/style/css';
 import 'element-plus/es/components/radio-group/style/css';
 import 'element-plus/es/components/table/style/css';
@@ -14,7 +17,7 @@ import 'element-plus/es/components/input/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { computed, ref, watch } from 'vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
@@ -102,6 +105,11 @@ watch(() => props.selectedBank?.id, () => {
     deletion.clearErrors();
 });
 
+function goToQuestionsPage(number) {
+    const url = props.selectedBank ? route('exams.library.banks.show', props.selectedBank.id) : route('exams.library.questions');
+    router.get(url, { questions_page: number }, { preserveScroll: true });
+}
+
 function removeOption(index) {
     question.options.splice(index, 1);
     if (correctIndex.value < 0) correctIndex.value = 0;
@@ -120,7 +128,7 @@ function removeOption(index) {
                 back-label="بازگشت به بانک‌ها"
             />
             <PanelNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</PanelNotice>
-            <section class="ui-surface overflow-hidden" aria-label="سؤال‌ها">
+            <PanelCard class="[--panel-card-overflow:hidden]" role="region" aria-label="سؤال‌ها">
                 <div v-if="!selectedBank || selectedBank.can_add_question" class="flex justify-end border-b border-ui-line px-4 py-3">
                     <PanelButton variant="outline-brand" size="default" aria-haspopup="dialog" @click="openQuestion()">
                         <PanelIcon name="plus" class="size-4" />
@@ -132,13 +140,14 @@ function removeOption(index) {
                     <ElTableColumn label="متن سؤال" min-width="230" align="right">
                         <template #default="{ row }">
                             <p class="min-w-52 whitespace-pre-wrap wrap-break-word font-medium">{{ row.body }}</p>
-                            <details v-if="row.options || row.accepted_answers || row.model_answer" class="text-sm">
-                                <summary class="cursor-pointer text-ui-muted">پاسخ‌ها</summary>
-                                <ul v-if="row.options" class="mt-2 list-disc space-y-1 ps-5">
-                                    <li v-for="option in row.options" :key="option.key">{{ option.text }}{{ option.is_correct ? ' (درست)' : '' }}</li>
-                                </ul>
-                                <p v-else class="mt-2 whitespace-pre-wrap wrap-break-word">{{ row.accepted_answers?.join('، ') ?? row.model_answer }}</p>
-                            </details>
+                            <ElCollapse v-if="row.options || row.accepted_answers || row.model_answer" class="mt-2">
+                                <ElCollapseItem name="answers" title="پاسخ‌ها">
+                                    <ul v-if="row.options" class="mt-2 list-disc space-y-1 ps-5">
+                                        <li v-for="option in row.options" :key="option.key">{{ option.text }}{{ option.is_correct ? ' (درست)' : '' }}</li>
+                                    </ul>
+                                    <p v-else class="mt-2 whitespace-pre-wrap wrap-break-word">{{ row.accepted_answers?.join('، ') ?? row.model_answer }}</p>
+                                </ElCollapseItem>
+                            </ElCollapse>
                         </template>
                     </ElTableColumn>
                     <ElTableColumn label="نوع" width="110" align="right">
@@ -175,11 +184,11 @@ function removeOption(index) {
                         </template>
                     </ElTableColumn>
                 </ElTable>
-                <nav v-if="questions.prev_page_url || questions.next_page_url" class="flex gap-4 border-t border-ui-line px-4 py-2" aria-label="صفحه‌های سؤال">
-                    <PanelButton v-if="questions.prev_page_url" :href="questions.prev_page_url" variant="link">قبلی</PanelButton>
-                    <PanelButton v-if="questions.next_page_url" :href="questions.next_page_url" variant="link">بعدی</PanelButton>
+                <nav v-if="questions.last_page > 1" class="border-t border-ui-line px-4 py-2" aria-label="صفحه‌های سؤال">
+                    <PanelPagination :current-page="questions.current_page" :page-size="questions.per_page" :total="questions.total"
+                        @update:current-page="goToQuestionsPage" />
                 </nav>
-            </section>
+            </PanelCard>
 
             <PanelDialog v-model="questionEditorOpen" :title="editingQuestion ? 'ویرایش سؤال' : 'افزودن سؤال'"
                 :busy="question.processing" @opened="questionBody?.focus()">

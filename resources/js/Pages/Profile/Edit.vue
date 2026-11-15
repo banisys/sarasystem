@@ -1,4 +1,7 @@
 <script setup>
+import PanelCard from '@/Components/Ui/PanelCard.vue';
+import { ElDescriptions, ElDescriptionsItem } from 'element-plus';
+import 'element-plus/es/components/descriptions/style/css';
 import { ElForm, ElInput } from 'element-plus';
 import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
@@ -102,23 +105,17 @@ function savePassword() {
             <PanelNotice v-if="status" tone="success">{{ status }}</PanelNotice>
 
             <!-- Account -->
-            <section class="ui-surface p-4 sm:p-6">
+            <PanelCard body-class="p-4 sm:p-6">
                 <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">اطلاعات حساب</h2>
-                <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-                    <div>
-                        <dt class="text-gray-500 panel-dark:text-ui-muted">نام</dt>
-                        <dd class="mt-1 text-gray-900 panel-dark:text-ui-ink">{{ profile.name }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-gray-500 panel-dark:text-ui-muted">کد ملی</dt>
-                        <dd class="mt-1 text-start text-ui-ink"><bdi dir="ltr">{{ profile.nationalCode ?? '—' }}</bdi></dd>
-                    </div>
-                </dl>
+                <ElDescriptions class="mt-4" :column="2" direction="vertical">
+                    <ElDescriptionsItem label="نام">{{ profile.name }}</ElDescriptionsItem>
+                    <ElDescriptionsItem label="کد ملی"><bdi dir="ltr">{{ profile.nationalCode ?? '—' }}</bdi></ElDescriptionsItem>
+                </ElDescriptions>
                 <p class="mt-3 text-xs text-gray-500 panel-dark:text-ui-muted">برای تغییر نام یا کد ملی با مدیر تماس بگیرید.</p>
-            </section>
+            </PanelCard>
 
             <!-- Mobile -->
-            <section class="ui-surface p-4 sm:p-6">
+            <PanelCard body-class="p-4 sm:p-6">
                 <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">شماره موبایل</h2>
                 <p class="mt-1 text-sm text-gray-600 panel-dark:text-ui-muted">
                     شماره‌ی فعلی:
@@ -194,7 +191,7 @@ function savePassword() {
                         </PanelButton>
                     </div>
                 </ElForm>
-            </section>
+            </PanelCard>
 
             <!-- Email -->
             <ElForm class="ui-surface p-4 sm:p-6" @submit.prevent="saveEmail">

@@ -1,35 +1,29 @@
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
+import { ElUpload } from 'element-plus';
+import 'element-plus/es/components/upload/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 
-// A Persian file picker for user-panel forms: a dashed drop area that lists
-// the chosen files (v-model: an array of File).
+const model = defineModel({ type: Array, default: () => [] });
 const props = defineProps({
-    modelValue: { type: Array, default: () => [] },
     multiple: { type: Boolean, default: true },
     hint: { type: String, default: '' },
     error: { type: String, default: '' },
 });
-const emit = defineEmits(['update:modelValue']);
-const input = ref(null);
-const dragging = ref(false);
 
-function choose(files) {
-    emit('update:modelValue', Array.from(files ?? []));
-}
+// Element Plus queues files locally; the surrounding Inertia form submits the raw files with the rest of the fields.
+const fileList = computed({
+    get: () => model.value.map((raw) => ({ name: raw.name, size: raw.size, raw, uid: raw.uid, status: 'ready' })),
+    set: (files) => {
+        const rawFiles = files.map(({ raw }) => raw);
+        model.value = props.multiple ? rawFiles : rawFiles.slice(-1);
+    },
+});
 
-function drop(event) {
-    dragging.value = false;
-    choose(props.multiple ? event.dataTransfer.files : [...event.dataTransfer.files].slice(0, 1));
-}
-
-function remove(index) {
-    emit('update:modelValue', props.modelValue.filter((_, at) => at !== index));
-    if (input.value) {
-        input.value.value = '';
-    }
+function remove(uid) {
+    fileList.value = fileList.value.filter((file) => file.uid !== uid);
 }
 
 function size(bytes) {
@@ -39,30 +33,25 @@ function size(bytes) {
 
 <template>
     <div>
-        <div
-            class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-5 text-center text-sm transition"
-            :class="dragging ? 'border-violet-400 bg-violet-50 panel-dark:bg-brand-50' : 'border-gray-300 panel-dark:border-ui-field bg-gray-50 panel-dark:bg-ui-canvas hover:border-violet-300 hover:bg-violet-50/50 panel-dark:hover:bg-brand-50/50'"
-            @dragover.prevent="dragging = true"
-            @dragleave.prevent="dragging = false"
-            @drop.prevent="drop"
-        >
-            <PanelIcon name="paperclip" class="size-6 text-violet-600 panel-dark:text-brand-700" />
-            <PanelButton variant="outline-brand" @click="input?.click()">انتخاب فایل</PanelButton>
-            <span class="text-ui-muted">یا رها کردن آن در اینجا</span>
-            <span v-if="hint" class="text-xs text-gray-500 panel-dark:text-ui-muted">{{ hint }}</span>
-            <input ref="input" type="file" :multiple="multiple" class="hidden" @change="choose($event.target.files)" />
-        </div>
-        <ul v-if="modelValue.length" class="mt-2 space-y-1">
-            <li v-for="(file, index) in modelValue" :key="`${file.name}-${index}`" class="flex items-center justify-between gap-2 rounded-lg bg-violet-50 panel-dark:bg-brand-50 px-3 py-1.5 text-sm text-violet-900 panel-dark:text-violet-200">
-                <span class="truncate" dir="auto">{{ file.name }}</span>
-                <span class="flex shrink-0 items-center gap-2 text-xs text-violet-700 panel-dark:text-brand-700">
-                    {{ size(file.size) }}
-                    <PanelButton variant="danger-link" size="small" aria-label="برداشتن فایل" @click="remove(index)">
-                        <PanelIcon name="close" class="size-4" />
-                    </PanelButton>
-                </span>
-            </li>
-        </ul>
+        <ElUpload v-model:file-list="fileList" drag :auto-upload="false" :multiple="multiple">
+            <span class="inline-flex items-center justify-center gap-2 font-semibold text-brand-700">
+                <PanelIcon name="paperclip" class="size-5" />
+                انتخاب فایل
+            </span>
+            <p class="mt-1 text-sm text-ui-muted">یا رها کردن آن در اینجا</p>
+            <p v-if="hint" class="mt-1 text-xs text-ui-muted">{{ hint }}</p>
+            <template #file="{ file }">
+                <div class="flex w-full items-center justify-between gap-2 px-2 py-1">
+                    <span class="min-w-0 truncate text-ui-ink" dir="auto">{{ file.name }}</span>
+                    <span class="flex shrink-0 items-center gap-2 text-xs text-ui-muted">
+                        {{ size(file.size) }}
+                        <PanelButton variant="danger-link" size="small" :aria-label="`برداشتن فایل ${file.name}`" @click="remove(file.uid)">
+                            <PanelIcon name="close" class="size-4" />
+                        </PanelButton>
+                    </span>
+                </div>
+            </template>
+        </ElUpload>
         <PanelNotice v-if="error" tone="error" class="mt-2">{{ error }}</PanelNotice>
     </div>
 </template>

@@ -1,12 +1,14 @@
 <script setup>
+import PanelCard from '@/Components/Ui/PanelCard.vue';
+import PanelCardLink from '@/Components/Ui/PanelCardLink.vue';
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import { ElCard, ElTag } from 'element-plus';
 import 'element-plus/es/components/card/style/css';
 import 'element-plus/es/components/tag/style/css';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 // «کلاس‌های من» (ADR 0026): the person's sessions as a day, a week
@@ -28,6 +30,12 @@ const views = [
 ];
 const weekdays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
 
+const sessionCardClass = {
+    scheduled: '[--panel-card-bg:var(--color-brand-50)]',
+    held: '[--panel-card-bg:var(--color-emerald-50)] panel-dark:[--panel-card-bg:var(--color-emerald-950)]',
+    cancelled: '[--panel-card-bg:var(--color-rose-50)] panel-dark:[--panel-card-bg:var(--color-rose-950)]',
+};
+
 const statusClass = {
     scheduled: 'border-ui-line bg-brand-50/70',
     held: 'border-emerald-200 panel-dark:border-emerald-800/70 bg-emerald-50 panel-dark:bg-emerald-950/50',
@@ -46,7 +54,8 @@ function at(date, view = props.calendar.view) {
 
     <AppLayout>
         <div class="space-y-6">
-            <header class="flex flex-wrap items-center justify-between gap-5 rounded-ui bg-[var(--profile-header)] px-5 py-6 text-white sm:px-8 sm:py-8">
+            <PanelCard class="[--panel-card-bg:var(--profile-header)] [--panel-card-color:white]"
+                body-class="flex flex-wrap items-center justify-between gap-5 px-5 py-6 sm:px-8 sm:py-8">
                 <div class="flex min-w-0 items-center gap-4">
                     <span class="grid size-12 shrink-0 place-items-center rounded-ui bg-white/12">
                         <PanelIcon name="calendar" class="size-6" />
@@ -57,9 +66,9 @@ function at(date, view = props.calendar.view) {
                     </div>
                 </div>
                 <PanelButton :href="at(calendar.today)" variant="outline">امروز</PanelButton>
-            </header>
+            </PanelCard>
 
-            <nav aria-label="نمای تقویم و جابه‌جایی تاریخ" class="ui-surface flex flex-wrap items-center justify-between gap-3 p-2.5">
+            <PanelCard role="navigation" aria-label="نمای تقویم و جابه‌جایی تاریخ" body-class="flex flex-wrap items-center justify-between gap-3 p-2.5">
                 <div class="flex flex-wrap gap-1 rounded-ui bg-ui-canvas p-1">
                     <PanelButton
                         v-for="item in views"
@@ -76,20 +85,20 @@ function at(date, view = props.calendar.view) {
                     <PanelButton :href="at(calendar.previous)" variant="outline">قبلی</PanelButton>
                     <PanelButton :href="at(calendar.next)" variant="outline">بعدی</PanelButton>
                 </div>
-            </nav>
+            </PanelCard>
 
             <!-- Month: a grid of the Jalali month, Saturday first. -->
             <div v-if="calendar.view === 'month'" class="hidden grid-cols-7 gap-2 md:grid">
                 <div v-for="name in weekdays" :key="name" class="pb-1 text-center text-xs text-gray-500 panel-dark:text-ui-muted">{{ name }}</div>
                 <div v-for="blank in calendar.leading_blanks" :key="`blank-${blank}`" />
-                <Link
+                <PanelCardLink
                     v-for="day in calendar.days"
                     :key="day.date"
                     :href="at(day.date, 'day')"
                     :aria-current="day.is_today ? 'date' : undefined"
                     :aria-label="day.label"
-                    class="ui-card-link min-h-24 min-w-0 p-2 text-xs sm:p-2"
-                    :class="[day.is_today ? 'border-brand-500' : '', day.holiday ? 'bg-red-50/50 panel-dark:bg-red-950/45' : '']"
+                    body-class="min-h-24 p-2 text-xs"
+                    :card-class="[day.is_today ? '[--panel-card-border:var(--color-brand-500)]' : '', day.holiday ? '[--panel-card-bg:var(--color-red-50)] panel-dark:[--panel-card-bg:var(--color-red-950)]' : '']"
                 >
                     <div class="font-semibold" :class="day.holiday ? 'text-red-600 panel-dark:text-red-300' : 'text-gray-700 panel-dark:text-ui-ink'">{{ day.day_number }}</div>
                     <div v-if="day.holiday" class="truncate text-red-600 panel-dark:text-red-300">{{ day.holiday }}</div>
@@ -101,18 +110,18 @@ function at(date, view = props.calendar.view) {
                     >
                         {{ session.time.split('–')[0] }} {{ session.class }}
                     </div>
-                </Link>
+                </PanelCardLink>
             </div>
 
             <!-- Day and week (and month on small screens): one block per day. -->
             <div class="space-y-3" :class="calendar.view === 'month' ? 'md:hidden' : ''">
-                <PanelNotice v-if="!visibleDays.length">جلسه‌ای در این بازه نیست.</PanelNotice>
+                <PanelEmpty v-if="!visibleDays.length" description="جلسه‌ای در این بازه نیست." />
 
-                <section
+                <PanelCard
                     v-for="day in visibleDays"
                     :key="day.date"
-                    class="ui-surface p-4 sm:p-5"
-                    :class="day.is_today ? 'border-brand-400' : ''"
+                    body-class="p-4 sm:p-5"
+                    :class="day.is_today ? '[--panel-card-border:var(--color-brand-400)]' : ''"
                 >
                     <div class="mb-3 flex flex-wrap items-center gap-2">
                         <h3 class="font-semibold text-ui-ink">{{ day.label }}</h3>
@@ -123,12 +132,12 @@ function at(date, view = props.calendar.view) {
                     <p v-if="!day.sessions.length" class="text-sm text-gray-500 panel-dark:text-ui-muted">جلسه‌ای نیست.</p>
 
                     <div class="grid gap-2 sm:grid-cols-2">
-                        <Link
+                        <PanelCardLink
                             v-for="session in day.sessions"
                             :key="session.id"
                             :href="route('my-classes.session', { session: session.id, ...forWard })"
-                            class="block min-w-0 rounded-ui border border-s-4 p-3.5 text-sm transition-colors hover:border-brand-500 focus-visible:outline-2 focus-visible:outline-brand-700"
-                            :class="statusClass[session.status]"
+                            body-class="p-3.5 text-sm"
+                            :card-class="sessionCardClass[session.status]"
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ session.class }}</span>
@@ -144,9 +153,9 @@ function at(date, view = props.calendar.view) {
                                 <span v-if="session.my_homework" class="text-emerald-700 panel-dark:text-emerald-300">{{ session.my_homework }}</span>
                                 <span v-else-if="session.has_homework" class="text-amber-700 panel-dark:text-amber-300">تکلیف دارد</span>
                             </div>
-                        </Link>
+                        </PanelCardLink>
                     </div>
-                </section>
+                </PanelCard>
             </div>
 
             <section v-if="classes.length" class="space-y-2">

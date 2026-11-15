@@ -1,7 +1,8 @@
 <script setup>
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import {
-    ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElFormItem, ElInput, ElPagination, ElTable, ElTableColumn, ElTag,
+    ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElFormItem, ElInput, ElTable, ElTableColumn, ElTag,
 } from 'element-plus';
 import 'element-plus/es/components/alert/style/css';
 import 'element-plus/es/components/button/style/css';
@@ -9,7 +10,8 @@ import 'element-plus/es/components/checkbox/style/css';
 import 'element-plus/es/components/dialog/style/css';
 import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
-import 'element-plus/es/components/pagination/style/css';
+import PanelCard from '@/Components/Ui/PanelCard.vue';
+import PanelPagination from '@/Components/Ui/PanelPagination.vue';
 import 'element-plus/es/components/table/style/css';
 import 'element-plus/es/components/tag/style/css';
 import { ref } from 'vue';
@@ -73,7 +75,7 @@ function goToBankPage(number) {
 
             <ElAlert v-if="page.props.flash.status" :title="page.props.flash.status" type="success" :closable="false" show-icon />
 
-            <section class="ui-surface overflow-hidden" aria-label="بانک‌های سؤال">
+            <PanelCard class="[--panel-card-overflow:hidden]" role="region" aria-label="بانک‌های سؤال">
                 <div class="flex justify-end border-b border-ui-line px-4 py-3">
                     <ElButton type="primary" plain aria-haspopup="dialog" @click="openBank()">
                         <span class="inline-flex items-center gap-1.5">
@@ -90,7 +92,7 @@ function goToBankPage(number) {
                 >
                     <ElTableColumn label="عنوان بانک" min-width="172" align="right">
                         <template #default="{ row }">
-                            <Link :href="route('exams.library.banks.show', row.id)" class="font-semibold text-brand-700 hover:underline">{{ row.title }}</Link>
+                            <PanelButton :href="route('exams.library.banks.show', row.id)" variant="link" class="font-semibold">{{ row.title }}</PanelButton>
                             <p v-if="row.description" class="whitespace-pre-wrap wrap-break-word text-xs text-ui-muted">{{ row.description }}</p>
                         </template>
                     </ElTableColumn>
@@ -106,7 +108,7 @@ function goToBankPage(number) {
                     <ElTableColumn label="عملیات" width="218" align="right">
                         <template #default="{ row }">
                             <div class="flex items-center gap-3 whitespace-nowrap">
-                                <Link :href="route('exams.library.banks.show', row.id)" class="font-medium text-brand-700 hover:underline">سؤال‌های بانک</Link>
+                                <PanelButton :href="route('exams.library.banks.show', row.id)" variant="link">سؤال‌های بانک</PanelButton>
                                 <template v-if="row.is_mine">
                                     <ElButton type="primary" link aria-haspopup="dialog" @click="openBank(row)">ویرایش</ElButton>
                                     <ElButton type="danger" link aria-haspopup="dialog" @click="confirmRemoval(row)">حذف</ElButton>
@@ -117,13 +119,12 @@ function goToBankPage(number) {
                 </ElTable>
 
                 <nav v-if="banks.last_page > 1" class="border-t border-ui-line px-4 py-2" aria-label="صفحه‌های بانک سؤال">
-                    <ElPagination
+                    <PanelPagination
                         :current-page="banks.current_page" :page-size="banks.per_page" :total="banks.total"
-                        :pager-count="5" layout="prev, pager, next" prev-text="قبلی" next-text="بعدی" background
                         @update:current-page="goToBankPage"
                     />
                 </nav>
-            </section>
+            </PanelCard>
 
             <ElDialog
                 v-model="bankDialogOpen" :title="editingBank ? 'ویرایش بانک' : 'بانک جدید'"

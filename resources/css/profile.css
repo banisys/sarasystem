@@ -284,3 +284,126 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
     white-space: normal;
     overflow-wrap: anywhere;
 }
+
+.profile-panel .panel-card {
+    --el-card-padding: 0;
+    --el-card-border-radius: var(--radius-ui);
+    --el-card-border-color: var(--panel-card-border, var(--color-ui-line));
+    --el-card-bg-color: var(--panel-card-bg, var(--color-ui-surface));
+    color: var(--panel-card-color, var(--color-ui-ink));
+    overflow: var(--panel-card-overflow, visible);
+}
+
+.profile-panel .panel-card-link {
+    transition: background-color 150ms, border-color 150ms;
+}
+
+@media (hover: hover) {
+    .profile-panel a:where(:hover) > .panel-card-link {
+        --el-card-border-color: var(--color-brand-500);
+    }
+}
+
+.profile-panel .el-tabs__item {
+    gap: 0.5rem;
+}
+
+.profile-panel .el-tabs__content {
+    overflow: visible;
+}
+
+.profile-panel .el-collapse {
+    --el-collapse-border-color: var(--color-ui-line);
+    --el-collapse-header-bg-color: transparent;
+    --el-collapse-content-bg-color: transparent;
+}
+
+.profile-panel .el-collapse-item__header {
+    text-align: start;
+}
+
+.profile-panel .el-collapse-item__arrow {
+    margin-inline: auto 0;
+    transform: rotate(180deg);
+}
+
+.profile-panel .el-collapse-item__arrow.is-active {
+    transform: rotate(90deg);
+}
+
+.profile-panel .el-upload-dragger.is-dragover {
+    background-color: var(--color-brand-50);
+}
+
+.profile-panel .panel-jalali-days .el-button[aria-current="date"] {
+    --el-button-border-color: var(--color-brand-700);
+}
+
+.profile-panel .panel-header-link {
+    --el-button-text-color: white;
+    --el-button-hover-link-text-color: white;
+    --el-button-active-color: white;
+    --el-button-outline-color: white;
+}
+
+.profile-panel .panel-account-avatar {
+    --el-avatar-bg-color: var(--color-brand-50);
+    --el-avatar-text-color: var(--color-brand-700);
+}
+
+.profile-panel .el-button.panel-nav-button {
+    --el-button-bg-color: transparent;
+    --el-button-border-color: transparent;
+    --el-button-text-color: var(--color-ui-ink);
+    --el-button-hover-bg-color: var(--color-ui-canvas);
+    --el-button-hover-border-color: transparent;
+    --el-button-hover-text-color: var(--color-brand-700);
+    --el-button-outline-color: var(--color-brand-700);
+    --el-button-active-bg-color: var(--color-brand-50);
+    --el-button-active-border-color: transparent;
+    --el-button-active-text-color: var(--color-brand-700);
+    justify-content: flex-start;
+    width: 100%;
+    height: auto;
+    min-height: 3rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+    border-inline-start-width: 2px;
+    text-align: start;
+    white-space: normal;
+}
+
+.profile-panel .el-button.panel-nav-button > span {
+    width: 100%;
+    min-width: 0;
+    gap: 0.75rem;
+}
+
+.profile-panel .el-button.panel-nav-button[aria-current="page"] {
+    background-color: var(--color-brand-50);
+    border-inline-start-color: var(--color-brand-600);
+    color: var(--color-brand-700);
+    font-weight: 600;
+}
+
+.profile-panel .panel-settings-collapse {
+    border: 1px solid var(--color-ui-line);
+    border-radius: var(--el-border-radius-base);
+}
+
+.profile-panel .panel-settings-collapse .el-collapse-item__header {
+    padding-inline: 0.75rem;
+}
+
+.profile-panel .el-link.panel-file-link {
+    display: inline-flex;
+    max-width: 100%;
+}
+
+.profile-panel .panel-file-link .el-link__inner {
+    min-width: 0;
+    gap: 0.375rem;
+    overflow-wrap: anywhere;
+}

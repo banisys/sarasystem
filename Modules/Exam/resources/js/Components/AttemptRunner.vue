@@ -1,4 +1,6 @@
 <script setup>
+import PanelCard from '@/Components/Ui/PanelCard.vue';
+import PanelPagination from '@/Components/Ui/PanelPagination.vue';
 import { ElInput, ElProgress, ElRadio, ElRadioGroup } from 'element-plus';
 import 'element-plus/es/components/input/style/css';
 import 'element-plus/es/components/progress/style/css';
@@ -104,7 +106,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="space-y-4">
-        <div class="ui-surface sticky top-16 z-10 flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 lg:top-0">
+        <PanelCard class="sticky top-16 z-10 lg:top-0" body-class="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4">
             <div class="min-w-0 flex-1 space-y-1.5 text-sm text-ui-muted">
                 <p class="font-semibold text-ui-ink">{{ answeredCount }} از {{ attempt.questions.length }} سؤال پاسخ داده شده</p>
                 <ElProgress class="max-w-48" :percentage="Math.round(100 * answeredCount / (attempt.questions.length || 1))" :show-text="false" aria-label="پیشرفت پاسخ‌گویی" />
@@ -124,16 +126,16 @@ onBeforeUnmount(() => {
             >
                 {{ formatDuration(secondsLeft) }}
             </div>
-        </div>
+        </PanelCard>
 
         <h2 ref="pageHeading" tabindex="-1" class="scroll-mt-48 text-sm font-semibold text-ui-muted focus:outline-none lg:scroll-mt-28">
             صفحهٔ {{ currentPage + 1 }} از {{ pageCount }}
         </h2>
 
-        <div
+        <PanelCard
             v-for="(question, index) in pageQuestions"
             :key="question.id"
-            class="ui-surface p-4 sm:p-5"
+            body-class="p-4 sm:p-5"
         >
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div class="min-w-0 flex-1 basis-48 whitespace-pre-line wrap-break-word font-medium leading-8 text-ui-ink">
@@ -174,17 +176,17 @@ onBeforeUnmount(() => {
                 :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`"
                 placeholder="پاسخ خود را بنویسید"
             />
-        </div>
+        </PanelCard>
 
-        <div class="ui-surface flex flex-wrap items-center justify-between gap-3 p-3">
-            <nav v-if="pageCount > 1" aria-label="صفحه‌های آزمون" class="flex flex-wrap items-center gap-2">
-                <PanelButton variant="outline" :disabled="currentPage === 0 || submitting" @click="goToPage(currentPage - 1)">قبلی</PanelButton>
-                <PanelButton variant="outline" :disabled="currentPage >= pageCount - 1 || submitting" @click="goToPage(currentPage + 1)">بعدی</PanelButton>
+        <PanelCard body-class="flex flex-wrap items-center justify-between gap-3 p-3">
+            <nav v-if="pageCount > 1" aria-label="صفحه‌های آزمون">
+                <PanelPagination :current-page="currentPage + 1" :page-count="pageCount" :disabled="submitting"
+                    @update:current-page="goToPage($event - 1)" />
             </nav>
             <PanelButton :loading="submitting" aria-haspopup="dialog" @click="confirming = true">
                 {{ submitting ? 'در حال ثبت پاسخ‌ها…' : 'پایان آزمون و ثبت پاسخ‌ها' }}
             </PanelButton>
-        </div>
+        </PanelCard>
         <PanelConfirm v-model="confirming" title="پایان آزمون" confirm-label="پایان آزمون و ثبت پاسخ‌ها" @confirm="submit">
             <p v-if="answeredCount < attempt.questions.length">{{ attempt.questions.length - answeredCount }} سؤال بی‌پاسخ است. آزمون پایان یابد؟</p>
             <p v-else>آزمون پایان یابد؟</p>

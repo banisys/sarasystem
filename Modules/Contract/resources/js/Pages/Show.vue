@@ -1,4 +1,5 @@
 <script setup>
+import PanelCard from '@/Components/Ui/PanelCard.vue';
 import { ElCheckbox, ElForm, ElInput } from 'element-plus';
 import 'element-plus/es/components/checkbox/style/css';
 import 'element-plus/es/components/form/style/css';
@@ -80,9 +81,11 @@ onBeforeUnmount(() => clearInterval(timer));
             </p>
 
             <!-- The text is rendered on the server from the issued contract. -->
-            <article class="contract ui-surface overflow-x-auto p-4 leading-8 text-gray-800 panel-dark:text-ui-ink sm:p-6" v-html="contract.html" />
+            <PanelCard body-class="overflow-x-auto p-4 sm:p-6">
+                <article class="contract leading-8 text-ui-ink" v-html="contract.html" />
+            </PanelCard>
 
-            <section v-if="contract.can_sign" class="ui-surface p-4 sm:p-6">
+            <PanelCard v-if="contract.can_sign" body-class="p-4 sm:p-6">
                 <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">امضای قرارداد</h2>
                 <p class="mt-1 text-sm text-gray-600 panel-dark:text-ui-muted">
                     برای امضا، متن را بخوانید و بپذیرید؛ کد امضا به موبایل
@@ -140,7 +143,7 @@ onBeforeUnmount(() => clearInterval(timer));
                         </PanelButton>
                     </div>
                 </ElForm>
-            </section>
+            </PanelCard>
         </div>
     </AppLayout>
 </template>

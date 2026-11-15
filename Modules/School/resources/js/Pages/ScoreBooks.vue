@@ -1,8 +1,8 @@
 <script setup>
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import { ElCard } from 'element-plus';
 import 'element-plus/es/components/card/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -20,7 +20,7 @@ defineProps({
         <div class="space-y-4">
             <UiPageHeader title="دفتر نمره" description="درس و دورهٔ نمره‌دهی را انتخاب کنید." icon="book" />
 
-            <PanelNotice v-if="!assignments.length">درسی برای نمره‌دادن ندارید.</PanelNotice>
+            <PanelEmpty v-if="!assignments.length" description="درسی برای نمره‌دادن ندارید." />
 
             <div class="grid gap-3 sm:grid-cols-2">
                 <ElCard v-for="item in assignments" :key="`${item.classroom_id}-${item.subject_id}`" shadow="never">

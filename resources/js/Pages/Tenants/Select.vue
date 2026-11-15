@@ -3,7 +3,7 @@ import { ElTag } from 'element-plus';
 import 'element-plus/es/components/tag/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
@@ -49,9 +49,7 @@ function choose(slug) {
                 </ul>
             </template>
 
-            <PanelNotice v-else>
-                حساب شما هنوز به هیچ {{ tenant.label }}ی اضافه نشده است. با مدیر {{ tenant.label }} تماس بگیرید.
-            </PanelNotice>
+            <PanelEmpty v-else :description="`حساب شما هنوز به هیچ ${tenant.label}ی اضافه نشده است. با مدیر ${tenant.label} تماس بگیرید.`" />
         </div>
     </AppLayout>
 </template>

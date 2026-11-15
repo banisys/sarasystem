@@ -1,9 +1,10 @@
 <script setup>
+import PanelCardLink from '@/Components/Ui/PanelCardLink.vue';
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import { ElTag } from 'element-plus';
 import 'element-plus/es/components/tag/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 defineProps({
@@ -20,13 +21,12 @@ const statusTypes = { issued: 'warning', signed: 'success', cancelled: 'danger' 
         <div class="space-y-4">
             <UiPageHeader title="قراردادها" icon="document" />
 
-            <PanelNotice v-if="!contracts.length">قراردادی برای شما نیست.</PanelNotice>
+            <PanelEmpty v-if="!contracts.length" description="قراردادی برای شما نیست." />
 
-            <Link
+            <PanelCardLink
                 v-for="contract in contracts"
                 :key="contract.id"
                 :href="route('contracts.show', contract.id)"
-                class="ui-card-link"
             >
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h2 class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ contract.title }}</h2>
@@ -40,7 +40,7 @@ const statusTypes = { issued: 'warning', signed: 'success', cancelled: 'danger' 
                     <span v-if="contract.starts_on">از {{ contract.starts_on }}</span>
                     <span v-if="contract.ends_on">تا {{ contract.ends_on }}</span>
                 </div>
-            </Link>
+            </PanelCardLink>
         </div>
     </AppLayout>
 </template>

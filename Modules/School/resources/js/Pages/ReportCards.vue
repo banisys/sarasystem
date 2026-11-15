@@ -1,9 +1,10 @@
 <script setup>
+import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
+import PanelCard from '@/Components/Ui/PanelCard.vue';
 import { ElTable, ElTableColumn } from 'element-plus';
 import 'element-plus/es/components/table/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -29,9 +30,9 @@ function pdfUrl(card) {
         <div class="space-y-4">
             <UiPageHeader :title="title" icon="academic" />
 
-            <PanelNotice v-if="!cards.length">کارنامه‌ای منتشر نشده است.</PanelNotice>
+            <PanelEmpty v-if="!cards.length" description="کارنامه‌ای منتشر نشده است." />
 
-            <section v-for="card in cards" :key="`${card.enrollment_id}-${card.period_id}`" class="ui-surface space-y-4 p-4 sm:p-5">
+            <PanelCard v-for="card in cards" :key="`${card.enrollment_id}-${card.period_id}`" body-class="space-y-4 p-4 sm:p-5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h2 class="font-semibold text-gray-900 panel-dark:text-ui-ink">{{ card.period }} · {{ card.year }}</h2>
                     <PanelButton :href="pdfUrl(card)" full-page variant="outline">دریافت PDF</PanelButton>
@@ -60,7 +61,7 @@ function pdfUrl(card) {
                     <span class="text-gray-700 panel-dark:text-ui-ink">تأخیر: {{ card.lates }}</span>
                     <span v-if="card.homework_average != null" class="text-gray-700 panel-dark:text-ui-ink">میانگین تکالیف: {{ card.homework_average }} از ۲۰</span>
                 </div>
-            </section>
+            </PanelCard>
         </div>
     </AppLayout>
 </template>
