@@ -23,7 +23,7 @@ use Modules\Exam\Models\QuestionBank;
 
 class ExamForm
 {
-    public static function configure(Schema $schema): Schema
+    public static function configure(Schema $schema, bool $forSession = false): Schema
     {
         return $schema
             ->components([
@@ -42,11 +42,13 @@ class ExamForm
                             ->columnSpanFull(),
                         DateTimePicker::make('starts_at')
                             ->label('از')
+                            ->hidden($forSession)
                             ->helperText('خالی: از همین حالا')
                             ->jalali()
                             ->seconds(false),
                         DateTimePicker::make('ends_at')
                             ->label('تا')
+                            ->hidden($forSession)
                             ->helperText(fn (?Exam $record): string => $record?->allow_late_start
                                 ? 'امکان شروع پس از پایان جلسه فعال است. این تاریخ فقط پس از غیرفعال کردن آن گزینه اعمال می‌شود.'
                                 : 'خالی: بدون پایان. آزمونی که در جریان است در این زمان بسته می‌شود.')
@@ -144,6 +146,7 @@ class ExamForm
                             ->label('ترتیب گزینه‌ها تصادفی باشد'),
                     ]),
                 Section::make('شرکت‌کنندگان')
+                    ->hidden($forSession)
                     ->description(fn (?Exam $record): string => $record?->context_type !== null ? 'شرکت‌کنندگان این آزمون از عضویت در جلسه تعیین می‌شوند؛ انتخاب کاربر یا نقش این‌جا کاربرد ندارد.' : 'آزمون را این کاربران و دارندگان این نقش‌ها (در همین '.config('sarasystem.tenant_label').') می‌بینند.')
                     ->columns(2)
                     ->schema([

@@ -7,6 +7,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Modules\Exam\Filament\Resources\Exams\Pages\CreateContextExam;
 use Modules\Exam\Filament\Resources\Exams\Pages\CreateExam;
 use Modules\Exam\Filament\Resources\Exams\Pages\EditExam;
 use Modules\Exam\Filament\Resources\Exams\Pages\ListExams;
@@ -55,6 +56,7 @@ class ExamResource extends Resource
         return [
             'index' => ListExams::route('/'),
             'create' => CreateExam::route('/create'),
+            'create-for-context' => CreateContextExam::route('/create/{contextType}/{contextId}'),
             'edit' => EditExam::route('/{record}/edit'),
         ];
     }

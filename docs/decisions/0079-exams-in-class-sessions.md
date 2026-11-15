@@ -3,7 +3,7 @@
 - **Date:** 2026-11-10
 - **Status:** accepted
 
-[ADR 0089](0089-shared-question-library-and-session-exam-generation.md) replaced template assignment on the context page with generation from the question library. [ADR 0102](0102-assign-existing-exams-from-schedules.md) makes independent copies available from the admin exam schedule.
+[ADR 0089](0089-shared-question-library-and-session-exam-generation.md) replaced new template assignments with generation from the question library. Existing session copies and their results remain supported.
 
 ## Context
 The user wants to use Exam in class sessions, and explicitly chose independent results and attempt limits for every session. Exam and Class must remain independently switchable (ADR 0041).

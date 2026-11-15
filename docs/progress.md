@@ -21,7 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
-- 2026-11-15 — Added «اتصال آزمون» to the exam schedule row menu. It creates an independent session copy from a standalone exam in the current branch ([ADR 0102](decisions/0102-assign-existing-exams-from-schedules.md)). Updated the tutorial, checked the search and selection in Chromium, and passed all 282 Class, Exam and Tutorial tests and Pint.
+- 2026-11-15 — Replaced the existing-exam picker with «ساخت آزمون جلسه» in the exam schedule row menu ([ADR 0102](decisions/0102-create-exams-from-class-schedules.md)). The new admin page reuses the exam form and takes its window and participants from the selected session. Verified navigation and cancellation in Chromium and passed 78 targeted tests. Updated the tutorial.
 - 2026-11-15 — Shared the account settings label style across profile forms, including exam settings, question banks, classwork and contract signing. Tutorial steps still match.
 - 2026-11-15 — Set account field labels to 14 px with a muted color, a 6 px gap above their inputs, and a 4 px inset from the leading edge. Tutorial steps still match.
 - 2026-11-15 — Standardized the account settings fields on Element Plus form items, including labels and Laravel validation errors. Tutorial steps still match.

@@ -177,7 +177,7 @@ Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `
 
 The Class timetable creates individually dated exam sessions in one submission ([ADR 0084](decisions/0084-class-exam-schedules.md)). The class list opens separate pages for teaching and exam schedules ([ADR 0096](decisions/0096-separate-class-schedule-pages.md)). Class editors can edit exam sittings from their schedule page ([ADR 0097](decisions/0097-edit-class-exam-sessions.md)). Class editors select exam invigilators through the optional Employee directory ([ADR 0085](decisions/0085-exam-invigilators.md)). The list and calendar link to a dedicated exam session page with attendance, an optional Campus 3D view, and a link to manage online exams when Exam is enabled ([ADR 0086](decisions/0086-exam-session-page.md)). Staff can remove unused online exam copies they assigned from the Exam context page ([ADR 0088](decisions/0088-delete-unused-session-exams.md)). Class editors can save a seating plan per exam, which the 3D view uses when available ([ADR 0087](decisions/0087-exam-seating.md)).
 
-The exam schedule can assign a standalone exam from the current branch as an independent session copy through the optional Exam module ([ADR 0102](decisions/0102-assign-existing-exams-from-schedules.md)).
+When Exam is enabled, the exam schedule can open the admin creation form for an online exam with the selected session's window and roster ([ADR 0102](decisions/0102-create-exams-from-class-schedules.md)).
 
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
