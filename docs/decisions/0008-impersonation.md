@@ -19,7 +19,7 @@ Own service, [Impersonation](../../app/Auth/Impersonation.php):
 - Start and end are written to the application log.
 
 ## Consequences
-- `stechstudio/filament-impersonate` is unused since this decision (it only registers `/filament-impersonate/leave`); it can be removed with `composer remove stechstudio/filament-impersonate`.
+- `stechstudio/filament-impersonate` was unused after this decision and was removed on 2026-11-15, including its unused `/filament-impersonate/leave` route.
 - Everything done while impersonating is recorded as done by the target user; there is no audit trail per action yet, only the log lines.
 - Logging out while impersonating ends the whole session (the super admin is logged out too).
 - If later managers should impersonate within their own tenants, extend `Impersonation::canImpersonate()` and restrict the target's tenants; that needs a new decision.
