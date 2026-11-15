@@ -13,6 +13,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Online class platforms ([ADR 0073](decisions/0073-online-class-platforms.md)): link, Adobe Connect and Skyroom (ADR 0076) done. A room per class or per session on Adobe Connect (ADR 0074); one reusable room per class on Skyroom. Next: try both API integrations on real servers; recordings and other drivers.
 
 ## Next
+- Continue the Element Plus rollout across the user panel, including «کلاس‌های من» ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)).
 - Contracts: approval workflow before issuing, the organization's signature, contracts tab on employee / learner pages; later a finance module for installments and payments that attaches to contracts.
 - Use customizable forms (ADR 0017) in the next forms (e.g. enrollment contracts). Possible additions: file fields, conditional fields.
 - Workflows: cancel / reassign a running case (super admin or workflow owner; from «همه‌ی پرونده‌ها»), per-step deadlines and reminders, attachments on notes.
@@ -21,6 +22,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-15 — Migrated the question bank list to Element Plus ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)): table, pagination, create/edit form and delete confirmation. Verified sample bank navigation, Persian form validation, keyboard focus and RTL scrolling at mobile width in Chromium. The Vite build passed. The tutorial still follows the existing labels and steps.
+- 2026-11-15 — Removed the unused `stechstudio/filament-impersonate` package; the internal impersonation flow remains ([ADR 0008](decisions/0008-impersonation.md)). All 770 tests passed.
 - 2026-11-14 — Enabled the «افزودن سؤال» dialog for bank owners and staff with update permission on accessible banks ([ADR 0099](decisions/0099-add-questions-from-bank-pages.md)). Verified direct creation and a clean reopened form in Chrome on shared bank 10 as a non-owner administrator.
 - 2026-11-14 — Converted bank questions to a table and moved question editing and creation into a dialog. Updated the daily operations tutorial. Verified creating, prefilling, validating and saving a question in Chrome on bank 10. Seven targeted tests, Pint and the Vite build passed.
 - 2026-11-14 — Reduced the height, padding and icon size of the «بانک جدید» toolbar button. Vite build passed.
@@ -483,7 +486,6 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Exams: a stale submit can close a later attempt; bank shortages or overlaps can reduce the question count; grading uses live settings; answer keys can appear before an allowed retake. See the [Exam gap report](exam-gap-review.md). Questions are plain text (no images/formulas); abandoned attempts are closed lazily (no scheduler yet); global admin answer review needs `Update:ExamAttempt`; session staff can review/grade their own session exams through ADR 0079; the participant pages are covered by tests but not checked in a browser yet. Legacy `schl_exam_*` activity scores and balances are outside the online Exam port; there is no automatic transfer to School's score books.
 - Site pages: no preview of unpublished pages; Latin-only paths.
 - Site menus: one menu per tenant, header only (no footer menu); drag-and-drop in the item tree is covered by tests of `moveItem()` but not checked in a browser yet.
-- `stechstudio/filament-impersonate` is installed but unused (our own impersonation, ADR 0008); remove it with `composer remove stechstudio/filament-impersonate` once approved.
 - Adding a top-level route (e.g. `/news`) hides an existing tenant whose slug is the same; `Tenant::reservedSlugs()` only blocks new slugs.
 - Impersonation has no per-action audit trail; actions are recorded as the impersonated user (only start/end are logged).
 - User identity (name, email, password) is global. Since ADR 0003 a manager can only edit users who are not "bigger" than them anywhere, but a manager can still change, for example, the password of a teacher who also teaches in another branch. Decide later whether password resets should go through the user (email/SMS reset) instead.

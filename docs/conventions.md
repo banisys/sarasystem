@@ -27,6 +27,7 @@ _(TODO: formatter/linter, naming rules, file naming.)_
 
 ## Patterns we use
 - For Vue pages, reuse the shared controls and Tailwind tokens in [ADR 0094](decisions/0094-vue-design-system.md). Use logical spacing and positioning, and set explicitly left-to-right fields such as phone numbers with `dir="ltr"`.
+- On user-panel pages migrated to Element Plus, import the components and their styles from the page, use the Persian locale and check the controls in RTL at mobile widths. Keep Inertia for forms and navigation and reuse the shared page shell and brand tokens ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)).
 
 - Define user-panel routes under `/profile` and generate links and form actions from route names ([ADR 0093](decisions/0093-user-panel-url-prefix.md)).
 

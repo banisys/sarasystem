@@ -1,19 +1,33 @@
 <script setup>
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import {
+    ElAlert, ElButton, ElCheckbox, ElConfigProvider, ElDialog, ElForm, ElFormItem, ElInput, ElPagination, ElTable, ElTableColumn, ElTag,
+} from 'element-plus';
+import fa from 'element-plus/es/locale/lang/fa';
+import 'element-plus/es/components/alert/style/css';
+import 'element-plus/es/components/button/style/css';
+import 'element-plus/es/components/checkbox/style/css';
+import 'element-plus/es/components/dialog/style/css';
+import 'element-plus/es/components/form/style/css';
+import 'element-plus/es/components/input/style/css';
+import 'element-plus/es/components/pagination/style/css';
+import 'element-plus/es/components/table/style/css';
+import 'element-plus/es/components/tag/style/css';
 import { ref } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import UiButton from '@/Components/Ui/UiButton.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
+import AppLayout from '@/Layouts/AppLayout.vue';
 
 defineProps({ banks: Object });
+
 const page = usePage();
-const dialog = ref(null);
+const bankDialogOpen = ref(false);
+const deleteDialogOpen = ref(false);
 const editingBank = ref(null);
+const deletingBank = ref(null);
+const titleInput = ref(null);
 const bank = useForm({ title: '', description: '', is_shared: false });
 const deletion = useForm({});
-const secondary = 'inline-flex min-h-9 items-center text-sm font-medium text-brand-700 hover:underline';
 
 function openBank(record = null) {
     bank.resetAndClearErrors();
@@ -21,96 +35,195 @@ function openBank(record = null) {
     if (record) {
         Object.assign(bank, { title: record.title, description: record.description ?? '', is_shared: record.is_shared });
     }
-    dialog.value.showModal();
+    bankDialogOpen.value = true;
 }
 
 function saveBank() {
-    const options = { preserveScroll: true, onSuccess: () => dialog.value?.close() };
+    if (bank.processing) return;
+
+    const options = { preserveScroll: true, onSuccess: () => { bankDialogOpen.value = false; } };
     if (editingBank.value) bank.patch(route('exams.library.banks.update', editingBank.value), options);
     else bank.post(route('exams.library.banks.store'), options);
 }
 
-function removeBank(id) {
-    if (!window.confirm('بانک حذف شود؟ سؤال‌های آن باقی می‌مانند.')) return;
-    deletion.delete(route('exams.library.banks.destroy', id), { preserveScroll: true });
+function confirmRemoval(record) {
+    deletion.clearErrors();
+    deletingBank.value = record.id;
+    deleteDialogOpen.value = true;
+}
+
+function removeBank() {
+    if (deletion.processing) return;
+
+    deletion.delete(route('exams.library.banks.destroy', deletingBank.value), {
+        preserveScroll: true,
+        onSuccess: () => { deleteDialogOpen.value = false; },
+    });
+}
+
+function goToBankPage(number) {
+    router.get(route('exams.library'), { banks_page: number });
 }
 </script>
 
 <template>
     <AppLayout>
         <Head title="بانک سؤال" />
-        <div class="space-y-6">
-            <UiPageHeader title="بانک سؤال" icon="book" tone="plum" />
+        <ElConfigProvider :locale="fa">
+            <div class="bank-library space-y-6" dir="rtl">
+                <UiPageHeader title="بانک سؤال" icon="book" tone="plum" />
 
-            <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
-            <p v-for="(error, key) in deletion.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
+                <ElAlert v-if="page.props.flash.status" :title="page.props.flash.status" type="success" :closable="false" show-icon />
 
-            <section class="ui-surface overflow-hidden" aria-label="بانک‌های سؤال">
-                <div class="flex justify-end border-b border-ui-line px-4 py-3">
-                    <UiButton variant="outline-brand" class="min-h-9 gap-1.5 px-3" aria-haspopup="dialog" @click="openBank()">
-                        <PanelIcon name="plus" class="size-4" />
-                        بانک جدید
-                    </UiButton>
-                </div>
-                <div v-if="banks.data.length" class="overflow-x-auto">
-                    <table class="w-full divide-y divide-ui-line text-start text-sm">
-                        <thead class="bg-ui-canvas text-ui-muted">
-                            <tr>
-                                <th scope="col" class="px-4 py-3 text-start">عنوان بانک</th>
-                                <th scope="col" class="px-4 py-3 text-start whitespace-nowrap">مالکیت</th>
-                                <th scope="col" class="px-4 py-3 text-start whitespace-nowrap">اشتراک</th>
-                                <th scope="col" class="px-4 py-3 text-start whitespace-nowrap">تعداد سؤال</th>
-                                <th scope="col" class="px-4 py-3 text-start">عملیات</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-ui-line">
-                            <tr v-for="record in banks.data" :key="record.id">
-                                <th scope="row" class="min-w-40 px-4 py-2 text-start font-medium">
-                                    <Link :href="route('exams.library.banks.show', record.id)" :class="secondary">{{ record.title }}</Link>
-                                    <p v-if="record.description" class="whitespace-pre-wrap wrap-break-word text-xs font-normal text-ui-muted">{{ record.description }}</p>
-                                </th>
-                                <td class="px-4 py-2 whitespace-nowrap">{{ record.is_mine ? 'بانک من' : 'همکار' }}</td>
-                                <td class="px-4 py-2">{{ record.is_shared ? 'عمومی' : 'خصوصی' }}</td>
-                                <td class="px-4 py-2 tabular-nums">{{ record.questions_count }}</td>
-                                <td class="px-4 py-2">
-                                    <div class="flex items-center gap-3 whitespace-nowrap">
-                                        <Link :href="route('exams.library.banks.show', record.id)" :class="secondary">سؤال‌های بانک</Link>
-                                        <button v-if="record.is_mine" type="button" :class="secondary" aria-haspopup="dialog" @click="openBank(record)">ویرایش</button>
-                                        <button v-if="record.is_mine" type="button" :disabled="deletion.processing" class="text-red-700 hover:underline" @click="removeBank(record.id)">حذف</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <p v-else class="p-4 text-sm text-ui-muted">هنوز بانکی در دسترس نیست.</p>
-                <nav v-if="banks.prev_page_url || banks.next_page_url" class="flex gap-4 border-t border-ui-line px-4 py-2" aria-label="صفحه‌های بانک سؤال">
-                    <Link v-if="banks.prev_page_url" :href="banks.prev_page_url" :class="secondary">قبلی</Link>
-                    <Link v-if="banks.next_page_url" :href="banks.next_page_url" :class="secondary">بعدی</Link>
-                </nav>
-            </section>
-
-            <dialog ref="dialog" aria-labelledby="bank-dialog-title" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-auto rounded-ui bg-white p-5 text-ui-ink shadow-xl backdrop:bg-black/50">
-                <form class="space-y-4" novalidate @submit.prevent="saveBank">
-                    <h2 id="bank-dialog-title" class="text-lg font-bold">{{ editingBank ? 'ویرایش بانک' : 'بانک جدید' }}</h2>
-                    <label class="block space-y-1 text-sm">
-                        <span>عنوان بانک</span>
-                        <input v-model="bank.title" class="ui-field" autofocus />
-                    </label>
-                    <label class="block space-y-1 text-sm">
-                        <span>توضیحات</span>
-                        <textarea v-model="bank.description" rows="3" class="ui-field" />
-                    </label>
-                    <label class="flex items-center gap-2 text-sm">
-                        <input v-model="bank.is_shared" type="checkbox" /> عمومی در این شعبه
-                    </label>
-                    <p v-for="(error, key) in bank.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
-                    <div class="flex flex-wrap gap-2">
-                        <UiButton type="submit" :disabled="bank.processing">ذخیرهٔ بانک</UiButton>
-                        <UiButton variant="outline" @click="dialog.close()">انصراف</UiButton>
+                <section class="ui-surface overflow-hidden" aria-label="بانک‌های سؤال">
+                    <div class="flex justify-end border-b border-ui-line px-4 py-3">
+                        <ElButton type="primary" plain aria-haspopup="dialog" @click="openBank()">
+                            <span class="inline-flex items-center gap-1.5">
+                                <PanelIcon name="plus" class="size-4" />
+                                بانک جدید
+                            </span>
+                        </ElButton>
                     </div>
-                </form>
-            </dialog>
-        </div>
+
+                    <ElTable
+                        :data="banks.data" row-key="id" empty-text="هنوز بانکی در دسترس نیست."
+                        table-layout="auto" native-scrollbar :scrollbar-tabindex="0" flexible
+                        aria-label="فهرست بانک‌های سؤال"
+                    >
+                        <ElTableColumn label="عنوان بانک" min-width="172" align="right">
+                            <template #default="{ row }">
+                                <Link :href="route('exams.library.banks.show', row.id)" class="font-semibold text-brand-700 hover:underline">{{ row.title }}</Link>
+                                <p v-if="row.description" class="whitespace-pre-wrap wrap-break-word text-xs text-ui-muted">{{ row.description }}</p>
+                            </template>
+                        </ElTableColumn>
+                        <ElTableColumn label="مالکیت" width="94" align="right">
+                            <template #default="{ row }">{{ row.is_mine ? 'بانک من' : 'همکار' }}</template>
+                        </ElTableColumn>
+                        <ElTableColumn label="اشتراک" width="94" align="right">
+                            <template #default="{ row }">
+                                <ElTag :type="row.is_shared ? 'success' : 'info'" size="small">{{ row.is_shared ? 'عمومی' : 'خصوصی' }}</ElTag>
+                            </template>
+                        </ElTableColumn>
+                        <ElTableColumn prop="questions_count" label="تعداد سؤال" width="106" align="right" class-name="tabular-nums" />
+                        <ElTableColumn label="عملیات" width="218" align="right">
+                            <template #default="{ row }">
+                                <div class="flex items-center gap-3 whitespace-nowrap">
+                                    <Link :href="route('exams.library.banks.show', row.id)" class="font-medium text-brand-700 hover:underline">سؤال‌های بانک</Link>
+                                    <template v-if="row.is_mine">
+                                        <ElButton type="primary" link aria-haspopup="dialog" @click="openBank(row)">ویرایش</ElButton>
+                                        <ElButton type="danger" link aria-haspopup="dialog" @click="confirmRemoval(row)">حذف</ElButton>
+                                    </template>
+                                </div>
+                            </template>
+                        </ElTableColumn>
+                    </ElTable>
+
+                    <nav v-if="banks.last_page > 1" class="border-t border-ui-line px-4 py-2" aria-label="صفحه‌های بانک سؤال">
+                        <ElPagination
+                            :current-page="banks.current_page" :page-size="banks.per_page" :total="banks.total"
+                            :pager-count="5" layout="prev, pager, next" prev-text="قبلی" next-text="بعدی" background
+                            @update:current-page="goToBankPage"
+                        />
+                    </nav>
+                </section>
+
+                <ElDialog
+                    v-model="bankDialogOpen" :title="editingBank ? 'ویرایش بانک' : 'بانک جدید'"
+                    width="min(32rem, calc(100% - 2rem))" align-center destroy-on-close
+                    :show-close="!bank.processing" :close-on-click-modal="false" :close-on-press-escape="!bank.processing"
+                    @opened="titleInput?.focus()"
+                >
+                    <ElForm label-position="top" :model="bank" :disabled="bank.processing" novalidate @submit.prevent="saveBank">
+                        <ElFormItem label="عنوان بانک" prop="title" :error="bank.errors.title">
+                            <ElInput ref="titleInput" v-model="bank.title" />
+                        </ElFormItem>
+                        <ElFormItem label="توضیحات" prop="description" :error="bank.errors.description">
+                            <ElInput v-model="bank.description" type="textarea" :rows="3" />
+                        </ElFormItem>
+                        <ElFormItem prop="is_shared" :error="bank.errors.is_shared">
+                            <ElCheckbox v-model="bank.is_shared">عمومی در این شعبه</ElCheckbox>
+                        </ElFormItem>
+                        <div class="flex flex-wrap gap-2">
+                            <ElButton type="primary" native-type="submit" :loading="bank.processing">ذخیرهٔ بانک</ElButton>
+                            <ElButton @click="bankDialogOpen = false">انصراف</ElButton>
+                        </div>
+                    </ElForm>
+                </ElDialog>
+
+                <ElDialog
+                    v-model="deleteDialogOpen" title="حذف بانک" width="min(26rem, calc(100% - 2rem))" align-center destroy-on-close
+                    :show-close="!deletion.processing" :close-on-click-modal="false" :close-on-press-escape="!deletion.processing"
+                >
+                    <p class="text-sm">بانک حذف شود؟ سؤال‌های آن باقی می‌مانند.</p>
+                    <ElAlert v-if="deletion.errors.delete_bank" class="mt-3" :title="deletion.errors.delete_bank" type="error" :closable="false" />
+                    <template #footer>
+                        <div class="flex flex-wrap gap-2">
+                            <ElButton :disabled="deletion.processing" @click="deleteDialogOpen = false">انصراف</ElButton>
+                            <ElButton type="danger" :loading="deletion.processing" @click="removeBank">حذف بانک</ElButton>
+                        </div>
+                    </template>
+                </ElDialog>
+            </div>
+        </ElConfigProvider>
     </AppLayout>
 </template>
+
+<style scoped>
+.bank-library {
+    --el-color-primary: var(--color-brand-600);
+    --el-color-primary-light-3: var(--color-brand-500);
+    --el-color-primary-light-5: var(--color-brand-400);
+    --el-color-primary-light-7: var(--color-brand-300);
+    --el-color-primary-light-8: var(--color-brand-200);
+    --el-color-primary-light-9: var(--color-brand-50);
+    --el-color-primary-dark-2: var(--color-brand-700);
+    --el-text-color-primary: var(--color-ui-ink);
+    --el-text-color-regular: var(--color-ui-ink);
+    --el-text-color-secondary: var(--color-ui-muted);
+    --el-border-color: var(--color-ui-line);
+    --el-border-color-lighter: var(--color-ui-line);
+    --el-fill-color-light: var(--color-ui-canvas);
+    --el-border-radius-base: 0.5rem;
+}
+
+.bank-library :deep(.el-table) {
+    --el-table-header-bg-color: var(--color-ui-canvas);
+}
+
+.bank-library :deep(.el-table__inner-wrapper::before) {
+    display: none;
+}
+
+.bank-library :deep(.el-dialog) {
+    --el-dialog-border-radius: var(--radius-ui);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+}
+
+.bank-library :deep(.el-dialog__header.show-close) {
+    padding-inline: 0 2rem;
+}
+
+.bank-library :deep(.el-dialog__headerbtn) {
+    inset-inline: auto 0;
+}
+
+.bank-library :deep(.el-alert__icon) {
+    margin: 0;
+    margin-inline-end: 0.5rem;
+}
+
+.bank-library :deep(.el-checkbox__label) {
+    padding-inline: 0.5rem 0;
+}
+
+.bank-library :deep(.el-form-item__error) {
+    position: static;
+    width: 100%;
+    line-height: 1.5;
+}
+
+.bank-library :deep(.el-button + .el-button) {
+    margin: 0;
+}
+</style>

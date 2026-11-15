@@ -20,6 +20,7 @@ The public site and user panel share Vue, Inertia and Tailwind. They need consis
 - Shared Vue controls live under [Components/Ui](../../resources/js/Components/Ui). Use Inertia links for navigation, Reka UI for the modal mobile menu and native form controls for ordinary input. Keep the existing Jalali and mobile verification components.
 - Apply the design to the public layouts and content surfaces, the preregistration form and the My Classes calendar first. The Filament theme has its own CSS entry.
 - The My Classes calendar, session detail, session exams and question library headers share the dark plum background and light text.
+- [ADR 0100](0100-element-plus-for-user-panel.md) adds Element Plus controls for migrated user-panel pages while retaining these layouts and tokens.
 
 ## Consequences
 

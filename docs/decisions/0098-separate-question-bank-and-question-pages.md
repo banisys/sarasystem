@@ -15,3 +15,5 @@ The library opens a paginated bank table. The same dialog handles creating and e
 
 ## Consequences
 The existing tenant, ownership and sharing rules apply to both pages. Creating, editing or deleting a question from a bank page returns to that bank.
+
+The bank list uses Element Plus as of [ADR 0100](0100-element-plus-for-user-panel.md); the dedicated question pages keep their existing controls.
