@@ -28,7 +28,7 @@ function isActive(url) {
     return samePath && current.searchParams.get('for') === target.searchParams.get('for');
 }
 
-const rowClass = 'flex min-h-12 w-full min-w-0 items-center gap-3 rounded-s-none rounded-e-lg border-s-2 border-transparent px-4 py-2 text-start text-sm text-ui-ink transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600 aria-[current=page]:border-s-blue-700 aria-[current=page]:bg-blue-50 aria-[current=page]:font-semibold aria-[current=page]:text-blue-800';
+const rowClass = 'flex min-h-12 w-full min-w-0 items-center gap-3 rounded-s-none rounded-e-lg border-s-2 border-transparent px-4 py-2 text-start text-sm text-ui-ink transition-colors hover:bg-slate-50 panel-dark:hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600 aria-[current=page]:border-s-blue-700 aria-[current=page]:bg-blue-50 panel-dark:aria-[current=page]:bg-blue-950/55 aria-[current=page]:font-semibold aria-[current=page]:text-blue-800 panel-dark:aria-[current=page]:text-blue-200';
 
 defineEmits(['navigate']);
 
@@ -41,7 +41,7 @@ function logout() {
     <div class="flex h-full min-h-0 flex-col">
         <div class="flex items-center justify-between gap-2 border-b border-ui-line px-4 py-3.5">
             <div class="flex min-w-0 items-center gap-3">
-                <span class="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 text-ui-ink">
+                <span class="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 panel-dark:bg-white/8 text-ui-ink">
                     <PanelIcon name="user" class="size-5" />
                 </span>
                 <div class="min-w-0">
@@ -96,7 +96,8 @@ function logout() {
             </ul>
         </nav>
 
-        <div class="shrink-0 px-4 py-3">
+        <div class="shrink-0 space-y-1 border-t border-ui-line px-4 py-2">
+            <slot name="appearance" />
             <PanelButton variant="danger-link" class="panel-row-button" @click="logout">
                 <PanelIcon name="logout" class="size-5 shrink-0" />
                 خروج از حساب کاربری

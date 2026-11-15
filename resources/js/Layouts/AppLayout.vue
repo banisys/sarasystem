@@ -9,11 +9,13 @@ import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import TutorialBar from '@/Components/TutorialBar.vue';
 import PanelNavigation from './PanelNavigation.vue';
+import { useProfileTheme } from './useProfileTheme.js';
 
 const page = usePage();
 const impersonator = computed(() => page.props.auth.impersonator);
 const homeUrl = computed(() => page.props.panelHome ?? route('dashboard'));
 const menuOpen = ref(false);
+const { theme, toggleTheme } = useProfileTheme();
 
 let desktop;
 function closeDesktopMenu(event) {
@@ -33,11 +35,12 @@ function leaveImpersonation() {
 
 <template>
     <ElConfigProvider :locale="fa" size="large">
-        <div class="profile-panel min-h-screen bg-ui-canvas text-ui-ink">
+        <div class="profile-panel min-h-screen bg-ui-canvas text-ui-ink" :data-profile-theme="theme">
+            <div id="profile-overlays" class="relative" />
             <TutorialBar />
             <div
                 v-if="impersonator"
-                class="flex flex-wrap items-center justify-center gap-2 bg-amber-100 px-4 py-2 text-center text-sm text-amber-950"
+                class="flex flex-wrap items-center justify-center gap-2 bg-amber-100 panel-dark:bg-amber-950/45 px-4 py-2 text-center text-sm text-amber-950 panel-dark:text-amber-200"
             >
                 <span>شما ({{ impersonator.name }}) با حساب <strong>{{ page.props.auth.user?.name }}</strong> وارد شده‌اید.</span>
                 <PanelButton variant="ghost" @click="leaveImpersonation">
@@ -45,13 +48,16 @@ function leaveImpersonation() {
                 </PanelButton>
             </div>
 
-            <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-ui-line bg-white px-4 lg:hidden">
+            <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-ui-line bg-ui-surface px-4 lg:hidden">
                 <PanelButton variant="outline" aria-haspopup="dialog" :aria-expanded="menuOpen" aria-label="باز کردن منوی پنل" @click="menuOpen = true">
                     <PanelIcon name="menu" class="size-5" />
                 </PanelButton>
                 <Link :href="homeUrl" class="flex min-w-0 items-center gap-2 px-3 font-bold">
                     <span class="truncate">{{ page.props.appName }}</span>
                 </Link>
+                <PanelButton variant="outline" aria-label="تم تیره" title="تم تیره" :aria-pressed="theme === 'dark'" @click="toggleTheme">
+                    <PanelIcon :name="theme === 'dark' ? 'sun' : 'moon'" class="size-5" />
+                </PanelButton>
             </header>
             <ElDrawer
                 v-model="menuOpen" title="منوی پنل کاربری" direction="rtl"
@@ -67,8 +73,15 @@ function leaveImpersonation() {
             </ElDrawer>
 
             <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:flex lg:items-start lg:gap-6 lg:px-8 lg:py-8">
-                <aside class="hidden h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 overflow-hidden rounded-ui border border-ui-line bg-white lg:sticky lg:top-8 lg:block xl:w-70">
-                    <PanelNavigation />
+                <aside class="hidden h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 overflow-hidden rounded-ui border border-ui-line bg-ui-surface lg:sticky lg:top-8 lg:block xl:w-70">
+                    <PanelNavigation>
+                        <template #appearance>
+                            <PanelButton variant="ghost" class="panel-row-button" :aria-pressed="theme === 'dark'" @click="toggleTheme">
+                                <PanelIcon :name="theme === 'dark' ? 'sun' : 'moon'" class="size-5" />
+                                تم تیره
+                            </PanelButton>
+                        </template>
+                    </PanelNavigation>
                 </aside>
                 <main class="min-w-0 flex-1">
                     <div class="mx-auto max-w-6xl">

@@ -63,7 +63,7 @@ function isSameDay(date, day) {
 function dayClass(day, index) {
     if (isSameDay(selected.value, day)) return 'bg-brand-600 font-bold text-brand-contrast';
 
-    const color = index % 7 === 6 ? 'text-red-600' : 'text-gray-800';
+    const color = index % 7 === 6 ? 'text-red-600 panel-dark:text-red-300' : 'text-gray-800 panel-dark:text-ui-ink';
 
     return [color, 'hover:bg-brand-50', isSameDay(todayDate, day) ? 'ring-1 ring-brand-400' : ''];
 }
@@ -90,8 +90,8 @@ function onOutsidePointer(event) {
 onMounted(() => document.addEventListener('pointerdown', onOutsidePointer));
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePointer));
 
-const navButtonClass = 'rounded-lg px-2 py-1 text-lg leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent';
-const selectClass = 'rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-brand-500 focus:ring-brand-500';
+const navButtonClass = 'rounded-lg px-2 py-1 text-lg leading-none text-gray-600 panel-dark:text-ui-muted hover:bg-gray-100 panel-dark:hover:bg-white/8 disabled:opacity-30 disabled:hover:bg-transparent';
+const selectClass = 'rounded-lg border border-gray-300 panel-dark:border-ui-field px-2 py-1 text-sm focus:border-brand-500 focus:ring-brand-500';
 const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50';
 </script>
 
@@ -112,7 +112,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-7
             />
             <button
                 type="button"
-                class="absolute inset-y-0 left-0 mt-1 flex items-center px-3 text-gray-400 hover:text-brand-600"
+                class="absolute inset-y-0 left-0 mt-1 flex items-center px-3 text-gray-400 panel-dark:text-ui-muted hover:text-brand-600"
                 tabindex="-1"
                 aria-label="انتخاب از تقویم"
                 :aria-expanded="isOpen"
@@ -125,7 +125,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-7
             </button>
         </div>
 
-        <div v-if="isOpen" class="absolute start-0 z-20 mt-2 w-72 max-w-full rounded-ui border border-ui-line bg-white p-3 shadow-lg" role="dialog" aria-label="تقویم">
+        <div v-if="isOpen" class="absolute start-0 z-20 mt-2 w-72 max-w-full rounded-ui border border-ui-line bg-white panel-dark:bg-ui-surface p-3 shadow-lg" role="dialog" aria-label="تقویم">
             <div class="flex items-center justify-between gap-1">
                 <button type="button" :class="navButtonClass" :disabled="isFirstMonth" aria-label="ماه قبل" @click="moveMonth(-1)">›</button>
                 <div class="flex gap-1">
@@ -139,7 +139,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-7
                 <button type="button" :class="navButtonClass" :disabled="isLastMonth" aria-label="ماه بعد" @click="moveMonth(1)">‹</button>
             </div>
 
-            <div class="mt-3 grid grid-cols-7 gap-1 text-center text-xs text-gray-500">
+            <div class="mt-3 grid grid-cols-7 gap-1 text-center text-xs text-gray-500 panel-dark:text-ui-muted">
                 <span v-for="name in weekdayNames" :key="name">{{ name }}</span>
             </div>
             <div class="mt-1 grid grid-cols-7 gap-1 text-center text-sm">
@@ -157,7 +157,7 @@ const footerButtonClass = 'rounded-lg px-2 py-1 text-sm font-medium text-brand-7
                 </template>
             </div>
 
-            <div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-2">
+            <div class="mt-3 flex items-center justify-between border-t border-gray-100 panel-dark:border-ui-line pt-2">
                 <button v-if="todayInRange" type="button" :class="footerButtonClass" @click="pickToday">امروز</button>
                 <span v-else />
                 <div class="flex gap-1">

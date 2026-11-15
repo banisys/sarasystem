@@ -36,7 +36,7 @@ function save() {
             <ElForm novalidate class="space-y-3" @submit.prevent="save">
                 <p class="wrap-break-word text-sm text-ui-muted">{{ exam.title }}</p>
                 <SessionExamFields :form="form" :settings="settings" expanded />
-                <p v-for="(error, key) in form.errors" :key="key" role="alert" class="text-sm text-red-700">{{ error }}</p>
+                <p v-for="(error, key) in form.errors" :key="key" role="alert" class="text-sm text-red-700 panel-dark:text-red-300">{{ error }}</p>
                 <div class="flex flex-wrap justify-end gap-2">
                     <PanelButton variant="outline" :disabled="form.processing" @click="settingsOpen = false">انصراف</PanelButton>
                     <PanelButton type="submit" :loading="form.processing">ذخیرهٔ تنظیمات</PanelButton>

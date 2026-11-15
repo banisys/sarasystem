@@ -27,7 +27,7 @@ const tenant = computed(() => page.props.tenant.current);
                     :href="link.url"
                     variant="outline" class="panel-row-button"
                 >
-                    <span class="rounded-xl bg-violet-50 p-2.5 text-violet-700">
+                    <span class="rounded-xl bg-violet-50 panel-dark:bg-brand-50 p-2.5 text-violet-700 panel-dark:text-brand-700">
                         <PanelIcon :name="link.icon" class="size-6" />
                     </span>
                     <span class="min-w-0 flex-1 wrap-break-word font-semibold text-ui-ink">{{ link.title }}</span>

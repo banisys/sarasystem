@@ -121,24 +121,24 @@ async function save(fixOrder = false) {
         <PanelDialog v-model="previewOpen" title="پیش‌نمایش سؤال‌ها" :busy="reorder.processing" @close="close">
             <div class="space-y-3">
                 <p class="wrap-break-word text-sm text-ui-muted">{{ exam.title }}</p>
-                <p v-if="preview.processing" class="text-sm text-gray-600" role="status">در حال دریافت سؤال‌ها…</p>
-                <p v-if="error" class="text-sm text-red-700" role="alert">{{ error }}</p>
-                <p v-if="editable && questions.length > 1" class="text-sm text-gray-600">برای تغییر ترتیب، سؤال‌ها را بکشید یا از فلش‌های کنارشان استفاده کنید.</p>
-                <p v-if="shuffled" class="text-sm text-gray-600">ترتیب نمایش برای شرکت‌کنندگان تصادفی است. با ذخیرهٔ یک ترتیب دستی، نمایش ثابت می‌شود.</p>
+                <p v-if="preview.processing" class="text-sm text-gray-600 panel-dark:text-ui-muted" role="status">در حال دریافت سؤال‌ها…</p>
+                <p v-if="error" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
+                <p v-if="editable && questions.length > 1" class="text-sm text-gray-600 panel-dark:text-ui-muted">برای تغییر ترتیب، سؤال‌ها را بکشید یا از فلش‌های کنارشان استفاده کنید.</p>
+                <p v-if="shuffled" class="text-sm text-gray-600 panel-dark:text-ui-muted">ترتیب نمایش برای شرکت‌کنندگان تصادفی است. با ذخیرهٔ یک ترتیب دستی، نمایش ثابت می‌شود.</p>
                 <ol class="space-y-2">
                     <li v-for="(question, index) in questions" :key="question.index"
-                        class="flex items-start gap-3 rounded-lg border border-gray-200 p-3"
+                        class="flex items-start gap-3 rounded-lg border border-gray-200 panel-dark:border-ui-line p-3"
                         :class="{ 'cursor-grab': canMove && questions.length > 1, 'opacity-50': dragged === index }"
                         :draggable="canMove && questions.length > 1"
                         @dragstart="startDrag($event, index)" @dragend="dragged = null" @dragover.prevent @drop.prevent="drop(index)">
-                        <span class="grid size-7 shrink-0 place-items-center rounded-full bg-gray-100 text-sm">{{ index + 1 }}</span>
+                        <span class="grid size-7 shrink-0 place-items-center rounded-full bg-gray-100 panel-dark:bg-white/8 text-sm">{{ index + 1 }}</span>
                         <div class="min-w-0 flex-1 space-y-1">
                             <p class="whitespace-pre-wrap break-words text-sm">{{ question.body }}</p>
-                            <ul v-if="question.options.length" class="list-disc space-y-1 ps-5 text-sm text-gray-700">
+                            <ul v-if="question.options.length" class="list-disc space-y-1 ps-5 text-sm text-gray-700 panel-dark:text-ui-ink">
                                 <li v-for="(option, optionIndex) in question.options" :key="optionIndex" class="break-words">{{ option }}</li>
                             </ul>
-                            <p class="text-xs text-gray-600">{{ question.type }}<template v-if="!editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
-                            <label v-if="editable" class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <p class="text-xs text-gray-600 panel-dark:text-ui-muted">{{ question.type }}<template v-if="!editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
+                            <label v-if="editable" class="inline-flex items-center gap-2 text-sm text-gray-700 panel-dark:text-ui-ink">
                                 <span>بارم</span>
                                 <ElInput v-model.number="question.score" type="number" min="0.25" max="1000" step="0.01" inputmode="decimal" dir="ltr"
                                     :aria-label="`بارم سؤال ${index + 1}`" :disabled="reorder.processing"
@@ -158,19 +158,19 @@ async function save(fixOrder = false) {
             </div>
             <template #footer>
                 <div class="space-y-3 text-start">
-                    <div v-if="totalScore !== null" aria-live="polite" class="space-y-1 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                    <div v-if="totalScore !== null" aria-live="polite" class="space-y-1 rounded-lg bg-gray-50 panel-dark:bg-ui-canvas px-3 py-2 text-sm">
                         <div class="flex flex-wrap gap-x-5 gap-y-1">
                             <span>جمع بارم سؤال‌ها <strong>{{ validScores ? displayCents(sumCents) : '—' }}</strong></span>
                             <span>نمرهٔ کل <strong>{{ displayCents(totalCents) }}</strong></span>
                         </div>
-                        <p v-if="!validScores" class="text-red-700">بارم هر سؤال باید بین ۰٫۲۵ و ۱۰۰۰ و حداکثر با دو رقم اعشار باشد.</p>
-                        <p v-else-if="difference" class="text-gray-600">
+                        <p v-if="!validScores" class="text-red-700 panel-dark:text-red-300">بارم هر سؤال باید بین ۰٫۲۵ و ۱۰۰۰ و حداکثر با دو رقم اعشار باشد.</p>
+                        <p v-else-if="difference" class="text-gray-600 panel-dark:text-ui-muted">
                             {{ displayCents(Math.abs(difference)) }} نمره {{ difference > 0 ? 'کمتر' : 'بیشتر' }} از نمرهٔ کل. نمرهٔ نهایی به مقیاس نمرهٔ کل تبدیل می‌شود.
                         </p>
-                        <p v-else class="text-emerald-700">جمع بارم با نمرهٔ کل برابر است.</p>
+                        <p v-else class="text-emerald-700 panel-dark:text-emerald-300">جمع بارم با نمرهٔ کل برابر است.</p>
                     </div>
                     <div class="flex flex-wrap items-center justify-end gap-3">
-                        <span v-if="notice" role="status" class="me-auto text-sm text-emerald-700">{{ notice }}</span>
+                        <span v-if="notice" role="status" class="me-auto text-sm text-emerald-700 panel-dark:text-emerald-300">{{ notice }}</span>
                         <PanelButton type="button" :disabled="reorder.processing" variant="outline" @click="previewOpen = false">بستن</PanelButton>
                         <PanelButton v-if="editable && shuffled && questions.length > 1 && !orderChanged" type="button"
                             :disabled="!validScores || reorder.processing" variant="outline-brand" @click="save(true)">ثابت‌کردن ترتیب</PanelButton>

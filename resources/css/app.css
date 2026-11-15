@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant panel-dark (&:where([data-profile-theme="dark"], [data-profile-theme="dark"] *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
@@ -53,6 +55,7 @@
 
 @theme {
     --color-ui-canvas: #f7f6f9;
+    --color-ui-surface: #fff;
     --color-ui-paper: #fcfaf7;
     --color-ui-ink: #241c32;
     --color-ui-muted: #60586c;
@@ -70,11 +73,11 @@
     }
 
     .ui-surface {
-        @apply rounded-ui border border-ui-line bg-white;
+        @apply rounded-ui border border-ui-line bg-ui-surface;
     }
 
     .ui-field {
-        @apply mt-1.5 block min-h-11 w-full min-w-0 rounded-ui border border-ui-field bg-white px-3 py-2 text-base text-ui-ink;
+        @apply mt-1.5 block min-h-11 w-full min-w-0 rounded-ui border border-ui-field bg-ui-surface px-3 py-2 text-base text-ui-ink;
         @apply focus:outline-2 focus:outline-offset-1 focus:outline-ui-field disabled:bg-ui-canvas;
     }
 
@@ -87,11 +90,11 @@
     }
 
     .ui-field-error {
-        @apply mt-1.5 text-sm leading-6 text-rose-700;
+        @apply mt-1.5 text-sm leading-6 text-rose-700 panel-dark:text-rose-300;
     }
 
     .ui-card-link {
-        @apply block rounded-ui border border-ui-line bg-white p-4 transition-colors sm:p-5;
+        @apply block rounded-ui border border-ui-line bg-ui-surface p-4 transition-colors sm:p-5;
         @apply hover:border-brand-300 hover:bg-brand-50/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
     }
 

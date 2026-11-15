@@ -57,7 +57,7 @@ function save() {
             <PanelNotice v-if="refusal">{{ refusal }}</PanelNotice>
 
             <ElForm v-if="period" class="ui-surface space-y-3 p-4 sm:p-5" @submit.prevent="save">
-                <p v-if="!rows.length" class="text-sm text-gray-500">کسی در این کلاس نیست.</p>
+                <p v-if="!rows.length" class="text-sm text-gray-500 panel-dark:text-ui-muted">کسی در این کلاس نیست.</p>
                 <div v-for="(row, index) in form.rows" :key="row.user_id" class="grid items-center gap-x-3 gap-y-2 rounded-ui border border-ui-line p-3 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(7rem,0.7fr)_minmax(0,1.5fr)]">
                     <span class="font-semibold text-ui-ink">{{ row.name }}</span>
                     <ElInput
@@ -74,7 +74,7 @@ function save() {
                         dir="ltr" class="mt-0"
                     />
                     <ElSelect v-else v-model="row.level" :disabled="!!refusal" :aria-label="`ارزشیابی ${row.name}`"
-                        :aria-invalid="!!form.errors[`rows.${index}.level`]" placeholder="—" popper-class="profile-popper" clearable :value-on-clear="''">
+                        :aria-invalid="!!form.errors[`rows.${index}.level`]" placeholder="—" append-to="#profile-overlays" clearable :value-on-clear="''">
                         <ElOption v-for="level in levels" :key="level.value" :value="level.value" :label="level.label" />
                     </ElSelect>
                     <ElInput v-model="row.note" type="text" maxlength="255" placeholder="توضیح" :disabled="!!refusal" :aria-label="`توضیح برای ${row.name}`" :aria-invalid="!!form.errors[`rows.${index}.note`]" class="mt-0" />

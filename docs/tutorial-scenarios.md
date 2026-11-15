@@ -4,6 +4,8 @@ Designs of the step-by-step tutorial's scenarios («آموزش گام‌به‌�
 
 Screen names are the Persian labels as they are in the system today. Check them against the code when building a scenario: labels change.
 
+In the user panel, «تم تیره» in the sidebar or the sun/moon button in the mobile header changes the appearance. This is a browser preference; scenario steps are the same in either theme.
+
 ## How the scenarios fit together
 
 | # | Scenario | For | Missions (about) | Modules it needs | Status |

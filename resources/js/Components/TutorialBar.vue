@@ -27,7 +27,7 @@ function post(url) {
 </script>
 
 <template>
-    <div v-if="guide" class="border-b border-violet-200 bg-violet-50 px-4 py-2 text-sm text-violet-950">
+    <div v-if="guide" class="border-b border-violet-200 panel-dark:border-ui-line bg-violet-50 panel-dark:bg-brand-50 px-4 py-2 text-sm text-violet-950 panel-dark:text-violet-100">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2">
             <span class="font-semibold">آموزش «{{ guide.scenario }}» · {{ Math.min(guide.done + 1, guide.total) }} از {{ guide.total }}</span>
             <span v-if="guide.finished">همه‌ی گام‌ها انجام شد.</span>
@@ -35,7 +35,7 @@ function post(url) {
                 <span>{{ guide.mission.title }} <span class="text-xs opacity-75">({{ guide.mission.actor }})</span></span>
                 <button type="button" class="text-xs underline" @click="open = !open">{{ open ? 'بستن' : 'جزئیات' }}</button>
             </template>
-            <span v-if="justDone" class="rounded-md bg-emerald-500 px-2 py-0.5 text-xs text-white">گام انجام شد. گام بعدی را ببینید.</span>
+            <span v-if="justDone" class="rounded-md bg-emerald-500 panel-dark:bg-emerald-800 px-2 py-0.5 text-xs text-white">گام انجام شد. گام بعدی را ببینید.</span>
 
             <div class="ms-auto flex flex-wrap items-center gap-2">
                 <a
@@ -46,13 +46,13 @@ function post(url) {
                 <button
                     v-if="guide.actAs"
                     type="button"
-                    class="rounded-md bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600"
+                    class="rounded-md bg-amber-500 panel-dark:bg-amber-800 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600"
                     @click="post(guide.actAs.url)"
                 >ورود با حساب {{ guide.actAs.name }}</button>
                 <button
                     v-if="guide.ownAccountUrl"
                     type="button"
-                    class="rounded-md bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600"
+                    class="rounded-md bg-amber-500 panel-dark:bg-amber-800 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600"
                     @click="post(guide.ownAccountUrl)"
                 >بازگشت به حساب خودم</button>
                 <a v-if="!page.props.auth.impersonator" :href="guide.pageUrl" class="text-xs underline">همه‌ی گام‌ها</a>

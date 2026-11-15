@@ -41,21 +41,21 @@ function size(bytes) {
     <div>
         <div
             class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-5 text-center text-sm transition"
-            :class="dragging ? 'border-violet-400 bg-violet-50' : 'border-gray-300 bg-gray-50 hover:border-violet-300 hover:bg-violet-50/50'"
+            :class="dragging ? 'border-violet-400 bg-violet-50 panel-dark:bg-brand-50' : 'border-gray-300 panel-dark:border-ui-field bg-gray-50 panel-dark:bg-ui-canvas hover:border-violet-300 hover:bg-violet-50/50 panel-dark:hover:bg-brand-50/50'"
             @dragover.prevent="dragging = true"
             @dragleave.prevent="dragging = false"
             @drop.prevent="drop"
         >
-            <PanelIcon name="paperclip" class="size-6 text-violet-600" />
+            <PanelIcon name="paperclip" class="size-6 text-violet-600 panel-dark:text-brand-700" />
             <PanelButton variant="outline-brand" @click="input?.click()">انتخاب فایل</PanelButton>
             <span class="text-ui-muted">یا رها کردن آن در اینجا</span>
-            <span v-if="hint" class="text-xs text-gray-500">{{ hint }}</span>
+            <span v-if="hint" class="text-xs text-gray-500 panel-dark:text-ui-muted">{{ hint }}</span>
             <input ref="input" type="file" :multiple="multiple" class="hidden" @change="choose($event.target.files)" />
         </div>
         <ul v-if="modelValue.length" class="mt-2 space-y-1">
-            <li v-for="(file, index) in modelValue" :key="`${file.name}-${index}`" class="flex items-center justify-between gap-2 rounded-lg bg-violet-50 px-3 py-1.5 text-sm text-violet-900">
+            <li v-for="(file, index) in modelValue" :key="`${file.name}-${index}`" class="flex items-center justify-between gap-2 rounded-lg bg-violet-50 panel-dark:bg-brand-50 px-3 py-1.5 text-sm text-violet-900 panel-dark:text-violet-200">
                 <span class="truncate" dir="auto">{{ file.name }}</span>
-                <span class="flex shrink-0 items-center gap-2 text-xs text-violet-700">
+                <span class="flex shrink-0 items-center gap-2 text-xs text-violet-700 panel-dark:text-brand-700">
                     {{ size(file.size) }}
                     <PanelButton variant="danger-link" size="small" aria-label="برداشتن فایل" @click="remove(index)">
                         <PanelIcon name="close" class="size-4" />

@@ -26,7 +26,7 @@ defineProps({
                 <ElCard v-for="item in assignments" :key="`${item.classroom_id}-${item.subject_id}`" shadow="never">
                     <h2 class="font-semibold">{{ item.subject }}</h2>
                     <p class="mt-1 text-sm text-ui-muted">{{ item.classroom }}</p>
-                    <p v-if="!item.periods.length" class="mt-2 text-sm text-gray-500">دوره‌ی نمره‌دهی‌ای تعریف نشده است.</p>
+                    <p v-if="!item.periods.length" class="mt-2 text-sm text-gray-500 panel-dark:text-ui-muted">دوره‌ی نمره‌دهی‌ای تعریف نشده است.</p>
                     <div class="mt-2 flex flex-wrap gap-2 text-sm">
                         <PanelButton
                             v-for="period in item.periods"

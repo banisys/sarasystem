@@ -33,10 +33,10 @@ function pdfUrl(card) {
 
             <section v-for="card in cards" :key="`${card.enrollment_id}-${card.period_id}`" class="ui-surface space-y-4 p-4 sm:p-5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="font-semibold text-gray-900">{{ card.period }} · {{ card.year }}</h2>
+                    <h2 class="font-semibold text-gray-900 panel-dark:text-ui-ink">{{ card.period }} · {{ card.year }}</h2>
                     <PanelButton :href="pdfUrl(card)" full-page variant="outline">دریافت PDF</PanelButton>
                 </div>
-                <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
+                <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600 panel-dark:text-ui-muted">
                     <span>{{ card.grade }}</span>
                     <span v-if="card.major">رشته: {{ card.major }}</span>
                     <span v-if="card.classroom">کلاس: {{ card.classroom }}</span>
@@ -55,10 +55,10 @@ function pdfUrl(card) {
                 </div>
 
                 <div class="flex flex-wrap gap-x-5 gap-y-2 rounded-ui bg-ui-canvas p-3 text-sm">
-                    <span v-if="card.scale === 'numeric'" class="font-semibold text-gray-900">معدل: {{ card.average ?? '—' }}</span>
-                    <span class="text-gray-700">غیبت: {{ card.absences }}<span v-if="card.excused"> (+{{ card.excused }} موجه)</span></span>
-                    <span class="text-gray-700">تأخیر: {{ card.lates }}</span>
-                    <span v-if="card.homework_average != null" class="text-gray-700">میانگین تکالیف: {{ card.homework_average }} از ۲۰</span>
+                    <span v-if="card.scale === 'numeric'" class="font-semibold text-gray-900 panel-dark:text-ui-ink">معدل: {{ card.average ?? '—' }}</span>
+                    <span class="text-gray-700 panel-dark:text-ui-ink">غیبت: {{ card.absences }}<span v-if="card.excused"> (+{{ card.excused }} موجه)</span></span>
+                    <span class="text-gray-700 panel-dark:text-ui-ink">تأخیر: {{ card.lates }}</span>
+                    <span v-if="card.homework_average != null" class="text-gray-700 panel-dark:text-ui-ink">میانگین تکالیف: {{ card.homework_average }} از ۲۰</span>
                 </div>
             </section>
         </div>

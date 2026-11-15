@@ -27,7 +27,7 @@ _(TODO: formatter/linter, naming rules, file naming.)_
 
 ## Patterns we use
 - For Vue pages, reuse the shared controls and Tailwind tokens in [ADR 0094](decisions/0094-vue-design-system.md). Use logical spacing and positioning, and set explicitly left-to-right fields such as phone numbers with `dir="ltr"`.
-- In the user panel, reuse the `PanelButton`, `PanelNotice` and `PanelDialog` family from [Components/Ui](../resources/js/Components/Ui). Import additional Element Plus components and their styles where used. The [panel layout](../resources/js/Layouts/AppLayout.vue) supplies the Persian locale and [RTL styles](../resources/css/profile.css); give teleported dropdowns the `profile-popper` class and check the controls at mobile widths. Keep Inertia for forms, validation and navigation ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)).
+- In the user panel, reuse the `PanelButton`, `PanelNotice` and `PanelDialog` family from [Components/Ui](../resources/js/Components/Ui). Import additional Element Plus components and their styles where used. The [panel layout](../resources/js/Layouts/AppLayout.vue) supplies the Persian locale and [RTL styles](../resources/css/profile.css); append teleported dropdowns to `#profile-overlays` so they inherit the theme. Use the shared surface and text tokens, apply the scoped `panel-dark:` variant for specific accents, and check light and dark controls at mobile widths ([ADR 0101](decisions/0101-user-panel-dark-theme.md)). Keep Inertia for forms, validation and navigation ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)).
 
 - Define user-panel routes under `/profile` and generate links and form actions from route names ([ADR 0093](decisions/0093-user-panel-url-prefix.md)).
 

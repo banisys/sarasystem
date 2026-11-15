@@ -1,5 +1,4 @@
-.profile-panel,
-.profile-popper {
+.profile-panel {
     --el-color-primary: var(--color-brand-600);
     --el-color-primary-light-3: var(--color-brand-500);
     --el-color-primary-light-5: var(--color-brand-400);
@@ -14,6 +13,116 @@
     --el-border-color-lighter: var(--color-ui-line);
     --el-fill-color-light: var(--color-ui-canvas);
     --el-border-radius-base: 0.5rem;
+}
+
+/* The document scrollbar needs the same scheme on panel pages. */
+html:has(.profile-panel[data-profile-theme="dark"]) {
+    color-scheme: dark;
+}
+
+.profile-panel[data-profile-theme="dark"] {
+    --color-ui-canvas: #13111c;
+    --color-ui-surface: #1d1a2a;
+    --color-ui-ink: #f0edf8;
+    --color-ui-muted: #bbb2cb;
+    --color-ui-line: #39334a;
+    --color-ui-field: #827591;
+    --color-ui-plum: #291d40;
+    --color-brand-50: #2d2345;
+    --color-brand-400: #8765c8;
+    --color-brand-500: #9c7adf;
+    --color-brand-600: #7449cb;
+    --color-brand-700: #cbb2ff;
+    --color-brand-action-hover: #875bdf;
+
+    --el-bg-color-page: var(--color-ui-canvas);
+    --el-bg-color: var(--color-ui-surface);
+    --el-bg-color-overlay: #272238;
+    --el-fill-color-blank: var(--color-ui-surface);
+    --el-fill-color-extra-light: #211d30;
+    --el-fill-color-lighter: #272238;
+    --el-fill-color-light: #2c263c;
+    --el-fill-color: #332c46;
+    --el-fill-color-dark: #3c3452;
+    --el-fill-color-darker: #483d60;
+    --el-border-color-extra-light: #2f283e;
+    --el-border-color-light: var(--color-ui-line);
+    --el-border-color-dark: #544a68;
+    --el-border-color-darker: #665b77;
+    --el-text-color-placeholder: #ada2bf;
+    --el-text-color-disabled: #91859f;
+    --el-mask-color: rgb(10 8 16 / 78%);
+    --el-mask-color-extra-light: rgb(10 8 16 / 38%);
+    --el-box-shadow-light: 0 0.5rem 1.5rem rgb(10 8 16 / 50%);
+    --el-box-shadow: 0 0.75rem 2rem rgb(10 8 16 / 60%);
+
+    --el-color-primary: var(--color-brand-700);
+    --el-color-primary-light-3: #d5c3fc;
+    --el-color-primary-light-5: #6c5399;
+    --el-color-primary-light-7: #51416f;
+    --el-color-primary-light-8: #3d3156;
+    --el-color-primary-light-9: var(--color-brand-50);
+    --el-color-primary-dark-2: #e1d1ff;
+    --el-color-success: #86e0b4;
+    --el-color-success-light-3: #71c698;
+    --el-color-success-light-5: #4c8368;
+    --el-color-success-light-7: #366450;
+    --el-color-success-light-8: #2b473d;
+    --el-color-success-light-9: #223632;
+    --el-color-success-dark-2: #a7f2ce;
+    --el-color-warning: #f5ca85;
+    --el-color-warning-light-3: #dfb26e;
+    --el-color-warning-light-5: #8d6b45;
+    --el-color-warning-light-7: #66513d;
+    --el-color-warning-light-8: #514032;
+    --el-color-warning-light-9: #3b302b;
+    --el-color-warning-dark-2: #ffe0ac;
+    --el-color-danger: #ffb4be;
+    --el-color-danger-light-3: #ee99a6;
+    --el-color-danger-light-5: #995c6e;
+    --el-color-danger-light-7: #6e424f;
+    --el-color-danger-light-8: #533443;
+    --el-color-danger-light-9: #3e2a37;
+    --el-color-danger-dark-2: #ffd3d9;
+    --el-color-error: var(--el-color-danger);
+    --el-color-info: #bdb1cf;
+    --el-color-info-light-3: #aa9abd;
+    --el-color-info-light-5: #786a8b;
+    --el-color-info-light-7: #5a4d6e;
+    --el-color-info-light-8: #473d58;
+    --el-color-info-light-9: #322b40;
+    --el-color-info-dark-2: #ded2eb;
+}
+
+/* Filled buttons keep their white label; text buttons and active controls use the lighter accent. */
+.profile-panel[data-profile-theme="dark"] .el-button--primary:not(.is-plain, .is-link, .is-text) {
+    --el-button-bg-color: var(--color-brand-600);
+    --el-button-border-color: var(--color-brand-600);
+    --el-button-hover-bg-color: var(--color-brand-action-hover);
+    --el-button-hover-border-color: var(--color-brand-action-hover);
+    --el-button-active-bg-color: #623bab;
+    --el-button-active-border-color: #623bab;
+}
+
+.profile-panel[data-profile-theme="dark"] .el-button--danger:not(.is-plain, .is-link, .is-text) {
+    --el-button-bg-color: #a32248;
+    --el-button-border-color: #a32248;
+    --el-button-hover-bg-color: #b52d53;
+    --el-button-hover-border-color: #b52d53;
+    --el-button-active-bg-color: #861c3b;
+    --el-button-active-border-color: #861c3b;
+}
+
+.profile-panel[data-profile-theme="dark"] .el-checkbox {
+    --el-checkbox-checked-icon-color: var(--color-ui-canvas);
+}
+
+.profile-panel[data-profile-theme="dark"] .el-radio__input.is-checked .el-radio__inner::after {
+    background-color: var(--color-ui-canvas);
+}
+
+.profile-panel[data-profile-theme="dark"] .el-pagination.is-background .el-pager li.is-active {
+    color: var(--color-ui-canvas);
 }
 
 .profile-panel .el-button + .el-button {

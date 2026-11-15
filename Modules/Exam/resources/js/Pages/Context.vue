@@ -144,7 +144,7 @@ function remove() {
                 </PanelButton>
             </nav>
             <section v-if="context.can_manage" v-show="tab === 'create'" aria-label="ساخت آزمون از بانک سؤال" class="space-y-4 ui-surface p-4 sm:p-5">
-                <p v-if="!banks.some((bank) => bank.question_count > 0)" class="text-sm text-gray-600">
+                <p v-if="!banks.some((bank) => bank.question_count > 0)" class="text-sm text-gray-600 panel-dark:text-ui-muted">
                     برای ساخت آزمون، در بانک خودتان سؤال فعال ثبت کنید یا از یک بانک عمومیِ دارای سؤال استفاده کنید.
                 </p>
                 <ElForm v-else novalidate class="space-y-4" @submit.prevent="generate">
@@ -152,7 +152,7 @@ function remove() {
                     <div v-for="(row, index) in generation.banks" :key="index" class="grid items-end gap-3 rounded-ui bg-ui-canvas p-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
                         <div class="min-w-0 space-y-1 text-sm font-medium">
                             <label :for="`exam-bank-${index}`">بانک سؤال</label>
-                            <ElSelect :id="`exam-bank-${index}`" v-model="row.bank_id" placeholder="انتخاب کنید" popper-class="profile-popper" @change="delete row.question_ids">
+                            <ElSelect :id="`exam-bank-${index}`" v-model="row.bank_id" placeholder="انتخاب کنید" append-to="#profile-overlays" @change="delete row.question_ids">
                                 <ElOption v-for="bank in banks" :key="bank.id" :value="bank.id"
                                     :label="`${bank.title} · ${bank.is_mine ? 'بانک من' : 'عمومی'} · ${bank.question_count} سؤال`"
                                     :disabled="!bank.question_count || generation.banks.some((other) => other !== row && other.bank_id === bank.id)" />
@@ -173,8 +173,8 @@ function remove() {
                         </div>
                     </div>
                     <PanelButton v-if="generation.banks.length < Math.min(10, banks.filter((bank) => bank.question_count > 0).length)" variant="link" @click="generation.banks.push(bankRow())">افزودن بانک دیگر</PanelButton>
-                    <p class="text-sm text-gray-600">سؤال‌ها به‌طور پیش‌فرض تصادفی و بدون تکرار انتخاب می‌شوند. برای انتخاب دستی، «انتخاب سؤال‌ها» را بزنید. زمان برگزاری از جلسه گرفته می‌شود.</p>
-                    <p v-for="(error, key) in generation.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
+                    <p class="text-sm text-gray-600 panel-dark:text-ui-muted">سؤال‌ها به‌طور پیش‌فرض تصادفی و بدون تکرار انتخاب می‌شوند. برای انتخاب دستی، «انتخاب سؤال‌ها» را بزنید. زمان برگزاری از جلسه گرفته می‌شود.</p>
+                    <p v-for="(error, key) in generation.errors" :key="key" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
                     <PanelButton type="submit" :disabled="generation.processing">{{ generation.processing ? 'در حال ساخت…' : 'ساخت پیش‌نویس آزمون' }}</PanelButton>
                 </ElForm>
                 <PanelDialog v-model="pickerOpen" title="انتخاب سؤال‌ها" @close="closeQuestions">
@@ -220,29 +220,29 @@ function remove() {
                         <span v-if="exam.ends_at" class="text-sm text-ui-muted">تا {{ formatDateTime(exam.ends_at) }}</span>
                         <span v-if="exam.allow_late_start" class="text-sm text-ui-muted">بدون مهلت پایانی برای شروع</span>
                     </div>
-                    <p v-if="context.can_manage" class="text-sm text-gray-600">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
+                    <p v-if="context.can_manage" class="text-sm text-gray-600 panel-dark:text-ui-muted">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
                     <div class="flex flex-wrap gap-4">
                         <PanelButton v-if="exam.take_url" :href="exam.take_url">ورود به آزمون و مشاهدهٔ نتیجه</PanelButton>
                         <PanelButton v-if="context.can_manage" :disabled="publication.processing || deletion.processing" variant="link" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</PanelButton>
                         <PanelButton v-if="exam.delete_url" type="button" :disabled="deletion.processing || publication.processing" variant="danger-link" aria-haspopup="dialog" @click="confirmRemoval(exam)">حذف آزمون</PanelButton>
                     </div>
                 </article>
-                <p v-for="(error, key) in publication.errors" :key="key" class="text-sm text-red-600" role="alert">{{ error }}</p>
+                <p v-for="(error, key) in publication.errors" :key="key" class="text-sm text-red-600 panel-dark:text-red-300" role="alert">{{ error }}</p>
                 <PanelConfirm v-model="removalOpen" title="حذف آزمون" confirm-label="حذف آزمون" danger :busy="deletion.processing" @confirm="remove">
                     <p>«{{ removingExam?.title }}» از این جلسه حذف شود؟</p>
                     <PanelNotice v-if="deletion.errors.delete_exam" tone="error" class="mt-3">{{ deletion.errors.delete_exam }}</PanelNotice>
                 </PanelConfirm>
             </section>
             <section v-if="results" v-show="tab === 'results'" aria-label="نتایج و تصحیح" class="space-y-4 ui-surface p-4 sm:p-5">
-                <p v-if="!results.data.length" class="text-sm text-gray-600">هنوز کسی در آزمون شرکت نکرده است.</p>
-                <div v-for="attempt in results.data" :key="attempt.id" class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                    <div><p class="font-medium">{{ attempt.name }}</p><p class="mt-1 text-sm text-gray-500">{{ attempt.exam }} · {{ attempt.status }}</p></div>
+                <p v-if="!results.data.length" class="text-sm text-gray-600 panel-dark:text-ui-muted">هنوز کسی در آزمون شرکت نکرده است.</p>
+                <div v-for="attempt in results.data" :key="attempt.id" class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 panel-dark:border-ui-line pb-3">
+                    <div><p class="font-medium">{{ attempt.name }}</p><p class="mt-1 text-sm text-gray-500 panel-dark:text-ui-muted">{{ attempt.exam }} · {{ attempt.status }}</p></div>
                     <span v-if="attempt.score !== null" class="text-sm">{{ attempt.score }} از {{ attempt.total_score }}</span>
                     <PanelButton :href="attempt.url" variant="outline">پاسخ‌ها و تصحیح</PanelButton>
                 </div>
                 <nav v-if="results.prev_page_url || results.next_page_url" class="flex gap-6" aria-label="صفحه‌های نتایج">
-                    <Link v-if="results.prev_page_url" :href="results.prev_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700">قبلی</Link>
-                    <Link v-if="results.next_page_url" :href="results.next_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700">بعدی</Link>
+                    <Link v-if="results.prev_page_url" :href="results.prev_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700 panel-dark:text-brand-700">قبلی</Link>
+                    <Link v-if="results.next_page_url" :href="results.next_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700 panel-dark:text-brand-700">بعدی</Link>
                 </nav>
             </section>
         </div>

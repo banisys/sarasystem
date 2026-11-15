@@ -16,3 +16,5 @@ Import components and styles where they are used. Set the Persian locale in [App
 
 ## Consequences
 The shared mobile menu uses the Element Plus drawer. The Reka UI dependency was removed after its last usage was replaced. The public frontend and Filament keep their own controls; the public app entry does not register Element Plus. The class calendar and Jalali date handling, exam timer and question reordering, file selection and 3D previews retain their domain logic.
+
+[ADR 0101](0101-user-panel-dark-theme.md) defines dark mode for the panel and its Element Plus controls.

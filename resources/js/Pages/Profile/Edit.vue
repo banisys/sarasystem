@@ -103,27 +103,27 @@ function savePassword() {
 
             <!-- Account -->
             <section class="ui-surface p-4 sm:p-6">
-                <h2 class="font-bold text-gray-900">اطلاعات حساب</h2>
+                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">اطلاعات حساب</h2>
                 <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
                     <div>
-                        <dt class="text-gray-500">نام</dt>
-                        <dd class="mt-1 text-gray-900">{{ profile.name }}</dd>
+                        <dt class="text-gray-500 panel-dark:text-ui-muted">نام</dt>
+                        <dd class="mt-1 text-gray-900 panel-dark:text-ui-ink">{{ profile.name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-gray-500">کد ملی</dt>
+                        <dt class="text-gray-500 panel-dark:text-ui-muted">کد ملی</dt>
                         <dd class="mt-1 text-start text-ui-ink"><bdi dir="ltr">{{ profile.nationalCode ?? '—' }}</bdi></dd>
                     </div>
                 </dl>
-                <p class="mt-3 text-xs text-gray-500">برای تغییر نام یا کد ملی با مدیر تماس بگیرید.</p>
+                <p class="mt-3 text-xs text-gray-500 panel-dark:text-ui-muted">برای تغییر نام یا کد ملی با مدیر تماس بگیرید.</p>
             </section>
 
             <!-- Mobile -->
             <section class="ui-surface p-4 sm:p-6">
-                <h2 class="font-bold text-gray-900">شماره موبایل</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">شماره موبایل</h2>
+                <p class="mt-1 text-sm text-gray-600 panel-dark:text-ui-muted">
                     شماره‌ی فعلی:
                     <span dir="ltr">{{ profile.mobile ?? '—' }}</span>
-                    <span v-if="profile.mobile" :class="profile.mobileVerified ? 'text-green-600' : 'text-amber-600'">
+                    <span v-if="profile.mobile" :class="profile.mobileVerified ? 'text-green-600 panel-dark:text-green-300' : 'text-amber-600 panel-dark:text-amber-300'">
                         ({{ profile.mobileVerified ? 'تأییدشده' : 'تأییدنشده' }})
                     </span>
                 </p>
@@ -198,7 +198,7 @@ function savePassword() {
 
             <!-- Email -->
             <ElForm class="ui-surface p-4 sm:p-6" @submit.prevent="saveEmail">
-                <h2 class="font-bold text-gray-900">ایمیل</h2>
+                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">ایمیل</h2>
                 <div class="mt-4">
                     <label for="email" class="ui-label">ایمیل (اختیاری)</label>
                     <ElInput
@@ -223,8 +223,8 @@ function savePassword() {
 
             <!-- Password -->
             <ElForm class="ui-surface p-4 sm:p-6" @submit.prevent="savePassword">
-                <h2 class="font-bold text-gray-900">رمز عبور</h2>
-                <p v-if="!currentPasswordRequired" class="mt-1 text-sm text-gray-600">
+                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">رمز عبور</h2>
+                <p v-if="!currentPasswordRequired" class="mt-1 text-sm text-gray-600 panel-dark:text-ui-muted">
                     با کد پیامکی وارد شده‌اید؛ می‌توانید بدون رمز فعلی، رمز جدید تعیین کنید.
                 </p>
 
@@ -269,7 +269,7 @@ function savePassword() {
                     </div>
                 </div>
 
-                <p class="mt-3 text-xs text-gray-500">با تغییر رمز، از همه‌ی دستگاه‌های دیگر خارج می‌شوید.</p>
+                <p class="mt-3 text-xs text-gray-500 panel-dark:text-ui-muted">با تغییر رمز، از همه‌ی دستگاه‌های دیگر خارج می‌شوید.</p>
 
                 <PanelButton
                     type="submit"

@@ -165,7 +165,7 @@ function removeOption(index) {
                             <ElForm v-if="addingQuestion === row.id" class="mt-1 space-y-2" novalidate @submit.prevent="addSharedQuestion(row.id)">
                                 <label class="block space-y-1 text-sm">
                                     <span>بانک مقصد</span>
-                                    <ElSelect v-model="sharing.bank_id" aria-label="بانک مقصد" placeholder="انتخاب کنید" popper-class="profile-popper">
+                                    <ElSelect v-model="sharing.bank_id" aria-label="بانک مقصد" placeholder="انتخاب کنید" append-to="#profile-overlays">
                                         <ElOption v-for="ownBank in ownBanks" :key="ownBank.id" :value="ownBank.id" :label="ownBank.title" />
                                     </ElSelect>
                                 </label>
@@ -187,13 +187,13 @@ function removeOption(index) {
                     <p v-if="selectedBank && !editingQuestion" class="text-sm text-ui-muted">بانک مقصد: {{ selectedBank.title }}</p>
                     <label class="block space-y-1 text-sm">
                         <span>نوع سؤال</span>
-                        <ElSelect v-model="question.type" aria-label="نوع سؤال" popper-class="profile-popper">
+                        <ElSelect v-model="question.type" aria-label="نوع سؤال" append-to="#profile-overlays">
                             <ElOption v-for="(label, value) in types" :key="value" :value="value" :label="label" />
                         </ElSelect>
                     </label>
                     <label class="block space-y-1 text-sm">
                         <span>متن سؤال</span>
-                        <ElInput type="textarea" id="question-body" ref="questionBody" v-model="question.body" rows="3" />
+                        <ElInput type="textarea" id="question-body" ref="questionBody" v-model="question.body" :rows="3" />
                     </label>
                     <fieldset v-if="question.type === 'choice'" class="space-y-2">
                         <legend class="text-sm font-medium">گزینه‌ها و پاسخ درست</legend>
@@ -208,14 +208,14 @@ function removeOption(index) {
                     </fieldset>
                     <fieldset v-else-if="question.type === 'fill_in_the_blank'" class="space-y-2">
                         <legend class="text-sm font-medium">پاسخ‌های پذیرفتنی</legend>
-                        <p class="text-sm text-gray-600">جای پاسخ را در متن سؤال با سه زیرخط (___) مشخص کنید.</p>
+                        <p class="text-sm text-gray-600 panel-dark:text-ui-muted">جای پاسخ را در متن سؤال با سه زیرخط (___) مشخص کنید.</p>
                         <div v-for="(_, index) in question.accepted_answers" :key="index" class="flex gap-2">
                             <ElInput v-model="question.accepted_answers[index]" :aria-label="`پاسخ پذیرفتنی ${index + 1}`" />
                             <PanelButton v-if="question.accepted_answers.length > 1" variant="danger-link" @click="question.accepted_answers.splice(index, 1)">حذف</PanelButton>
                         </div>
                         <PanelButton v-if="question.accepted_answers.length < 10" variant="link" @click="question.accepted_answers.push('')">افزودن پاسخ</PanelButton>
                     </fieldset>
-                    <label v-else class="block space-y-1 text-sm"><span>پاسخ نمونه (اختیاری)</span><ElInput type="textarea" v-model="question.model_answer" rows="2" /></label>
+                    <label v-else class="block space-y-1 text-sm"><span>پاسخ نمونه (اختیاری)</span><ElInput type="textarea" v-model="question.model_answer" :rows="2" /></label>
                     <label class="block space-y-1 text-sm"><span>بارم</span><ElInput v-model.number="question.score" type="number" min="0.25" step="0.01" /></label>
                     <fieldset v-if="availableBanks.length" class="space-y-1">
                         <legend class="mb-1 text-sm font-medium">{{ selectedBank && !editingQuestion ? 'بانک‌های دیگر من' : 'بانک‌های من' }}</legend>
@@ -227,7 +227,7 @@ function removeOption(index) {
                     </fieldset>
                     <div><ElCheckbox v-model="question.is_active">فعال برای ساخت آزمون</ElCheckbox></div>
                     <div><ElCheckbox v-model="question.is_shared">عمومی در این شعبه</ElCheckbox></div>
-                    <p v-for="(error, key) in question.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
+                    <p v-for="(error, key) in question.errors" :key="key" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
                     <div class="flex flex-wrap items-center gap-3">
                         <PanelButton type="submit" :disabled="question.processing">ذخیرهٔ سؤال</PanelButton>
                         <PanelButton variant="outline" :disabled="question.processing" @click="questionEditorOpen = false">انصراف</PanelButton>

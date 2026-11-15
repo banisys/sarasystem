@@ -38,12 +38,12 @@ const advanced = [
                 <span class="mt-1 block text-ui-muted">برای شروع آزمون مهلت پایانی وجود ندارد. مدت پاسخ‌گویی از لحظهٔ شروع هر تلاش حساب می‌شود.</span>
             </ElCheckbox>
         </div>
-        <details :open="expanded || undefined" class="rounded-lg border border-gray-200">
-            <summary class="cursor-pointer px-3 py-3 text-sm font-medium text-violet-700">تنظیمات بیشتر</summary>
-            <div class="space-y-4 border-t border-gray-200 p-3">
+        <details :open="expanded || undefined" class="rounded-lg border border-gray-200 panel-dark:border-ui-line">
+            <summary class="cursor-pointer px-3 py-3 text-sm font-medium text-violet-700 panel-dark:text-brand-700">تنظیمات بیشتر</summary>
+            <div class="space-y-4 border-t border-gray-200 panel-dark:border-ui-line p-3">
                 <label class="block space-y-1 text-sm font-medium">
                     <span>{{ settings.labels.description }}</span>
-                    <ElInput type="textarea" v-model="form.description" rows="3" maxlength="20000" />
+                    <ElInput type="textarea" v-model="form.description" :rows="3" maxlength="20000" />
                 </label>
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label v-for="[key, min, max] in advanced" :key="key" class="space-y-1 text-sm font-medium">
@@ -54,19 +54,19 @@ const advanced = [
                 <div class="grid gap-3 sm:grid-cols-2">
                     <label class="space-y-1 text-sm font-medium">
                         <span>{{ settings.labels.retake_policy }}</span>
-                        <ElSelect v-model="form.retake_policy" :aria-label="settings.labels.retake_policy" popper-class="profile-popper">
+                        <ElSelect v-model="form.retake_policy" :aria-label="settings.labels.retake_policy" append-to="#profile-overlays">
                             <ElOption v-for="(label, value) in settings.retake_policies" :key="value" :value="value" :label="label" />
                         </ElSelect>
                     </label>
                     <label class="space-y-1 text-sm font-medium">
                         <span>{{ settings.labels.result_visibility }}</span>
-                        <ElSelect v-model="form.result_visibility" :aria-label="settings.labels.result_visibility" popper-class="profile-popper">
+                        <ElSelect v-model="form.result_visibility" :aria-label="settings.labels.result_visibility" append-to="#profile-overlays">
                             <ElOption v-for="(label, value) in settings.result_visibility" :key="value" :value="value" :label="label" />
                         </ElSelect>
                     </label>
                     <label class="space-y-1 text-sm font-medium sm:col-span-2">
                         <span>{{ settings.labels.negative_marking }}</span>
-                        <ElSelect v-model="form.negative_marking" clearable :value-on-clear="null" placeholder="بدون نمرهٔ منفی" :aria-label="settings.labels.negative_marking" popper-class="profile-popper">
+                        <ElSelect v-model="form.negative_marking" clearable :value-on-clear="null" placeholder="بدون نمرهٔ منفی" :aria-label="settings.labels.negative_marking" append-to="#profile-overlays">
                             <ElOption v-for="count in [2, 3, 4, 5, 6]" :key="count" :value="count" :label="`هر ${count} پاسخ غلط، یک پاسخ درست را حذف کند`" />
                         </ElSelect>
                     </label>

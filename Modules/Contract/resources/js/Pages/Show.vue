@@ -72,19 +72,19 @@ onBeforeUnmount(() => clearInterval(timer));
             </UiPageHeader>
 
             <PanelNotice v-if="status" tone="success">{{ status }}</PanelNotice>
-            <p v-if="contract.status === 'cancelled'" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            <p v-if="contract.status === 'cancelled'" class="rounded-lg bg-red-50 panel-dark:bg-red-950/50 p-3 text-sm text-red-700 panel-dark:text-red-300">
                 این قرارداد لغو شده است<span v-if="contract.cancellation_reason">: {{ contract.cancellation_reason }}</span>
             </p>
-            <p v-if="contract.signs_on_paper" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+            <p v-if="contract.signs_on_paper" class="rounded-lg bg-amber-50 panel-dark:bg-amber-950/45 p-3 text-sm text-amber-700 panel-dark:text-amber-300">
                 این قرارداد به صورت کاغذی امضا می‌شود؛ برای امضا به دفتر مراجعه کنید.
             </p>
 
             <!-- The text is rendered on the server from the issued contract. -->
-            <article class="contract ui-surface overflow-x-auto p-4 leading-8 text-gray-800 sm:p-6" v-html="contract.html" />
+            <article class="contract ui-surface overflow-x-auto p-4 leading-8 text-gray-800 panel-dark:text-ui-ink sm:p-6" v-html="contract.html" />
 
             <section v-if="contract.can_sign" class="ui-surface p-4 sm:p-6">
-                <h2 class="font-bold text-gray-900">امضای قرارداد</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="font-bold text-gray-900 panel-dark:text-ui-ink">امضای قرارداد</h2>
+                <p class="mt-1 text-sm text-gray-600 panel-dark:text-ui-muted">
                     برای امضا، متن را بخوانید و بپذیرید؛ کد امضا به موبایل
                     <span dir="ltr">{{ mobile }}</span>
                     پیامک می‌شود.
@@ -93,7 +93,7 @@ onBeforeUnmount(() => clearInterval(timer));
                 <div class="mt-4">
                     <ElCheckbox v-model="signForm.accept" class="panel-wrap-option">متن قرارداد را خواندم و می‌پذیرم.</ElCheckbox>
                 </div>
-                <p v-if="signForm.errors.accept" class="mt-1 text-sm text-red-600">{{ signForm.errors.accept }}</p>
+                <p v-if="signForm.errors.accept" class="mt-1 text-sm text-red-600 panel-dark:text-red-300">{{ signForm.errors.accept }}</p>
 
                 <PanelButton
                     v-if="!codeSent"
@@ -104,11 +104,11 @@ onBeforeUnmount(() => clearInterval(timer));
                 >
                     ارسال کد امضا
                 </PanelButton>
-                <p v-if="sendCodeForm.errors.code" class="mt-1 text-sm text-red-600">{{ sendCodeForm.errors.code }}</p>
+                <p v-if="sendCodeForm.errors.code" class="mt-1 text-sm text-red-600 panel-dark:text-red-300">{{ sendCodeForm.errors.code }}</p>
 
                 <ElForm v-if="codeSent" class="mt-4 space-y-3" @submit.prevent="sign">
                     <div>
-                        <label for="sign-code" class="block text-sm font-medium text-gray-700">کد {{ codeLength }} رقمی پیامک‌شده</label>
+                        <label for="sign-code" class="block text-sm font-medium text-gray-700 panel-dark:text-ui-ink">کد {{ codeLength }} رقمی پیامک‌شده</label>
                         <ElInput
                             id="sign-code"
                             ref="codeInput"
@@ -166,7 +166,7 @@ onBeforeUnmount(() => clearInterval(timer));
 }
 .contract :deep(td),
 .contract :deep(th) {
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-ui-line);
     padding: 0.25rem 0.5rem;
 }
 .contract :deep(ul) {
@@ -180,13 +180,13 @@ onBeforeUnmount(() => clearInterval(timer));
 .contract :deep(.contract-number) {
     text-align: left;
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--color-ui-muted);
 }
 .contract :deep(.contract-signature) {
     margin-top: 2rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--color-ui-line);
     padding-top: 0.75rem;
     font-size: 0.85rem;
-    color: #4b5563;
+    color: var(--color-ui-muted);
 }
 </style>

@@ -30,8 +30,8 @@ const weekdays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه',
 
 const statusClass = {
     scheduled: 'border-ui-line bg-brand-50/70',
-    held: 'border-emerald-200 bg-emerald-50',
-    cancelled: 'border-rose-200 bg-rose-50',
+    held: 'border-emerald-200 panel-dark:border-emerald-800/70 bg-emerald-50 panel-dark:bg-emerald-950/50',
+    cancelled: 'border-rose-200 panel-dark:border-rose-800/70 bg-rose-50 panel-dark:bg-rose-950/50',
 };
 
 const visibleDays = computed(() => (props.calendar.view === 'week' ? props.calendar.days : props.calendar.days.filter((day) => day.sessions.length || day.holiday || day.is_today)));
@@ -80,7 +80,7 @@ function at(date, view = props.calendar.view) {
 
             <!-- Month: a grid of the Jalali month, Saturday first. -->
             <div v-if="calendar.view === 'month'" class="hidden grid-cols-7 gap-2 md:grid">
-                <div v-for="name in weekdays" :key="name" class="pb-1 text-center text-xs text-gray-500">{{ name }}</div>
+                <div v-for="name in weekdays" :key="name" class="pb-1 text-center text-xs text-gray-500 panel-dark:text-ui-muted">{{ name }}</div>
                 <div v-for="blank in calendar.leading_blanks" :key="`blank-${blank}`" />
                 <Link
                     v-for="day in calendar.days"
@@ -89,10 +89,10 @@ function at(date, view = props.calendar.view) {
                     :aria-current="day.is_today ? 'date' : undefined"
                     :aria-label="day.label"
                     class="ui-card-link min-h-24 min-w-0 p-2 text-xs sm:p-2"
-                    :class="[day.is_today ? 'border-brand-500' : '', day.holiday ? 'bg-red-50/50' : '']"
+                    :class="[day.is_today ? 'border-brand-500' : '', day.holiday ? 'bg-red-50/50 panel-dark:bg-red-950/45' : '']"
                 >
-                    <div class="font-semibold" :class="day.holiday ? 'text-red-600' : 'text-gray-700'">{{ day.day_number }}</div>
-                    <div v-if="day.holiday" class="truncate text-red-600">{{ day.holiday }}</div>
+                    <div class="font-semibold" :class="day.holiday ? 'text-red-600 panel-dark:text-red-300' : 'text-gray-700 panel-dark:text-ui-ink'">{{ day.day_number }}</div>
+                    <div v-if="day.holiday" class="truncate text-red-600 panel-dark:text-red-300">{{ day.holiday }}</div>
                     <div
                         v-for="session in day.sessions"
                         :key="session.id"
@@ -120,7 +120,7 @@ function at(date, view = props.calendar.view) {
                         <ElTag v-if="day.holiday" type="danger" size="small" round>تعطیل: {{ day.holiday }}</ElTag>
                     </div>
 
-                    <p v-if="!day.sessions.length" class="text-sm text-gray-500">جلسه‌ای نیست.</p>
+                    <p v-if="!day.sessions.length" class="text-sm text-gray-500 panel-dark:text-ui-muted">جلسه‌ای نیست.</p>
 
                     <div class="grid gap-2 sm:grid-cols-2">
                         <Link
@@ -132,7 +132,7 @@ function at(date, view = props.calendar.view) {
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ session.class }}</span>
-                                <span class="inline-flex items-center gap-1.5 rounded-md bg-white px-2 py-1 font-semibold tabular-nums text-ui-muted"><PanelIcon name="clock" class="size-4" /><bdi dir="ltr">{{ session.time }}</bdi></span>
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-ui-surface px-2 py-1 font-semibold tabular-nums text-ui-muted"><PanelIcon name="clock" class="size-4" /><bdi dir="ltr">{{ session.time }}</bdi></span>
                             </div>
                             <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-ui-muted">
                                 <span v-if="session.subject">{{ session.subject }}</span>
@@ -141,8 +141,8 @@ function at(date, view = props.calendar.view) {
                                 <span v-if="session.status !== 'scheduled'">{{ session.status_label }}</span>
                                 <span v-if="session.kind_label !== 'عادی'">{{ session.kind_label }}</span>
                                 <span v-if="session.my_attendance" class="text-brand-700">حضور{{ ward ? '' : ' شما' }}: {{ session.my_attendance }}</span>
-                                <span v-if="session.my_homework" class="text-emerald-700">{{ session.my_homework }}</span>
-                                <span v-else-if="session.has_homework" class="text-amber-700">تکلیف دارد</span>
+                                <span v-if="session.my_homework" class="text-emerald-700 panel-dark:text-emerald-300">{{ session.my_homework }}</span>
+                                <span v-else-if="session.has_homework" class="text-amber-700 panel-dark:text-amber-300">تکلیف دارد</span>
                             </div>
                         </Link>
                     </div>

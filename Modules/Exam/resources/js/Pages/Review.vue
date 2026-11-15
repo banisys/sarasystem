@@ -22,10 +22,10 @@ const form = useForm({ scores: Object.fromEntries(props.answers.filter(answer =>
             <ElForm novalidate class="space-y-4" @submit.prevent="form.post(save_url, { preserveScroll: true })">
                 <article v-for="(answer, index) in answers" :key="answer.id" class="ui-surface space-y-3 p-4 sm:p-5">
                     <h2 class="whitespace-pre-wrap wrap-break-word font-semibold">{{ index + 1 }}. {{ answer.body }}</h2>
-                    <p class="whitespace-pre-wrap wrap-break-word text-sm leading-7 text-gray-700">پاسخ: {{ answer.answer || 'بی‌پاسخ' }}</p>
-                    <p v-if="!answer.requires_manual_grading" class="text-sm text-emerald-700">پاسخ درست: {{ answer.correct }} · نمره: {{ answer.score ?? '—' }} از {{ answer.max_score }}</p>
+                    <p class="whitespace-pre-wrap wrap-break-word text-sm leading-7 text-gray-700 panel-dark:text-ui-ink">پاسخ: {{ answer.answer || 'بی‌پاسخ' }}</p>
+                    <p v-if="!answer.requires_manual_grading" class="text-sm text-emerald-700 panel-dark:text-emerald-300">پاسخ درست: {{ answer.correct }} · نمره: {{ answer.score ?? '—' }} از {{ answer.max_score }}</p>
                     <template v-else>
-                        <p v-if="answer.correct" class="whitespace-pre-wrap wrap-break-word text-sm text-emerald-700">پاسخ نمونه: {{ answer.correct }}</p>
+                        <p v-if="answer.correct" class="whitespace-pre-wrap wrap-break-word text-sm text-emerald-700 panel-dark:text-emerald-300">پاسخ نمونه: {{ answer.correct }}</p>
                         <label :for="`score-${answer.id}`" class="block text-sm">نمره از {{ answer.max_score }} (خالی: تصحیح‌نشده)</label>
                         <ElInput :id="`score-${answer.id}`" v-model.number="form.scores[answer.id]" :disabled="!can_grade" type="number" step="0.01" min="0" :max="answer.max_score" dir="ltr" class="max-w-36"
                             :aria-invalid="!!form.errors[`scores.${answer.id}`]"
