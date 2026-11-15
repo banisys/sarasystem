@@ -46,7 +46,7 @@ function at(date, view = props.calendar.view) {
 
     <AppLayout>
         <div class="space-y-6">
-            <header class="flex flex-wrap items-center justify-between gap-5 rounded-ui bg-ui-plum px-5 py-6 text-white sm:px-8 sm:py-8">
+            <header class="flex flex-wrap items-center justify-between gap-5 rounded-ui bg-[var(--profile-header)] px-5 py-6 text-white sm:px-8 sm:py-8">
                 <div class="flex min-w-0 items-center gap-4">
                     <span class="grid size-12 shrink-0 place-items-center rounded-ui bg-white/12">
                         <PanelIcon name="calendar" class="size-6" />
@@ -127,7 +127,7 @@ function at(date, view = props.calendar.view) {
                             v-for="session in day.sessions"
                             :key="session.id"
                             :href="route('my-classes.session', { session: session.id, ...forWard })"
-                            class="block min-w-0 rounded-ui border border-s-4 p-3.5 text-sm transition-colors hover:border-brand-500 focus-visible:outline-2 focus-visible:outline-brand-600"
+                            class="block min-w-0 rounded-ui border border-s-4 p-3.5 text-sm transition-colors hover:border-brand-500 focus-visible:outline-2 focus-visible:outline-brand-700"
                             :class="statusClass[session.status]"
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">

@@ -69,7 +69,7 @@ function goToBankPage(number) {
     <AppLayout>
         <Head title="بانک سؤال" />
         <div class="space-y-6">
-            <UiPageHeader title="بانک سؤال" icon="book" tone="plum" />
+            <UiPageHeader title="بانک سؤال" icon="book" tone="brand" />
 
             <ElAlert v-if="page.props.flash.status" :title="page.props.flash.status" type="success" :closable="false" show-icon />
 

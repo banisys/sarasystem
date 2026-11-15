@@ -115,7 +115,7 @@ function removeOption(index) {
             <UiPageHeader
                 :title="selectedBank?.title ?? 'همهٔ سؤال‌ها'"
                 icon="book"
-                tone="plum"
+                tone="brand"
                 :back-href="route('exams.library')"
                 back-label="بازگشت به بانک‌ها"
             />

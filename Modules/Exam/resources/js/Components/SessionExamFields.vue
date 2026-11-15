@@ -39,7 +39,7 @@ const advanced = [
             </ElCheckbox>
         </div>
         <details :open="expanded || undefined" class="rounded-lg border border-gray-200 panel-dark:border-ui-line">
-            <summary class="cursor-pointer px-3 py-3 text-sm font-medium text-violet-700 panel-dark:text-brand-700">تنظیمات بیشتر</summary>
+            <summary class="cursor-pointer px-3 py-3 text-sm font-medium text-brand-700">تنظیمات بیشتر</summary>
             <div class="space-y-4 border-t border-gray-200 panel-dark:border-ui-line p-3">
                 <label class="block space-y-1 text-sm font-medium">
                     <span>{{ settings.labels.description }}</span>

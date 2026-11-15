@@ -124,7 +124,7 @@ function remove() {
                 title="آزمون‌های جلسه"
                 :description="context.title"
                 icon="clipboard"
-                tone="plum"
+                tone="brand"
                 :back-href="context.back_url"
                 full-page-back
                 back-label="بازگشت به جلسه"
@@ -241,8 +241,8 @@ function remove() {
                     <PanelButton :href="attempt.url" variant="outline">پاسخ‌ها و تصحیح</PanelButton>
                 </div>
                 <nav v-if="results.prev_page_url || results.next_page_url" class="flex gap-6" aria-label="صفحه‌های نتایج">
-                    <Link v-if="results.prev_page_url" :href="results.prev_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700 panel-dark:text-brand-700">قبلی</Link>
-                    <Link v-if="results.next_page_url" :href="results.next_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-violet-700 panel-dark:text-brand-700">بعدی</Link>
+                    <Link v-if="results.prev_page_url" :href="results.prev_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-brand-700">قبلی</Link>
+                    <Link v-if="results.next_page_url" :href="results.next_page_url" :data="{ tab: 'results' }" preserve-state class="text-sm text-brand-700">بعدی</Link>
                 </nav>
             </section>
         </div>

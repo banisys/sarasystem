@@ -162,7 +162,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 :title="session.class"
                 :description="session.subject"
                 icon="calendar"
-                tone="plum"
+                tone="brand"
                 :back-href="route('my-classes.index', ward ? { for: ward.id } : {})"
                 :back-label="ward ? `کلاس‌های ${ward.name}` : 'کلاس‌های من'"
             />
@@ -201,7 +201,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
 
                 <dl class="grid gap-px bg-gray-100 panel-dark:bg-white/8 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
                     <div class="flex items-start gap-3 bg-ui-surface p-4">
-                        <PanelIcon name="clock" class="mt-0.5 size-5 shrink-0 text-violet-600 panel-dark:text-brand-700" />
+                        <PanelIcon name="clock" class="mt-0.5 size-5 shrink-0 text-brand-700" />
                         <div class="min-w-0">
                             <dt class="text-xs text-gray-500 panel-dark:text-ui-muted">زمان</dt>
                             <dd class="text-sm font-medium text-gray-900 panel-dark:text-ui-ink">{{ session.when }}</dd>
@@ -209,21 +209,21 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                         </div>
                     </div>
                     <div class="flex items-start gap-3 bg-ui-surface p-4">
-                        <PanelIcon name="user" class="mt-0.5 size-5 shrink-0 text-violet-600 panel-dark:text-brand-700" />
+                        <PanelIcon name="user" class="mt-0.5 size-5 shrink-0 text-brand-700" />
                         <div class="min-w-0">
                             <dt class="text-xs text-gray-500 panel-dark:text-ui-muted">مدرس</dt>
                             <dd class="text-sm font-medium text-gray-900 panel-dark:text-ui-ink">{{ session.teacher || '—' }}</dd>
                         </div>
                     </div>
                     <div class="flex items-start gap-3 bg-ui-surface p-4">
-                        <PanelIcon name="pin" class="mt-0.5 size-5 shrink-0 text-violet-600 panel-dark:text-brand-700" />
+                        <PanelIcon name="pin" class="mt-0.5 size-5 shrink-0 text-brand-700" />
                         <div class="min-w-0">
                             <dt class="text-xs text-gray-500 panel-dark:text-ui-muted">مکان</dt>
                             <dd class="text-sm font-medium text-gray-900 panel-dark:text-ui-ink">{{ session.location || (session.online_platform ? `آنلاین (${session.online_platform})` : '—') }}</dd>
                         </div>
                     </div>
                     <div class="flex items-start gap-3 bg-ui-surface p-4">
-                        <PanelIcon name="academic" class="mt-0.5 size-5 shrink-0 text-violet-600 panel-dark:text-brand-700" />
+                        <PanelIcon name="academic" class="mt-0.5 size-5 shrink-0 text-brand-700" />
                         <div class="min-w-0">
                             <dt class="text-xs text-gray-500 panel-dark:text-ui-muted">{{ ward ? `نقش ${ward.name}` : 'نقش شما' }}</dt>
                             <dd class="text-sm font-medium text-gray-900 panel-dark:text-ui-ink">{{ role.label }}</dd>
@@ -276,7 +276,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 <ul class="divide-y divide-gray-100 panel-dark:divide-ui-line">
                     <li v-for="(row, index) in attendanceForm.rows" :key="row.user_id" class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
                         <div class="flex min-w-44 flex-1 items-center gap-3">
-                            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-100 panel-dark:bg-violet-950 text-sm font-bold text-violet-700 panel-dark:text-brand-700">{{ initial(row.name) }}</span>
+                            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-bold text-brand-700">{{ initial(row.name) }}</span>
                             <span class="font-medium text-gray-900 panel-dark:text-ui-ink">{{ row.name }}</span>
                         </div>
                         <div class="flex max-w-full flex-wrap gap-1 rounded-ui border border-ui-line p-1" role="group" :aria-label="`حضور ${row.name}`">
@@ -318,7 +318,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
 
             <!-- Content: the form for who may record it… -->
             <ElForm v-if="contentForm && tab === 'content'" class="space-y-6 ui-surface p-4 sm:p-5" @submit.prevent="saveContent">
-                <div v-if="!session.content && session.planned_topics.length" class="rounded-xl bg-violet-50 panel-dark:bg-brand-50 px-4 py-3 text-sm text-violet-900 panel-dark:text-violet-200">
+                <div v-if="!session.content && session.planned_topics.length" class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700">
                     <span class="font-medium">طبق طرح درس، این جلسه:</span> {{ session.planned_topics.join('، ') }}
                 </div>
 
@@ -412,12 +412,12 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             <!-- …or what was recorded, to read. -->
             <section v-if="!contentForm && tab === 'content'" class="space-y-4 ui-surface p-4 sm:p-5">
                 <h2 class="flex items-center gap-2 font-semibold text-gray-900 panel-dark:text-ui-ink">
-                    <PanelIcon name="book" class="size-5 text-violet-600 panel-dark:text-brand-700" />
+                    <PanelIcon name="book" class="size-5 text-brand-700" />
                     مطالب جلسه
                 </h2>
                 <template v-if="session.content">
                     <div v-if="session.content.topics.length" class="flex flex-wrap gap-2">
-                        <span v-for="topic in session.content.topics" :key="topic" class="inline-flex items-center gap-1 rounded-full bg-violet-50 panel-dark:bg-brand-50 px-3 py-1 text-sm text-violet-800 panel-dark:text-violet-200">
+                        <span v-for="topic in session.content.topics" :key="topic" class="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700">
                             <PanelIcon name="check" class="size-4" />
                             <span dir="auto">{{ topic }}</span>
                         </span>
@@ -442,7 +442,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                         :href="file.url"
                         target="_blank"
                         rel="noopener"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 panel-dark:bg-ui-canvas px-3 py-2 text-sm text-violet-700 panel-dark:text-brand-700 ring-1 ring-gray-200 panel-dark:ring-ui-line hover:bg-violet-50 panel-dark:hover:bg-brand-50"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 panel-dark:bg-ui-canvas px-3 py-2 text-sm text-brand-700 ring-1 ring-gray-200 panel-dark:ring-ui-line hover:bg-brand-50"
                     >
                         <PanelIcon name="document" class="size-4" />
                         <span dir="auto">{{ file.name }}</span>
@@ -453,7 +453,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
             <!-- The person's own hand-in, or a ward's (read only). -->
             <section v-if="tab === 'content' && session.homework && (mySubmission || canSubmit)" class="space-y-4 ui-surface p-4 sm:p-5">
                 <h2 class="flex items-center gap-2 font-semibold text-gray-900 panel-dark:text-ui-ink">
-                    <PanelIcon name="pencil" class="size-5 text-violet-600 panel-dark:text-brand-700" />
+                    <PanelIcon name="pencil" class="size-5 text-brand-700" />
                     {{ ward ? `تکلیف ${ward.name}` : 'تکلیف شما' }}
                 </h2>
                 <div v-if="mySubmission" class="space-y-2 text-sm text-gray-700 panel-dark:text-ui-ink">
@@ -467,7 +467,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                     </div>
                     <p v-if="!canSubmit && mySubmission.answer" class="whitespace-pre-line wrap-break-word rounded-lg bg-gray-50 panel-dark:bg-ui-canvas p-3">{{ mySubmission.answer }}</p>
                     <div v-if="!canSubmit && mySubmission.files.length" class="flex flex-wrap gap-2">
-                        <a v-for="file in mySubmission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 panel-dark:bg-ui-canvas px-3 py-2 text-violet-700 panel-dark:text-brand-700 ring-1 ring-gray-200 panel-dark:ring-ui-line hover:bg-violet-50 panel-dark:hover:bg-brand-50">
+                        <a v-for="file in mySubmission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 panel-dark:bg-ui-canvas px-3 py-2 text-brand-700 ring-1 ring-gray-200 panel-dark:ring-ui-line hover:bg-brand-50">
                             <PanelIcon name="document" class="size-4" />
                             <span dir="auto">{{ file.name }}</span>
                         </a>
@@ -515,7 +515,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                     <li v-for="row in submissions" :key="row.name" class="space-y-3 p-4 text-sm">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-3">
-                                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-100 panel-dark:bg-violet-950 font-bold text-violet-700 panel-dark:text-brand-700">{{ initial(row.name) }}</span>
+                                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-50 font-bold text-brand-700">{{ initial(row.name) }}</span>
                                 <span class="font-medium text-gray-900 panel-dark:text-ui-ink">{{ row.name }}</span>
                             </div>
                             <span v-if="!row.submission" class="rounded-full bg-gray-100 panel-dark:bg-white/8 px-2.5 py-0.5 text-xs text-gray-500 panel-dark:text-ui-muted">تحویل نداده</span>
@@ -527,7 +527,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                         <template v-if="row.submission">
                             <p v-if="row.submission.answer" class="whitespace-pre-line wrap-break-word rounded-lg bg-gray-50 panel-dark:bg-ui-canvas p-3 leading-7 text-gray-800 panel-dark:text-ui-ink">{{ row.submission.answer }}</p>
                             <div v-if="row.submission.files.length" class="flex flex-wrap gap-2">
-                                <a v-for="file in row.submission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 panel-dark:bg-ui-canvas px-3 py-1.5 text-violet-700 panel-dark:text-brand-700 ring-1 ring-gray-200 panel-dark:ring-ui-line hover:bg-violet-50 panel-dark:hover:bg-brand-50">
+                                <a v-for="file in row.submission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 panel-dark:bg-ui-canvas px-3 py-1.5 text-brand-700 ring-1 ring-gray-200 panel-dark:ring-ui-line hover:bg-brand-50">
                                     <PanelIcon name="document" class="size-4" />
                                     <span dir="auto">{{ file.name }}</span>
                                 </a>

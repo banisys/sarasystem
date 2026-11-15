@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
                 class="shrink-0 rounded-lg px-3 py-1 text-lg font-bold tabular-nums"
                 role="timer"
                 aria-label="زمان باقی‌مانده"
-                :class="secondsLeft < 60 ? 'bg-rose-50 panel-dark:bg-rose-950/50 text-rose-700 panel-dark:text-rose-300' : 'bg-violet-50 panel-dark:bg-brand-50 text-violet-700 panel-dark:text-brand-700'"
+                :class="secondsLeft < 60 ? 'bg-rose-50 panel-dark:bg-rose-950/50 text-rose-700 panel-dark:text-rose-300' : 'bg-brand-50 text-brand-700'"
                 dir="ltr"
             >
                 {{ formatDuration(secondsLeft) }}
@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
         >
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div class="min-w-0 flex-1 basis-48 whitespace-pre-line wrap-break-word font-medium leading-8 text-ui-ink">
-                    <span class="text-violet-700 panel-dark:text-brand-700">{{ currentPage * perPage + index + 1 }}.</span>
+                    <span class="text-brand-700">{{ currentPage * perPage + index + 1 }}.</span>
                     <template v-if="question.blank_parts">
                         {{ question.blank_parts[0] }}
                         <ElInput

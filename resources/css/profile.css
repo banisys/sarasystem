@@ -1,11 +1,28 @@
 .profile-panel {
-    --el-color-primary: var(--color-brand-600);
+    --color-ui-canvas: #f4f8f7;
+    --color-ui-ink: #172c26;
+    --color-ui-muted: #4d655d;
+    --color-ui-line: #dce8e4;
+    --color-ui-field: #68867c;
+    --color-brand-50: color-mix(in srgb, var(--color-brand-600) 8%, white);
+    --color-brand-200: color-mix(in srgb, var(--color-brand-600) 28%, white);
+    --color-brand-300: color-mix(in srgb, var(--color-brand-600) 50%, white);
+    --color-brand-400: color-mix(in srgb, var(--color-brand-600) 78%, white);
+    --color-brand-500: color-mix(in srgb, var(--color-brand-600) 74%, black);
+    --color-brand-600: #00b894;
+    --color-brand-700: color-mix(in srgb, var(--color-brand-600) 55%, black);
+    --color-brand-contrast: #002820;
+    --color-brand-action-hover: color-mix(in srgb, var(--color-brand-600) 82%, white);
+    --profile-action-active: color-mix(in srgb, var(--color-brand-600) 90%, black);
+    --profile-header: color-mix(in srgb, var(--color-brand-600) 44%, black);
+
+    --el-color-primary: var(--color-brand-700);
     --el-color-primary-light-3: var(--color-brand-500);
     --el-color-primary-light-5: var(--color-brand-400);
     --el-color-primary-light-7: var(--color-brand-300);
     --el-color-primary-light-8: var(--color-brand-200);
     --el-color-primary-light-9: var(--color-brand-50);
-    --el-color-primary-dark-2: var(--color-brand-700);
+    --el-color-primary-dark-2: color-mix(in srgb, var(--color-brand-700) 80%, black);
     --el-text-color-primary: var(--color-ui-ink);
     --el-text-color-regular: var(--color-ui-ink);
     --el-text-color-secondary: var(--color-ui-muted);
@@ -21,48 +38,44 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
 }
 
 .profile-panel[data-profile-theme="dark"] {
-    --color-ui-canvas: #13111c;
-    --color-ui-surface: #1d1a2a;
-    --color-ui-ink: #f0edf8;
-    --color-ui-muted: #bbb2cb;
-    --color-ui-line: #39334a;
-    --color-ui-field: #827591;
-    --color-ui-plum: #291d40;
-    --color-brand-50: #2d2345;
-    --color-brand-400: #8765c8;
-    --color-brand-500: #9c7adf;
-    --color-brand-600: #7449cb;
-    --color-brand-700: #cbb2ff;
-    --color-brand-action-hover: #875bdf;
+    --color-ui-canvas: #101a17;
+    --color-ui-surface: #182622;
+    --color-ui-ink: #eaf5f1;
+    --color-ui-muted: #b3c9c0;
+    --color-ui-line: #314740;
+    --color-ui-field: #77988c;
+    --color-brand-50: color-mix(in srgb, var(--color-brand-600) 15%, var(--color-ui-surface));
+    --color-brand-400: var(--color-brand-600);
+    --color-brand-500: var(--color-brand-600);
+    --color-brand-700: color-mix(in srgb, var(--color-brand-600) 62%, white);
+    --profile-header: color-mix(in srgb, var(--color-brand-600) 22%, var(--color-ui-surface));
 
     --el-bg-color-page: var(--color-ui-canvas);
     --el-bg-color: var(--color-ui-surface);
-    --el-bg-color-overlay: #272238;
+    --el-bg-color-overlay: #20342d;
     --el-fill-color-blank: var(--color-ui-surface);
-    --el-fill-color-extra-light: #211d30;
-    --el-fill-color-lighter: #272238;
-    --el-fill-color-light: #2c263c;
-    --el-fill-color: #332c46;
-    --el-fill-color-dark: #3c3452;
-    --el-fill-color-darker: #483d60;
-    --el-border-color-extra-light: #2f283e;
+    --el-fill-color-extra-light: #1c2d27;
+    --el-fill-color-lighter: var(--el-bg-color-overlay);
+    --el-fill-color-light: #253b33;
+    --el-fill-color: var(--color-ui-line);
+    --el-fill-color-dark: #39554a;
+    --el-fill-color-darker: #45675a;
+    --el-border-color-extra-light: #293e36;
     --el-border-color-light: var(--color-ui-line);
-    --el-border-color-dark: #544a68;
-    --el-border-color-darker: #665b77;
-    --el-text-color-placeholder: #ada2bf;
-    --el-text-color-disabled: #91859f;
-    --el-mask-color: rgb(10 8 16 / 78%);
-    --el-mask-color-extra-light: rgb(10 8 16 / 38%);
-    --el-box-shadow-light: 0 0.5rem 1.5rem rgb(10 8 16 / 50%);
-    --el-box-shadow: 0 0.75rem 2rem rgb(10 8 16 / 60%);
+    --el-border-color-dark: #48685c;
+    --el-border-color-darker: #567a6c;
+    --el-text-color-placeholder: var(--color-ui-muted);
+    --el-text-color-disabled: #829e93;
+    --el-mask-color: rgb(4 12 9 / 78%);
+    --el-mask-color-extra-light: rgb(4 12 9 / 38%);
+    --el-box-shadow-light: 0 0.5rem 1.5rem rgb(4 12 9 / 50%);
+    --el-box-shadow: 0 0.75rem 2rem rgb(4 12 9 / 60%);
 
-    --el-color-primary: var(--color-brand-700);
-    --el-color-primary-light-3: #d5c3fc;
-    --el-color-primary-light-5: #6c5399;
-    --el-color-primary-light-7: #51416f;
-    --el-color-primary-light-8: #3d3156;
-    --el-color-primary-light-9: var(--color-brand-50);
-    --el-color-primary-dark-2: #e1d1ff;
+    --el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 80%, white);
+    --el-color-primary-light-5: color-mix(in srgb, var(--el-color-primary) 55%, var(--color-ui-surface));
+    --el-color-primary-light-7: color-mix(in srgb, var(--el-color-primary) 35%, var(--color-ui-surface));
+    --el-color-primary-light-8: color-mix(in srgb, var(--el-color-primary) 23%, var(--color-ui-surface));
+    --el-color-primary-dark-2: color-mix(in srgb, var(--el-color-primary) 66%, white);
     --el-color-success: #86e0b4;
     --el-color-success-light-3: #71c698;
     --el-color-success-light-5: #4c8368;
@@ -85,23 +98,36 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
     --el-color-danger-light-9: #3e2a37;
     --el-color-danger-dark-2: #ffd3d9;
     --el-color-error: var(--el-color-danger);
-    --el-color-info: #bdb1cf;
-    --el-color-info-light-3: #aa9abd;
-    --el-color-info-light-5: #786a8b;
-    --el-color-info-light-7: #5a4d6e;
-    --el-color-info-light-8: #473d58;
-    --el-color-info-light-9: #322b40;
-    --el-color-info-dark-2: #ded2eb;
+    --el-color-info: #bac6d0;
+    --el-color-info-light-3: #a7b5c1;
+    --el-color-info-light-5: #74838f;
+    --el-color-info-light-7: #55636f;
+    --el-color-info-light-8: #434f59;
+    --el-color-info-light-9: #2c373f;
+    --el-color-info-dark-2: #d9e1e8;
 }
 
-/* Filled buttons keep their white label; text buttons and active controls use the lighter accent. */
-.profile-panel[data-profile-theme="dark"] .el-button--primary:not(.is-plain, .is-link, .is-text) {
+.profile-panel .el-button--primary {
+    --el-button-outline-color: var(--el-color-primary);
+    --el-button-hover-link-text-color: var(--el-color-primary-dark-2);
+}
+
+/* The exact accent needs dark text; controls that use the accent as text use shade 700. */
+.profile-panel .el-button--primary:not(.is-plain, .is-link, .is-text, .is-dashed) {
+    --el-button-text-color: var(--color-brand-contrast);
+    --el-button-hover-text-color: var(--color-brand-contrast);
+    --el-button-active-text-color: var(--color-brand-contrast);
     --el-button-bg-color: var(--color-brand-600);
     --el-button-border-color: var(--color-brand-600);
     --el-button-hover-bg-color: var(--color-brand-action-hover);
     --el-button-hover-border-color: var(--color-brand-action-hover);
-    --el-button-active-bg-color: #623bab;
-    --el-button-active-border-color: #623bab;
+    --el-button-active-bg-color: var(--profile-action-active);
+    --el-button-active-border-color: var(--profile-action-active);
+}
+
+.profile-panel[data-profile-theme="dark"] .el-button--primary.is-plain {
+    --el-button-hover-text-color: var(--color-brand-contrast);
+    --el-button-active-text-color: var(--color-brand-contrast);
 }
 
 .profile-panel[data-profile-theme="dark"] .el-button--danger:not(.is-plain, .is-link, .is-text) {
