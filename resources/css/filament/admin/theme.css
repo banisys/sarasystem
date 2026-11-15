@@ -103,8 +103,13 @@ body > .fi-dropdown-panel.fi-dropdown-list[style*='min-width: 12rem'] {
 
 /* Class information tab: labels and values have distinct visual weight,
    with a bounded surface per fact, including entries supplied by modules. */
-.classroom-details-section .fi-in-entry {
+.classroom-details-section .fi-in-entry:not(.exam-invigilators *),
+.classroom-details-section .exam-invigilators {
     @apply h-full rounded-xl border border-gray-200/70 bg-gray-50/70 p-4 dark:border-white/10 dark:bg-white/5;
+}
+
+.exam-invigilators > .fi-sc {
+    @apply gap-y-2;
 }
 
 .classroom-details-section .fi-in-entry .fi-in-entry-label {

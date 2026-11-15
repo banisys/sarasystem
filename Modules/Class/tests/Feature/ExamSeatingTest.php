@@ -80,6 +80,22 @@ class ExamSeatingTest extends TestCase
             ->assertSchemaStateSet(['layout' => $layout], 'mountedActionSchema0');
     }
 
+    public function test_the_editor_can_save_a_layout_with_every_seat_empty(): void
+    {
+        $student = $this->attendee('شرکت‌کننده');
+        $this->exam->update([
+            'seat_layout' => ['rows' => 1, 'columns' => 2, 'seats' => [$student->id, null]],
+        ]);
+        $emptyLayout = ['rows' => 1, 'columns' => 2, 'seats' => [null, null]];
+
+        Livewire::test(ViewExamSession::class, ['record' => $this->exam->id])
+            ->callAction('seatLayout', data: ['layout' => $emptyLayout])
+            ->assertHasNoActionErrors()
+            ->assertNotified('چیدمان صندلی‌ها ذخیره شد.');
+
+        $this->assertSame($emptyLayout, $this->exam->fresh()->seat_layout);
+    }
+
     public function test_invalid_layouts_cannot_assign_a_non_attendee_or_duplicate_a_person(): void
     {
         $student = $this->attendee('شرکت‌کننده');

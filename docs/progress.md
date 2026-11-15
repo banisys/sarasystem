@@ -22,6 +22,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Done
 - 2026-11-15 — Replaced the existing-exam picker with «ساخت آزمون جلسه» in the exam schedule row menu ([ADR 0102](decisions/0102-create-exams-from-class-schedules.md)). The new admin page reuses the exam form and takes its window and participants from the selected session. Verified navigation and cancellation in Chromium and passed 78 targeted tests. Updated the tutorial.
+- 2026-11-15 — Highlighted the exam seat under the pointer during a drag from the unassigned list or another seat. Checked target changes, placement, swapping and cancellation in JavaScript. The seating tests and Vite build passed. Tutorial steps still match.
+- 2026-11-15 — Added «خالی کردن همهٔ صندلی‌ها» to the exam seating editor and its tutorial. Verified on exam 514 that all 20 attendees return to the unassigned list and the grid keeps its dimensions. The seating and tutorial tests and Pint passed.
+- 2026-11-15 — Moved «سایر» to the end of the exam session action row. Verified the order and dropdown on exam 514. All 24 session page and scene tests passed. Tutorial steps still match.
+- 2026-11-15 — Grouped the invigilators in one «مراقبان» card on exam session pages. Verified both names and their individual actions in the shared card on exam 514. The session page tests, Pint and the Vite build passed. Tutorial steps still match.
 - 2026-11-15 — Shared the account settings label style across profile forms, including exam settings, question banks, classwork and contract signing. Tutorial steps still match.
 - 2026-11-15 — Set account field labels to 14 px with a muted color, a 6 px gap above their inputs, and a 4 px inset from the leading edge. Tutorial steps still match.
 - 2026-11-15 — Standardized the account settings fields on Element Plus form items, including labels and Laravel validation errors. Tutorial steps still match.

@@ -202,6 +202,9 @@ class SessionActions
             ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
             ->placeholder($exam ? 'مشخص نشده' : '—');
         $staff = Group::make(fn (ClassSession $record): array => self::teacherEntries($record, $exam ? 'مراقبان' : 'مدرس‌ها'));
+        if ($exam) {
+            $staff->extraAttributes(['class' => 'exam-invigilators']);
+        }
 
         return [
             Section::make($exam ? 'مشخصات جلسهٔ امتحانی' : 'مشخصات جلسه')

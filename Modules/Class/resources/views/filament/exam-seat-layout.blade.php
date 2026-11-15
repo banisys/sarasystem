@@ -4,6 +4,7 @@
         attendees: @js($attendees),
         selected: null,
         dragging: null,
+        dropSeat: null,
         get names() {
             return Object.fromEntries(this.attendees.map(({ id, name }) => [id, name]));
         },
@@ -38,11 +39,13 @@
             if (origin !== -1) seats[origin] = seats[index];
             seats[index] = id;
             this.layout = { ...this.layout, seats };
-            this.selected = this.dragging = null;
+            this.selected = null;
+            this.endDrag();
         },
         remove(id) {
             this.layout = { ...this.layout, seats: this.layout.seats.map(seat => seat === id ? null : seat) };
-            this.selected = this.dragging = null;
+            this.selected = null;
+            this.endDrag();
         },
         startDrag(event, id) {
             if (id === null) return;
@@ -50,9 +53,23 @@
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', String(id));
         },
+        previewDrop(event, index) {
+            if (this.dragging === null) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            this.dropSeat = index;
+        },
+        endDrag() {
+            this.dragging = this.dropSeat = null;
+        },
         fill() {
             this.layout = { ...this.layout, seats: this.layout.seats.map((_, index) => this.attendees[index]?.id ?? null) };
             this.selected = null;
+        },
+        clearSeats() {
+            this.layout = { ...this.layout, seats: this.layout.seats.map(() => null) };
+            this.selected = null;
+            this.endDrag();
         },
         number(value) {
             return new Intl.NumberFormat('fa-IR', { useGrouping: false }).format(value);
@@ -80,6 +97,9 @@
         <x-filament::button type="button" color="gray" x-on:click="fill()" x-bind:disabled="attendees.length === 0">
             چیدمان خودکار
         </x-filament::button>
+        <x-filament::button type="button" color="gray" outlined x-on:click="clearSeats()" x-bind:disabled="!layout.seats.some(id => id !== null)">
+            خالی کردن همهٔ صندلی‌ها
+        </x-filament::button>
     </div>
 
     <p class="min-h-6 text-sm text-gray-700 dark:text-gray-200" aria-live="polite">
@@ -98,17 +118,23 @@
                     <button
                         type="button"
                         class="flex min-h-16 flex-col items-center justify-center rounded-lg border px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-primary-500 aria-pressed:ring-2 aria-pressed:ring-primary-500"
-                        x-bind:class="id === null ? 'border-dashed border-gray-300 text-gray-500 dark:border-white/20 dark:text-gray-400' : 'border-primary-200 bg-primary-50 text-primary-800 dark:border-primary-400/30 dark:bg-primary-500/15 dark:text-primary-200'"
+                        x-bind:class="[
+                            id === null
+                                ? 'border-dashed border-gray-300 text-gray-500 dark:border-white/20 dark:text-gray-400'
+                                : 'cursor-grab active:cursor-grabbing border-primary-200 bg-primary-50 text-primary-800 dark:border-primary-400/30 dark:bg-primary-500/15 dark:text-primary-200',
+                            dropSeat === index ? 'outline-2 outline-offset-2 outline-primary-500 bg-primary-100! dark:bg-primary-500/30!' : '',
+                        ]"
                         x-bind:aria-pressed="id !== null && selected === id"
                         x-bind:draggable="id !== null"
                         x-on:click="choose(index)"
                         x-on:dragstart="startDrag($event, id)"
-                        x-on:dragend="dragging = null"
-                        x-on:dragover.prevent
+                        x-on:dragend="endDrag()"
+                        x-on:dragover="previewDrop($event, index)"
+                        x-on:dragleave="if (dropSeat === index) dropSeat = null"
                         x-on:drop.prevent="dragging !== null && place(dragging, index)"
                     >
-                        <span class="text-xs" x-text="'صندلی ' + number(index + 1)"></span>
-                        <span class="wrap-anywhere font-medium" x-text="id === null ? 'خالی' : names[id]"></span>
+                        <span class="pointer-events-none text-xs" x-text="'صندلی ' + number(index + 1)"></span>
+                        <span class="pointer-events-none wrap-anywhere font-medium" x-text="id === null ? 'خالی' : names[id]"></span>
                     </button>
                 </template>
             </div>
@@ -118,11 +144,11 @@
             <h3 class="mb-2 text-sm font-medium" x-text="'بدون صندلی (' + number(unassigned.length) + ')'"></h3>
             <div class="flex max-h-80 flex-wrap gap-2 overflow-auto">
                 <template x-for="person in unassigned" x-bind:key="person.id">
-                    <button type="button" draggable="true" class="rounded-lg bg-gray-100 px-2 py-1 text-start text-sm aria-pressed:ring-2 aria-pressed:ring-primary-500 dark:bg-white/10"
+                    <button type="button" draggable="true" class="cursor-grab rounded-lg bg-gray-100 px-2 py-1 text-start text-sm active:cursor-grabbing aria-pressed:ring-2 aria-pressed:ring-primary-500 dark:bg-white/10"
                         x-bind:aria-pressed="selected === person.id"
                         x-on:click="selected = selected === person.id ? null : person.id"
                         x-on:dragstart="startDrag($event, person.id)"
-                        x-on:dragend="dragging = null"
+                        x-on:dragend="endDrag()"
                         x-text="person.name"
                     ></button>
                 </template>
