@@ -1,0 +1,151 @@
+.profile-panel,
+.profile-popper {
+    --el-color-primary: var(--color-brand-600);
+    --el-color-primary-light-3: var(--color-brand-500);
+    --el-color-primary-light-5: var(--color-brand-400);
+    --el-color-primary-light-7: var(--color-brand-300);
+    --el-color-primary-light-8: var(--color-brand-200);
+    --el-color-primary-light-9: var(--color-brand-50);
+    --el-color-primary-dark-2: var(--color-brand-700);
+    --el-text-color-primary: var(--color-ui-ink);
+    --el-text-color-regular: var(--color-ui-ink);
+    --el-text-color-secondary: var(--color-ui-muted);
+    --el-border-color: var(--color-ui-line);
+    --el-border-color-lighter: var(--color-ui-line);
+    --el-fill-color-light: var(--color-ui-canvas);
+    --el-border-radius-base: 0.5rem;
+}
+
+.profile-panel .el-button + .el-button {
+    margin-inline: 0;
+}
+
+.profile-panel .el-button > span {
+    gap: 0.375rem;
+}
+
+.profile-panel .el-alert__icon,
+.profile-panel .el-radio {
+    margin-inline: 0 0.5rem;
+}
+
+.profile-panel .el-checkbox__label,
+.profile-panel .el-radio__label {
+    padding-inline: 0.5rem 0;
+}
+
+.profile-panel .el-checkbox,
+.profile-panel .el-radio {
+    height: auto;
+}
+
+.profile-panel .el-checkbox {
+    margin-inline: 0;
+}
+
+.profile-panel .el-table {
+    --el-table-header-bg-color: var(--color-ui-canvas);
+}
+
+.profile-panel .el-table__inner-wrapper::before {
+    display: none;
+}
+
+.profile-panel .el-dialog {
+    --el-dialog-border-radius: var(--radius-ui);
+    display: flex;
+    max-height: calc(100dvh - 2rem);
+    flex-direction: column;
+}
+
+.profile-panel .el-dialog__body {
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.profile-panel .el-dialog__header.show-close {
+    padding-inline: 0 2rem;
+}
+
+.profile-panel .el-dialog__headerbtn {
+    inset-inline: auto 0;
+}
+
+.profile-panel .el-drawer {
+    --el-drawer-padding-primary: 0;
+}
+
+.profile-panel .el-drawer__body {
+    overflow: hidden;
+}
+
+.profile-panel .el-form-item__error {
+    position: static;
+    width: 100%;
+    line-height: 1.5;
+}
+
+.profile-panel .el-input[dir="ltr"] input,
+.profile-panel .el-textarea[dir="ltr"] textarea {
+    direction: ltr;
+    text-align: left;
+}
+
+.profile-panel .el-input:has(input[aria-invalid="true"]) .el-input__wrapper,
+.profile-panel .el-textarea__inner[aria-invalid="true"],
+.profile-panel .el-select[aria-invalid="true"] .el-select__wrapper {
+    box-shadow: 0 0 0 1px var(--el-color-danger) inset;
+}
+
+.profile-panel .el-button.panel-wrap-button,
+.profile-panel .el-button.panel-row-button {
+    max-width: 100%;
+    min-height: 2.5rem;
+    height: auto;
+    white-space: normal;
+}
+
+.profile-panel .el-button.panel-row-button {
+    width: 100%;
+    min-height: 3rem;
+    text-align: start;
+}
+
+.profile-panel .panel-row-button > span {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    text-align: start;
+}
+
+.profile-panel .el-input.panel-inline-input {
+    display: inline-flex;
+    width: min(9rem, 100%);
+}
+
+.profile-panel .panel-option-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.profile-panel .el-checkbox.panel-wrap-option,
+.profile-panel .el-radio.panel-wrap-option {
+    align-items: flex-start;
+    min-width: 0;
+    margin-inline: 0;
+    padding-block: 0.5rem;
+    padding-inline: 0.75rem;
+    white-space: normal;
+}
+
+.profile-panel .panel-wrap-option :is(.el-checkbox__input, .el-radio__input) {
+    margin-block-start: 0.125rem;
+}
+
+.profile-panel .panel-wrap-option :is(.el-checkbox__label, .el-radio__label) {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}

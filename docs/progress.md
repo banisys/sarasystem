@@ -13,7 +13,6 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Online class platforms ([ADR 0073](decisions/0073-online-class-platforms.md)): link, Adobe Connect and Skyroom (ADR 0076) done. A room per class or per session on Adobe Connect (ADR 0074); one reusable room per class on Skyroom. Next: try both API integrations on real servers; recordings and other drivers.
 
 ## Next
-- Continue the Element Plus rollout across the user panel, including «کلاس‌های من» ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)).
 - Contracts: approval workflow before issuing, the organization's signature, contracts tab on employee / learner pages; later a finance module for installments and payments that attaches to contracts.
 - Use customizable forms (ADR 0017) in the next forms (e.g. enrollment contracts). Possible additions: file fields, conditional fields.
 - Workflows: cancel / reassign a running case (super admin or workflow owner; from «همه‌ی پرونده‌ها»), per-step deadlines and reminders, attachments on notes.
@@ -22,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-15 — Completed the Element Plus rollout across the user panel: shared mobile navigation, My Classes, exams, contracts, school grades and report cards, and account and tenant pages ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)). Removed Reka UI. The Vite build and the full suite (770 tests) passed. Checked the question editor and table, account validation, class calendar navigation and the mobile drawer in Chromium. The tutorial still matches the existing labels and steps.
 - 2026-11-15 — Migrated the question bank list to Element Plus ([ADR 0100](decisions/0100-element-plus-for-user-panel.md)): table, pagination, create/edit form and delete confirmation. Verified sample bank navigation, Persian form validation, keyboard focus and RTL scrolling at mobile width in Chromium. The Vite build passed. The tutorial still follows the existing labels and steps.
 - 2026-11-15 — Removed the unused `stechstudio/filament-impersonate` package; the internal impersonation flow remains ([ADR 0008](decisions/0008-impersonation.md)). All 770 tests passed.
 - 2026-11-14 — Enabled the «افزودن سؤال» dialog for bank owners and staff with update permission on accessible banks ([ADR 0099](decisions/0099-add-questions-from-bank-pages.md)). Verified direct creation and a clean reopened form in Chrome on shared bank 10 as a non-owner administrator.

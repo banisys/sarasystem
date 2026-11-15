@@ -1,6 +1,9 @@
 <script setup>
+import { ElTable, ElTableColumn } from 'element-plus';
+import 'element-plus/es/components/table/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -26,12 +29,12 @@ function pdfUrl(card) {
         <div class="space-y-4">
             <UiPageHeader :title="title" icon="academic" />
 
-            <UiNotice v-if="!cards.length">کارنامه‌ای منتشر نشده است.</UiNotice>
+            <PanelNotice v-if="!cards.length">کارنامه‌ای منتشر نشده است.</PanelNotice>
 
             <section v-for="card in cards" :key="`${card.enrollment_id}-${card.period_id}`" class="ui-surface space-y-4 p-4 sm:p-5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h2 class="font-semibold text-gray-900">{{ card.period }} · {{ card.year }}</h2>
-                    <a :href="pdfUrl(card)" class="ui-button border-ui-line bg-white hover:bg-ui-canvas">دریافت PDF</a>
+                    <PanelButton :href="pdfUrl(card)" full-page variant="outline">دریافت PDF</PanelButton>
                 </div>
                 <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
                     <span>{{ card.grade }}</span>
@@ -40,25 +43,15 @@ function pdfUrl(card) {
                     <span>{{ card.tenant }}</span>
                 </div>
 
-                <div class="overflow-x-auto rounded-ui border border-ui-line" tabindex="0" role="region" :aria-label="`نمره‌های ${card.period}`">
-                    <table class="w-full min-w-80 text-sm">
-                        <thead>
-                            <tr class="border-b bg-gray-50 text-gray-700">
-                                <th scope="col" class="p-2 text-start">درس</th>
-                                <th scope="col" v-if="card.scale === 'numeric'" class="p-2">ضریب</th>
-                                <th scope="col" class="p-2">{{ card.scale === 'numeric' ? 'نمره' : 'ارزشیابی' }}</th>
-                                <th scope="col" class="p-2 text-start">توضیح</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="row in card.rows" :key="row.subject" class="border-b border-gray-100">
-                                <th scope="row" class="p-2 text-start font-medium text-ui-ink">{{ row.subject }}</th>
-                                <td v-if="card.scale === 'numeric'" class="p-2 text-center text-gray-600">{{ row.coefficient }}</td>
-                                <td class="p-2 text-center font-semibold text-gray-900">{{ row.result ?? '—' }}</td>
-                                <td class="p-2 text-gray-600">{{ row.note }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="overflow-hidden rounded-ui border border-ui-line" role="region" :aria-label="`نمره‌های ${card.period}`">
+                    <ElTable :data="card.rows" table-layout="auto" native-scrollbar :scrollbar-tabindex="0" flexible>
+                        <ElTableColumn prop="subject" label="درس" width="140" align="right" />
+                        <ElTableColumn v-if="card.scale === 'numeric'" prop="coefficient" label="ضریب" width="65" align="center" />
+                        <ElTableColumn :label="card.scale === 'numeric' ? 'نمره' : 'ارزشیابی'" width="90" align="center">
+                            <template #default="{ row }">{{ row.result ?? '—' }}</template>
+                        </ElTableColumn>
+                        <ElTableColumn prop="note" label="توضیح" align="right" />
+                    </ElTable>
                 </div>
 
                 <div class="flex flex-wrap gap-x-5 gap-y-2 rounded-ui bg-ui-canvas p-3 text-sm">

@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 
 // The user panel's frame (ADR 0069): a side menu at the start (the right in
@@ -96,10 +97,10 @@ function logout() {
         </nav>
 
         <div class="shrink-0 px-4 py-3">
-            <button type="button" :class="rowClass" class="rounded-lg hover:bg-rose-50 hover:text-rose-800" @click="logout">
+            <PanelButton variant="danger-link" class="panel-row-button" @click="logout">
                 <PanelIcon name="logout" class="size-5 shrink-0" />
                 خروج از حساب کاربری
-            </button>
+            </PanelButton>
         </div>
     </div>
 </template>

@@ -1,6 +1,9 @@
 <script setup>
+import { ElTag } from 'element-plus';
+import 'element-plus/es/components/tag/style/css';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
@@ -30,9 +33,9 @@ function choose(slug) {
             <template v-if="tenant.available.length">
                 <ul class="space-y-2" :aria-busy="!!switching">
                     <li v-for="item in tenant.available" :key="item.id">
-                        <button
+                        <PanelButton
                             type="button"
-                            class="ui-card-link flex w-full items-center gap-3 text-start disabled:opacity-60"
+                            variant="outline" class="panel-row-button"
                             :disabled="!!switching"
                             :aria-current="tenant.current?.id === item.id ? 'true' : undefined"
                             @click="choose(item.slug)"
@@ -40,15 +43,15 @@ function choose(slug) {
                             <PanelIcon name="building" class="size-5 shrink-0 text-brand-700" />
                             <span class="min-w-0 flex-1 wrap-break-word font-semibold">{{ item.name }}</span>
                             <span v-if="switching === item.slug" class="text-xs text-ui-muted" role="status">در حال ورود…</span>
-                            <span v-else-if="tenant.current?.id === item.id" class="ui-badge bg-brand-50 text-brand-700">فعلی</span>
-                        </button>
+                            <ElTag v-else-if="tenant.current?.id === item.id" size="small" round>فعلی</ElTag>
+                        </PanelButton>
                     </li>
                 </ul>
             </template>
 
-            <UiNotice v-else>
+            <PanelNotice v-else>
                 حساب شما هنوز به هیچ {{ tenant.label }}ی اضافه نشده است. با مدیر {{ tenant.label }} تماس بگیرید.
-            </UiNotice>
+            </PanelNotice>
         </div>
     </AppLayout>
 </template>

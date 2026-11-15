@@ -1,7 +1,7 @@
 <script setup>
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
-import UiButton from '@/Components/Ui/UiButton.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -41,8 +41,8 @@ function start() {
                 :back-label="exam.context_url ? 'آزمون‌های جلسه' : 'همه‌ی آزمون‌ها'"
             />
 
-            <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
-            <UiNotice v-for="(message, key) in page.props.errors" :key="key" tone="error">{{ message }}</UiNotice>
+            <PanelNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</PanelNotice>
+            <PanelNotice v-for="(message, key) in page.props.errors" :key="key" tone="error">{{ message }}</PanelNotice>
 
             <AttemptRunner v-if="attempt" :key="attempt.id" :exam="exam" :attempt="attempt" />
 
@@ -64,10 +64,10 @@ function start() {
                     </dl>
 
                     <div class="mt-6">
-                        <UiNotice v-if="blocked">{{ blocked }}</UiNotice>
-                        <UiButton v-else :disabled="starting" @click="start">
+                        <PanelNotice v-if="blocked">{{ blocked }}</PanelNotice>
+                        <PanelButton v-else :disabled="starting" @click="start">
                             {{ starting ? 'در حال ورود…' : attemptsUsed ? 'شرکت دوباره' : 'شروع آزمون' }}
-                        </UiButton>
+                        </PanelButton>
                     </div>
                 </div>
 

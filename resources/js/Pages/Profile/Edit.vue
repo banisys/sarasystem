@@ -1,8 +1,11 @@
 <script setup>
+import { ElForm, ElInput } from 'element-plus';
+import 'element-plus/es/components/form/style/css';
+import 'element-plus/es/components/input/style/css';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
-import UiButton from '@/Components/Ui/UiButton.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
@@ -88,7 +91,6 @@ function savePassword() {
     });
 }
 
-const inputClass = 'ui-field';
 </script>
 
 <template>
@@ -97,7 +99,7 @@ const inputClass = 'ui-field';
     <AppLayout>
         <div class="mx-auto max-w-4xl space-y-5">
             <UiPageHeader title="اطلاعات کاربری" icon="user" />
-            <UiNotice v-if="status" tone="success">{{ status }}</UiNotice>
+            <PanelNotice v-if="status" tone="success">{{ status }}</PanelNotice>
 
             <!-- Account -->
             <section class="ui-surface p-4 sm:p-6">
@@ -128,7 +130,7 @@ const inputClass = 'ui-field';
 
                 <div class="mt-4">
                     <label for="mobile" class="ui-label">شماره‌ی جدید</label>
-                    <input
+                    <ElInput
                         id="mobile"
                         ref="mobileInput"
                         v-model="mobile"
@@ -138,7 +140,6 @@ const inputClass = 'ui-field';
                         :disabled="codeSent || sendCodeForm.processing"
                         :aria-invalid="!!mobileError"
                         :aria-describedby="mobileError ? 'mobile-error' : undefined"
-                        :class="inputClass"
                         @keydown.enter.prevent="mobile && !codeSent && !sendCodeForm.processing && sendMobileCode()"
                     />
                     <p v-if="mobileError" id="mobile-error" class="ui-field-error">
@@ -146,7 +147,7 @@ const inputClass = 'ui-field';
                     </p>
                 </div>
 
-                <UiButton
+                <PanelButton
                     v-if="!codeSent"
                     type="button"
                     :disabled="!mobile || sendCodeForm.processing"
@@ -154,12 +155,12 @@ const inputClass = 'ui-field';
                     @click="sendMobileCode"
                 >
                     ارسال کد تأیید
-                </UiButton>
+                </PanelButton>
 
-                <form v-else class="mt-4 space-y-3" @submit.prevent="confirmMobile">
+                <ElForm v-else class="mt-4 space-y-3" @submit.prevent="confirmMobile">
                     <div>
                         <label for="mobile-code" class="ui-label">کد {{ codeLength }} رقمی پیامک‌شده</label>
-                        <input
+                        <ElInput
                             id="mobile-code"
                             :aria-invalid="!!mobileForm.errors.code"
                             :aria-describedby="mobileForm.errors.code ? 'mobile-code-error' : undefined"
@@ -170,38 +171,37 @@ const inputClass = 'ui-field';
                             inputmode="numeric"
                             autocomplete="one-time-code"
                             :maxlength="codeLength"
-                            :class="inputClass"
                         />
                         <p v-if="mobileForm.errors.code" id="mobile-code-error" class="ui-field-error">{{ mobileForm.errors.code }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-4">
-                        <UiButton
+                        <PanelButton
                             type="submit"
                             :disabled="!mobileForm.code || mobileForm.processing"
                         >
                             تأیید و ذخیره
-                        </UiButton>
-                        <button type="button" class="text-sm text-gray-600 hover:text-gray-900" @click="changeMobile">
+                        </PanelButton>
+                        <PanelButton type="button" variant="ghost" @click="changeMobile">
                             تغییر شماره
-                        </button>
-                        <button
+                        </PanelButton>
+                        <PanelButton
                             type="button"
                             :disabled="secondsLeft > 0 || sendCodeForm.processing"
-                            class="text-sm text-violet-600 hover:text-violet-800 disabled:text-gray-400"
+                            variant="link"
                             @click="sendMobileCode"
                         >
                             {{ secondsLeft > 0 ? `ارسال دوباره تا ${secondsLeft} ثانیه` : 'ارسال دوباره' }}
-                        </button>
+                        </PanelButton>
                     </div>
-                </form>
+                </ElForm>
             </section>
 
             <!-- Email -->
-            <form class="ui-surface p-4 sm:p-6" @submit.prevent="saveEmail">
+            <ElForm class="ui-surface p-4 sm:p-6" @submit.prevent="saveEmail">
                 <h2 class="font-bold text-gray-900">ایمیل</h2>
                 <div class="mt-4">
                     <label for="email" class="ui-label">ایمیل (اختیاری)</label>
-                    <input
+                    <ElInput
                         id="email"
                         v-model="emailForm.email"
                         type="email"
@@ -209,21 +209,20 @@ const inputClass = 'ui-field';
                         autocomplete="email"
                         :aria-invalid="!!emailForm.errors.email"
                         :aria-describedby="emailForm.errors.email ? 'email-error' : undefined"
-                        :class="inputClass"
                     />
                     <p v-if="emailForm.errors.email" id="email-error" class="ui-field-error">{{ emailForm.errors.email }}</p>
                 </div>
-                <UiButton
+                <PanelButton
                     type="submit"
                     :disabled="emailForm.processing || !emailForm.isDirty"
                     class="mt-4"
                 >
                     ذخیره
-                </UiButton>
-            </form>
+                </PanelButton>
+            </ElForm>
 
             <!-- Password -->
-            <form class="ui-surface p-4 sm:p-6" @submit.prevent="savePassword">
+            <ElForm class="ui-surface p-4 sm:p-6" @submit.prevent="savePassword">
                 <h2 class="font-bold text-gray-900">رمز عبور</h2>
                 <p v-if="!currentPasswordRequired" class="mt-1 text-sm text-gray-600">
                     با کد پیامکی وارد شده‌اید؛ می‌توانید بدون رمز فعلی، رمز جدید تعیین کنید.
@@ -232,7 +231,7 @@ const inputClass = 'ui-field';
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <div v-if="currentPasswordRequired" class="sm:col-span-2">
                         <label for="current_password" class="ui-label">رمز فعلی</label>
-                        <input
+                        <ElInput
                             id="current_password"
                             :aria-invalid="!!passwordForm.errors.current_password"
                             :aria-describedby="passwordForm.errors.current_password ? 'current_password-error' : undefined"
@@ -240,7 +239,6 @@ const inputClass = 'ui-field';
                             type="password"
                             dir="ltr"
                             autocomplete="current-password"
-                            :class="inputClass"
                         />
                         <p v-if="passwordForm.errors.current_password" id="current_password-error" class="ui-field-error">
                             {{ passwordForm.errors.current_password }}
@@ -248,7 +246,7 @@ const inputClass = 'ui-field';
                     </div>
                     <div>
                         <label for="password" class="ui-label">رمز جدید</label>
-                        <input
+                        <ElInput
                             id="password"
                             :aria-invalid="!!passwordForm.errors.password"
                             :aria-describedby="passwordForm.errors.password ? 'password-error' : undefined"
@@ -256,33 +254,31 @@ const inputClass = 'ui-field';
                             type="password"
                             dir="ltr"
                             autocomplete="new-password"
-                            :class="inputClass"
                         />
                         <p v-if="passwordForm.errors.password" id="password-error" class="ui-field-error">{{ passwordForm.errors.password }}</p>
                     </div>
                     <div>
                         <label for="password_confirmation" class="ui-label">تکرار رمز جدید</label>
-                        <input
+                        <ElInput
                             id="password_confirmation"
                             v-model="passwordForm.password_confirmation"
                             type="password"
                             dir="ltr"
                             autocomplete="new-password"
-                            :class="inputClass"
                         />
                     </div>
                 </div>
 
                 <p class="mt-3 text-xs text-gray-500">با تغییر رمز، از همه‌ی دستگاه‌های دیگر خارج می‌شوید.</p>
 
-                <UiButton
+                <PanelButton
                     type="submit"
                     :disabled="passwordForm.processing"
                     class="mt-4"
                 >
                     تغییر رمز
-                </UiButton>
-            </form>
+                </PanelButton>
+            </ElForm>
         </div>
     </AppLayout>
 </template>

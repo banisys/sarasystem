@@ -1,11 +1,23 @@
 <script setup>
+import PanelDialog from '@/Components/Ui/PanelDialog.vue';
+import PanelConfirm from '@/Components/Ui/PanelConfirm.vue';
+import { ElCheckbox, ElCheckboxGroup, ElForm, ElInput, ElOption, ElRadio, ElRadioGroup, ElSelect, ElTable, ElTableColumn, ElTag } from 'element-plus';
+import 'element-plus/es/components/checkbox/style/css';
+import 'element-plus/es/components/checkbox-group/style/css';
+import 'element-plus/es/components/select/style/css';
+import 'element-plus/es/components/radio/style/css';
+import 'element-plus/es/components/radio-group/style/css';
+import 'element-plus/es/components/table/style/css';
+import 'element-plus/es/components/tag/style/css';
+import 'element-plus/es/components/form/style/css';
+import 'element-plus/es/components/input/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { computed, ref, watch } from 'vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
-import UiButton from '@/Components/Ui/UiButton.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
 
 const props = defineProps({ questions: Object, ownBanks: Array, selectedBank: Object, types: Object });
 const page = usePage();
@@ -16,7 +28,10 @@ const question = useForm({
 });
 const deletion = useForm({});
 const sharing = useForm({ bank_id: '' });
-const dialog = ref(null);
+const questionEditorOpen = ref(false);
+const questionBody = ref(null);
+const removalOpen = ref(false);
+const removingQuestion = ref(null);
 const editingQuestion = ref(null);
 const addingQuestion = ref(null);
 const availableBanks = computed(() => editingQuestion.value || !props.selectedBank
@@ -26,9 +41,6 @@ const correctIndex = computed({
     get: () => question.options.findIndex((option) => option.is_correct),
     set: (index) => question.options.forEach((option, optionIndex) => { option.is_correct = optionIndex === index; }),
 });
-const field = 'ui-field';
-const primary = 'ui-button border-transparent bg-brand-600 text-brand-contrast hover:bg-brand-action-hover';
-const secondary = 'inline-flex min-h-9 items-center text-sm font-medium text-brand-700 hover:underline';
 const returnBank = () => ({ return_bank: props.selectedBank?.id ?? null });
 
 function openQuestion(record = null) {
@@ -43,7 +55,7 @@ function openQuestion(record = null) {
             model_answer: record.model_answer ?? '',
         });
     }
-    dialog.value.showModal();
+    questionEditorOpen.value = true;
 }
 function saveQuestion() {
     question.transform((data) => ({ ...data, ...returnBank() }));
@@ -52,17 +64,25 @@ function saveQuestion() {
         onSuccess: () => {
             question.resetAndClearErrors();
             question.defaults();
-            dialog.value?.close();
+            questionEditorOpen.value = false;
         },
     };
     if (editingQuestion.value) question.patch(route('exams.library.questions.update', editingQuestion.value), options);
     else if (props.selectedBank) question.post(route('exams.library.banks.questions.store', props.selectedBank.id), options);
     else question.post(route('exams.library.questions.store'), options);
 }
-function removeQuestion(id) {
-    if (!window.confirm('سؤال حذف شود؟')) return;
-    deletion.transform(returnBank).delete(route('exams.library.questions.destroy', id), {
+function confirmRemoval(id) {
+    removingQuestion.value = id;
+    deletion.clearErrors();
+    removalOpen.value = true;
+}
+
+function removeQuestion() {
+    if (deletion.processing) return;
+
+    deletion.transform(returnBank).delete(route('exams.library.questions.destroy', removingQuestion.value), {
         preserveScroll: true,
+        onSuccess: () => { removalOpen.value = false; },
     });
 }
 function selectSharedQuestion(id) {
@@ -75,7 +95,8 @@ function addSharedQuestion(id) {
     });
 }
 watch(() => props.selectedBank?.id, () => {
-    dialog.value?.close();
+    questionEditorOpen.value = false;
+    removalOpen.value = false;
     addingQuestion.value = null;
     sharing.resetAndClearErrors();
     deletion.clearErrors();
@@ -98,121 +119,126 @@ function removeOption(index) {
                 :back-href="route('exams.library')"
                 back-label="بازگشت به بانک‌ها"
             />
-            <UiNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</UiNotice>
-            <p v-for="(error, key) in deletion.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
+            <PanelNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</PanelNotice>
             <section class="ui-surface overflow-hidden" aria-label="سؤال‌ها">
                 <div v-if="!selectedBank || selectedBank.can_add_question" class="flex justify-end border-b border-ui-line px-4 py-3">
-                    <UiButton variant="outline-brand" class="min-h-9 gap-1.5 px-3" aria-haspopup="dialog" @click="openQuestion()">
+                    <PanelButton variant="outline-brand" size="default" aria-haspopup="dialog" @click="openQuestion()">
                         <PanelIcon name="plus" class="size-4" />
                         افزودن سؤال
-                    </UiButton>
+                    </PanelButton>
                 </div>
-                <div v-if="questions.data.length" class="overflow-x-auto">
-                    <table class="w-full divide-y divide-ui-line text-start text-sm">
-                        <thead class="bg-ui-canvas text-ui-muted">
-                            <tr>
-                                <th scope="col" class="px-4 py-3 text-start">متن سؤال</th>
-                                <th scope="col" class="px-4 py-3 text-start whitespace-nowrap">نوع</th>
-                                <th scope="col" class="px-4 py-3 text-start">بارم</th>
-                                <th scope="col" class="px-4 py-3 text-start whitespace-nowrap">وضعیت</th>
-                                <th scope="col" class="px-4 py-3 text-start">اشتراک</th>
-                                <th scope="col" class="px-4 py-3 text-start">عملیات</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-ui-line">
-                            <tr v-for="record in questions.data" :key="record.id" class="align-top">
-                                <td class="min-w-56 space-y-2 px-4 py-3">
-                                    <p class="whitespace-pre-wrap wrap-break-word font-medium">{{ record.body }}</p>
-                                    <details v-if="record.options || record.accepted_answers || record.model_answer" class="text-sm">
-                                        <summary class="cursor-pointer text-gray-700">پاسخ‌ها</summary>
-                                        <ul v-if="record.options" class="mt-2 list-disc space-y-1 ps-5">
-                                            <li v-for="option in record.options" :key="option.key">{{ option.text }}{{ option.is_correct ? ' (درست)' : '' }}</li>
-                                        </ul>
-                                        <p v-else class="mt-2 whitespace-pre-wrap wrap-break-word">{{ record.accepted_answers?.join('، ') ?? record.model_answer }}</p>
-                                    </details>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">{{ types[record.type] }}</td>
-                                <td class="px-4 py-3 tabular-nums">{{ record.score }}</td>
-                                <td class="px-4 py-3">{{ record.is_active ? 'فعال' : 'غیرفعال' }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap">{{ record.is_shared ? 'عمومی' : 'خصوصی' }}</td>
-                                <td class="px-4 py-2">
-                                    <div v-if="record.is_mine" class="flex items-center gap-3 whitespace-nowrap">
-                                        <button type="button" :class="secondary" aria-haspopup="dialog" @click="openQuestion(record)">ویرایش</button>
-                                        <button type="button" :disabled="deletion.processing" class="text-red-700 hover:underline" @click="removeQuestion(record.id)">حذف</button>
-                                    </div>
-                                    <button v-else-if="ownBanks.length" type="button" :class="[secondary, 'whitespace-nowrap']" :aria-expanded="addingQuestion === record.id" @click="selectSharedQuestion(record.id)">افزودن به بانک من</button>
-                                    <form v-if="addingQuestion === record.id" class="space-y-2" novalidate @submit.prevent="addSharedQuestion(record.id)">
-                                        <label class="block space-y-1 text-sm">
-                                            <span>بانک مقصد</span>
-                                            <select v-model="sharing.bank_id" :class="field">
-                                                <option value="">انتخاب کنید</option>
-                                                <option v-for="ownBank in ownBanks" :key="ownBank.id" :value="ownBank.id">{{ ownBank.title }}</option>
-                                            </select>
-                                        </label>
-                                        <p v-for="(error, key) in sharing.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
-                                        <button :class="primary" :disabled="sharing.processing">افزودن سؤال</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <p v-else class="p-4 text-sm text-ui-muted">سؤالی برای نمایش وجود ندارد.</p>
+                <ElTable :data="questions.data" row-key="id" empty-text="سؤالی برای نمایش وجود ندارد."
+                    table-layout="auto" native-scrollbar :scrollbar-tabindex="0" flexible>
+                    <ElTableColumn label="متن سؤال" min-width="230" align="right">
+                        <template #default="{ row }">
+                            <p class="min-w-52 whitespace-pre-wrap wrap-break-word font-medium">{{ row.body }}</p>
+                            <details v-if="row.options || row.accepted_answers || row.model_answer" class="text-sm">
+                                <summary class="cursor-pointer text-ui-muted">پاسخ‌ها</summary>
+                                <ul v-if="row.options" class="mt-2 list-disc space-y-1 ps-5">
+                                    <li v-for="option in row.options" :key="option.key">{{ option.text }}{{ option.is_correct ? ' (درست)' : '' }}</li>
+                                </ul>
+                                <p v-else class="mt-2 whitespace-pre-wrap wrap-break-word">{{ row.accepted_answers?.join('، ') ?? row.model_answer }}</p>
+                            </details>
+                        </template>
+                    </ElTableColumn>
+                    <ElTableColumn label="نوع" width="110" align="right">
+                        <template #default="{ row }">{{ types[row.type] }}</template>
+                    </ElTableColumn>
+                    <ElTableColumn label="بارم" prop="score" width="64" align="right" />
+                    <ElTableColumn label="وضعیت" width="90" align="right">
+                        <template #default="{ row }">
+                            <ElTag :type="row.is_active ? 'success' : 'info'" size="small">{{ row.is_active ? 'فعال' : 'غیرفعال' }}</ElTag>
+                        </template>
+                    </ElTableColumn>
+                    <ElTableColumn label="اشتراک" width="90" align="right">
+                        <template #default="{ row }">
+                            <ElTag :type="row.is_shared ? 'success' : 'info'" size="small">{{ row.is_shared ? 'عمومی' : 'خصوصی' }}</ElTag>
+                        </template>
+                    </ElTableColumn>
+                    <ElTableColumn label="عملیات" width="210" align="right">
+                        <template #default="{ row }">
+                            <div v-if="row.is_mine" class="flex flex-wrap gap-3">
+                                <PanelButton variant="link" aria-haspopup="dialog" @click="openQuestion(row)">ویرایش</PanelButton>
+                                <PanelButton variant="danger-link" :disabled="deletion.processing" aria-haspopup="dialog" @click="confirmRemoval(row.id)">حذف</PanelButton>
+                            </div>
+                            <PanelButton v-else-if="ownBanks.length" variant="link" :aria-expanded="addingQuestion === row.id" @click="selectSharedQuestion(row.id)">افزودن به بانک من</PanelButton>
+                            <ElForm v-if="addingQuestion === row.id" class="mt-1 space-y-2" novalidate @submit.prevent="addSharedQuestion(row.id)">
+                                <label class="block space-y-1 text-sm">
+                                    <span>بانک مقصد</span>
+                                    <ElSelect v-model="sharing.bank_id" aria-label="بانک مقصد" placeholder="انتخاب کنید" popper-class="profile-popper">
+                                        <ElOption v-for="ownBank in ownBanks" :key="ownBank.id" :value="ownBank.id" :label="ownBank.title" />
+                                    </ElSelect>
+                                </label>
+                                <p v-for="(error, key) in sharing.errors" :key="key" class="ui-field-error" role="alert">{{ error }}</p>
+                                <PanelButton type="submit" :loading="sharing.processing">افزودن سؤال</PanelButton>
+                            </ElForm>
+                        </template>
+                    </ElTableColumn>
+                </ElTable>
                 <nav v-if="questions.prev_page_url || questions.next_page_url" class="flex gap-4 border-t border-ui-line px-4 py-2" aria-label="صفحه‌های سؤال">
-                    <Link v-if="questions.prev_page_url" :href="questions.prev_page_url" :class="secondary">قبلی</Link>
-                    <Link v-if="questions.next_page_url" :href="questions.next_page_url" :class="secondary">بعدی</Link>
+                    <PanelButton v-if="questions.prev_page_url" :href="questions.prev_page_url" variant="link">قبلی</PanelButton>
+                    <PanelButton v-if="questions.next_page_url" :href="questions.next_page_url" variant="link">بعدی</PanelButton>
                 </nav>
             </section>
 
-            <dialog ref="dialog" aria-labelledby="question-dialog-title" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-2xl overflow-auto rounded-ui bg-white p-5 text-ui-ink shadow-xl backdrop:bg-black/50">
-                <form class="space-y-4" novalidate @submit.prevent="saveQuestion">
-                    <h2 id="question-dialog-title" class="text-lg font-bold">{{ editingQuestion ? 'ویرایش سؤال' : 'افزودن سؤال' }}</h2>
+            <PanelDialog v-model="questionEditorOpen" :title="editingQuestion ? 'ویرایش سؤال' : 'افزودن سؤال'"
+                :busy="question.processing" @opened="questionBody?.focus()">
+                <ElForm class="space-y-4" novalidate @submit.prevent="saveQuestion">
                     <p v-if="selectedBank && !editingQuestion" class="text-sm text-ui-muted">بانک مقصد: {{ selectedBank.title }}</p>
                     <label class="block space-y-1 text-sm">
                         <span>نوع سؤال</span>
-                        <select v-model="question.type" :class="field">
-                            <option v-for="(label, value) in types" :key="value" :value="value">{{ label }}</option>
-                        </select>
+                        <ElSelect v-model="question.type" aria-label="نوع سؤال" popper-class="profile-popper">
+                            <ElOption v-for="(label, value) in types" :key="value" :value="value" :label="label" />
+                        </ElSelect>
                     </label>
                     <label class="block space-y-1 text-sm">
                         <span>متن سؤال</span>
-                        <textarea id="question-body" autofocus v-model="question.body" rows="3" :class="field" />
+                        <ElInput type="textarea" id="question-body" ref="questionBody" v-model="question.body" rows="3" />
                     </label>
                     <fieldset v-if="question.type === 'choice'" class="space-y-2">
                         <legend class="text-sm font-medium">گزینه‌ها و پاسخ درست</legend>
-                        <div v-for="(option, index) in question.options" :key="index" class="flex items-center gap-2">
-                            <input v-model="correctIndex" type="radio" name="correct-option" :value="index" :aria-label="`گزینهٔ درست ${index + 1}`" />
-                            <input v-model="option.text" :class="field" :aria-label="`متن گزینهٔ ${index + 1}`" />
-                            <button v-if="question.options.length > 2" type="button" class="text-sm text-red-700" @click="removeOption(index)">حذف</button>
-                        </div>
-                        <button v-if="question.options.length < 10" type="button" :class="secondary" @click="question.options.push({ text: '', is_correct: false })">افزودن گزینه</button>
+                        <ElRadioGroup v-model="correctIndex" aria-label="پاسخ درست" class="panel-option-stack">
+                            <div v-for="(option, index) in question.options" :key="index" class="flex w-full items-center gap-2">
+                                <ElRadio :value="index" :aria-label="`گزینهٔ درست ${index + 1}`" />
+                                <ElInput v-model="option.text" :aria-label="`متن گزینهٔ ${index + 1}`" />
+                                <PanelButton v-if="question.options.length > 2" variant="danger-link" @click="removeOption(index)">حذف</PanelButton>
+                            </div>
+                        </ElRadioGroup>
+                        <PanelButton v-if="question.options.length < 10" variant="link" @click="question.options.push({ text: '', is_correct: false })">افزودن گزینه</PanelButton>
                     </fieldset>
                     <fieldset v-else-if="question.type === 'fill_in_the_blank'" class="space-y-2">
                         <legend class="text-sm font-medium">پاسخ‌های پذیرفتنی</legend>
                         <p class="text-sm text-gray-600">جای پاسخ را در متن سؤال با سه زیرخط (___) مشخص کنید.</p>
                         <div v-for="(_, index) in question.accepted_answers" :key="index" class="flex gap-2">
-                            <input v-model="question.accepted_answers[index]" :class="field" :aria-label="`پاسخ پذیرفتنی ${index + 1}`" />
-                            <button v-if="question.accepted_answers.length > 1" type="button" class="text-sm text-red-700" @click="question.accepted_answers.splice(index, 1)">حذف</button>
+                            <ElInput v-model="question.accepted_answers[index]" :aria-label="`پاسخ پذیرفتنی ${index + 1}`" />
+                            <PanelButton v-if="question.accepted_answers.length > 1" variant="danger-link" @click="question.accepted_answers.splice(index, 1)">حذف</PanelButton>
                         </div>
-                        <button v-if="question.accepted_answers.length < 10" type="button" :class="secondary" @click="question.accepted_answers.push('')">افزودن پاسخ</button>
+                        <PanelButton v-if="question.accepted_answers.length < 10" variant="link" @click="question.accepted_answers.push('')">افزودن پاسخ</PanelButton>
                     </fieldset>
-                    <label v-else class="block space-y-1 text-sm"><span>پاسخ نمونه (اختیاری)</span><textarea v-model="question.model_answer" rows="2" :class="field" /></label>
-                    <label class="block space-y-1 text-sm"><span>بارم</span><input v-model="question.score" type="number" min="0.25" step="0.01" :class="field" /></label>
+                    <label v-else class="block space-y-1 text-sm"><span>پاسخ نمونه (اختیاری)</span><ElInput type="textarea" v-model="question.model_answer" rows="2" /></label>
+                    <label class="block space-y-1 text-sm"><span>بارم</span><ElInput v-model.number="question.score" type="number" min="0.25" step="0.01" /></label>
                     <fieldset v-if="availableBanks.length" class="space-y-1">
                         <legend class="mb-1 text-sm font-medium">{{ selectedBank && !editingQuestion ? 'بانک‌های دیگر من' : 'بانک‌های من' }}</legend>
-                        <label v-for="record in availableBanks" :key="record.id" class="flex items-center gap-2 text-sm">
-                            <input v-model="question.bank_ids" type="checkbox" :value="record.id" /> {{ record.title }}
-                        </label>
+                        <ElCheckboxGroup v-model="question.bank_ids" :aria-label="selectedBank && !editingQuestion ? 'بانک‌های دیگر من' : 'بانک‌های من'" class="panel-option-stack">
+                            <ElCheckbox v-for="record in availableBanks" :key="record.id" :value="record.id" class="panel-wrap-option">
+                                {{ record.title }}
+                            </ElCheckbox>
+                        </ElCheckboxGroup>
                     </fieldset>
-                    <label class="flex items-center gap-2 text-sm"><input v-model="question.is_active" type="checkbox" /> فعال برای ساخت آزمون</label>
-                    <label class="flex items-center gap-2 text-sm"><input v-model="question.is_shared" type="checkbox" /> عمومی در این شعبه</label>
+                    <div><ElCheckbox v-model="question.is_active">فعال برای ساخت آزمون</ElCheckbox></div>
+                    <div><ElCheckbox v-model="question.is_shared">عمومی در این شعبه</ElCheckbox></div>
                     <p v-for="(error, key) in question.errors" :key="key" class="text-sm text-red-700" role="alert">{{ error }}</p>
                     <div class="flex flex-wrap items-center gap-3">
-                        <UiButton type="submit" :disabled="question.processing">ذخیرهٔ سؤال</UiButton>
-                        <UiButton variant="outline" @click="dialog.close()">انصراف</UiButton>
+                        <PanelButton type="submit" :disabled="question.processing">ذخیرهٔ سؤال</PanelButton>
+                        <PanelButton variant="outline" :disabled="question.processing" @click="questionEditorOpen = false">انصراف</PanelButton>
                     </div>
-                </form>
-            </dialog>
+                </ElForm>
+            </PanelDialog>
+            <PanelConfirm v-model="removalOpen" title="حذف سؤال" confirm-label="حذف سؤال" danger
+                :busy="deletion.processing" @confirm="removeQuestion">
+                <p>سؤال حذف شود؟</p>
+                <PanelNotice v-for="(error, key) in deletion.errors" :key="key" class="mt-2" tone="error">{{ error }}</PanelNotice>
+            </PanelConfirm>
         </div>
     </AppLayout>
 </template>

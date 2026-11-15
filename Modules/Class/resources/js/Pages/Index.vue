@@ -1,9 +1,12 @@
 <script setup>
+import { ElCard, ElTag } from 'element-plus';
+import 'element-plus/es/components/card/style/css';
+import 'element-plus/es/components/tag/style/css';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
-import UiButton from '@/Components/Ui/UiButton.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 // «کلاس‌های من» (ADR 0026): the person's sessions as a day, a week
@@ -53,12 +56,12 @@ function at(date, view = props.calendar.view) {
                         <h2 class="mt-1 text-sm text-white/85">{{ calendar.label }}</h2>
                     </div>
                 </div>
-                <UiButton :href="at(calendar.today)" variant="outline">امروز</UiButton>
+                <PanelButton :href="at(calendar.today)" variant="outline">امروز</PanelButton>
             </header>
 
             <nav aria-label="نمای تقویم و جابه‌جایی تاریخ" class="ui-surface flex flex-wrap items-center justify-between gap-3 p-2.5">
                 <div class="flex flex-wrap gap-1 rounded-ui bg-ui-canvas p-1">
-                    <UiButton
+                    <PanelButton
                         v-for="item in views"
                         :key="item.value"
                         :href="at(calendar.date, item.value)"
@@ -67,11 +70,11 @@ function at(date, view = props.calendar.view) {
                         class="px-3 sm:px-4"
                     >
                         {{ item.label }}
-                    </UiButton>
+                    </PanelButton>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <UiButton :href="at(calendar.previous)" variant="outline">قبلی</UiButton>
-                    <UiButton :href="at(calendar.next)" variant="outline">بعدی</UiButton>
+                    <PanelButton :href="at(calendar.previous)" variant="outline">قبلی</PanelButton>
+                    <PanelButton :href="at(calendar.next)" variant="outline">بعدی</PanelButton>
                 </div>
             </nav>
 
@@ -103,7 +106,7 @@ function at(date, view = props.calendar.view) {
 
             <!-- Day and week (and month on small screens): one block per day. -->
             <div class="space-y-3" :class="calendar.view === 'month' ? 'md:hidden' : ''">
-                <UiNotice v-if="!visibleDays.length">جلسه‌ای در این بازه نیست.</UiNotice>
+                <PanelNotice v-if="!visibleDays.length">جلسه‌ای در این بازه نیست.</PanelNotice>
 
                 <section
                     v-for="day in visibleDays"
@@ -113,8 +116,8 @@ function at(date, view = props.calendar.view) {
                 >
                     <div class="mb-3 flex flex-wrap items-center gap-2">
                         <h3 class="font-semibold text-ui-ink">{{ day.label }}</h3>
-                        <span v-if="day.is_today" class="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-900">امروز</span>
-                        <span v-if="day.holiday" class="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">تعطیل: {{ day.holiday }}</span>
+                        <ElTag v-if="day.is_today" size="small" round>امروز</ElTag>
+                        <ElTag v-if="day.holiday" type="danger" size="small" round>تعطیل: {{ day.holiday }}</ElTag>
                     </div>
 
                     <p v-if="!day.sessions.length" class="text-sm text-gray-500">جلسه‌ای نیست.</p>
@@ -149,14 +152,14 @@ function at(date, view = props.calendar.view) {
             <section v-if="classes.length" class="space-y-2">
                 <h2 class="text-xl font-bold text-ui-ink">کلاس‌ها</h2>
                 <div class="grid gap-2 sm:grid-cols-2">
-                    <div v-for="item in classes" :key="item.id" class="ui-surface p-4 text-sm">
+                    <ElCard v-for="item in classes" :key="item.id" shadow="never" class="text-sm">
                         <div class="font-semibold text-ui-ink">{{ item.title }}</div>
                         <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-ui-muted">
                             <span>نقش: {{ item.roles }}</span>
                             <span>{{ item.mode }}</span>
                             <span v-if="item.online_platform">کلاس آنلاین: {{ item.online_platform }}</span>
                         </div>
-                    </div>
+                    </ElCard>
                 </div>
             </section>
         </div>

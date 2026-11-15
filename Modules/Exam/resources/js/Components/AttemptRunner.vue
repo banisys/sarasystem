@@ -1,5 +1,11 @@
 <script setup>
-import UiButton from '@/Components/Ui/UiButton.vue';
+import { ElInput, ElProgress, ElRadio, ElRadioGroup } from 'element-plus';
+import 'element-plus/es/components/input/style/css';
+import 'element-plus/es/components/progress/style/css';
+import 'element-plus/es/components/radio-group/style/css';
+import 'element-plus/es/components/radio/style/css';
+import PanelConfirm from '@/Components/Ui/PanelConfirm.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
 import { router, useHttp } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatDuration } from '../format.js';
@@ -17,6 +23,7 @@ const autosave = useHttp({
 const savedAt = ref(null);
 const saveFailed = ref(false);
 const submitting = ref(false);
+const confirming = ref(false);
 
 const perPage = Math.max(1, props.exam.questions_per_page);
 const pageCount = Math.max(1, Math.ceil(props.attempt.questions.length / perPage));
@@ -68,17 +75,12 @@ watch(
     },
 );
 
-function submit(askFirst = false) {
+function submit() {
     if (submitting.value) {
         return;
     }
 
-    const unanswered = props.attempt.questions.length - answeredCount.value;
-
-    if (askFirst && !window.confirm(unanswered > 0 ? `${unanswered} سؤال بی‌پاسخ است. آزمون پایان یابد؟` : 'آزمون پایان یابد؟')) {
-        return;
-    }
-
+    confirming.value = false;
     submitting.value = true;
     clearTimeout(saveTimeout);
     clearInterval(timer);
@@ -105,12 +107,12 @@ onBeforeUnmount(() => {
         <div class="ui-surface sticky top-16 z-10 flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 lg:top-0">
             <div class="min-w-0 flex-1 space-y-1.5 text-sm text-ui-muted">
                 <p class="font-semibold text-ui-ink">{{ answeredCount }} از {{ attempt.questions.length }} سؤال پاسخ داده شده</p>
-                <progress class="block h-1.5 w-full max-w-48 accent-brand-600" :value="answeredCount" :max="attempt.questions.length || 1" aria-label="پیشرفت پاسخ‌گویی" />
+                <ElProgress class="max-w-48" :percentage="Math.round(100 * answeredCount / (attempt.questions.length || 1))" :show-text="false" aria-label="پیشرفت پاسخ‌گویی" />
                 <div class="flex flex-wrap items-center gap-x-2 text-xs" role="status">
                     <span v-if="saveFailed" class="text-rose-700">ذخیره نشد.</span>
                     <span v-else-if="autosave.processing">در حال ذخیره…</span>
                     <span v-else-if="savedAt" class="text-emerald-700">ذخیره شد</span>
-                    <button v-if="saveFailed" type="button" class="min-h-8 text-brand-700 underline" :disabled="autosave.processing || submitting" @click="save">تلاش دوباره</button>
+                    <PanelButton v-if="saveFailed" variant="link" :disabled="autosave.processing || submitting" @click="save">تلاش دوباره</PanelButton>
                 </div>
             </div>
             <div
@@ -134,54 +136,41 @@ onBeforeUnmount(() => {
             class="ui-surface p-4 sm:p-5"
         >
             <div class="flex flex-wrap items-start justify-between gap-2">
-                <p class="min-w-0 flex-1 basis-48 whitespace-pre-line wrap-break-word font-medium leading-8 text-ui-ink">
+                <div class="min-w-0 flex-1 basis-48 whitespace-pre-line wrap-break-word font-medium leading-8 text-ui-ink">
                     <span class="text-violet-700">{{ currentPage * perPage + index + 1 }}.</span>
                     <template v-if="question.blank_parts">
                         {{ question.blank_parts[0] }}
-                        <input
+                        <ElInput
                             v-model="autosave.answers[question.id]"
                             type="text"
-                            :aria-label="`پاسخ جای خالی سؤال ${currentPage * perPage + index + 1}`"
-                            class="ui-field my-1 inline-block w-36 max-w-full"
+                            :aria-label="`پاسخ جای خالی سؤال ${currentPage * perPage + index + 1}`" class="panel-inline-input my-1"
                         />
                         {{ question.blank_parts[1] }}
                     </template>
                     <template v-else>{{ question.body }}</template>
-                </p>
+                </div>
                 <span class="shrink-0 text-xs text-gray-500">{{ question.max_score }} نمره</span>
             </div>
 
             <div v-if="question.type === 'choice'" class="mt-4 space-y-2">
-                <label
-                    v-for="option in question.options"
-                    :key="option.key"
-                    class="flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2"
-                    :class="autosave.answers[question.id] === option.key ? 'border-violet-500 bg-violet-50' : 'border-gray-200 hover:bg-gray-50'"
-                >
-                    <input
-                        v-model="autosave.answers[question.id]"
-                        type="radio"
-                        :name="`question-${question.id}`"
-                        :value="option.key"
-                        class="text-violet-600"
-                    />
-                    <span>{{ option.text }}</span>
-                </label>
-                <button
+                <ElRadioGroup v-model="autosave.answers[question.id]" :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`" class="panel-option-stack">
+                    <ElRadio v-for="option in question.options" :key="option.key" :value="option.key"
+                        :name="`question-${question.id}`" border class="panel-wrap-option"
+                    >{{ option.text }}</ElRadio>
+                </ElRadioGroup>
+                <PanelButton
                     v-if="autosave.answers[question.id]"
-                    type="button"
-                    class="text-xs text-gray-500 hover:text-gray-800"
+                    variant="link"
                     @click="autosave.answers[question.id] = null"
                 >
                     پاک کردن پاسخ
-                </button>
+                </PanelButton>
             </div>
 
-            <textarea
+            <ElInput type="textarea"
                 v-else-if="!question.blank_parts"
                 v-model="autosave.answers[question.id]"
-                rows="5"
-                class="ui-field mt-4"
+                rows="5" class="mt-4"
                 :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`"
                 placeholder="پاسخ خود را بنویسید"
             />
@@ -189,12 +178,16 @@ onBeforeUnmount(() => {
 
         <div class="ui-surface flex flex-wrap items-center justify-between gap-3 p-3">
             <nav v-if="pageCount > 1" aria-label="صفحه‌های آزمون" class="flex flex-wrap items-center gap-2">
-                <UiButton variant="outline" :disabled="currentPage === 0 || submitting" @click="goToPage(currentPage - 1)">قبلی</UiButton>
-                <UiButton variant="outline" :disabled="currentPage >= pageCount - 1 || submitting" @click="goToPage(currentPage + 1)">بعدی</UiButton>
+                <PanelButton variant="outline" :disabled="currentPage === 0 || submitting" @click="goToPage(currentPage - 1)">قبلی</PanelButton>
+                <PanelButton variant="outline" :disabled="currentPage >= pageCount - 1 || submitting" @click="goToPage(currentPage + 1)">بعدی</PanelButton>
             </nav>
-            <UiButton :disabled="submitting" @click="submit(true)">
+            <PanelButton :loading="submitting" aria-haspopup="dialog" @click="confirming = true">
                 {{ submitting ? 'در حال ثبت پاسخ‌ها…' : 'پایان آزمون و ثبت پاسخ‌ها' }}
-            </UiButton>
+            </PanelButton>
         </div>
+        <PanelConfirm v-model="confirming" title="پایان آزمون" confirm-label="پایان آزمون و ثبت پاسخ‌ها" @confirm="submit">
+            <p v-if="answeredCount < attempt.questions.length">{{ attempt.questions.length - answeredCount }} سؤال بی‌پاسخ است. آزمون پایان یابد؟</p>
+            <p v-else>آزمون پایان یابد؟</p>
+        </PanelConfirm>
     </div>
 </template>

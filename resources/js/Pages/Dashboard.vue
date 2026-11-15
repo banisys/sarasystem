@@ -1,8 +1,8 @@
 <script setup>
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import UiButton from '@/Components/Ui/UiButton.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
+import { Head, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '../Layouts/AppLayout.vue';
@@ -21,21 +21,21 @@ const tenant = computed(() => page.props.tenant.current);
             <UiPageHeader :title="`${user.name}، خوش آمدید`" :description="tenant.name" icon="home" />
 
             <div v-if="page.props.navigation?.length" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <Link
+                <PanelButton
                     v-for="link in page.props.navigation"
                     :key="link.url"
                     :href="link.url"
-                    class="ui-card-link flex min-w-0 items-center gap-3"
+                    variant="outline" class="panel-row-button"
                 >
                     <span class="rounded-xl bg-violet-50 p-2.5 text-violet-700">
                         <PanelIcon :name="link.icon" class="size-6" />
                     </span>
                     <span class="min-w-0 flex-1 wrap-break-word font-semibold text-ui-ink">{{ link.title }}</span>
                     <PanelIcon name="back" class="size-4 shrink-0 rotate-180 text-ui-muted ltr:rotate-0" />
-                </Link>
+                </PanelButton>
             </div>
-            <UiNotice v-else>در این {{ page.props.tenant.label }} هنوز بخشی برای حساب شما در دسترس نیست.</UiNotice>
-            <UiButton :href="route('profile.edit')" variant="outline">اطلاعات کاربری</UiButton>
+            <PanelNotice v-else>در این {{ page.props.tenant.label }} هنوز بخشی برای حساب شما در دسترس نیست.</PanelNotice>
+            <PanelButton :href="route('profile.edit')" variant="outline">اطلاعات کاربری</PanelButton>
         </div>
     </AppLayout>
 </template>

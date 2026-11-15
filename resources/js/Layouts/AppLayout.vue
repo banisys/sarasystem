@@ -1,8 +1,12 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui';
+import { ElConfigProvider, ElDrawer } from 'element-plus';
+import fa from 'element-plus/es/locale/lang/fa';
+import 'element-plus/es/components/drawer/style/css';
+import '../../css/profile.css';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
 import TutorialBar from '@/Components/TutorialBar.vue';
 import PanelNavigation from './PanelNavigation.vue';
 
@@ -28,51 +32,50 @@ function leaveImpersonation() {
 </script>
 
 <template>
-    <div class="min-h-screen bg-ui-canvas text-ui-ink">
-        <TutorialBar />
-        <div
-            v-if="impersonator"
-            class="flex flex-wrap items-center justify-center gap-2 bg-amber-100 px-4 py-2 text-center text-sm text-amber-950"
-        >
-            <span>شما ({{ impersonator.name }}) با حساب <strong>{{ page.props.auth.user?.name }}</strong> وارد شده‌اید.</span>
-            <button type="button" class="min-h-10 rounded-ui px-3 font-semibold underline underline-offset-4" @click="leaveImpersonation">
-                بازگشت به حساب خودم
-            </button>
-        </div>
+    <ElConfigProvider :locale="fa" size="large">
+        <div class="profile-panel min-h-screen bg-ui-canvas text-ui-ink">
+            <TutorialBar />
+            <div
+                v-if="impersonator"
+                class="flex flex-wrap items-center justify-center gap-2 bg-amber-100 px-4 py-2 text-center text-sm text-amber-950"
+            >
+                <span>شما ({{ impersonator.name }}) با حساب <strong>{{ page.props.auth.user?.name }}</strong> وارد شده‌اید.</span>
+                <PanelButton variant="ghost" @click="leaveImpersonation">
+                    بازگشت به حساب خودم
+                </PanelButton>
+            </div>
 
-        <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-ui-line bg-white px-4 lg:hidden">
-            <DialogRoot v-model:open="menuOpen">
-                <DialogTrigger class="ui-button border-ui-line bg-white px-3" aria-label="باز کردن منوی پنل">
+            <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-ui-line bg-white px-4 lg:hidden">
+                <PanelButton variant="outline" aria-haspopup="dialog" :aria-expanded="menuOpen" aria-label="باز کردن منوی پنل" @click="menuOpen = true">
                     <PanelIcon name="menu" class="size-5" />
-                </DialogTrigger>
-                <DialogPortal>
-                    <DialogOverlay class="fixed inset-0 z-40 bg-ui-plum/45" />
-                    <DialogContent class="fixed inset-y-3 start-3 z-50 w-72 max-w-[calc(100%-1.5rem)] overflow-hidden rounded-ui border border-ui-line bg-white shadow-xl outline-none" :aria-describedby="undefined">
-                        <DialogTitle class="sr-only">منوی پنل کاربری</DialogTitle>
-                        <PanelNavigation @navigate="menuOpen = false">
-                            <template #close>
-                                <DialogClose class="ui-button border-transparent bg-white px-2 text-ui-muted hover:bg-ui-canvas" aria-label="بستن منو">
-                                    <PanelIcon name="close" class="size-5" />
-                                </DialogClose>
-                            </template>
-                        </PanelNavigation>
-                    </DialogContent>
-                </DialogPortal>
-            </DialogRoot>
-            <Link :href="homeUrl" class="flex min-w-0 items-center gap-2 px-3 font-bold">
-                <span class="truncate">{{ page.props.appName }}</span>
-            </Link>
-        </header>
+                </PanelButton>
+                <Link :href="homeUrl" class="flex min-w-0 items-center gap-2 px-3 font-bold">
+                    <span class="truncate">{{ page.props.appName }}</span>
+                </Link>
+            </header>
+            <ElDrawer
+                v-model="menuOpen" title="منوی پنل کاربری" direction="rtl"
+                size="min(20rem, calc(100% - 1.5rem))" :with-header="false" destroy-on-close
+            >
+                <PanelNavigation @navigate="menuOpen = false">
+                    <template #close>
+                        <PanelButton variant="ghost" aria-label="بستن منو" @click="menuOpen = false">
+                            <PanelIcon name="close" class="size-5" />
+                        </PanelButton>
+                    </template>
+                </PanelNavigation>
+            </ElDrawer>
 
-        <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:flex lg:items-start lg:gap-6 lg:px-8 lg:py-8">
-            <aside class="hidden h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 overflow-hidden rounded-ui border border-ui-line bg-white lg:sticky lg:top-8 lg:block xl:w-70">
-                <PanelNavigation />
-            </aside>
-            <main class="min-w-0 flex-1">
-                <div class="mx-auto max-w-6xl">
-                    <slot />
-                </div>
-            </main>
+            <div class="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:flex lg:items-start lg:gap-6 lg:px-8 lg:py-8">
+                <aside class="hidden h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 overflow-hidden rounded-ui border border-ui-line bg-white lg:sticky lg:top-8 lg:block xl:w-70">
+                    <PanelNavigation />
+                </aside>
+                <main class="min-w-0 flex-1">
+                    <div class="mx-auto max-w-6xl">
+                        <slot />
+                    </div>
+                </main>
+            </div>
         </div>
-    </div>
+    </ElConfigProvider>
 </template>

@@ -1,7 +1,11 @@
 <script setup>
+import { ElCheckbox, ElForm, ElInput } from 'element-plus';
+import 'element-plus/es/components/checkbox/style/css';
+import 'element-plus/es/components/form/style/css';
+import 'element-plus/es/components/input/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import UiButton from '@/Components/Ui/UiButton.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -63,11 +67,11 @@ onBeforeUnmount(() => clearInterval(timer));
         <div class="mx-auto max-w-3xl space-y-6">
             <UiPageHeader :title="contract.title" :description="contract.status_label" icon="document" :back-href="route('contracts.index')" back-label="قراردادها">
                 <template #actions>
-                    <a :href="route('contracts.pdf', contract.id)" class="ui-button border-ui-line bg-white hover:bg-ui-canvas">دریافت PDF</a>
+                    <PanelButton :href="route('contracts.pdf', contract.id)" full-page variant="outline">دریافت PDF</PanelButton>
                 </template>
             </UiPageHeader>
 
-            <UiNotice v-if="status" tone="success">{{ status }}</UiNotice>
+            <PanelNotice v-if="status" tone="success">{{ status }}</PanelNotice>
             <p v-if="contract.status === 'cancelled'" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
                 این قرارداد لغو شده است<span v-if="contract.cancellation_reason">: {{ contract.cancellation_reason }}</span>
             </p>
@@ -86,13 +90,12 @@ onBeforeUnmount(() => clearInterval(timer));
                     پیامک می‌شود.
                 </p>
 
-                <label class="mt-4 flex items-start gap-2 text-sm text-gray-800">
-                    <input v-model="signForm.accept" type="checkbox" class="mt-1 rounded border-gray-300 text-violet-600" />
-                    <span>متن قرارداد را خواندم و می‌پذیرم.</span>
-                </label>
+                <div class="mt-4">
+                    <ElCheckbox v-model="signForm.accept" class="panel-wrap-option">متن قرارداد را خواندم و می‌پذیرم.</ElCheckbox>
+                </div>
                 <p v-if="signForm.errors.accept" class="mt-1 text-sm text-red-600">{{ signForm.errors.accept }}</p>
 
-                <UiButton
+                <PanelButton
                     v-if="!codeSent"
                     type="button"
                     :disabled="!signForm.accept || sendCodeForm.processing"
@@ -100,13 +103,13 @@ onBeforeUnmount(() => clearInterval(timer));
                     @click="sendCode"
                 >
                     ارسال کد امضا
-                </UiButton>
+                </PanelButton>
                 <p v-if="sendCodeForm.errors.code" class="mt-1 text-sm text-red-600">{{ sendCodeForm.errors.code }}</p>
 
-                <form v-if="codeSent" class="mt-4 space-y-3" @submit.prevent="sign">
+                <ElForm v-if="codeSent" class="mt-4 space-y-3" @submit.prevent="sign">
                     <div>
                         <label for="sign-code" class="block text-sm font-medium text-gray-700">کد {{ codeLength }} رقمی پیامک‌شده</label>
-                        <input
+                        <ElInput
                             id="sign-code"
                             ref="codeInput"
                             v-model="signForm.code"
@@ -114,30 +117,29 @@ onBeforeUnmount(() => clearInterval(timer));
                             dir="ltr"
                             inputmode="numeric"
                             autocomplete="one-time-code"
-                            :maxlength="codeLength"
-                            class="ui-field max-w-xs"
+                            :maxlength="codeLength" class="mt-1.5 max-w-xs"
                             :aria-invalid="!!signForm.errors.code"
                             :aria-describedby="signForm.errors.code ? 'sign-code-error' : undefined"
                         />
                         <p v-if="signForm.errors.code" id="sign-code-error" class="ui-field-error">{{ signForm.errors.code }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-4">
-                        <UiButton
+                        <PanelButton
                             type="submit"
                             :disabled="!signForm.accept || !signForm.code || signForm.processing"
                         >
                             {{ signForm.processing ? 'در حال ثبت امضا…' : 'امضا می‌کنم' }}
-                        </UiButton>
-                        <button
+                        </PanelButton>
+                        <PanelButton
                             type="button"
                             :disabled="secondsLeft > 0 || sendCodeForm.processing"
-                            class="text-sm text-violet-600 hover:text-violet-800 disabled:text-gray-400"
+                            variant="link"
                             @click="sendCode"
                         >
                             {{ secondsLeft > 0 ? `ارسال دوباره تا ${secondsLeft} ثانیه` : 'ارسال دوباره' }}
-                        </button>
+                        </PanelButton>
                     </div>
-                </form>
+                </ElForm>
             </section>
         </div>
     </AppLayout>

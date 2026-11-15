@@ -1,6 +1,6 @@
 <script setup>
-import UiButton from '@/Components/Ui/UiButton.vue';
-import UiNotice from '@/Components/Ui/UiNotice.vue';
+import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { Head } from '@inertiajs/vue3';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -24,10 +24,10 @@ defineProps({
                 </div>
                 <h1 class="mt-4 text-lg font-semibold text-gray-900">ورود به کلاس آنلاین ممکن نشد</h1>
                 <p v-if="$props.class" class="mt-1 text-sm text-gray-500">{{ $props.class }}<span v-if="time"> · {{ time }}</span></p>
-                <UiNotice class="mt-4 text-start" tone="error">{{ message }}</UiNotice>
-                <UiButton :href="route('my-classes.index')" class="mt-6">
+                <PanelNotice class="mt-4 text-start" tone="error">{{ message }}</PanelNotice>
+                <PanelButton :href="route('my-classes.index')" class="mt-6">
                     کلاس‌های من
-                </UiButton>
+                </PanelButton>
             </section>
         </div>
     </AppLayout>
