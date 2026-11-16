@@ -30,7 +30,7 @@ const props = defineProps({ context: Object, banks: Array, exams: Array, results
 const page = usePage();
 const tabs = computed(() => [
     { key: 'exams', label: 'لیست آزمون‌های ساخته‌شده', icon: 'clipboard' },
-    ...(props.context.can_manage ? [{ key: 'create', label: 'ساخت آزمون از بانک سؤال', icon: 'book' }] : []),
+    ...(props.context.can_create ? [{ key: 'create', label: 'ساخت آزمون از بانک سؤال', icon: 'book' }] : []),
     ...(props.results ? [{ key: 'results', label: 'نتایج و تصحیح', icon: 'pencil' }] : []),
 ]);
 const requestedTab = new URLSearchParams(page.url.split('?')[1]).get('tab');

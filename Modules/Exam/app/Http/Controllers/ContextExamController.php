@@ -53,7 +53,8 @@ class ContextExamController extends Controller
             : null;
 
         return Inertia::render('Exam::Context', [
-            'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage],
+            'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage,
+                'can_create' => $host->canManage && ($host->singleExamSessionUrl === null || $records->isEmpty())],
             'settings_form' => $host->canManage ? [
                 'defaults' => SessionExamSettings::DEFAULTS,
                 'labels' => SessionExamSettings::labels(),

@@ -21,3 +21,5 @@ The ordinary admin creation page still handles standalone exams. Class session s
 The admin creation page can assign the new exam to a branch's exam group ([ADR 0104](0104-exam-groups.md)).
 
 The admin creation page can preview and print a sample paper using the banks and counts in the unsaved form ([ADR 0105](0105-printable-session-exam-draft.md)).
+
+Once an exam exists for a session of kind Exam, the schedule hides the creation action and a direct visit to the creation form opens session details ([ADR 0107](0107-single-exam-and-staff-paper.md)).

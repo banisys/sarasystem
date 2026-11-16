@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
 use Modules\Exam\Filament\Resources\Exams\Schemas\ExamForm;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Services\ContextExams;
 use Modules\Exam\Services\ExamPaperPreview;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
@@ -40,6 +41,12 @@ class CreateContextExam extends CreateExam
         $this->contextId = $id;
 
         parent::mount();
+
+        $context = $this->examContext();
+
+        if ($context->singleExamSessionUrl !== null && app(ContextExams::class)->query($context)->exists()) {
+            $this->redirect($context->singleExamSessionUrl);
+        }
     }
 
     protected function authorizeAccess(): void
@@ -63,7 +70,7 @@ class CreateContextExam extends CreateExam
     {
         return [
             Action::make('sessionExams')
-                ->label('آزمون‌های جلسه')
+                ->label('پیش‌نمایش آزمون جلسه')
                 ->icon(Heroicon::OutlinedDocumentText)
                 ->outlined()
                 ->modalHeading('پیش‌نمایش نسخهٔ آزمون')
@@ -75,6 +82,7 @@ class CreateContextExam extends CreateExam
 
                     return view('exam::filament.exam-paper-preview', [
                         'paper' => $preview->forDraft($this->form->getRawState(), $this->examContext()->title),
+                        'notice' => 'این نمونه از بانک‌های انتخاب‌شده در فرم تهیه شده است. در آزمون آنلاینِ تصادفی، سؤال‌ها یا ترتیب آن‌ها ممکن است متفاوت باشند.',
                     ]);
                 }),
         ];
@@ -83,6 +91,7 @@ class CreateContextExam extends CreateExam
     protected function handleRecordCreation(array $data): Exam
     {
         $context = $this->examContext();
+        app(ContextExams::class)->ensureCanCreate($context, 'data.title');
         $exam = new Exam($data);
         $exam->forceFill([
             'context_type' => $context->type,

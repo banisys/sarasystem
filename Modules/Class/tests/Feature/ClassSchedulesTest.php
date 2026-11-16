@@ -472,6 +472,25 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame(3, $exam->questionCount());
         $this->assertTrue($exam->hasParticipant($attendee->user));
         $this->assertFalse($exam->hasParticipant($outsider));
+
+        $this->get($url)->assertRedirect(ClassSessionResource::detailsUrl($session, $this->west));
+        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+            ->assertActionHidden(TestAction::make('createSessionExam')->table($session));
+    }
+
+    public function test_an_already_open_admin_form_cannot_create_a_second_exam(): void
+    {
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
+        $bank = QuestionBank::factory()->for($this->west)->create();
+        $draft = Livewire::test(CreateContextExam::class, ['contextType' => 'class-session', 'contextId' => $session->id])
+            ->fillForm(['title' => 'دومین آزمون', 'sections' => [['question_bank_id' => $bank->id, 'question_count' => 1]]]);
+        $exam = Exam::factory()->for($this->west)->create();
+        $exam->forceFill(['context_type' => 'class-session', 'context_id' => $session->id])->save();
+
+        $draft->call('create')->assertHasFormErrors(['title']);
+
+        $this->assertDatabaseCount('exams', 1);
     }
 
     public function test_the_exam_create_page_opens_a_printable_preview_of_its_unsaved_questions(): void
@@ -487,7 +506,7 @@ class ClassSchedulesTest extends TestCase
         $bank->questions()->attach([$question->id, $choice->id, $inactive->id]);
 
         Livewire::test(CreateContextExam::class, ['contextType' => 'class-session', 'contextId' => $session->id])
-            ->assertSee('آزمون‌های جلسه')
+            ->assertSee('پیش‌نمایش آزمون جلسه')
             ->fillForm([
                 'title' => 'عنوان پیش‌نویس',
                 'sections' => [['question_bank_id' => $bank->id, 'question_count' => 2]],

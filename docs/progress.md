@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-16 — Limited formal exam sessions to one new exam and replaced their admin exam link with a printable paper modal for authorized staff ([ADR 0107](decisions/0107-single-exam-and-staff-paper.md)). Existing duplicate exams remain in management. Updated the tutorial. All 792 tests, module isolation checks, Pint and the Vite build passed.
 - 2026-11-16 — Fixed session exam links that returned 404 when the user panel had a different branch selected. The link now selects the session's branch after verifying access ([ADR 0106](decisions/0106-session-exam-links-select-branch.md)). All 787 tests, module isolation checks and Pint passed. Tutorial steps still match.
 - 2026-11-16 — Added a printable sample paper modal to the admin session exam creation form ([ADR 0105](decisions/0105-printable-session-exam-draft.md)). Updated the tutorial. All 784 tests, module isolation checks, Pint and the Vite build passed. The exam route required sign-in in the browser.
 - 2026-11-16 — Added branch exam groups to the admin exam form and list, including exams created from class sessions ([ADR 0104](decisions/0104-exam-groups.md)). Updated the tutorial, applied the local migration and refreshed the default grants. The module isolation checks, Pint and all 782 tests passed.

@@ -4,7 +4,6 @@ namespace Modules\Class\Filament\Resources\ClassSessions\Pages;
 
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
-use Filament\Support\Icons\Heroicon;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
@@ -77,11 +76,10 @@ class ViewClassSession extends ViewRecord
     {
         $exam = $this->isExamPage();
         $actions = SessionActions::pageActions(exam: $exam);
-        if (Module::isEnabled('Exam')) {
+        if (! $exam && Module::isEnabled('Exam')) {
             $url = app(SessionExamSource::class)->link($this->session(), auth()->user());
             if ($url !== null) {
-                $action = Action::make('sessionExams')->label('آزمون‌های جلسه')->url($url)->openUrlInNewTab();
-                $actions[] = $exam ? $action->icon(Heroicon::OutlinedDocumentText)->color('warning')->outlined() : $action;
+                $actions[] = Action::make('sessionExams')->label('آزمون‌های جلسه')->url($url)->openUrlInNewTab();
             }
         }
 

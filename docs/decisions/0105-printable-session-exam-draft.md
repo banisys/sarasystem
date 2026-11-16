@@ -11,7 +11,7 @@ Staff preparing an online exam from an exam session need to see and print a pape
 - Preview and print the current form in a modal while the draft remains open.
 
 ## Decision
-The admin creation page's «آزمون‌های جلسه» action opens a read-only modal with a representative paper drawn in stable order from the active questions of the selected banks. Questions are unique across sections. The modal uses the existing creation authorization and the current branch, and requires enough questions for the selected counts. It displays choice text and answer space without the marking key. «چاپ آزمون» prints the same document shown in the modal.
+The admin creation page's «پیش‌نمایش آزمون جلسه» action opens a read-only modal with a representative paper drawn in stable order from the active questions of the selected banks. Questions are unique across sections. The modal uses the existing creation authorization and the current branch, and requires enough questions for the selected counts. It displays choice text and answer space without the marking key. «چاپ آزمون» prints the same document shown in the modal.
 
 ## Consequences
 Previewing and printing do not create an exam, write to the banks, or change how questions are drawn for online attempts. Randomized attempts can differ from the printed paper.

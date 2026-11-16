@@ -2,12 +2,18 @@
 
 namespace Modules\Class\Filament\Resources\ClassSessions\Pages;
 
+use App\Models\Tenant;
 use App\Models\User;
+use App\Support\EmployeeDirectory;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Modules\Class\Enums\SessionKind;
+use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Actions\SessionActions;
+use Modules\Class\Services\SessionExamSource;
 use Modules\Class\Services\SessionScene;
+use Modules\Exam\Support\SessionExamAdmin;
+use Nwidart\Modules\Facades\Module;
 
 class ViewExamSession extends ViewClassSession
 {
@@ -15,7 +21,7 @@ class ViewExamSession extends ViewClassSession
     {
         abort_unless($this->session()->kind === SessionKind::Exam, 404);
 
-        parent::authorizeAccess();
+        abort_unless($this->canReadSession() || $this->canReadPaper(), 403);
     }
 
     public function getHeading(): string
@@ -32,13 +38,56 @@ class ViewExamSession extends ViewClassSession
         $user = auth()->user();
 
         return view('class::filament.exam-session-header', [
-            'scene' => $user instanceof User && $scene->canSee($user, $session) ? $scene->for($session) : null,
+            'scene' => $this->canReadSession() && $user instanceof User && $scene->canSee($user, $session) ? $scene->for($session) : null,
         ]);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        $actions = $this->canReadSession() ? parent::getHeaderActions() : [];
+
+        if (Module::isEnabled('Exam')) {
+            $actions[] = app(SessionExamAdmin::class)->paperAction(
+                SessionExamSource::TYPE, $this->session()->id, fn (): bool => $this->canReadPaper(),
+            );
+        }
+
+        return $actions;
     }
 
     public function infolist(Schema $schema): Schema
     {
-        return $schema->components(SessionActions::detailsEntries(exam: true))->columns(1);
+        return $schema->components($this->canReadSession() ? SessionActions::detailsEntries(exam: true) : [])->columns(1);
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $this->canReadSession() ? parent::form($schema) : $schema->components([]);
+    }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return $this->canReadSession() ? $data : [];
+    }
+
+    private function canReadSession(): bool
+    {
+        return static::getResource()::canView($this->session());
+    }
+
+    private function canReadPaper(): bool
+    {
+        $actor = auth()->user();
+        $tenant = Tenant::current();
+        $session = $this->session();
+
+        if (! Module::isEnabled('Exam') || ! $actor instanceof User || $tenant?->getKey() !== $session->tenant_id
+            || $session->status === SessionStatus::Cancelled) {
+            return false;
+        }
+
+        return (app()->bound(EmployeeDirectory::class) && app(EmployeeDirectory::class)->employs($actor, $tenant))
+            || ($this->canReadSession() && app(SessionExamSource::class)->resolve($session->id, $actor)?->canManage === true);
     }
 
     protected function pageLabel(): string

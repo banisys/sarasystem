@@ -4,10 +4,33 @@ namespace Modules\Exam\Services;
 
 use Illuminate\Support\Facades\Validator;
 use Modules\Exam\Enums\QuestionType;
+use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\QuestionBank;
 
 class ExamPaperPreview
 {
+    public function forSaved(Exam $exam): array
+    {
+        if ($exam->question_snapshot === null) {
+            return $this->forDraft([
+                'title' => $exam->title,
+                'description' => $exam->description,
+                'duration_minutes' => $exam->duration_minutes,
+                'sections' => $exam->sections()->get(['question_bank_id', 'question_count'])->toArray(),
+            ], $exam->title);
+        }
+
+        return [
+            'title' => $exam->title,
+            'description' => $exam->description ?? '',
+            'duration' => $exam->duration_minutes,
+            'questions' => array_map(fn (array $question): array => $this->question(
+                $question['body'], $question['options'] ?? [], QuestionType::tryFrom($question['type']),
+            ), $exam->question_snapshot),
+            'error' => $exam->question_snapshot === [] ? 'این آزمون سؤالی برای چاپ ندارد.' : null,
+        ];
+    }
+
     /**
      * @param  array<string, mixed>  $draft
      * @return array{title: string, description: string, duration: int|null, questions: list<array{body: string, options: list<string>, written: bool}>, error: string|null}
@@ -55,14 +78,19 @@ class ExamPaperPreview
 
             foreach ($questions as $question) {
                 $usedIds[] = $question->getKey();
-                $paper['questions'][] = [
-                    'body' => $question->body,
-                    'options' => array_values(array_column($question->options ?? [], 'text')),
-                    'written' => $question->type === QuestionType::Descriptive,
-                ];
+                $paper['questions'][] = $this->question($question->body, $question->options ?? [], $question->type);
             }
         }
 
         return $paper;
+    }
+
+    private function question(string $body, array $options, ?QuestionType $type): array
+    {
+        return [
+            'body' => $body,
+            'options' => array_values(array_column($options, 'text')),
+            'written' => $type === QuestionType::Descriptive,
+        ];
     }
 }

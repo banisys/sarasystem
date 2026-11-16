@@ -30,6 +30,7 @@ use Modules\Class\Services\SessionCalendar;
 use Modules\Class\Services\SessionExamSource;
 use Modules\Class\Services\SessionPlanner;
 use Modules\Exam\Filament\Resources\Exams\ExamResource;
+use Modules\Exam\Support\SessionExamAdmin;
 use Nwidart\Modules\Facades\Module;
 
 class ExamSchedulesRelationManager extends RelationManager
@@ -49,7 +50,11 @@ class ExamSchedulesRelationManager extends RelationManager
             ->modifyQueryUsing(function (Builder $query): Builder {
                 abort_unless(static::canViewForRecord($this->getOwnerRecord(), $this->getPageClass()), 404);
 
-                return $query->where('kind', SessionKind::Exam)->with(['subject', 'teachers', 'substitutes']);
+                $query->where('kind', SessionKind::Exam)->with(['subject', 'teachers', 'substitutes']);
+
+                return Module::isEnabled('Exam')
+                    ? app(SessionExamAdmin::class)->withExamAvailability($query, SessionExamSource::TYPE)
+                    : $query;
             })
             ->defaultSort('starts_at', 'desc')
             ->emptyStateHeading('جلسهٔ امتحانی ثبت نشده است')
@@ -91,7 +96,7 @@ class ExamSchedulesRelationManager extends RelationManager
             ->label('ساخت آزمون جلسه')
             ->icon(Heroicon::OutlinedDocumentPlus)
             ->authorize(fn (): bool => Gate::allows('update', $this->classroom()) && ExamResource::canCreate())
-            ->visible(fn (ClassSession $record): bool => $record->status !== SessionStatus::Cancelled)
+            ->visible(fn (ClassSession $record): bool => $record->status !== SessionStatus::Cancelled && ! $record->has_session_exam)
             ->url(fn (ClassSession $record): string => ExamResource::getUrl('create-for-context', [
                 'contextType' => SessionExamSource::TYPE,
                 'contextId' => $record->id,

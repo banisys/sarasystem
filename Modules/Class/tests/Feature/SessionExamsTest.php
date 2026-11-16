@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -88,6 +89,22 @@ class SessionExamsTest extends TestCase
         $this->assertSame(1, $first->attempts()->count());
         $this->assertSame(1, $second->attempts()->count());
         $this->assertSame(0, $this->template->attempts()->count());
+    }
+
+    public function test_formal_exam_sessions_accept_one_exam_while_regular_sessions_can_have_several(): void
+    {
+        $formal = ClassSession::factory()->for($this->session->classroom)->taughtBy($this->teacher)
+            ->create(['kind' => SessionKind::Exam]);
+        $this->assign($formal);
+
+        $this->get($this->url($formal))->assertInertia(fn (AssertableInertia $page) => $page->where('context.can_create', false));
+        $this->post($this->url($formal), $this->payload())->assertSessionHasErrors('banks');
+        $this->assertSame(1, Exam::query()->where('context_type', 'class-session')->where('context_id', $formal->id)->count());
+
+        $this->assign();
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('context.can_create', true));
+        $this->post($this->url(), $this->payload())->assertSessionHasNoErrors()->assertRedirect($this->url());
+        $this->assertSame(2, Exam::query()->where('context_type', 'class-session')->where('context_id', $this->session->id)->count());
     }
 
     public function test_an_exam_can_reopen_after_the_session_with_the_full_attempt_duration(): void

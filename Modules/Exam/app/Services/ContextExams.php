@@ -2,6 +2,7 @@
 
 namespace Modules\Exam\Services;
 
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,20 @@ class ContextExams
         return Exam::query()->where('context_type', $context->type)->where('context_id', $context->id);
     }
 
+    /** Both creation paths call this inside their save transaction. */
+    public function ensureCanCreate(ExamContext $context, string $errorField): void
+    {
+        if ($context->singleExamSessionUrl === null) {
+            return;
+        }
+
+        Tenant::query()->whereKey($context->tenantId)->lockForUpdate()->firstOrFail();
+
+        if ($this->query($context)->exists()) {
+            throw ValidationException::withMessages([$errorField => 'برای این جلسهٔ امتحانی قبلاً آزمون تعریف شده است.']);
+        }
+    }
+
     /**
      * @param  array{title: string, duration_minutes: int, total_score: float, passing_score: float, banks: list<array{bank_id: int, question_count: int, question_ids?: list<int>}>, ...}  $data
      */
@@ -28,6 +43,7 @@ class ContextExams
         abort_unless($context->canManage, 403);
 
         return DB::transaction(function () use ($context, $data, $actor, $library): Exam {
+            $this->ensureCanCreate($context, 'banks');
             $banks = $library->banks($actor)->whereKey(array_column($data['banks'], 'bank_id'))
                 ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
 
