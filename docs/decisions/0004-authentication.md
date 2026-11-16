@@ -19,7 +19,7 @@ In legacy LMS, most users have no email. About 28k log in with a national code a
 - **Two ways to prove identity:** a password, or a **6-digit one-time code sent by SMS** to the user's mobile. The code is stored hashed in the cache, expires after 2 minutes, allows 5 wrong tries, and a new one can be requested after 60 seconds.
 - **SMS** goes through an `SmsSender` interface. The current driver is `log` (it writes to the Laravel log), and a real provider (Kavenegar, Ghasedak, …) is a driver added later.
 - **Rate limiting:** 5 failed attempts per identifier and IP, then lockout.
-- **After login:** tenant resolution follows ADR 0002. With several tenants and none chosen, the user goes to the tenant picker.
+- **After login:** [ADR 0103](0103-default-panel-after-login.md) defines the default panel. Tenant resolution follows [ADR 0002](0002-tenancy-model.md); in the user panel, a user with several tenants and none chosen goes to the tenant picker.
 
 ## Consequences
 - Every user needs at least one of mobile, national code or email. A user without a mobile cannot use SMS login.

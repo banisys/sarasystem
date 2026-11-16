@@ -96,6 +96,38 @@ class PasswordLoginTest extends TestCase
             ->assertRedirect("/cpadmin/{$tenant->slug}");
     }
 
+    public function test_staff_land_in_the_admin_panel_after_direct_login(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->makeStaff($this->user, $tenant);
+
+        $this->post('/login', ['identifier' => '0084575948', 'password' => 'password'])
+            ->assertRedirect('/cpadmin');
+
+        $this->get('/cpadmin')->assertRedirect("/cpadmin/{$tenant->slug}");
+    }
+
+    public function test_inertia_login_opens_the_requested_admin_page_as_a_full_page(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->makeStaff($this->user, $tenant);
+        $page = "/cpadmin/{$tenant->slug}?from=bookmark";
+
+        $this->get($page)->assertRedirect('/login');
+
+        $this->post('/login', ['identifier' => '0084575948', 'password' => 'password'], ['X-Inertia' => 'true'])
+            ->assertConflict()
+            ->assertHeader('X-Inertia-Location', url($page));
+    }
+
+    public function test_staff_without_an_active_admin_tenant_land_in_the_user_panel(): void
+    {
+        $this->makeStaff($this->user, Tenant::factory()->inactive()->create());
+
+        $this->post('/login', ['identifier' => '0084575948', 'password' => 'password'])
+            ->assertRedirect(route('dashboard'));
+    }
+
     public function test_a_user_with_several_tenants_picks_one_after_login(): void
     {
         $second = Tenant::factory()->create();

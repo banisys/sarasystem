@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-16 — Direct password and SMS login opens `/cpadmin` for users with access to the admin panel in an active branch and `/profile/dashboard` for other users ([ADR 0103](decisions/0103-default-panel-after-login.md)). Preserved requested destinations and updated the system administration tutorial. All 777 tests and Pint passed.
 - 2026-11-15 — Replaced the existing-exam picker with «ساخت آزمون جلسه» in the exam schedule row menu ([ADR 0102](decisions/0102-create-exams-from-class-schedules.md)). The new admin page reuses the exam form and takes its window and participants from the selected session. Verified navigation and cancellation in Chromium and passed 78 targeted tests. Updated the tutorial.
 - 2026-11-15 — Highlighted the exam seat under the pointer during a drag from the unassigned list or another seat. Checked target changes, placement, swapping and cancellation in JavaScript. The seating tests and Vite build passed. Tutorial steps still match.
 - 2026-11-15 — Added «خالی کردن همهٔ صندلی‌ها» to the exam seating editor and its tutorial. Verified on exam 514 that all 20 attendees return to the unassigned list and the grid keeps its dimensions. The seating and tutorial tests and Pint passed.

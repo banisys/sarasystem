@@ -56,6 +56,19 @@ class CodeLoginTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_staff_login_with_a_code_opens_the_admin_panel_as_a_full_page(): void
+    {
+        $this->makeStaff($this->user, Tenant::factory()->create());
+        $this->post('/login/code/send', ['identifier' => '0084575948'])->assertSessionHas('status');
+
+        $this->post('/login/code', [
+            'identifier' => '0084575948',
+            'code' => $this->sms->lastCodeFor('09121234567'),
+        ], ['X-Inertia' => 'true'])
+            ->assertConflict()
+            ->assertHeader('X-Inertia-Location', url('/cpadmin'));
+    }
+
     public function test_an_expired_code_is_rejected(): void
     {
         $this->post('/login/code/send', ['identifier' => '09121234567']);

@@ -8,11 +8,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\OtpLoginRequest;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * The single login page for everyone (ADR 0004): password or SMS code,
@@ -20,7 +22,7 @@ use Inertia\Response;
  */
 class LoginController extends Controller
 {
-    public function create(): Response
+    public function create(): InertiaResponse
     {
         return Inertia::render('Auth/Login', [
             'codeLength' => OneTimePassword::LENGTH,
@@ -28,12 +30,12 @@ class LoginController extends Controller
         ]);
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): Response
     {
         return $this->logIn($request, $request->authenticatedUser());
     }
 
-    public function storeWithCode(OtpLoginRequest $request, OneTimePassword $otp): RedirectResponse
+    public function storeWithCode(OtpLoginRequest $request, OneTimePassword $otp): Response
     {
         $user = $request->authenticatedUser($otp);
 
@@ -56,12 +58,24 @@ class LoginController extends Controller
         return redirect('/');
     }
 
-    private function logIn(Request $request, User $user): RedirectResponse
+    private function logIn(Request $request, User $user): Response
     {
         Auth::login($user, $request->boolean('remember'));
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        $panel = Filament::getPanel('admin');
+        $adminUrl = route('filament.admin.tenant');
+        $canOpenAdmin = $user->canAccessPanel($panel) && $user->getTenants($panel)->isNotEmpty();
+        $response = redirect()->intended($canOpenAdmin ? $adminUrl : route('dashboard'));
+
+        $adminPath = parse_url($adminUrl, PHP_URL_PATH);
+        $targetPath = (string) parse_url($response->getTargetUrl(), PHP_URL_PATH);
+
+        if ($targetPath === $adminPath || str_starts_with($targetPath, $adminPath.'/')) {
+            return Inertia::location($response);
+        }
+
+        return $response;
     }
 }

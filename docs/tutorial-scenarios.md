@@ -94,7 +94,7 @@ Implemented in [SystemAdministration](../Modules/Tutorial/app/Scenarios/SystemAd
 | **A. ساختار سازمان** |||||
 | 1 | Two branches; the steps explain home pages and the primary tenant | you | «شعبه‌ها» | 2 tenants made |
 | **B. کاربران و نقش‌ها** |||||
-| 2 | «مریم صادقی» with «مدیر {tenant_label}» and panel access in «شعبه شرق» | you | «کاربران» (شعبه شرق) | a user with `tenant_manager` + `panel_user` there |
+| 2 | «مریم صادقی» with «مدیر {tenant_label}» and panel access in «شعبه شرق»; the steps explain why direct login opens the admin panel for her | you | «کاربران» (شعبه شرق) | a user with `tenant_manager` + `panel_user` there |
 | 3 | Role «مسئول کتابخانه» with a few permissions | you | «نقش‌ها» | a role made in the run with ≥ 1 permission |
 | 4 | «حمید نوری» as «کارمند» in «شعبه شرق», then «افزودن کاربر موجود» in «شعبه غرب» with the new role; see him in «نقشه‌ی دسترسی» | you | «کاربران» in both | staff in the first branch and the new role in the second |
 | **C. از نگاه مدیر** |||||
