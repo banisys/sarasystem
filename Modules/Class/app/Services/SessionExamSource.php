@@ -55,6 +55,7 @@ class SessionExamSource implements ExamContextSource
                 ? ClassroomResource::getUrl('exam-schedules', ['record' => $session->classroom], tenant: $session->tenant)
                 : null,
             singleExamSessionUrl: $session->kind === SessionKind::Exam ? ClassSessionResource::detailsUrl($session, $session->tenant) : null,
+            classTitle: $session->classroom->title,
         );
     }
 

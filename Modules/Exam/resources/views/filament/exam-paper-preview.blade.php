@@ -9,7 +9,7 @@
                     {{ $notice }}
                 </p>
             @endif
-            <x-filament::button type="button" icon="heroicon-o-printer" disabled
+            <x-filament::button type="button" icon="heroicon-o-printer"
                 x-bind:disabled="!ready" x-on:click="$refs.paper.contentWindow.print()">
                 چاپ آزمون
             </x-filament::button>

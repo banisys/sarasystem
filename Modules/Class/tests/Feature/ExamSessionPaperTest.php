@@ -48,7 +48,7 @@ class ExamSessionPaperTest extends TestCase
         $exam = $this->attachExam($session);
         $exam->forceFill(['question_snapshot' => [[
             'type' => QuestionType::Descriptive->value, 'body' => 'متن برگهٔ ذخیره‌شده',
-            'model_answer' => 'پاسخ محرمانهٔ تصحیح',
+            'score' => 3.75, 'model_answer' => 'پاسخ محرمانهٔ تصحیح',
         ]]])->save();
 
         $this->actingInPanel($user, $branch);
@@ -58,7 +58,10 @@ class ExamSessionPaperTest extends TestCase
             ->assertActionDoesNotExist('seatLayout')
             ->mountAction('sessionExams')
             ->assertNoRedirect()
-            ->assertMountedActionModalSee(['متن برگهٔ ذخیره‌شده', 'چاپ آزمون'])
+            ->assertMountedActionModalSee([
+                'متن برگهٔ ذخیره‌شده', 'چاپ آزمون', 'ردیف', 'شرح سؤال', 'جمع نمرات برگه',
+                '۳٫۷۵', $branch->name, $session->classroom->title,
+            ])
             ->assertMountedActionModalDontSee('پاسخ محرمانهٔ تصحیح');
 
         $employee->update(['status' => EmploymentStatus::Suspended]);

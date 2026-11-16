@@ -47,8 +47,10 @@ class ViewExamSession extends ViewClassSession
         $actions = $this->canReadSession() ? parent::getHeaderActions() : [];
 
         if (Module::isEnabled('Exam')) {
+            $session = $this->session();
             $actions[] = app(SessionExamAdmin::class)->paperAction(
-                SessionExamSource::TYPE, $this->session()->id, fn (): bool => $this->canReadPaper(),
+                SessionExamSource::TYPE, $session->id, fn (): bool => $this->canReadPaper(),
+                $session->classroom?->title, $session->starts_at,
             );
         }
 

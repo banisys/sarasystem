@@ -79,9 +79,10 @@ class CreateContextExam extends CreateExam
                 ->modalCancelActionLabel('بستن')
                 ->modalContent(function (ExamPaperPreview $preview): View {
                     $this->authorizeAccess();
+                    $context = $this->examContext();
 
                     return view('exam::filament.exam-paper-preview', [
-                        'paper' => $preview->forDraft($this->form->getRawState(), $this->examContext()->title),
+                        'paper' => $preview->forDraft($this->form->getRawState(), $context->title, $context->classTitle, $context->startsAt),
                         'notice' => 'این نمونه از بانک‌های انتخاب‌شده در فرم تهیه شده است. در آزمون آنلاینِ تصادفی، سؤال‌ها یا ترتیب آن‌ها ممکن است متفاوت باشند.',
                     ]);
                 }),

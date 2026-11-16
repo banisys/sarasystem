@@ -17,3 +17,5 @@ The exam session's «آزمون جلسه» action opens the printable sheet with
 
 ## Consequences
 The paper uses saved questions when present and a representative bank draw for exams that draw questions at attempt time. It omits grading keys. The session details, other admin actions, online participation, and results keep their existing authorization. Regular class sessions still support multiple exams.
+
+The shared A4 paper has a right-to-left identity grid with the exam title, branch, class, scheduled date and start time, duration, and spaces for the candidate's details. The question table shows each question's stored weight, space for written answers, and the sum of the printed weights.

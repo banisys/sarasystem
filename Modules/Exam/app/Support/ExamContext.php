@@ -19,5 +19,6 @@ readonly class ExamContext
         public bool $canParticipate,
         public ?string $adminCreateReturnUrl = null,
         public ?string $singleExamSessionUrl = null,
+        public ?string $classTitle = null,
     ) {}
 }

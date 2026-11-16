@@ -2,6 +2,7 @@
 
 namespace Modules\Exam\Support;
 
+use Carbon\CarbonInterface;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
@@ -22,7 +23,7 @@ class SessionExamAdmin
         ]);
     }
 
-    public function paperAction(string $type, int $id, Closure $canRead): Action
+    public function paperAction(string $type, int $id, Closure $canRead, ?string $classTitle, CarbonInterface $startsAt): Action
     {
         return Action::make('sessionExams')
             ->label('آزمون جلسه')
@@ -34,7 +35,7 @@ class SessionExamAdmin
             ->modalWidth('6xl')
             ->modalSubmitAction(false)
             ->modalCancelActionLabel('بستن')
-            ->modalContent(function (ExamPaperPreview $preview) use ($type, $id, $canRead): View {
+            ->modalContent(function (ExamPaperPreview $preview) use ($type, $id, $canRead, $classTitle, $startsAt): View {
                 abort_unless($canRead(), 403);
 
                 $exam = Exam::query()->where('context_type', $type)->where('context_id', $id)
@@ -43,7 +44,7 @@ class SessionExamAdmin
                 return view('exam::filament.exam-paper-preview', [
                     'paper' => $exam === null
                         ? ['error' => 'برای این جلسه هنوز آزمونی تعریف نشده است.']
-                        : $preview->forSaved($exam),
+                        : $preview->forSaved($exam, $classTitle, $startsAt),
                     'notice' => $exam?->question_snapshot === null
                         ? 'این برگه نمونه‌ای از سؤال‌های بانک آزمون است. سؤال‌ها یا ترتیب آن‌ها در آزمون آنلاینِ تصادفی ممکن است متفاوت باشند.'
                         : null,
