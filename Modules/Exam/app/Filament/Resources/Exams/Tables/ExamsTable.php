@@ -9,6 +9,7 @@ use Filament\Actions\EditAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Modules\Exam\Filament\Resources\ExamAttempts\ExamAttemptResource;
@@ -26,6 +27,9 @@ class ExamsTable
                 TextColumn::make('title')
                     ->label('عنوان')
                     ->sortable(),
+                TextColumn::make('examGroup.title')
+                    ->label('گروه آزمون')
+                    ->placeholder('بدون گروه'),
                 IconColumn::make('is_published')
                     ->label('منتشر شده')
                     ->boolean(),
@@ -54,6 +58,11 @@ class ExamsTable
             ])
             ->filters([
                 TextFilter::make('title')->label('عنوان'),
+                SelectFilter::make('examGroup')
+                    ->label('گروه آزمون')
+                    ->relationship('examGroup', 'title')
+                    ->searchable()
+                    ->preload(),
                 TernaryFilter::make('is_published')->label('منتشر شده'),
             ])
             ->recordActions([

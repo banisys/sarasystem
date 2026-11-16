@@ -17,3 +17,5 @@ The route requires permission to create an exam and edit the class. The optional
 
 ## Consequences
 The ordinary admin creation page still handles standalone exams. Class session staff can also generate an exam from the question library on the user-panel context page under [ADR 0089](0089-shared-question-library-and-session-exam-generation.md).
+
+The admin creation page can assign the new exam to a branch's exam group ([ADR 0104](0104-exam-groups.md)).

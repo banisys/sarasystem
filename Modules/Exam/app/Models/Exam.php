@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -24,7 +25,7 @@ use Modules\Exam\Support\ExamContexts;
  * take it: the users chosen for it, and holders of its roles in its tenant.
  */
 #[Fillable([
-    'tenant_id', 'title', 'description', 'is_published', 'starts_at', 'ends_at',
+    'tenant_id', 'exam_group_id', 'title', 'description', 'is_published', 'starts_at', 'ends_at',
     'duration_minutes', 'allow_late_start', 'grace_minutes', 'total_score', 'passing_score',
     'max_attempts', 'retake_policy', 'questions_per_page', 'shuffle_questions',
     'shuffle_options', 'negative_marking', 'result_visibility',
@@ -39,6 +40,12 @@ class Exam extends Model
     protected static function newFactory(): ExamFactory
     {
         return ExamFactory::new();
+    }
+
+    /** @return BelongsTo<ExamGroup, $this> */
+    public function examGroup(): BelongsTo
+    {
+        return $this->belongsTo(ExamGroup::class);
     }
 
     /**

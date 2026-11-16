@@ -1,7 +1,7 @@
 {
     "name": "Exam",
     "alias": "exam",
-    "description": "آزمون‌های برخط و بانک سؤال",
+    "description": "آزمون‌های برخط، گروه‌های آزمون و بانک سؤال",
     "keywords": [],
     "priority": 0,
     "providers": [

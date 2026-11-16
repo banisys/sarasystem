@@ -61,6 +61,7 @@ use Modules\Exam\Filament\Resources\QuestionTags\QuestionTagResource;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\ExamGroup;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Models\QuestionCategory;
@@ -588,14 +589,19 @@ class School extends Scenario
                     ->whereHas('tags', fn ($query) => $query->where('title', 'مرور'))->exists() ?? false) ?? false),
             Mission::make('exam', 'ساخت آزمون')
                 ->steps([
+                    'در «آزمون → گروه آزمون»، با «افزودن گروه آزمون» گروه «آزمون‌های میان‌دوره» را بسازید.',
                     'در «آزمون → آزمون‌ها» آزمون «آزمونک ریاضی» را بسازید: از امروز تا یک ساعت بعد، ۱۵ دقیقه، از ۲۰ نمره، نمره‌ی قبولی ۱۰.',
+                    'در بخش «مشخصات»، گروه «آزمون‌های میان‌دوره» را انتخاب کنید.',
                     'در بخش سؤال‌ها ۴ سؤال از بانک «ریاضی هفتم» بکشید؛ شرکت‌کننده‌ها: نقش «'.$learner.'»؛ آزمون را منتشر کنید.',
+                    'در فهرست آزمون‌ها، فیلتر «گروه آزمون» را روی «آزمون‌های میان‌دوره» بگذارید تا آزمون را پیدا کنید.',
                 ])
                 ->url(fn (TutorialRun $run): ?string => self::schoolUrl($run, ExamResource::class))
                 ->fill(fn (): array => ['title' => 'آزمونک ریاضی', 'duration_minutes' => 15, 'total_score' => 20, 'passing_score' => 10])
                 ->perform(function (TutorialRun $run): void {
+                    $group = self::school($run)->execute(fn (): ExamGroup => ExamGroup::query()->firstOrCreate(['title' => 'آزمون‌های میان‌دوره']));
                     $exam = Exam::query()->create([
                         'tenant_id' => self::school($run)->getKey(), 'title' => 'آزمونک ریاضی', 'is_published' => true,
+                        'exam_group_id' => $group->getKey(),
                         'starts_at' => now(), 'ends_at' => now()->addHour(), 'duration_minutes' => 15, 'grace_minutes' => 2,
                         'total_score' => 20, 'passing_score' => 10, 'max_attempts' => 1, 'retake_policy' => RetakePolicy::Always,
                         'questions_per_page' => 4, 'result_visibility' => ResultVisibility::ScoreWithAnswers,
@@ -603,7 +609,8 @@ class School extends Scenario
                     $exam->sections()->create(['question_bank_id' => self::bank($run)->getKey(), 'question_count' => 4, 'sort' => 1]);
                     $exam->participantRoles()->attach(self::roleIds(DefaultRoles::LEARNER));
                 })
-                ->doneWhen(fn (TutorialRun $run): bool => self::exam($run) !== null),
+                ->doneWhen(fn (TutorialRun $run): bool => $run->made(ExamGroup::class)
+                    ->whereKey(self::exam($run)?->exam_group_id)->where('title', 'آزمون‌های میان‌دوره')->exists()),
             Mission::make('take-exam', 'شرکت در آزمون')
                 ->actor('دانش‌آموز', fn (TutorialRun $run): ?User => self::student($run)?->user)
                 ->steps([

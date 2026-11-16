@@ -35,6 +35,7 @@ use Modules\Employee\Models\Employee;
 use Modules\Exam\Filament\Resources\Exams\ExamResource;
 use Modules\Exam\Filament\Resources\Exams\Pages\CreateContextExam;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Models\ExamGroup;
 use Modules\Exam\Models\QuestionBank;
 use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
@@ -428,6 +429,7 @@ class ClassSchedulesTest extends TestCase
         $this->actingInPanel($admin, $this->west);
         $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
         $bank = QuestionBank::factory()->for($this->west)->create();
+        $group = ExamGroup::factory()->for($this->west)->create(['title' => 'خرداد ۱۴۰۵']);
         $attendee = ClassMember::factory()->for($this->classroom)->for(ClassRole::factory()->create(['is_attendee' => true]))->create();
         $outsider = User::factory()->create();
         $params = ['contextType' => 'class-session', 'contextId' => $session->id];
@@ -436,7 +438,7 @@ class ClassSchedulesTest extends TestCase
 
         Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
             ->assertActionHasUrl(TestAction::make('createSessionExam')->table($session), $url);
-        $this->get($url)->assertOk()->assertSee(['ساخت آزمون جلسه', $this->classroom->title, $bank->title]);
+        $this->get($url)->assertOk()->assertSee(['ساخت آزمون جلسه', $this->classroom->title, $bank->title, $group->title]);
 
         Livewire::test(CreateContextExam::class, $params)
             ->assertFormFieldIsHidden('starts_at')
@@ -444,6 +446,7 @@ class ClassSchedulesTest extends TestCase
             ->assertFormFieldIsHidden('participantUsers')
             ->fillForm([
                 'title' => 'آزمون این جلسه',
+                'exam_group_id' => $group->id,
                 'is_published' => true,
                 'sections' => [['question_bank_id' => $bank->id, 'question_count' => 3]],
                 'duration_minutes' => 40,
@@ -454,6 +457,7 @@ class ClassSchedulesTest extends TestCase
 
         $exam = Exam::query()->sole();
         $this->assertSame('آزمون این جلسه', $exam->title);
+        $this->assertSame($group->id, $exam->exam_group_id);
         $this->assertSame($this->west->id, $exam->tenant_id);
         $this->assertSame('class-session', $exam->context_type);
         $this->assertSame($session->id, $exam->context_id);

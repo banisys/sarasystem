@@ -17,7 +17,9 @@ use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Exam\Enums\AttemptStatus;
+use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\ExamGroup;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionCategory;
 use Modules\Exam\Models\QuestionTag;
@@ -84,7 +86,11 @@ class SchoolScenarioTest extends TestCase
             ->map(fn (Enrollment $enrollment): string => Grade::withoutTenantScope()->find($enrollment->grade_id)->title)->all());
         $categories = [];
         $tag = null;
+        $examGroup = null;
         if (Module::isEnabled('Exam')) {
+            $examGroup = $run->made(ExamGroup::class)->sole();
+            $this->assertSame('آزمون‌های میان‌دوره', $examGroup->title);
+            $this->assertSame($examGroup->id, $run->made(Exam::class)->sole()->exam_group_id);
             $this->assertSame(AttemptStatus::Completed, $run->made(ExamAttempt::class)->sole()->status);
             $root = $run->made(QuestionCategory::class)->whereNull('parent_id')->sole();
             $child = $run->made(QuestionCategory::class)->where('parent_id', $root->id)->sole();
@@ -110,6 +116,9 @@ class SchoolScenarioTest extends TestCase
         if ($tag !== null) {
             $this->assertModelMissing($tag);
             $this->assertDatabaseMissing('exam_question_question_tag', ['question_tag_id' => $tag->id]);
+        }
+        if ($examGroup !== null) {
+            $this->assertModelMissing($examGroup);
         }
         $this->assertSame(0, Enrollment::withoutTenantScope()->count());
     }

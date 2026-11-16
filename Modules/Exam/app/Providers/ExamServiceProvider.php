@@ -51,6 +51,7 @@ class ExamServiceProvider extends ModuleServiceProvider
                 ...DefaultRoles::manage('QuestionTag'),
                 ...DefaultRoles::manage('Question'),
                 ...DefaultRoles::manage('Exam'),
+                ...DefaultRoles::manage('ExamGroup'),
                 ...DefaultRoles::manage('ExamAttempt'),
             ],
         ]);

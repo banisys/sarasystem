@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Enums\RetakePolicy;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Models\ExamGroup;
 use Modules\Exam\Models\QuestionBank;
 
 class ExamForm
@@ -35,6 +36,14 @@ class ExamForm
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
+                        Select::make('exam_group_id')
+                            ->label('گروه آزمون')
+                            ->relationship('examGroup', 'title')
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('بدون گروه')
+                            ->rules(['bail', 'integer'])
+                            ->scopedExists(ExamGroup::class, 'id'),
                         Textarea::make('description')
                             ->label('توضیحات')
                             ->helperText('پیش از شروع آزمون به شرکت‌کننده نشان داده می‌شود.')

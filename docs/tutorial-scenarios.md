@@ -160,7 +160,7 @@ Implemented in [School](../Modules/Tutorial/app/Scenarios/School.php).
 | 23 | Bank «ریاضی هفتم»: 3 choice + 1 written questions | you | bank with a written question |
 | 24 | Create «ریاضی» and hover or focus its row to reveal «افزودن زیردسته» beside the title. Add «اعداد صحیح», assign a question to it with the tree selector, and filter by the parent | you | bank has a question assigned to a subcategory |
 | 25 | Create the «مرور» tag, assign it to a bank question, and filter the questions by it | you | bank has a question tagged «مرور» |
-| 26 | Exam: 4 questions from the bank, role «فراگیر», now for an hour | you | published exam drawing from the bank |
+| 26 | Create «آزمون‌های میان‌دوره», assign it to an exam with 4 questions from the bank for «فراگیر», then filter the exam list by group | you | published exam drawing from the bank and assigned to the group created in this run |
 | 27 | Take it | student | attempt submitted |
 | 28 | Grade the written answer | you | attempt completed |
 

@@ -65,6 +65,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Question bank | بانک سؤال | A named set of questions of one tenant. A question can be in several banks. Teaching staff can keep personal banks private or share them with authorized colleagues in the same tenant ([ADR 0089](decisions/0089-shared-question-library-and-session-exam-generation.md)). |
 | Question category | دستهٔ سؤال | An optional classification for a question. Categories form a tree in each tenant, and filtering by a category also includes its descendants. |
 | Question tag | برچسب سؤال | A reusable label from the tenant’s catalog. A question can have several tags alongside its category. [ADR 0082](decisions/0082-question-tags.md). |
+| Exam group | گروه آزمون | An optional label from a branch catalog that groups related exams for filtering. [ADR 0104](decisions/0104-exam-groups.md). |
 | Choice / written question | چندگزینه‌ای / تشریحی | A choice question has options with exactly one correct and is graded automatically; a written (descriptive) answer is graded by staff. |
 | Model answer | پاسخ نمونه | An optional reference solution for staff grading a written question. The attempt keeps the version available when it started. |
 | Fill-in-the-blank question | سؤال جای خالی | A question with one short inline answer, graded against a list of accepted answers. |
