@@ -36,6 +36,7 @@ use Modules\Exam\Filament\Resources\Exams\ExamResource;
 use Modules\Exam\Filament\Resources\Exams\Pages\CreateContextExam;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamGroup;
+use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
@@ -471,6 +472,53 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame(3, $exam->questionCount());
         $this->assertTrue($exam->hasParticipant($attendee->user));
         $this->assertFalse($exam->hasParticipant($outsider));
+    }
+
+    public function test_the_exam_create_page_opens_a_printable_preview_of_its_unsaved_questions(): void
+    {
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
+        $bank = QuestionBank::factory()->for($this->west)->create();
+        $question = Question::factory()->for($this->west)->descriptive()->create([
+            'body' => 'متن سؤال نمونه', 'model_answer' => 'پاسخ مخصوص تصحیح',
+        ]);
+        $choice = Question::factory()->for($this->west)->create(['body' => 'یک سؤال چندگزینه‌ای']);
+        $inactive = Question::factory()->for($this->west)->inactive()->create(['body' => 'متن سؤال غیرفعال']);
+        $bank->questions()->attach([$question->id, $choice->id, $inactive->id]);
+
+        Livewire::test(CreateContextExam::class, ['contextType' => 'class-session', 'contextId' => $session->id])
+            ->assertSee('آزمون‌های جلسه')
+            ->fillForm([
+                'title' => 'عنوان پیش‌نویس',
+                'sections' => [['question_bank_id' => $bank->id, 'question_count' => 2]],
+            ])
+            ->mountAction('sessionExams')
+            ->assertMountedActionModalSee(['عنوان پیش‌نویس', 'پیش‌نمایش نسخهٔ آزمون', 'چاپ آزمون', $question->body, $choice->body, 'گزینه a'])
+            ->assertMountedActionModalSeeHtml('srcdoc=')
+            ->assertMountedActionModalDontSee(['پاسخ مخصوص تصحیح', $inactive->body]);
+
+        $this->assertDatabaseCount('exams', 0);
+    }
+
+    public function test_the_paper_preview_does_not_print_missing_or_foreign_questions(): void
+    {
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
+        $foreignBank = QuestionBank::factory()->for($this->primary)->create();
+        $foreignQuestion = Question::factory()->for($this->primary)->create(['body' => 'سؤال شعبهٔ دیگر']);
+        $foreignBank->questions()->attach($foreignQuestion);
+        $params = ['contextType' => 'class-session', 'contextId' => $session->id];
+
+        Livewire::test(CreateContextExam::class, $params)
+            ->mountAction('sessionExams')
+            ->assertMountedActionModalSee('بانک سؤال و تعداد سؤال‌های هر ردیف را وارد کنید')
+            ->assertMountedActionModalDontSee('چاپ آزمون');
+
+        Livewire::test(CreateContextExam::class, $params)
+            ->fillForm(['sections' => [['question_bank_id' => $foreignBank->id, 'question_count' => 1]]])
+            ->mountAction('sessionExams')
+            ->assertMountedActionModalSee('یکی از بانک‌های انتخاب‌شده در دسترس نیست.')
+            ->assertMountedActionModalDontSee([$foreignQuestion->body, 'چاپ آزمون']);
     }
 
     public function test_exam_creation_requires_a_current_branch_exam_session_and_permission_for_both_resources(): void

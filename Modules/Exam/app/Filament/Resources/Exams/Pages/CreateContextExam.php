@@ -6,9 +6,12 @@ use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
 use Modules\Exam\Filament\Resources\Exams\Schemas\ExamForm;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Services\ExamPaperPreview;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
 
@@ -54,6 +57,27 @@ class CreateContextExam extends CreateExam
     public function form(Schema $schema): Schema
     {
         return ExamForm::configure($schema, forSession: true);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('sessionExams')
+                ->label('آزمون‌های جلسه')
+                ->icon(Heroicon::OutlinedDocumentText)
+                ->outlined()
+                ->modalHeading('پیش‌نمایش نسخهٔ آزمون')
+                ->modalWidth('6xl')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('بستن')
+                ->modalContent(function (ExamPaperPreview $preview): View {
+                    $this->authorizeAccess();
+
+                    return view('exam::filament.exam-paper-preview', [
+                        'paper' => $preview->forDraft($this->form->getRawState(), $this->examContext()->title),
+                    ]);
+                }),
+        ];
     }
 
     protected function handleRecordCreation(array $data): Exam
