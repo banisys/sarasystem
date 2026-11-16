@@ -122,7 +122,7 @@
                             id === null
                                 ? 'border-dashed border-gray-300 text-gray-500 dark:border-white/20 dark:text-gray-400'
                                 : 'cursor-grab active:cursor-grabbing border-primary-200 bg-primary-50 text-primary-800 dark:border-primary-400/30 dark:bg-primary-500/15 dark:text-primary-200',
-                            dropSeat === index ? 'outline-2 outline-offset-2 outline-primary-500 bg-primary-100! dark:bg-primary-500/30!' : '',
+                            dropSeat === index ? 'outline-2 outline-offset-2 outline-red-500/70 bg-red-50! dark:bg-red-500/20!' : '',
                         ]"
                         x-bind:aria-pressed="id !== null && selected === id"
                         x-bind:draggable="id !== null"

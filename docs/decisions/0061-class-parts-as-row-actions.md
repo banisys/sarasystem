@@ -18,6 +18,7 @@ A class's page (`classes/{id}`) had the tabs «اطلاعات», «اعضا», �
 - Relation managers other modules could add to a class (`ModelRelationManagers`) are no longer shown; none exists today. Row actions from `ClassroomExtensions` stay as they were.
 
 The «برنامه» action later became «برنامهٔ درسی» and «برنامهٔ امتحانی» gained its own action and page ([ADR 0096](0096-separate-class-schedule-pages.md)).
+The «جلسه‌ها» row action is now labeled «تقویم جلسات».
 
 ## Consequences
 One more click from the list to the class's parts, but no tabs; the action menu of a row lists everything a class offers.

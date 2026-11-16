@@ -116,6 +116,7 @@ class ClassAdminTest extends TestCase
             ->assertTableActionExists('members')
             ->assertTableActionExists('schedules')
             ->assertTableActionExists('sessions')
+            ->assertSee('تقویم جلسات')
             ->mountTableAction('view', $mine)
             ->assertHasNoErrors()
             ->assertSet('mountedActions.0.name', 'view');

@@ -94,7 +94,7 @@ class ClassroomsTable
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->url(fn (Classroom $record): string => ClassroomResource::getUrl('exam-schedules', ['record' => $record])),
                 Action::make('sessions')
-                    ->label('جلسه‌ها')
+                    ->label('تقویم جلسات')
                     ->icon(Heroicon::OutlinedClock)
                     ->url(fn (Classroom $record): string => ClassroomResource::getUrl('sessions', ['record' => $record])),
                 ...ClassroomExtensions::components('actions'),
