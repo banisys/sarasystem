@@ -2,6 +2,7 @@
 
 namespace Modules\Exam\Support;
 
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Interfaces\ExamContextSource;
@@ -20,6 +21,11 @@ class ExamContexts
     public function resolve(string $type, int $id, User $user): ?ExamContext
     {
         return ($this->sources[$type] ?? null)?->resolve($id, $user);
+    }
+
+    public function tenantForVisit(string $type, int $id, User $user): ?Tenant
+    {
+        return ($this->sources[$type] ?? null)?->tenantForVisit($id, $user);
     }
 
     public function forParticipant(Builder $query, User $user): void

@@ -2,6 +2,8 @@
 
 namespace Modules\Exam\Http\Controllers;
 
+use App\Http\Middleware\ResolveCurrentTenant;
+use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -30,7 +32,7 @@ class ContextExamController extends Controller
 {
     public function show(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): Response
     {
-        $host = $this->context($request, $type, $context, $contexts);
+        $host = $this->contextForVisit($request, $type, $context, $contexts);
         $query = $exams->query($host);
         if (! $host->canManage) {
             $query->published()->forParticipant($request->user());
@@ -233,6 +235,29 @@ class ContextExamController extends Controller
         });
 
         return to_route('exams.context.review', [$type, $context, $attempt])->with('status', 'نمره‌ها ثبت شد.');
+    }
+
+    private function contextForVisit(Request $request, string $type, int $id, ExamContexts $contexts): ExamContext
+    {
+        $actor = $request->user();
+
+        if (Tenant::checkCurrent() && ($context = $contexts->resolve($type, $id, $actor)) !== null) {
+            return $context;
+        }
+
+        $tenant = $contexts->tenantForVisit($type, $id, $actor);
+        abort_if($tenant === null || $tenant->isCurrent(), 404);
+
+        $context = $tenant->execute(fn (): ?ExamContext => $contexts->resolve(
+            $type, $id, (clone $actor)->unsetRelation('roles')->unsetRelation('permissions'),
+        ));
+        abort_if($context === null, 404);
+
+        $tenant->makeCurrent();
+        $actor->unsetRelation('roles')->unsetRelation('permissions');
+        $request->session()->put(ResolveCurrentTenant::SESSION_KEY, $tenant->getKey());
+
+        return $context;
     }
 
     private function context(Request $request, string $type, int $id, ExamContexts $contexts, bool $manage = false): ExamContext

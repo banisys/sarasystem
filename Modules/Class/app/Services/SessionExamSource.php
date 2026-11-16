@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Services;
 
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\SessionKind;
@@ -18,6 +19,15 @@ use Modules\Exam\Support\ExamContexts;
 class SessionExamSource implements ExamContextSource
 {
     public const TYPE = 'class-session';
+
+    public function tenantForVisit(int $id, User $user): ?Tenant
+    {
+        $availableTenants = $user->isSuperAdmin() ? Tenant::query() : $user->tenants();
+
+        return $availableTenants->active()
+            ->whereIn('tenants.id', ClassSession::withoutTenantScope()->takingPlace()->whereKey($id)->select('tenant_id'))
+            ->first();
+    }
 
     public function resolve(int $id, User $user): ?ExamContext
     {

@@ -22,7 +22,8 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/exams')->
         Route::delete('/questions/{question}', 'destroyQuestion')->name('.questions.destroy');
         Route::post('/questions/{question}/banks', 'addSharedQuestion')->name('.questions.banks.store');
     });
-    Route::get('/contexts/{type}/{context}', [ContextExamController::class, 'show'])->whereNumber('context')->name('context');
+    Route::get('/contexts/{type}/{context}', [ContextExamController::class, 'show'])
+        ->withoutMiddleware('tenant')->whereNumber('context')->name('context');
     Route::post('/contexts/{type}/{context}', [ContextExamController::class, 'store'])->whereNumber('context')->name('context.store');
     Route::get('/contexts/{type}/{context}/banks/{bank}/questions', [ContextExamController::class, 'bankQuestions'])
         ->whereNumber(['context', 'bank'])->name('context.bank-questions');

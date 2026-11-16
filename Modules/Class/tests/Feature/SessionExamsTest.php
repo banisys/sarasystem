@@ -239,6 +239,48 @@ class SessionExamsTest extends TestCase
         $this->assertTrue($exam->fresh()->is_published);
     }
 
+    public function test_a_session_exam_link_opens_in_its_branch_when_another_branch_is_selected(): void
+    {
+        $exam = $this->assign();
+        $otherBranch = Tenant::factory()->create();
+        $this->grantRole($this->teacher, $otherBranch, 'teacher');
+        $this->actingAs($this->teacher)->withSession([ResolveCurrentTenant::SESSION_KEY => $otherBranch->id]);
+
+        $this->get($this->url())->assertOk()
+            ->assertSessionHas(ResolveCurrentTenant::SESSION_KEY, $this->tenant->id)
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Exam::Context')
+                ->where('tenant.current.id', $this->tenant->id)->where('exams.0.id', $exam->id));
+
+        $this->getJson(route('exams.context.preview', ['class-session', $this->session->id, $exam]))->assertOk();
+    }
+
+    public function test_a_super_admin_can_open_a_session_exam_link_without_selecting_a_branch_first(): void
+    {
+        $exam = $this->assign();
+        $this->flushSession();
+        Tenant::forgetCurrent();
+        $this->actingAs(User::factory()->superAdmin()->create());
+
+        $this->get($this->url())->assertOk()
+            ->assertSessionHas(ResolveCurrentTenant::SESSION_KEY, $this->tenant->id)
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('exams.0.id', $exam->id));
+    }
+
+    public function test_following_a_link_does_not_carry_class_editor_permissions_to_another_branch(): void
+    {
+        $otherBranch = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $this->roleWithPermissions('other_branch_class_editor', ['Update:Classroom']);
+        $this->grantRole($user, $otherBranch, 'other_branch_class_editor');
+        $this->grantRole($user, $this->tenant, 'teacher');
+        $otherBranch->makeCurrent();
+        $this->assertTrue($user->can('Update:Classroom'));
+
+        $this->actingAs($user)->withSession([ResolveCurrentTenant::SESSION_KEY => $otherBranch->id])
+            ->get($this->url())->assertNotFound()
+            ->assertSessionHas(ResolveCurrentTenant::SESSION_KEY, $otherBranch->id);
+    }
+
     public function test_foreign_sessions_banks_and_attempts_are_rejected(): void
     {
         $exam = $this->assign();

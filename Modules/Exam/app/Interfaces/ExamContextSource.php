@@ -2,6 +2,7 @@
 
 namespace Modules\Exam\Interfaces;
 
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Support\ExamContext;
@@ -10,6 +11,9 @@ use Modules\Exam\Support\ExamContext;
 interface ExamContextSource
 {
     public function resolve(int $id, User $user): ?ExamContext;
+
+    /** Locate the active tenant for a direct page visit, limited to branches the user may enter. */
+    public function tenantForVisit(int $id, User $user): ?Tenant;
 
     public function hasTeachingStaff(User $user): bool;
 
