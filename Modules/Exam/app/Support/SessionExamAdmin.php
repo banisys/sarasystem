@@ -14,12 +14,12 @@ use Modules\Exam\Services\ExamPaperPreview;
 /** Admin controls exposed to session hosts when Exam is enabled. */
 class SessionExamAdmin
 {
-    public function withExamAvailability(Builder $sessions, string $type): Builder
+    public function withSessionExamId(Builder $sessions, string $type): Builder
     {
         return $sessions->addSelect([
-            'has_session_exam' => Exam::query()->where('context_type', $type)
+            'session_exam_id' => $this->orderedExams($type)
                 ->whereColumn('context_id', $sessions->getModel()->qualifyColumn('id'))
-                ->selectRaw('1')->limit(1),
+                ->select('exams.id')->limit(1),
         ]);
     }
 
@@ -38,8 +38,7 @@ class SessionExamAdmin
             ->modalContent(function (ExamPaperPreview $preview) use ($type, $id, $canRead, $classTitle, $startsAt): View {
                 abort_unless($canRead(), 403);
 
-                $exam = Exam::query()->where('context_type', $type)->where('context_id', $id)
-                    ->orderByDesc('is_published')->latest('id')->first();
+                $exam = $this->orderedExams($type)->where('context_id', $id)->first();
 
                 return view('exam::filament.exam-paper-preview', [
                     'paper' => $exam === null
@@ -50,5 +49,10 @@ class SessionExamAdmin
                         : null,
                 ]);
             });
+    }
+
+    private function orderedExams(string $type): Builder
+    {
+        return Exam::query()->where('context_type', $type)->orderByDesc('is_published')->latest('id');
     }
 }

@@ -438,7 +438,7 @@ class ClassSchedulesTest extends TestCase
         $returnUrl = ClassroomResource::getUrl('exam-schedules', ['record' => $this->classroom], tenant: $this->west);
 
         Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHasUrl(TestAction::make('createSessionExam')->table($session), $url);
+            ->assertActionHasUrl(TestAction::make('sessionExam')->table($session), $url);
         $this->get($url)->assertOk()->assertSee(['ساخت آزمون جلسه', $this->classroom->title, $bank->title, $group->title]);
 
         Livewire::test(CreateContextExam::class, $params)
@@ -474,8 +474,10 @@ class ClassSchedulesTest extends TestCase
         $this->assertFalse($exam->hasParticipant($outsider));
 
         $this->get($url)->assertRedirect(ClassSessionResource::detailsUrl($session, $this->west));
+        $editUrl = ExamResource::getUrl('edit', ['record' => $exam], tenant: $this->west);
         Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHidden(TestAction::make('createSessionExam')->table($session));
+            ->assertActionHasUrl(TestAction::make('sessionExam')->table($session), $editUrl);
+        $this->get($editUrl)->assertOk()->assertSee($exam->title);
     }
 
     public function test_an_already_open_admin_form_cannot_create_a_second_exam(): void
@@ -555,7 +557,7 @@ class ClassSchedulesTest extends TestCase
         $this->get($url($foreign))->assertNotFound();
         $this->get($url($regular))->assertForbidden();
         Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHidden(TestAction::make('createSessionExam')->table($cancelled));
+            ->assertActionHidden(TestAction::make('sessionExam')->table($cancelled));
 
         $editor = User::factory()->create();
         $this->roleWithPermissions('class_without_exam_create', ['ViewAny:Classroom', 'View:Classroom', 'Update:Classroom', 'ViewAny:Exam']);
@@ -564,7 +566,14 @@ class ClassSchedulesTest extends TestCase
         $this->actingInPanel($editor, $this->west);
         $this->get($url($session))->assertForbidden();
         Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHidden(TestAction::make('createSessionExam')->table($session));
+            ->assertActionHidden(TestAction::make('sessionExam')->table($session));
+
+        $exam = Exam::factory()->for($this->west)->create();
+        $exam->forceFill(['context_type' => 'class-session', 'context_id' => $session->id])->save();
+        $editUrl = ExamResource::getUrl('edit', ['record' => $exam], tenant: $this->west);
+        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+            ->assertActionHidden(TestAction::make('sessionExam')->table($session));
+        $this->get($editUrl)->assertForbidden();
     }
 
     public function test_exam_schedule_accepts_an_employee_from_another_tenant_and_rejects_non_employees(): void

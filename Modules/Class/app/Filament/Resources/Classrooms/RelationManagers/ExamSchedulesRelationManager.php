@@ -53,7 +53,7 @@ class ExamSchedulesRelationManager extends RelationManager
                 $query->where('kind', SessionKind::Exam)->with(['subject', 'teachers', 'substitutes']);
 
                 return Module::isEnabled('Exam')
-                    ? app(SessionExamAdmin::class)->withExamAvailability($query, SessionExamSource::TYPE)
+                    ? app(SessionExamAdmin::class)->withSessionExamId($query, SessionExamSource::TYPE)
                     : $query;
             })
             ->defaultSort('starts_at', 'desc')
@@ -82,7 +82,7 @@ class ExamSchedulesRelationManager extends RelationManager
             ->headerActions([$this->addExamScheduleAction()])
             ->recordActions([
                 $this->editExamScheduleAction(),
-                ...(Module::isEnabled('Exam') ? [$this->createSessionExamAction()] : []),
+                ...(Module::isEnabled('Exam') ? [$this->sessionExamAction()] : []),
                 Action::make('viewExam')
                     ->label('جزئیات')
                     ->icon(Heroicon::OutlinedEye)
@@ -90,17 +90,21 @@ class ExamSchedulesRelationManager extends RelationManager
             ]);
     }
 
-    private function createSessionExamAction(): Action
+    private function sessionExamAction(): Action
     {
-        return Action::make('createSessionExam')
-            ->label('ساخت آزمون جلسه')
-            ->icon(Heroicon::OutlinedDocumentPlus)
-            ->authorize(fn (): bool => Gate::allows('update', $this->classroom()) && ExamResource::canCreate())
-            ->visible(fn (ClassSession $record): bool => $record->status !== SessionStatus::Cancelled && ! $record->has_session_exam)
-            ->url(fn (ClassSession $record): string => ExamResource::getUrl('create-for-context', [
-                'contextType' => SessionExamSource::TYPE,
-                'contextId' => $record->id,
-            ]));
+        return Action::make('sessionExam')
+            ->label('آزمون جلسه')
+            ->icon(Heroicon::OutlinedDocumentText)
+            ->authorize(fn (ClassSession $record): bool => $record->session_exam_id !== null
+                ? Gate::allows('Update:Exam')
+                : Gate::allows('update', $this->classroom()) && ExamResource::canCreate())
+            ->visible(fn (ClassSession $record): bool => $record->session_exam_id !== null || $record->status !== SessionStatus::Cancelled)
+            ->url(fn (ClassSession $record): string => $record->session_exam_id !== null
+                ? ExamResource::getUrl('edit', ['record' => $record->session_exam_id])
+                : ExamResource::getUrl('create-for-context', [
+                    'contextType' => SessionExamSource::TYPE,
+                    'contextId' => $record->id,
+                ]));
     }
 
     private function addExamScheduleAction(): Action
