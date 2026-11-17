@@ -40,14 +40,9 @@ class SessionExamAdmin
 
                 $exam = $this->orderedExams($type)->where('context_id', $id)->first();
 
-                return view('exam::filament.exam-paper-preview', [
-                    'paper' => $exam === null
-                        ? ['error' => 'برای این جلسه هنوز آزمونی تعریف نشده است.']
-                        : $preview->forSaved($exam, $classTitle, $startsAt),
-                    'notice' => $exam?->question_snapshot === null
-                        ? 'برگه از سؤال‌های گلچین‌شده و نمونه‌ای از ردیف‌های خودکار تهیه می‌شود. برداشت ردیف‌های خودکار و ترتیب سؤال‌ها در آزمون آنلاین ممکن است متفاوت باشد.'
-                        : null,
-                ]);
+                return $exam === null
+                    ? view('exam::filament.exam-paper-preview', ['paper' => ['error' => 'برای این جلسه هنوز آزمونی تعریف نشده است.']])
+                    : $preview->savedModal($exam, $classTitle, $startsAt);
             });
     }
 

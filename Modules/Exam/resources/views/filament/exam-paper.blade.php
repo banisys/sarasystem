@@ -54,12 +54,12 @@
                 <tbody>
                     <tr>
                         <td class="title-cell" colspan="2"><h1>{{ $paper['title'] }}</h1></td>
-                        <td><strong>تاریخ:</strong> {{ $localizeDigits($paper['date']) }}</td>
+                        <td><strong>تاریخ:</strong> {{ $localizeDigits($paper['date'] ?? '—') }}</td>
                     </tr>
                     <tr>
                         <td><strong>نام و نام خانوادگی:</strong> <span class="fill-line" aria-hidden="true"></span></td>
                         <td><strong>{{ config('sarasystem.tenant_label') }}:</strong> {{ $paper['branch'] ?? '—' }}</td>
-                        <td><strong>شروع:</strong> <bdi dir="ltr">{{ $localizeDigits($paper['time']) }}</bdi></td>
+                        <td><strong>شروع:</strong> <bdi dir="ltr">{{ $localizeDigits($paper['time'] ?? '—') }}</bdi></td>
                     </tr>
                     <tr>
                         <td><strong>کلاس:</strong> {{ $paper['class'] ?? '—' }}</td>

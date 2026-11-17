@@ -3,6 +3,7 @@
 namespace Modules\Exam\Filament\Resources\Exams\Tables;
 
 use App\Filament\Support\TextFilter;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -12,8 +13,11 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Modules\Exam\Filament\Resources\ExamAttempts\ExamAttemptResource;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Services\ExamPaperPreview;
+use Modules\Exam\Support\ExamContexts;
 
 class ExamsTable
 {
@@ -66,6 +70,22 @@ class ExamsTable
                 TernaryFilter::make('is_published')->label('منتشر شده'),
             ])
             ->recordActions([
+                Action::make('previewPaper')
+                    ->label('پیش‌نمایش آزمون')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->authorize('view')
+                    ->modalHeading('پیش‌نمایش آزمون')
+                    ->modalWidth('6xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('بستن')
+                    ->modalContent(function (Exam $record, ExamPaperPreview $preview, ExamContexts $contexts): View {
+                        $actor = auth()->user();
+                        $context = $actor instanceof User && $record->context_type !== null && $record->context_id !== null
+                            ? $contexts->resolve($record->context_type, $record->context_id, $actor)
+                            : null;
+
+                        return $preview->savedModal($record, $context?->classTitle, $context?->startsAt);
+                    }),
                 Action::make('results')
                     ->label('نتایج')
                     ->icon(Heroicon::OutlinedChartBar)

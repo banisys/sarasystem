@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-17 — Added «پیش‌نمایش آزمون» to the admin exam list. The row action opens the shared printable paper for the selected exam. Verified the Mehregan modal in Chromium. All 796 tests, targeted module isolation checks, and Pint passed.
 - 2026-11-17 — Added «انتخاب سؤال‌ها» to each bank row in the admin exam form ([ADR 0108](decisions/0108-manual-admin-exam-question-selection.md)). Confirmed choices set the row count and are used by future attempts and printable papers. Updated the tutorial and migrated the local database. Verified the picker on exam 36 in Chromium and passed all 794 tests and Pint.
 - 2026-11-16 — Renamed the exam schedule row action to «آزمون جلسه». It opens creation for an empty session and the existing exam editor when an exam is present. Updated the tutorial and verified both destinations and permission checks with 34 targeted tests and Pint.
 - 2026-11-16 — Restyled the A4 exam paper to match the supplied layout, with a Persian identity grid, scored question rows, written answer space, and a score total. Verified the sample layout in Chromium. All 792 tests and Pint passed. Tutorial steps still match.

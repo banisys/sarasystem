@@ -19,3 +19,5 @@ The exam session's «آزمون جلسه» action opens the printable sheet with
 The paper uses saved questions when present and a representative bank draw for exams that draw questions at attempt time. It omits grading keys. The session details, other admin actions, online participation, and results keep their existing authorization. Regular class sessions still support multiple exams.
 
 The shared A4 paper has a right-to-left identity grid with the exam title, branch, class, scheduled date and start time, duration, and spaces for the candidate's details. The question table shows each question's stored weight, space for written answers, and the sum of the printed weights.
+
+The admin exam list offers «پیش‌نمایش آزمون» to users who can view the exam. The modal uses the same paper and opens the selected row's exam, including standalone exams. It uses the session's class and start time when the session is accessible, and otherwise uses the exam's own start time when set.

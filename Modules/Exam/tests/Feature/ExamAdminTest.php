@@ -76,6 +76,41 @@ class ExamAdminTest extends TestCase
         Livewire::test(ListExamAttempts::class)->assertCanSeeTableRecords([$ownAttempt])->assertCanNotSeeTableRecords([$foreignAttempt]);
 
         $this->get(ExamAttemptResource::getUrl('edit', ['record' => $foreignAttempt], tenant: $this->tenant))->assertNotFound();
+
+        Livewire::test(ListExams::class)
+            ->mountAction(TestAction::make('previewPaper')->table($foreignExam))
+            ->assertActionNotMounted('previewPaper');
+    }
+
+    public function test_the_exam_list_previews_the_selected_exam_without_exposing_answer_keys(): void
+    {
+        $exam = Exam::factory()->for($this->tenant)->draft()->create(['starts_at' => null]);
+        $exam->forceFill(['question_snapshot' => [[
+            'type' => 'descriptive', 'body' => 'متن برگهٔ آزمون', 'score' => 4, 'model_answer' => 'پاسخ محرمانه',
+        ]]])->save();
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::test(ListExams::class)
+            ->mountAction(TestAction::make('previewPaper')->table($exam))
+            ->assertMountedActionModalSee([$exam->title, 'متن برگهٔ آزمون', 'چاپ آزمون'])
+            ->assertMountedActionModalDontSee('پاسخ محرمانه');
+    }
+
+    public function test_exam_list_access_alone_does_not_allow_opening_the_paper(): void
+    {
+        $exam = Exam::factory()->for($this->tenant)->create();
+        $viewer = User::factory()->create();
+        $this->roleWithPermissions('exam_list_viewer', ['ViewAny:Exam']);
+        $this->makeStaff($viewer, $this->tenant);
+        $this->grantRole($viewer, $this->tenant, 'exam_list_viewer');
+        $this->actingInPanel($viewer, $this->tenant);
+
+        $paper = TestAction::make('previewPaper')->table($exam);
+        Livewire::test(ListExams::class)
+            ->assertCanSeeTableRecords([$exam])
+            ->assertActionHidden($paper)
+            ->mountAction($paper)
+            ->assertActionNotMounted('previewPaper');
     }
 
     public function test_a_choice_question_needs_exactly_one_correct_option_and_a_bank_of_this_tenant(): void

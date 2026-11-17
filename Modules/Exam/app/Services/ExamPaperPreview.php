@@ -5,6 +5,7 @@ namespace Modules\Exam\Services;
 use App\Models\Tenant;
 use Ariaieboy\Jalali\CalendarUtils;
 use Carbon\CarbonInterface;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Validator;
 use Modules\Exam\Enums\QuestionType;
 use Modules\Exam\Models\Exam;
@@ -13,8 +14,20 @@ use Modules\Exam\Models\QuestionBank;
 
 class ExamPaperPreview
 {
-    public function forSaved(Exam $exam, ?string $classTitle, CarbonInterface $startsAt): array
+    public function savedModal(Exam $exam, ?string $classTitle, ?CarbonInterface $startsAt): View
     {
+        return view('exam::filament.exam-paper-preview', [
+            'paper' => $this->forSaved($exam, $classTitle, $startsAt),
+            'notice' => $exam->question_snapshot === null
+                ? 'برگه از سؤال‌های گلچین‌شده و نمونه‌ای از ردیف‌های خودکار تهیه می‌شود. برداشت ردیف‌های خودکار و ترتیب سؤال‌ها در آزمون آنلاین ممکن است متفاوت باشد.'
+                : null,
+        ]);
+    }
+
+    public function forSaved(Exam $exam, ?string $classTitle, ?CarbonInterface $startsAt): array
+    {
+        $startsAt ??= $exam->starts_at;
+
         if ($exam->question_snapshot === null) {
             return $this->forDraft([
                 'title' => $exam->title,
@@ -39,7 +52,7 @@ class ExamPaperPreview
      * @param  array<string, mixed>  $draft
      * @return array{title: string, branch: string|null, class: string|null, date: string|null, time: string|null, description: string, duration: int|null, questions: list<array{body: string, options: list<string>, written: bool, score: float|null}>, error: string|null}
      */
-    public function forDraft(array $draft, string $sessionTitle, ?string $classTitle, CarbonInterface $startsAt): array
+    public function forDraft(array $draft, string $sessionTitle, ?string $classTitle, ?CarbonInterface $startsAt): array
     {
         $validator = Validator::make($draft, [
             'title' => ['nullable', 'string', 'max:255'],
@@ -88,14 +101,14 @@ class ExamPaperPreview
         return $paper;
     }
 
-    private function paper(string $title, ?string $classTitle, CarbonInterface $startsAt): array
+    private function paper(string $title, ?string $classTitle, ?CarbonInterface $startsAt): array
     {
         return [
             'title' => $title,
             'branch' => Tenant::current()?->name,
             'class' => $classTitle,
-            'date' => CalendarUtils::strftime('l Y/m/d', $startsAt->toMutable()),
-            'time' => $startsAt->format('H:i'),
+            'date' => $startsAt === null ? null : CalendarUtils::strftime('l Y/m/d', $startsAt->toMutable()),
+            'time' => $startsAt?->format('H:i'),
             'description' => '',
             'duration' => null,
             'questions' => [],
