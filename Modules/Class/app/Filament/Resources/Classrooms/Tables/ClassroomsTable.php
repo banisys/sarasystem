@@ -29,7 +29,7 @@ class ClassroomsTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query
-                ->with(['term', 'parent', 'members' => fn ($members) => $members->current()->with(['user', 'classRole'])])
+                ->with(['term', 'parent', 'members' => fn ($members) => $members->current()->with('classRole')])
                 ->withCount(['children', 'members']))
             ->columns([
                 TextColumn::make('title')
@@ -48,14 +48,6 @@ class ClassroomsTable
                 TextColumn::make('mode')
                     ->label('برگزاری')
                     ->badge(),
-                TextColumn::make('staff')
-                    ->label('کادر')
-                    ->state(fn (Classroom $record): array => $record->members
-                        ->reject(fn (ClassMember $member): bool => $member->classRole->is_attendee)
-                        ->map(fn (ClassMember $member): string => $member->user->name.' ('.$member->classRole->title.')')
-                        ->values()->all())
-                    ->listWithLineBreaks()
-                    ->placeholder('—'),
                 TextColumn::make('attendees')
                     ->label('شرکت‌کنندگان')
                     ->state(fn (Classroom $record): string => $record->members->filter(fn (ClassMember $member): bool => $member->classRole->is_attendee)->count()
@@ -77,7 +69,7 @@ class ClassroomsTable
             ])
             ->recordActions([
                 Action::make('sessions')
-                    ->label('تقویم برنامه ریزی آموزشی')
+                    ->label('تقویم کلاسی')
                     ->icon(Heroicon::OutlinedCalendarDays)
                     ->url(fn (Classroom $record): string => ClassroomResource::getUrl('sessions', ['record' => $record])),
                 ViewAction::make()

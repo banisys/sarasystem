@@ -23,6 +23,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-17 — Removed the staff column from the admin classes list. Class staff are listed on the members page.
+- 2026-11-17 — Renamed the class calendar action and page to «تقویم کلاسی» and updated the teaching plan help.
+- 2026-11-17: Renamed the class list calendar action and its page to «برنامه ریزی جلسات» and updated the teaching plan help to match.
 - 2026-11-17 — Added optional titles to teaching and exam sessions and displayed them in the admin and user calendars ([ADR 0112](decisions/0112-session-titles.md)).
 - 2026-11-17 — Replaced schedule editing on teaching session details with «ویرایش جلسه» for that session’s subject, location and note. Date and time remain in the separate move action.
 - 2026-11-17 — Renamed «کلاس‌های من» to «تقویم آموزشی» and moved it to `/profile/academic-calendar` ([ADR 0111](decisions/0111-user-academic-calendar.md)). The default Jalali month shows teaching and exam sessions together, with exam labels. Old calendar and session links redirect with their query parameters. All 210 Class tests, Pint and the Vite build passed.

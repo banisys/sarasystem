@@ -116,14 +116,14 @@ class ClassAdminTest extends TestCase
             ->assertTableActionExists('members')
             ->assertTableActionDoesNotExist('schedules')
             ->assertTableActionExists('sessions')
-            ->assertSee('تقویم برنامه ریزی آموزشی')
+            ->assertSee('تقویم کلاسی')
             ->mountTableAction('view', $mine)
             ->assertHasNoErrors()
             ->assertSet('mountedActions.0.name', 'view');
 
         foreach ([
             'members' => 'اعضا',
-            'sessions' => 'تقویم برنامه ریزی آموزشی',
+            'sessions' => 'تقویم کلاسی',
         ] as $page => $title) {
             $this->get(ClassroomResource::getUrl($page, ['record' => $mine], tenant: $this->west))
                 ->assertOk()
