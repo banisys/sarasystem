@@ -33,6 +33,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
+use Filament\Support\Colors\Color;
 use Filament\Support\Exceptions\Halt;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -57,7 +58,6 @@ use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionCalendar;
 use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionPlanner;
-use Modules\Class\Services\SessionScene;
 
 /**
  * Columns and row actions of session lists: a class's «جلسه‌ها» tab and
@@ -185,7 +185,7 @@ class SessionActions
             });
         $time = TextEntry::make('starts_at')
             ->label('زمان')
-            ->icon($exam ? Heroicon::OutlinedClock : null)
+            ->icon(Heroicon::OutlinedClock)
             ->state(fn (ClassSession $record): string => self::when($record))
             ->helperText(fn (ClassSession $record): ?string => $record->wasMoved() ? 'جابه‌جا از '.self::when($record, original: true) : null);
         if ($exam) {
@@ -198,7 +198,7 @@ class SessionActions
 
         $location = TextEntry::make('location')
             ->label('مکان')
-            ->icon($exam ? Heroicon::OutlinedMapPin : null)
+            ->icon(Heroicon::OutlinedMapPin)
             ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
             ->placeholder($exam ? 'مشخص نشده' : '—');
         $staff = Group::make(fn (ClassSession $record): array => self::teacherEntries($record, $exam ? 'مراقبان' : 'مدرس‌ها'));
@@ -208,12 +208,15 @@ class SessionActions
 
         return [
             Section::make($exam ? 'مشخصات جلسهٔ امتحانی' : 'مشخصات جلسه')
-                ->icon($exam ? Heroicon::OutlinedInformationCircle : null)
+                ->icon(Heroicon::OutlinedInformationCircle)
                 ->description(fn (ClassSession $record): ?string => self::lastChange($exam ? 'آخرین تغییر جلسهٔ امتحانی' : 'آخرین تغییر زمان، وضعیت یا مدرس‌ها', $record->changedBy, $record->changed_at))
                 ->extraAttributes(['class' => 'classroom-details-section'])
                 ->columns(['default' => 1, 'sm' => 2, 'lg' => 3])
                 ->schema([
-                    ...($exam ? [$time, $location, $status, $staff] : [$status, $time, $staff, $location]),
+                    $time,
+                    $location,
+                    $status,
+                    $staff,
                     TextEntry::make('mode')
                         ->label('نحوه‌ی برگزاری')
                         ->state(fn (ClassSession $record): ?ClassMode => $record->classroom?->mode)
@@ -299,13 +302,6 @@ class SessionActions
                     ->schema([
                         View::make('class::filament.session-attendance')
                             ->viewData(fn (ClassSession $record): array => ['rows' => self::attendanceRows($record), 'isExam' => $exam]),
-                        View::make('class::filament.session-scene')
-                            ->viewData(fn (ClassSession $record, SessionScene $scene): array => [
-                                'scene' => $scene->for($record),
-                                'title' => ($record->subject?->title ?? 'جلسه').' · '.self::when($record),
-                                'isExam' => false,
-                            ])
-                            ->visible(fn (ClassSession $record, SessionScene $scene): bool => ! $exam && ($user = auth()->user()) instanceof User && $scene->canSee($user, $record)),
                     ]),
             ]),
         ];
@@ -396,28 +392,18 @@ class SessionActions
     }
 
     /**
-     * The session's page's buttons: attendance as the main one, content and
-     * homework beside it, the rest under «سایر». Deleting the session leaves
-     * for its class.
-     *
-     * @return list<Action|ActionGroup>
+     * @return list<Action>
      */
     public static function pageActions(bool $exam = false): array
     {
         return [
-            self::attendance()->color($exam ? 'success' : 'primary'),
-            ...($exam ? [self::seatLayout()] : [self::content()->color('gray'), self::grading()->color('gray')]),
-            ActionGroup::make([
-                self::move(),
-                ...($exam ? [] : [self::substitute()]),
-                self::cancel(),
-                self::restore(),
-                self::delete()->after(fn (ClassSession $record, Page $livewire) => $livewire->redirect(ClassroomResource::getUrl('sessions', ['record' => $record->classroom_id]))),
-            ])
-                ->label('سایر')
-                ->icon(Heroicon::OutlinedEllipsisHorizontal)
-                ->color('gray')
-                ->button(),
+            self::attendance()->color('success'),
+            ...($exam ? [self::seatLayout()] : [self::content()->color('info'), self::grading()->color(Color::Fuchsia)]),
+            self::move()->color(Color::Cyan),
+            ...($exam ? [] : [self::substitute()->color(Color::Slate)]),
+            self::cancel()->color('warning'),
+            self::restore()->color(Color::Emerald),
+            self::delete()->after(fn (ClassSession $record, Page $livewire) => $livewire->redirect(ClassroomResource::getUrl('sessions', ['record' => $record->classroom_id]))),
         ];
     }
 

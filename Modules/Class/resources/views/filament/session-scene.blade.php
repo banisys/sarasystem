@@ -39,28 +39,20 @@
                 this.scene?.dispose();
             },
         }"
-        @if ($isExam)
-            x-bind:class="state === 'failed' && 'basis-full'"
-        @endif
         class="flex flex-col items-start gap-3"
     >
-        <div class="flex w-full flex-wrap items-center justify-between gap-2">
-            @unless ($isExam)
-                <span class="text-sm font-medium text-gray-950 dark:text-white">نمای کلاس</span>
-            @endunless
-
-            <x-filament::button
-                x-ref="trigger"
-                x-on:click="show()"
-                x-bind:disabled="state === 'loading'"
-                :color="$isExam ? \Filament\Support\Colors\Color::Violet : 'gray'"
-                :size="$isExam ? 'md' : 'sm'"
-                :outlined="$isExam"
-                icon="heroicon-m-cube"
-            >
-                <span x-text="state === 'loading' ? 'در حال بارگذاری…' : 'نمای سه‌بعدی'">نمای سه‌بعدی</span>
-            </x-filament::button>
-        </div>
+        <x-filament::button
+            x-ref="trigger"
+            x-on:click="show()"
+            x-bind:disabled="state === 'loading'"
+            :color="\Filament\Support\Colors\Color::Violet"
+            size="sm"
+            outlined
+            class="w-full"
+            icon="heroicon-m-cube"
+        >
+            <span x-text="state === 'loading' ? 'در حال بارگذاری…' : 'نمای سه‌بعدی'">نمای سه‌بعدی</span>
+        </x-filament::button>
 
         {{-- On the body: a parent with a backdrop filter (the dark theme) would cut off a fixed element. --}}
         <template x-teleport="body">

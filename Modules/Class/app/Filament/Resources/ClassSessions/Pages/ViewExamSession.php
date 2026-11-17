@@ -6,14 +6,12 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\EmployeeDirectory;
 use Filament\Schemas\Schema;
-use Illuminate\Contracts\View\View;
+use Filament\Support\Colors\Color;
 use Illuminate\Support\Facades\Gate;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Actions\ExamScheduleActions;
-use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Services\SessionExamSource;
-use Modules\Class\Services\SessionScene;
 use Modules\Exam\Support\SessionExamAdmin;
 use Nwidart\Modules\Facades\Module;
 
@@ -33,22 +31,11 @@ class ViewExamSession extends ViewClassSession
         return $subject === null ? $this->pageLabel() : $this->pageLabel().' — '.$subject;
     }
 
-    public function getHeader(): View
-    {
-        $session = $this->session();
-        $scene = app(SessionScene::class);
-        $user = auth()->user();
-
-        return view('class::filament.exam-session-header', [
-            'scene' => $this->canReadSession() && $user instanceof User && $scene->canSee($user, $session) ? $scene->for($session) : null,
-        ]);
-    }
-
-    protected function getHeaderActions(): array
+    protected function sessionPageActions(): array
     {
         $session = $this->session();
         $canReadSession = $this->canReadSession();
-        $actions = $canReadSession ? [...parent::getHeaderActions(), ExamScheduleActions::edit()] : [];
+        $actions = $canReadSession ? [...parent::sessionPageActions(), ExamScheduleActions::edit()->color(Color::Indigo)] : [];
 
         if (Module::isEnabled('Exam')) {
             $admin = app(SessionExamAdmin::class);
@@ -56,21 +43,16 @@ class ViewExamSession extends ViewClassSession
                 $actions[] = $admin->manageAction(
                     SessionExamSource::TYPE, $session->id,
                     fn (): bool => $session->status !== SessionStatus::Cancelled && Gate::allows('update', $session->classroom),
-                );
+                )->color(Color::Teal);
             }
 
             $actions[] = $admin->paperAction(
                 SessionExamSource::TYPE, $session->id, fn (): bool => $this->canReadPaper(),
                 $session->classroom?->title, $session->starts_at,
-            );
+            )->color(Color::Orange);
         }
 
         return $actions;
-    }
-
-    public function infolist(Schema $schema): Schema
-    {
-        return $schema->components($this->canReadSession() ? SessionActions::detailsEntries(exam: true) : [])->columns(1);
     }
 
     public function form(Schema $schema): Schema
@@ -81,11 +63,6 @@ class ViewExamSession extends ViewClassSession
     protected function mutateFormDataBeforeFill(array $data): array
     {
         return $this->canReadSession() ? $data : [];
-    }
-
-    private function canReadSession(): bool
-    {
-        return static::getResource()::canView($this->session());
     }
 
     private function canReadPaper(): bool

@@ -21,6 +21,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-17 — Matched teaching session details to the exam session layout. Both pages share the «عملیات جلسه» sidebar and keep their own available actions. Verified both pages in Chromium, including the teaching session on mobile. All 62 targeted tests, Pint and the Vite build passed.
+- 2026-11-17 — Increased the vertical spacing between exam session action buttons from 8 to 12 pixels. Verified all seven gaps on session 7253 in Chromium. The Vite build passed.
+- 2026-11-17 — Made all exam session action buttons use the full width of the operations section. Verified equal widths for all eight visible buttons on session 7253 in Chromium. The Vite build passed.
+- 2026-11-17 — Moved exam session buttons into a vertical «عملیات جلسه» section beside the session details. Verified desktop and mobile placement and opened the cancel dialog in Chromium. All 46 targeted tests and the Vite build passed.
+- 2026-11-17 — Replaced «سایر» on exam session details with direct scheduling actions and styled the row with small, colored outline buttons. Verified the row and the cancel dialog on session 7253 in Chromium. All 32 targeted tests and Pint passed.
 - 2026-11-17 — Moved teaching schedule creation and the schedule list to the class calendar. Linked teaching sessions can edit their schedule and return to the calendar after saving ([ADR 0110](decisions/0110-teaching-schedules-from-class-calendar.md)). Old schedule links redirect to the calendar. Verified the new entry points in Chromium and passed all 208 Class tests and Pint.
 - 2026-11-17 — Moved exam schedule creation to the class calendar and the session edit and online exam actions to exam session details ([ADR 0109](decisions/0109-exam-scheduling-from-class-calendar.md)). Old links redirect to the calendar. Verified the screens in Chromium and passed all 796 tests and Pint.
 - 2026-11-17 — Added «پیش‌نمایش آزمون» to the admin exam list. The row action opens the shared printable paper for the selected exam. Verified the Mehregan modal in Chromium. All 796 tests, targeted module isolation checks, and Pint passed.

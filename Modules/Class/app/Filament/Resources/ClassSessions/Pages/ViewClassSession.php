@@ -2,19 +2,30 @@
 
 namespace Modules\Class\Filament\Resources\ClassSessions\Pages;
 
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View as SchemaView;
+use Filament\Schemas\Schema;
+use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Size;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Actions\TeachingScheduleActions;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\SessionExamSource;
+use Modules\Class\Services\SessionScene;
 use Nwidart\Modules\Facades\Module;
 
 /**
- * Everything about one session, with its actions in the header (ADR 0050).
+ * Everything about one session, with actions alongside its details (ADR 0050).
  * A session on a calendar and «جزئیات» in the lists open it in a new tab.
  */
 class ViewClassSession extends ViewRecord
@@ -73,7 +84,23 @@ class ViewClassSession extends ViewRecord
             : [$this->pageLabel()];
     }
 
+    public function getHeader(): View
+    {
+        return view('class::filament.session-page-header');
+    }
+
     protected function getHeaderActions(): array
+    {
+        $actions = $this->sessionPageActions();
+
+        foreach ($actions as $action) {
+            $action->size(Size::Small)->outlined();
+        }
+
+        return $actions;
+    }
+
+    protected function sessionPageActions(): array
     {
         $exam = $this->isExamPage();
         $actions = SessionActions::pageActions(exam: $exam);
@@ -82,17 +109,70 @@ class ViewClassSession extends ViewRecord
             $actions[] = TeachingScheduleActions::edit($classroom)
                 ->record($schedule)
                 ->label('ویرایش برنامهٔ درسی')
+                ->color(Color::Indigo)
                 ->after(fn () => $this->redirect(ClassroomResource::getUrl('sessions', ['record' => $classroom])));
         }
 
         if (! $exam && Module::isEnabled('Exam')) {
             $url = app(SessionExamSource::class)->link($this->session(), auth()->user());
             if ($url !== null) {
-                $actions[] = Action::make('sessionExams')->label('آزمون‌های جلسه')->url($url)->openUrlInNewTab();
+                $actions[] = Action::make('sessionExams')
+                    ->label('آزمون‌های جلسه')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->color(Color::Teal)
+                    ->url($url)
+                    ->openUrlInNewTab();
             }
         }
 
         return $actions;
+    }
+
+    public function infolist(Schema $schema): Schema
+    {
+        return $schema->columns(1)->components(function (): array {
+            $canReadSession = $this->canReadSession();
+            $exam = $this->isExamPage();
+            $details = $canReadSession ? SessionActions::detailsEntries(exam: $exam) : [];
+            $scene = app(SessionScene::class);
+            $user = auth()->user();
+            $session = $this->session();
+            $canSeeScene = fn (): bool => $canReadSession && $user instanceof User && $scene->canSee($user, $session);
+
+            $hasOperations = fn (): bool => collect($this->getCachedHeaderActions())
+                ->contains(fn ($action): bool => $action->isVisible())
+                || ($canSeeScene() && ($exam || app(AttendanceRegister::class)->attendees($session)->isNotEmpty()));
+
+            $operations = Section::make('عملیات جلسه')
+                ->visible($hasOperations)
+                ->schema([
+                    SchemaView::make('class::filament.session-page-actions')
+                        ->viewData(fn (): array => [
+                            'scene' => $canSeeScene() ? $scene->for($session) : null,
+                            'isExam' => $exam,
+                            'title' => $this->getTitle(),
+                        ]),
+                ]);
+
+            if (! $canReadSession) {
+                return [$operations];
+            }
+
+            $sessionDetails = array_shift($details);
+
+            return [
+                Grid::make(['default' => 1, 'lg' => 4])->schema([
+                    $sessionDetails->columnSpan(fn (): array => ['default' => 1, 'lg' => $hasOperations() ? 3 : 4]),
+                    $operations,
+                ]),
+                ...$details,
+            ];
+        });
+    }
+
+    protected function canReadSession(): bool
+    {
+        return static::getResource()::canView($this->session());
     }
 
     protected function pageLabel(): string

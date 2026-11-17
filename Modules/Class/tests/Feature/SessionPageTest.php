@@ -57,7 +57,8 @@ class SessionPageTest extends TestCase
         $this->actingInPanel($this->admin(), $this->west);
         $this->get(ClassSessionResource::getUrl('view', ['record' => $session], tenant: $this->west))
             ->assertOk()
-            ->assertSee(['زبان مقدماتی الف', 'برنامه‌ریزی‌شده', 'نحوه‌ی برگزاری', 'سایر', 'حضور و غیاب'])
+            ->assertSee(['زبان مقدماتی الف', 'برنامه‌ریزی‌شده', 'نحوه‌ی برگزاری', 'عملیات جلسهٔ درسی', 'حضور و غیاب'])
+            ->assertDontSee('سایر')
             ->assertSee(ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west));
     }
 
