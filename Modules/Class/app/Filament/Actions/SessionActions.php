@@ -714,8 +714,9 @@ class SessionActions
             ->label('ویرایش جلسه')
             ->icon(Heroicon::OutlinedPencilSquare)
             ->authorize(fn (ClassSession $record): bool => self::canChange($record))
-            ->fillForm(fn (ClassSession $record): array => $record->only(['subject_id', 'location', 'note']))
+            ->fillForm(fn (ClassSession $record): array => $record->only(['title', 'subject_id', 'location', 'note']))
             ->schema([
+                TextInput::make('title')->label('عنوان جلسه')->maxLength(255),
                 Select::make('subject_id')->label('درس')
                     ->options(fn (ClassSession $record): array => Subject::options($record->subject_id))
                     ->searchable(),
@@ -723,7 +724,7 @@ class SessionActions
                 Textarea::make('note')->label('توضیح')->rows(2),
             ])
             ->action(fn (array $data, ClassSession $record, SessionPlanner $planner) => self::attempt(
-                fn () => $planner->updateDetails($record, $data['subject_id'] ?? null, $data['location'] ?? null, $data['note'] ?? null),
+                fn () => $planner->updateDetails($record, $data['subject_id'] ?? null, $data['location'] ?? null, $data['note'] ?? null, $data['title'] ?? null),
                 'جلسه ویرایش شد.',
             ));
     }

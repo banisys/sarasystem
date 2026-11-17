@@ -66,9 +66,9 @@ class ExamScheduleActions
             ->modalWidth('3xl')
             ->modalDescription(fn (ClassSession $record): string => $record->status === SessionStatus::Scheduled && $record->starts_at->isFuture()
                 ? 'تغییر زمان جلسه را در تقویم کلاس می‌بینید. زمان آزمون آنلاینِ متصل، تنظیم جداگانه‌ای دارد.'
-                : 'برای جلسه‌ای که شروع شده، می‌توانید درس، مراقبان، مکان و توضیحات را اصلاح کنید.')
+                : 'برای جلسه‌ای که شروع شده، می‌توانید عنوان، درس، مراقبان، مکان و توضیحات را اصلاح کنید.')
             ->fillForm(fn (ClassSession $record): array => [
-                ...$record->only(['subject_id', 'location', 'note']),
+                ...$record->only(['title', 'subject_id', 'location', 'note']),
                 'date' => $record->starts_at->toDateString(),
                 'start_time' => $record->starts_at->format('H:i'),
                 'end_time' => $record->ends_at->format('H:i'),
@@ -93,6 +93,7 @@ class ExamScheduleActions
         $canChangeTime = $session === null || ($session->status === SessionStatus::Scheduled && $session->starts_at->isFuture());
 
         return [
+            ...($session === null ? [] : [TextInput::make('title')->label('عنوان جلسه')->maxLength(255)->columnSpanFull()]),
             DatePicker::make('date')
                 ->label('تاریخ')
                 ->disabled(! $canChangeTime)

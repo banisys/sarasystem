@@ -26,9 +26,9 @@ class ViewExamSession extends ViewClassSession
 
     public function getHeading(): string
     {
-        $subject = $this->session()->subject?->title;
+        $title = $this->session()->title ?? $this->session()->subject?->title;
 
-        return $subject === null ? $this->pageLabel() : $this->pageLabel().' — '.$subject;
+        return $title === null ? $this->pageLabel() : $this->pageLabel().' — '.$title;
     }
 
     protected function sessionPageActions(): array

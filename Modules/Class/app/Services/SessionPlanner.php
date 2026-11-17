@@ -255,6 +255,7 @@ class SessionPlanner
                 'ends_at' => $end,
                 'location' => $location,
                 'note' => $data['note'] ?? null,
+                'title' => array_key_exists('title', $data) ? (filled($data['title']) ? trim($data['title']) : null) : $session->title,
             ]);
             if ($session->isDirty() || $staffChanged) {
                 $session->update([
@@ -307,12 +308,13 @@ class SessionPlanner
         });
     }
 
-    public function updateDetails(ClassSession $session, ?int $subjectId, ?string $location, ?string $note): void
+    public function updateDetails(ClassSession $session, ?int $subjectId, ?string $location, ?string $note, ?string $title): void
     {
         $session->fill([
             'subject_id' => $subjectId,
             'location' => filled($location) ? trim($location) : null,
             'note' => $note,
+            'title' => filled($title) ? trim($title) : null,
         ]);
 
         if (! $session->isDirty()) {

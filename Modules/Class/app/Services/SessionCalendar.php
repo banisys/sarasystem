@@ -302,7 +302,8 @@ class SessionCalendar
             'start_minute' => $session->starts_at->hour * 60 + $session->starts_at->minute,
             // A session ending after midnight is drawn to the end of its day.
             'end_minute' => $session->ends_at->isSameDay($session->starts_at) ? $session->ends_at->hour * 60 + $session->ends_at->minute : 24 * 60,
-            'title' => $session->subject?->title ?? 'جلسه',
+            'custom_title' => $session->title,
+            'title' => $session->title ?? $session->subject?->title ?? 'جلسه',
             'classroom' => $session->classroom?->title,
             'mode' => $session->classroom?->mode->value,
             'teacher' => $session->teacherNames(),

@@ -28,6 +28,7 @@ use Modules\Class\Models\Holiday;
 use Modules\Class\Models\Subject;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\ClassMembers;
+use Modules\Class\Services\SessionCalendar;
 use Modules\Class\Services\SessionPlanner;
 use Modules\Employee\Models\Employee;
 use Modules\Exam\Filament\Resources\Exams\ExamResource;
@@ -327,6 +328,7 @@ class ClassSchedulesTest extends TestCase
                 'subject_id' => $subject->id,
                 'location' => 'اتاق دوم',
                 'note' => 'توضیح این جلسه',
+                'title' => 'مرور فصل اول',
                 'starts_at' => '2026-11-07 12:00:00',
                 'ends_at' => '2026-11-07 13:00:00',
             ])
@@ -336,6 +338,8 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame($subject->id, $updated->subject_id);
         $this->assertSame('اتاق دوم', $updated->location);
         $this->assertSame('توضیح این جلسه', $updated->note);
+        $this->assertSame('مرور فصل اول', $updated->title);
+        $this->assertSame('مرور فصل اول', app(SessionCalendar::class)->card($updated)['title']);
         $this->assertTrue($session->starts_at->equalTo($updated->starts_at));
         $this->assertTrue($session->ends_at->equalTo($updated->ends_at));
         $this->assertSame($before, $schedule->fresh()->getAttributes());
@@ -685,7 +689,7 @@ class ClassSchedulesTest extends TestCase
         $changes = [
             'date' => '2026-11-07', 'start_time' => '10:00', 'end_time' => '11:00',
             'subject_id' => $subject->id, 'teacher_ids' => [$invigilator->user_id],
-            'location' => 'سالن امتحان', 'note' => 'نسخهٔ به‌روزشده',
+            'location' => 'سالن امتحان', 'note' => 'نسخهٔ به‌روزشده', 'title' => 'آزمون میان‌ترم',
         ];
 
         $page = Livewire::test(ViewExamSession::class, ['record' => $exam->id])
@@ -710,6 +714,7 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame([$invigilator->user_id], $exam->teachers()->pluck('users.id')->all());
         $this->assertSame('سالن امتحان', $exam->location);
         $this->assertSame('نسخهٔ به‌روزشده', $exam->note);
+        $this->assertSame('آزمون میان‌ترم', app(SessionCalendar::class)->card($exam)['title']);
         $this->assertSame($editor->id, $exam->changed_by_id);
     }
 

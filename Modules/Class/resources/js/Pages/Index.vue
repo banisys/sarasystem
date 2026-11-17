@@ -101,7 +101,7 @@ function at(date, view = props.calendar.view) {
                         :class="statusClass[session.status]"
                     >
                         <div v-if="session.is_exam" class="font-semibold text-amber-800 panel-dark:text-amber-300">{{ session.kind_label }}</div>
-                        <div class="truncate"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.class }}</div>
+                        <div class="truncate"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.title ?? session.class }}</div>
                     </div>
                 </PanelCardLink>
             </div>
@@ -133,10 +133,11 @@ function at(date, view = props.calendar.view) {
                             :card-class="sessionCardClass[session.status]"
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                <span class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ session.class }}</span>
+                                <span class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ session.title ?? session.class }}</span>
                                 <span class="inline-flex items-center gap-1.5 rounded-md bg-ui-surface px-2 py-1 font-semibold tabular-nums text-ui-muted"><PanelIcon name="clock" class="size-4" /><bdi dir="ltr">{{ session.time }}</bdi></span>
                             </div>
                             <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-ui-muted">
+                                <span v-if="session.title">{{ session.class }}</span>
                                 <span v-if="session.subject">{{ session.subject }}</span>
                                 <span v-if="session.teacher">مدرس: {{ session.teacher }}</span>
                                 <span v-if="session.location">{{ session.location }}</span>

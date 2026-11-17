@@ -58,12 +58,12 @@ class ViewClassSession extends ViewRecord
     }
 
     /**
-     * The subject alone: the time is in the page's first section, and stays
+     * The session title or subject: the time is in the page's first section, and stays
      * in the browser tab's title to tell open sessions apart.
      */
     public function getHeading(): string
     {
-        return $this->session()->subject?->title ?? 'جلسه';
+        return $this->session()->title ?? $this->session()->subject?->title ?? 'جلسه';
     }
 
     public function getSubheading(): ?string

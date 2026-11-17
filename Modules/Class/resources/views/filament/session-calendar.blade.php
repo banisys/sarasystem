@@ -223,7 +223,7 @@
                                         @endif
                                         @include('class::filament.session-calendar-mode', ['mode' => $session['mode']])
                                         <span class="shrink-0 font-semibold tabular-nums">{{ \Illuminate\Support\Str::before($session['time'], '–') }}</span>
-                                        <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $calendar['shows_classroom'] ? $session['classroom'] : $session['title'] }}</span>
+                                        <span @class(['truncate', 'line-through' => $session['tone'] === 'cancelled'])>{{ $session['custom_title'] ?? ($calendar['shows_classroom'] ? $session['classroom'] : $session['title']) }}</span>
                                     </a>
                                 @endforeach
                                 @if (count($day['sessions']) > 3)

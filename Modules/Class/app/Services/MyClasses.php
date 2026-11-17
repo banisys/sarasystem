@@ -120,6 +120,7 @@ class MyClasses
         return [
             'id' => $session->getKey(),
             'class' => $session->classroom->title,
+            'title' => $session->title,
             'subject' => $session->subject?->title,
             'time' => $session->starts_at->format('H:i').'–'.$session->ends_at->format('H:i'),
             'location' => $session->location,

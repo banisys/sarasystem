@@ -31,7 +31,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * rebuilt by its schedule; past sessions never are.
  */
 #[Fillable([
-    'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'starts_at', 'ends_at', 'location',
+    'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'title', 'starts_at', 'ends_at', 'location',
     'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note', 'changed_by_id', 'changed_at',
     'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'homework_max_score', 'content_recorded_by_id', 'content_recorded_at',
 ])]
