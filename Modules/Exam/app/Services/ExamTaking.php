@@ -284,25 +284,16 @@ class ExamTaking
 
         $drawn = collect();
 
-        foreach ($exam->sections()->with('questionBank')->get() as $section) {
-            if ($section->questionBank === null || $section->question_count <= 0) {
-                continue;
+        $sections = $exam->sections()->with('questionBank')->get();
+        foreach (app(ExamSectionDraw::class)->draw($sections, random: $exam->shuffle_questions) as [$section, $questions]) {
+            if ($section->question_ids !== null && $questions->count() !== $section->question_count) {
+                throw ValidationException::withMessages(['exam' => 'بعضی از سؤال‌های انتخاب‌شدهٔ این آزمون در دسترس نیستند.']);
             }
 
-            $candidates = $section->questionBank->questions()->active()
-                ->whereNotIn('exam_questions.id', $drawn->keys());
-
-            if ($exam->shuffle_questions) {
-                $candidates->inRandomOrder();
-            } else {
-                $candidates->orderBy('exam_questions.id');
-            }
-
-            $candidates->limit($section->question_count)->get()
-                ->each(fn (Question $question) => $drawn->put($question->getKey(), $question));
+            $drawn = $drawn->concat($questions);
         }
 
-        return $drawn->values();
+        return $drawn;
     }
 
     /**

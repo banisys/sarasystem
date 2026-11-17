@@ -20,8 +20,8 @@ use Modules\Exam\Enums\RetakePolicy;
 use Modules\Exam\Support\ExamContexts;
 
 /**
- * An online exam of one tenant (ADR 0013). Its questions are drawn from
- * question banks (sections) when an attempt starts. Only participants
+ * An online exam of one tenant (ADR 0013). Its questions come from a saved
+ * snapshot or bank sections when an attempt starts. Only participants
  * take it: the users chosen for it, and holders of its roles in its tenant.
  */
 #[Fillable([

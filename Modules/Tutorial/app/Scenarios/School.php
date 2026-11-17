@@ -592,7 +592,8 @@ class School extends Scenario
                     'در «آزمون → گروه آزمون»، با «افزودن گروه آزمون» گروه «آزمون‌های میان‌دوره» را بسازید.',
                     'در «آزمون → آزمون‌ها» آزمون «آزمونک ریاضی» را بسازید: از امروز تا یک ساعت بعد، ۱۵ دقیقه، از ۲۰ نمره، نمره‌ی قبولی ۱۰.',
                     'در بخش «مشخصات»، گروه «آزمون‌های میان‌دوره» را انتخاب کنید.',
-                    'در بخش سؤال‌ها ۴ سؤال از بانک «ریاضی هفتم» بکشید؛ شرکت‌کننده‌ها: نقش «'.$learner.'»؛ آزمون را منتشر کنید.',
+                    'در بخش سؤال‌ها بانک «ریاضی هفتم» را وارد کنید و «انتخاب سؤال‌ها» را بزنید. هر چهار سؤال تمرین را تیک بزنید و «ثبت انتخاب» را بزنید.',
+                    'نقش «'.$learner.'» را به‌عنوان شرکت‌کننده انتخاب کنید و آزمون را منتشر کنید.',
                     'در فهرست آزمون‌ها، فیلتر «گروه آزمون» را روی «آزمون‌های میان‌دوره» بگذارید تا آزمون را پیدا کنید.',
                 ])
                 ->url(fn (TutorialRun $run): ?string => self::schoolUrl($run, ExamResource::class))
@@ -606,10 +607,16 @@ class School extends Scenario
                         'total_score' => 20, 'passing_score' => 10, 'max_attempts' => 1, 'retake_policy' => RetakePolicy::Always,
                         'questions_per_page' => 4, 'result_visibility' => ResultVisibility::ScoreWithAnswers,
                     ]);
-                    $exam->sections()->create(['question_bank_id' => self::bank($run)->getKey(), 'question_count' => 4, 'sort' => 1]);
+                    $bank = self::bank($run);
+                    $questionIds = self::school($run)->execute(fn (): array => $bank->questions()->active()
+                        ->oldest('exam_questions.id')->limit(4)->pluck('exam_questions.id')->all());
+                    $exam->sections()->create([
+                        'question_bank_id' => $bank->getKey(), 'question_count' => 4, 'question_ids' => $questionIds, 'sort' => 1,
+                    ]);
                     $exam->participantRoles()->attach(self::roleIds(DefaultRoles::LEARNER));
                 })
-                ->doneWhen(fn (TutorialRun $run): bool => $run->made(ExamGroup::class)
+                ->doneWhen(fn (TutorialRun $run): bool => self::exam($run)?->sections()
+                    ->where('question_bank_id', self::bank($run)?->getKey())->whereJsonLength('question_ids', 4)->exists() && $run->made(ExamGroup::class)
                     ->whereKey(self::exam($run)?->exam_group_id)->where('title', 'آزمون‌های میان‌دوره')->exists()),
             Mission::make('take-exam', 'شرکت در آزمون')
                 ->actor('دانش‌آموز', fn (TutorialRun $run): ?User => self::student($run)?->user)

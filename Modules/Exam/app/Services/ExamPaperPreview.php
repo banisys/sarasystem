@@ -8,6 +8,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Validator;
 use Modules\Exam\Enums\QuestionType;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Models\ExamSection;
 use Modules\Exam\Models\QuestionBank;
 
 class ExamPaperPreview
@@ -19,7 +20,7 @@ class ExamPaperPreview
                 'title' => $exam->title,
                 'description' => $exam->description,
                 'duration_minutes' => $exam->duration_minutes,
-                'sections' => $exam->sections()->get(['question_bank_id', 'question_count'])->toArray(),
+                'sections' => $exam->sections()->get(['question_bank_id', 'question_count', 'question_ids'])->toArray(),
             ], $exam->title, $classTitle, $startsAt);
         }
 
@@ -48,6 +49,8 @@ class ExamPaperPreview
             'sections.*' => ['required', 'array'],
             'sections.*.question_bank_id' => ['required', 'integer', 'min:1'],
             'sections.*.question_count' => ['required', 'integer', 'min:1', 'max:500'],
+            'sections.*.question_ids' => ['nullable', 'array', 'list', 'min:1', 'max:500'],
+            'sections.*.question_ids.*' => ['required', 'integer', 'min:1', 'distinct'],
         ]);
         $paper = $this->paper($sessionTitle, $classTitle, $startsAt);
 
@@ -60,27 +63,24 @@ class ExamPaperPreview
         $paper['description'] = $data['description'] ?? '';
         $paper['duration'] = isset($data['duration_minutes']) ? (int) $data['duration_minutes'] : null;
         $banks = QuestionBank::query()->whereKey(array_column($data['sections'], 'question_bank_id'))->get()->keyBy('id');
-        $usedIds = [];
+        $sections = array_map(fn (array $section): ExamSection => (new ExamSection($section))
+            ->setRelation('questionBank', $banks->get($section['question_bank_id'])), $data['sections']);
 
-        foreach ($data['sections'] as $section) {
-            $bank = $banks->get($section['question_bank_id']);
-
+        foreach (app(ExamSectionDraw::class)->draw($sections) as [$section, $questions]) {
+            $bank = $section->questionBank;
             if ($bank === null) {
                 return array_replace($paper, ['questions' => [], 'error' => 'یکی از بانک‌های انتخاب‌شده در دسترس نیست.']);
             }
 
-            $questions = $bank->questions()->active()
-                ->whereNotIn('exam_questions.id', $usedIds)
-                ->orderBy('exam_questions.id')
-                ->limit($section['question_count'])
-                ->get(['exam_questions.id', 'exam_questions.type', 'exam_questions.body', 'exam_questions.options', 'exam_questions.score']);
+            if ($section->question_ids !== null && (count($section->question_ids) !== $section->question_count || $questions->count() !== $section->question_count)) {
+                return array_replace($paper, ['questions' => [], 'error' => "سؤال‌های انتخاب‌شدهٔ بانک «{$bank->title}» را بررسی کنید."]);
+            }
 
-            if ($questions->count() < (int) $section['question_count']) {
+            if ($questions->count() < $section->question_count) {
                 return array_replace($paper, ['questions' => [], 'error' => "بانک «{$bank->title}» به تعداد درخواستی سؤال فعال و غیرتکراری ندارد."]);
             }
 
             foreach ($questions as $question) {
-                $usedIds[] = $question->getKey();
                 $paper['questions'][] = $this->question($question->body, $question->options ?? [], $question->type, $question->score);
             }
         }

@@ -179,6 +179,8 @@ The Class timetable creates individually dated exam sessions in one submission (
 
 When Exam is enabled, the exam schedule can open the admin creation form for an online exam with the selected session's window and roster ([ADR 0102](decisions/0102-create-exams-from-class-schedules.md)). Opening the user-panel session exam list selects the session's branch after authorization ([ADR 0106](decisions/0106-session-exam-links-select-branch.md)). Exam sessions accept one new exam and offer a read-only printable paper to authorized staff ([ADR 0107](decisions/0107-single-exam-and-staff-paper.md)).
 
+The admin exam form can combine explicit question selections and automatic draws across its bank sections. The attempt and paper use the same bank selection rules ([ADR 0108](decisions/0108-manual-admin-exam-question-selection.md)).
+
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy

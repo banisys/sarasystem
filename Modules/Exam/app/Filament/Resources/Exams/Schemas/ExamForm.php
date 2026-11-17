@@ -6,20 +6,30 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Enums\RetakePolicy;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamGroup;
+use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 
 class ExamForm
@@ -70,12 +80,13 @@ class ExamForm
                     ]),
                 Section::make('سؤال‌ها')
                     ->hidden(fn (?Exam $record): bool => $record?->question_snapshot !== null)
-                    ->description('هنگام شروع هر آزمون، از هر بانک به تعداد گفته‌شده سؤال فعال برداشته می‌شود.')
+                    ->description('برای گلچین کردن سؤال‌های هر بانک، «انتخاب سؤال‌ها» را بزنید. در ردیف‌های بدون انتخاب دستی، سؤال‌ها هنگام شروع آزمون از بانک برداشته می‌شوند.')
                     ->schema([
                         Repeater::make('sections')
                             ->hiddenLabel()
                             ->relationship()
                             ->orderColumn('sort')
+                            ->extraItemActions([self::selectQuestionsAction()])
                             ->schema([
                                 Select::make('question_bank_id')
                                     ->label('بانک سؤال')
@@ -84,6 +95,8 @@ class ExamForm
                                         ->mapWithKeys(fn (QuestionBank $bank): array => [$bank->id => "{$bank->title} ({$bank->questions_count} سؤال فعال)"])
                                         ->all())
                                     ->in(fn (): array => QuestionBank::query()->pluck('id')->all())
+                                    ->live()
+                                    ->afterStateUpdated(fn (Set $set) => $set('question_ids', null))
                                     ->required()
                                     ->columnSpan(2),
                                 TextInput::make('question_count')
@@ -92,7 +105,11 @@ class ExamForm
                                     ->minValue(1)
                                     ->maxValue(500)
                                     ->default(5)
+                                    ->readOnly(fn (Get $get): bool => filled($get('question_ids')))
+                                    ->helperText(fn (Get $get): ?string => filled($get('question_ids')) ? 'انتخاب دستی' : null)
+                                    ->rules([fn (Get $get): Closure => self::validateSelection($get)])
                                     ->required(),
+                                Hidden::make('question_ids'),
                             ])
                             ->columns(3)
                             ->defaultItems(1)
@@ -177,6 +194,106 @@ class ExamForm
                             ->rules([fn (): Closure => self::rolesOfCurrentTenant()]),
                     ]),
             ]);
+    }
+
+    private static function selectQuestionsAction(): Action
+    {
+        return Action::make('selectQuestions')
+            ->label('انتخاب سؤال‌ها')
+            ->icon(Heroicon::OutlinedListBullet)
+            ->link()
+            ->visible(fn (array $arguments, Repeater $component): bool => filled($component->getRawState()[$arguments['item'] ?? '']['question_bank_id'] ?? null))
+            ->modalHeading('انتخاب سؤال‌های بانک')
+            ->modalSubmitActionLabel('ثبت انتخاب')
+            ->modalCancelActionLabel('انصراف')
+            ->schema(fn (array $arguments, Repeater $component): array => [
+                CheckboxList::make('question_ids')
+                    ->label('سؤال‌های فعال')
+                    ->helperText('برای برگشت به برداشت خودکار، همهٔ تیک‌ها را بردارید و انتخاب را ثبت کنید.')
+                    ->options(fn (): array => self::selectableQuestions($component->getRawState(), $arguments['item'])
+                        ?->orderBy('exam_questions.id')
+                        ->get(['exam_questions.id', 'exam_questions.body', 'exam_questions.type', 'exam_questions.score'])
+                        ->mapWithKeys(fn (Question $question): array => [
+                            $question->id => "{$question->body} ({$question->type->getLabel()}، {$question->score} نمره)",
+                        ])->all() ?? [])
+                    ->searchable()
+                    ->noSearchResultsMessage('سؤالی پیدا نشد.')
+                    ->rules(['array', 'list', 'max:500']),
+            ])
+            ->fillForm(function (array $arguments, Repeater $component): array {
+                $item = $component->getRawState()[$arguments['item']] ?? [];
+                $count = max(1, min(500, (int) ($item['question_count'] ?? 1)));
+
+                return ['question_ids' => $item['question_ids']
+                    ?? self::selectableQuestions($component->getRawState(), $arguments['item'])
+                        ?->inRandomOrder()->limit($count)->pluck('exam_questions.id')->all()
+                    ?? []];
+            })
+            ->action(function (array $data, array $arguments, Repeater $component): void {
+                $state = $component->getRawState();
+                $item = $arguments['item'];
+                $ids = array_map('intval', $data['question_ids'] ?? []);
+                $available = self::selectableQuestions($state, $item);
+
+                if ($available === null || ($ids !== [] && $available->whereKey($ids)->count() !== count($ids))) {
+                    throw ValidationException::withMessages(['question_ids' => 'سؤال‌های فعال و غیرتکراری همین بانک را انتخاب کنید.']);
+                }
+
+                $state[$item]['question_ids'] = $ids ?: null;
+                if ($ids !== []) {
+                    $state[$item]['question_count'] = count($ids);
+                }
+                $component->rawState($state);
+            });
+    }
+
+    /** @return BelongsToMany<Question, QuestionBank>|null */
+    private static function selectableQuestions(array $sections, string $item): ?BelongsToMany
+    {
+        $reserved = collect($sections)->except($item)->pluck('question_ids')->flatten()
+            ->filter(fn (mixed $id): bool => filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) !== false)
+            ->all();
+
+        return self::findBank($sections[$item]['question_bank_id'] ?? null)?->questions()->active()
+            ->whereNotIn('exam_questions.id', $reserved);
+    }
+
+    private static function validateSelection(Get $get): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+            $ids = $get('question_ids');
+            if ($ids === null) {
+                return;
+            }
+
+            $validator = Validator::make(['ids' => $ids], [
+                'ids' => ['required', 'array', 'list', 'size:'.(int) $value],
+                'ids.*' => ['required', 'integer', 'min:1', 'distinct'],
+            ]);
+            $bank = self::findBank($get('question_bank_id'));
+
+            if ($validator->fails() || $bank?->questions()->active()->whereKey($ids)->count() !== count($ids)) {
+                $fail('سؤال‌های انتخاب‌شده را بررسی کنید. همه باید فعال و متعلق به همین بانک باشند.');
+
+                return;
+            }
+
+            $item = str($attribute)->beforeLast('.')->afterLast('.')->toString();
+            foreach ($get('../') ?? [] as $key => $section) {
+                if ((string) $key !== $item && array_intersect($ids, (array) ($section['question_ids'] ?? [])) !== []) {
+                    $fail('هر سؤال را فقط در یکی از ردیف‌های آزمون انتخاب کنید.');
+
+                    return;
+                }
+            }
+        };
+    }
+
+    private static function findBank(mixed $id): ?QuestionBank
+    {
+        $id = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return $id === false ? null : QuestionBank::query()->find($id);
     }
 
     private static function tenant(): Tenant

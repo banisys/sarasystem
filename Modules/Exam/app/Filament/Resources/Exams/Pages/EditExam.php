@@ -12,6 +12,8 @@ class EditExam extends EditRecord
 {
     protected static string $resource = ExamResource::class;
 
+    protected ?bool $hasDatabaseTransactions = true;
+
     protected function getHeaderActions(): array
     {
         return [

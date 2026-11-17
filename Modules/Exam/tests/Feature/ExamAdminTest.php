@@ -5,6 +5,7 @@ namespace Modules\Exam\Tests\Feature;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Exam\Enums\AttemptStatus;
@@ -13,6 +14,7 @@ use Modules\Exam\Filament\Resources\ExamAttempts\Pages\GradeExamAttempt;
 use Modules\Exam\Filament\Resources\ExamAttempts\Pages\ListExamAttempts;
 use Modules\Exam\Filament\Resources\Exams\ExamResource;
 use Modules\Exam\Filament\Resources\Exams\Pages\CreateExam;
+use Modules\Exam\Filament\Resources\Exams\Pages\EditExam;
 use Modules\Exam\Filament\Resources\Exams\Pages\ListExams;
 use Modules\Exam\Filament\Resources\QuestionBanks\Pages\ListQuestionBanks;
 use Modules\Exam\Filament\Resources\QuestionBanks\QuestionBankResource;
@@ -24,6 +26,7 @@ use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
+use Modules\Exam\Services\ExamPaperPreview;
 use Modules\Exam\Services\ExamTaking;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
@@ -207,6 +210,83 @@ class ExamAdminTest extends TestCase
         $this->assertSame(AttemptStatus::Completed, $attempt->status);
         // (1 + 3) of (1 + 4) raw → 16 of 20.
         $this->assertSame(16.0, $attempt->score);
+    }
+
+    public function test_an_editor_can_pick_questions_and_keep_other_bank_draws(): void
+    {
+        $firstBank = QuestionBank::factory()->for($this->tenant)->create();
+        $pickedBank = QuestionBank::factory()->for($this->tenant)->create();
+        $picked = Question::factory()->for($this->tenant)->descriptive()->create([
+            'body' => 'متن سؤال منتخب', 'model_answer' => 'کلید محرمانه',
+        ]);
+        $automatic = Question::factory()->for($this->tenant)->create(['body' => 'متن سؤال خودکار']);
+        $unpicked = Question::factory()->for($this->tenant)->create(['body' => 'متن سؤال کنار گذاشته‌شده']);
+        $inactive = Question::factory()->for($this->tenant)->create(['body' => 'متن سؤال غیرفعال', 'is_active' => false]);
+        $firstBank->questions()->attach([$picked->id, $automatic->id]);
+        $pickedBank->questions()->attach([$picked->id, $unpicked->id, $inactive->id]);
+        $exam = Exam::factory()->for($this->tenant)->create(['shuffle_questions' => false]);
+        $exam->sections()->create(['question_bank_id' => $firstBank->id, 'question_count' => 1, 'sort' => 1]);
+        $section = $exam->sections()->create(['question_bank_id' => $pickedBank->id, 'question_count' => 2, 'sort' => 2]);
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        $action = TestAction::make('selectQuestions')->schemaComponent('sections', schema: 'form')
+            ->arguments(['item' => "record-{$section->id}"]);
+        $editor = Livewire::test(EditExam::class, ['record' => $exam->id])
+            ->assertSee('انتخاب سؤال‌ها')
+            ->mountAction($action)
+            ->assertMountedActionModalSee([$picked->body, $unpicked->body])
+            ->assertMountedActionModalDontSee([$automatic->body, $inactive->body, $picked->model_answer]);
+        $this->assertEqualsCanonicalizing([$picked->id, $unpicked->id], $editor->get('mountedActions.0.data.question_ids'));
+
+        $editor->set('mountedActions.0.data.question_ids', [(string) $picked->id])
+            ->callMountedAction()
+            ->assertHasNoErrors()
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $section->refresh();
+        $this->assertSame([$picked->id], $section->question_ids);
+        $this->assertSame(1, $section->question_count);
+        $expected = [$automatic->body, $picked->body];
+        $paper = app(ExamPaperPreview::class)->forSaved($exam, null, now());
+        $this->assertSame($expected, array_column($paper['questions'], 'body'));
+        $attempt = app(ExamTaking::class)->start($exam, User::factory()->create());
+        $this->assertSame($expected, $attempt->answers()->pluck('question_body')->all());
+
+        Livewire::test(EditExam::class, ['record' => $exam->id])
+            ->mountAction($action)
+            ->assertSchemaStateSet(['question_ids' => [(string) $picked->id]], 'mountedActionSchema0')
+            ->set('mountedActions.0.data.question_ids', [])
+            ->callMountedAction()
+            ->call('save')
+            ->assertHasNoFormErrors();
+        $this->assertNull($section->fresh()->question_ids);
+    }
+
+    public function test_an_editor_cannot_save_a_foreign_or_repeated_question(): void
+    {
+        $bank = QuestionBank::factory()->for($this->tenant)->create();
+        $foreignBank = QuestionBank::factory()->for($this->otherTenant)->create();
+        $question = Question::factory()->for($this->tenant)->create();
+        $foreignQuestion = Question::factory()->for($this->otherTenant)->create();
+        $bank->questions()->attach($question);
+        $foreignBank->questions()->attach($foreignQuestion);
+        $exam = Exam::factory()->for($this->tenant)->create();
+        $first = $exam->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 1, 'sort' => 1]);
+        $second = $exam->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 1, 'sort' => 2]);
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::test(EditExam::class, ['record' => $exam->id])
+            ->set("data.sections.record-{$first->id}.question_ids", [$foreignQuestion->id])
+            ->call('save')
+            ->assertHasFormErrors(["sections.record-{$first->id}.question_count"])
+            ->set("data.sections.record-{$first->id}.question_ids", [$question->id])
+            ->set("data.sections.record-{$second->id}.question_ids", [$question->id])
+            ->call('save')
+            ->assertHasFormErrors(["sections.record-{$second->id}.question_count"]);
+
+        $this->assertNull($first->fresh()->question_ids);
+        $this->assertNull($second->fresh()->question_ids);
     }
 
     public function test_overdue_attempts_are_closed_when_the_results_are_listed(): void

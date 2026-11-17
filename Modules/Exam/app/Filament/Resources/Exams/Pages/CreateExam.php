@@ -8,4 +8,6 @@ use Modules\Exam\Filament\Resources\Exams\ExamResource;
 class CreateExam extends CreateRecord
 {
     protected static string $resource = ExamResource::class;
+
+    protected ?bool $hasDatabaseTransactions = true;
 }

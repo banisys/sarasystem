@@ -15,3 +15,5 @@ The admin creation page's «پیش‌نمایش آزمون جلسه» action ope
 
 ## Consequences
 Previewing and printing do not create an exam, write to the banks, or change how questions are drawn for online attempts. Randomized attempts can differ from the printed paper.
+
+[ADR 0108](0108-manual-admin-exam-question-selection.md) adds explicit choices to the paper when the editor has hand-picked questions from a bank.

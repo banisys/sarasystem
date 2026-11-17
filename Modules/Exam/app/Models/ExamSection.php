@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A part of an exam: draw `question_count` active questions from a bank.
+ * A bank draw or an explicit question selection for part of an exam.
  * Belongs to its exam's tenant; only reached through the exam.
  */
-#[Fillable(['exam_id', 'question_bank_id', 'question_count', 'sort'])]
+#[Fillable(['exam_id', 'question_bank_id', 'question_count', 'question_ids', 'sort'])]
 class ExamSection extends Model
 {
     protected $table = 'exam_sections';
@@ -37,6 +37,7 @@ class ExamSection extends Model
     {
         return [
             'question_count' => 'integer',
+            'question_ids' => 'array',
             'sort' => 'integer',
         ];
     }

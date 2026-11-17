@@ -55,3 +55,5 @@ A written question can include an optional model answer. The attempt copies it a
 [ADR 0080](0080-question-categories.md) adds a category tree for classifying and filtering questions in the admin panel. Exam sections still draw from question banks.
 
 [ADR 0082](0082-question-tags.md) adds a tenant-owned tag catalog and multiple tags per question, with tag filtering in the admin panel.
+
+[ADR 0108](0108-manual-admin-exam-question-selection.md) allows admin editors to save explicit question IDs per bank section.

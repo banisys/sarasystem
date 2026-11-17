@@ -22,8 +22,6 @@ class CreateContextExam extends CreateExam
 
     protected static bool $canCreateAnother = false;
 
-    protected ?bool $hasDatabaseTransactions = true;
-
     #[Locked]
     public string $contextType;
 
@@ -83,7 +81,7 @@ class CreateContextExam extends CreateExam
 
                     return view('exam::filament.exam-paper-preview', [
                         'paper' => $preview->forDraft($this->form->getRawState(), $context->title, $context->classTitle, $context->startsAt),
-                        'notice' => 'این نمونه از بانک‌های انتخاب‌شده در فرم تهیه شده است. در آزمون آنلاینِ تصادفی، سؤال‌ها یا ترتیب آن‌ها ممکن است متفاوت باشند.',
+                        'notice' => 'برگه از سؤال‌های گلچین‌شده و نمونه‌ای از ردیف‌های خودکار تهیه می‌شود. برداشت ردیف‌های خودکار و ترتیب سؤال‌ها در آزمون آنلاین ممکن است متفاوت باشد.',
                     ]);
                 }),
         ];

@@ -90,7 +90,9 @@ class SchoolScenarioTest extends TestCase
         if (Module::isEnabled('Exam')) {
             $examGroup = $run->made(ExamGroup::class)->sole();
             $this->assertSame('آزمون‌های میان‌دوره', $examGroup->title);
-            $this->assertSame($examGroup->id, $run->made(Exam::class)->sole()->exam_group_id);
+            $exam = $run->made(Exam::class)->sole();
+            $this->assertSame($examGroup->id, $exam->exam_group_id);
+            $this->assertEqualsCanonicalizing($run->made(Question::class)->pluck('id')->all(), $exam->sections()->sole()->question_ids);
             $this->assertSame(AttemptStatus::Completed, $run->made(ExamAttempt::class)->sole()->status);
             $root = $run->made(QuestionCategory::class)->whereNull('parent_id')->sole();
             $child = $run->made(QuestionCategory::class)->where('parent_id', $root->id)->sole();
