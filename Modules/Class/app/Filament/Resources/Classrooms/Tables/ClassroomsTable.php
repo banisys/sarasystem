@@ -76,6 +76,10 @@ class ClassroomsTable
                 ...ClassroomExtensions::components('filters'),
             ])
             ->recordActions([
+                Action::make('sessions')
+                    ->label('تقویم برنامه ریزی آموزشی')
+                    ->icon(Heroicon::OutlinedCalendarDays)
+                    ->url(fn (Classroom $record): string => ClassroomResource::getUrl('sessions', ['record' => $record])),
                 ViewAction::make()
                     ->label('اطلاعات')
                     ->icon(Heroicon::OutlinedInformationCircle)
@@ -85,10 +89,6 @@ class ClassroomsTable
                     ->label('اعضا')
                     ->icon(Heroicon::OutlinedUsers)
                     ->url(fn (Classroom $record): string => ClassroomResource::getUrl('members', ['record' => $record])),
-                Action::make('sessions')
-                    ->label('تقویم جلسات')
-                    ->icon(Heroicon::OutlinedClock)
-                    ->url(fn (Classroom $record): string => ClassroomResource::getUrl('sessions', ['record' => $record])),
                 ...ClassroomExtensions::components('actions'),
                 EditAction::make()
                     ->modalWidth('3xl'),

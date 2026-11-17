@@ -31,6 +31,6 @@ class ClassSessions extends ClassroomSectionPage
 
     protected static function sectionTitle(): string
     {
-        return 'جلسه‌ها';
+        return 'تقویم برنامه ریزی آموزشی';
     }
 }

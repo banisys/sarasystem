@@ -64,14 +64,6 @@
                         ])>{{ $viewLabel }}</button>
                 @endforeach
             </div>
-
-            @if ($canAddSessions)
-                <div class="ms-auto flex flex-wrap gap-2">
-                    {{ $this->addSessionAction }}
-                    {{ $this->addScheduleAction }}
-                    {{ $this->addExamScheduleAction }}
-                </div>
-            @endif
         </div>
 
         <div class="px-4 pb-4 pt-10" wire:loading.class="opacity-60" wire:target="showSessions">

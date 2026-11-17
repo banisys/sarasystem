@@ -36,14 +36,6 @@ trait ShowsSessionCalendar
      */
     abstract protected function calendarData(SessionCalendar $calendar, string $view, CarbonImmutable $date): array;
 
-    /**
-     * Whether the calendar offers «جلسه‌ی جبرانی / فوق‌العاده» (addSessionAction()).
-     */
-    protected function canAddSessions(): bool
-    {
-        return false;
-    }
-
     protected function sessionCalendarComponent(): View
     {
         return View::make('class::filament.session-calendar')
@@ -52,7 +44,6 @@ trait ShowsSessionCalendar
                 'views' => ['day' => 'روزانه', 'week' => 'هفتگی', 'month' => 'ماهانه', 'year' => 'سالانه'],
                 'current' => $this->currentView(),
                 'tones' => SessionCalendar::toneLabels(),
-                'canAddSessions' => $this->canAddSessions(),
                 'sessionUrl' => fn (int $session, bool $isExam): string => ClassSessionResource::getUrl($isExam ? 'view-exam' : 'view', ['record' => $session]),
                 // A page renders the action modals itself; a relation manager without its table doesn't.
                 'rendersModals' => ! $this instanceof Page,

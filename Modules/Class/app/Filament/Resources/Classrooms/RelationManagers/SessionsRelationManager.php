@@ -5,6 +5,7 @@ namespace Modules\Class\Filament\Resources\Classrooms\RelationManagers;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -12,7 +13,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\Size;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -66,7 +69,19 @@ class SessionsRelationManager extends RelationManager
      */
     public function content(Schema $schema): Schema
     {
-        return $schema->components([$this->sessionCalendarComponent()]);
+        return $schema->components([
+            Actions::make([
+                ActionGroup::make([
+                    $this->addScheduleAction(),
+                    $this->addExamScheduleAction(),
+                    $this->addSessionAction(),
+                ])
+                    ->label('افزودن')
+                    ->icon(Heroicon::OutlinedPlus)
+                    ->button(),
+            ])->alignment(Alignment::End),
+            $this->sessionCalendarComponent(),
+        ]);
     }
 
     public function addSessionAction(): Action
@@ -124,11 +139,6 @@ class SessionsRelationManager extends RelationManager
     protected function calendarData(SessionCalendar $calendar, string $view, CarbonImmutable $date): array
     {
         return $calendar->forClassroom($this->classroom(), $view, $date);
-    }
-
-    protected function canAddSessions(): bool
-    {
-        return true;
     }
 
     private function classroom(): Classroom
