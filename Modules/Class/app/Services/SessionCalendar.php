@@ -35,6 +35,8 @@ class SessionCalendar
 
     private const LAST_HOUR = 18;
 
+    private const MIN_CARD_MINUTES = 30;
+
     /**
      * @var (Closure(ClassSession): array<string, mixed>)|null
      */
@@ -163,6 +165,7 @@ class SessionCalendar
             ->with(['classroom', 'subject', 'teachers', 'substitutes'])
             ->withCount('attendances')
             ->orderBy('starts_at')
+            ->orderBy('class_sessions.id')
             ->get();
         $holidays = $this->holidays($tenant, $period['first'], $period['last']);
         $byDay = $sessions->groupBy(fn (ClassSession $session): string => $session->starts_at->toDateString());
@@ -203,12 +206,59 @@ class SessionCalendar
 
         return [...$calendar, 'days' => array_map(fn (array $day): array => [
             ...$day,
-            'sessions' => array_map(fn (array $card): array => [
-                ...$card,
-                'top' => round(($card['start_minute'] - $fromHour * 60) / (($toHour - $fromHour) * 60) * 100, 3),
-                'height' => round(($card['end_minute'] - $card['start_minute']) / (($toHour - $fromHour) * 60) * 100, 3),
-            ], $day['sessions']),
+            'sessions' => $this->timeline($day['sessions'], $fromHour * 60, $toHour * 60),
         ], $days), 'hours' => range($fromHour, $toHour - 1)];
+    }
+
+    /**
+     * Place chronologically ordered cards in the first free column. Widths
+     * reset once all cards in an overlapping group have ended.
+     *
+     * @param  list<array<string, mixed>>  $cards
+     * @return list<array<string, mixed>>
+     */
+    private function timeline(array $cards, int $fromMinute, int $toMinute): array
+    {
+        $group = -1;
+        $groupEnd = -1;
+        $columnEnds = [];
+        $columnCounts = [];
+        $placements = [];
+
+        foreach ($cards as $card) {
+            $start = $card['start_minute'];
+            $end = max($card['end_minute'], $start + self::MIN_CARD_MINUTES);
+
+            if ($start >= $groupEnd) {
+                $group++;
+                $columnEnds = [];
+            }
+
+            $column = 0;
+            while (($columnEnds[$column] ?? 0) > $start) {
+                $column++;
+            }
+
+            $columnEnds[$column] = $end;
+            $groupEnd = max($groupEnd, $end);
+            $columnCounts[$group] = count($columnEnds);
+            $placements[] = [$card, $group, $column, $end - $start];
+        }
+
+        $minutes = $toMinute - $fromMinute;
+
+        return array_map(function (array $placement) use ($columnCounts, $fromMinute, $minutes): array {
+            [$card, $group, $column, $height] = $placement;
+            $columns = $columnCounts[$group];
+
+            return [
+                ...$card,
+                'top' => round(($card['start_minute'] - $fromMinute) / $minutes * 100, 3),
+                'height' => round($height / $minutes * 100, 3),
+                'inline_start' => round($column / $columns * 100, 3),
+                'inline_end' => round(($columns - $column - 1) / $columns * 100, 3),
+            ];
+        }, $placements);
     }
 
     /**

@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-17 — Placed overlapping session cards side by side in the admin calendar's day and week views. Verified that both the cancelled session and its replacement exam at 10:00 in Mehregan class 51 open separately in Chromium. All 209 Class tests and Pint passed.
 - 2026-11-17 — Moved «تقویم برنامه ریزی آموزشی» to the top of each class row's actions menu and gave it a calendar icon. Verified the order in the browser. All seven class admin tests and Pint passed.
 - 2026-11-17 — Matched teaching session details to the exam session layout. Both pages share the «عملیات جلسه» sidebar and keep their own available actions. Verified both pages in Chromium, including the teaching session on mobile. All 62 targeted tests, Pint and the Vite build passed.
 - 2026-11-17 — Increased the vertical spacing between exam session action buttons from 8 to 12 pixels. Verified all seven gaps on session 7253 in Chromium. The Vite build passed.

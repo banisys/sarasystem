@@ -114,8 +114,8 @@
                                         x-on:click="openedSession = {{ $session['id'] }}"
                                         x-bind:class="openedSession === {{ $session['id'] }} && '{{ $openedClasses }}'"
                                         title="{{ $session['title'] }} · {{ $session['time'] }}{{ $session['is_exam'] ? ' · امتحانی' : '' }} · {{ $session['tone_label'] }}"
-                                        class="absolute inset-x-1 z-10 flex min-h-7 flex-col overflow-hidden rounded-md border-s-4 px-2 py-1 text-start text-xs shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}"
-                                        style="top: {{ $session['top'] }}%; height: {{ $session['height'] }}%">
+                                        class="absolute z-10 flex flex-col overflow-hidden rounded-md border-s-4 px-2 py-1 text-start text-xs shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 {{ $toneClasses[$session['tone']] }}"
+                                        style="top: {{ $session['top'] }}%; height: {{ $session['height'] }}%; inset-inline-start: calc({{ $session['inline_start'] }}% + 0.25rem); inset-inline-end: calc({{ $session['inline_end'] }}% + 0.25rem)">
                                         @include('class::filament.session-calendar-card', ['session' => $session, 'roomy' => $calendar['view'] === 'day', 'showsClassroom' => $calendar['shows_classroom'], 'showsTeacher' => $calendar['shows_teacher']])
                                     </a>
                                 @endforeach

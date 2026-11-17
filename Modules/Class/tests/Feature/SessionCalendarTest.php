@@ -104,6 +104,30 @@ class SessionCalendarTest extends TestCase
         $this->assertSame([0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0], array_column($year['months'], 'count'));
     }
 
+    public function test_overlapping_sessions_keep_separate_space_on_the_day_and_week_timelines(): void
+    {
+        $cancelled = $this->classSession('2026-10-30 10:00', SessionStatus::Cancelled);
+        $replacement = $this->classSession('2026-10-30 10:00');
+        $overlapping = $this->classSession('2026-10-30 11:00');
+        $following = $this->classSession('2026-10-30 12:30');
+        $date = CarbonImmutable::parse('2026-10-30');
+        $calendar = app(SessionCalendar::class);
+
+        foreach (['day', 'week'] as $view) {
+            $days = $calendar->forClassroom($this->classroom, $view, $date)['days'];
+            $sessions = collect(collect($days)->firstWhere('date', '2026-10-30')['sessions'])->keyBy('id');
+
+            $this->assertSame('cancelled', $sessions[$cancelled->id]['tone']);
+            $this->assertSame($sessions[$cancelled->id]['top'], $sessions[$replacement->id]['top']);
+            $this->assertSame([
+                $cancelled->id => [0.0, 66.667],
+                $replacement->id => [33.333, 33.333],
+                $overlapping->id => [66.667, 0.0],
+                $following->id => [0.0, 0.0],
+            ], $sessions->map(fn (array $session): array => [$session['inline_start'], $session['inline_end']])->all());
+        }
+    }
+
     public function test_the_tab_shows_the_calendar_and_switches_views(): void
     {
         $subject = Subject::factory()->create(['title' => 'ریاضی']);
