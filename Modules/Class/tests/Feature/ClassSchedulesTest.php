@@ -13,14 +13,13 @@ use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ClassExamSchedules;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\ExamSchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ListClassSessions;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewExamSession;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -338,14 +337,13 @@ class ClassSchedulesTest extends TestCase
         $editor = User::factory()->superAdmin()->create();
         $subject = Subject::factory()->for($this->primary)->create();
         $this->actingInPanel($editor, $this->west);
-        $action = TestAction::make('addExamSchedule')->table();
+        $action = 'addExamSchedule';
 
-        $this->get(ClassroomResource::getUrl('exam-schedules', ['record' => $this->classroom], tenant: $this->west))
+        $this->get(ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west))
             ->assertOk()
             ->assertSee($this->classroom->title);
 
-        $examList = Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertSee('جلسهٔ امتحانی ثبت نشده است')
+        $calendar = Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->assertSee('افزودن برنامه امتحانی')
             ->mountAction($action)
             ->assertActionMounted($action)
@@ -368,13 +366,12 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame('13:30–15:00', $second->starts_at->format('H:i').'–'.$second->ends_at->format('H:i'));
         $this->assertSame('سالن آزمون', $second->location);
         $this->assertFalse($this->classroom->schedules()->exists());
-        $examList->assertCanSeeTableRecords([$second, $first], inOrder: true);
-        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
+        $calendar
             ->call('showSessions', 'day', '2026-11-08')
             ->assertSee('امتحانی');
     }
 
-    public function test_class_schedules_lists_only_its_exam_sessions_with_invigilators_and_details_links(): void
+    public function test_old_exam_schedule_links_redirect_to_the_class_calendar(): void
     {
         $viewer = User::factory()->create();
         $this->roleWithPermissions('class_viewer', ['ViewAny:Classroom', 'View:Classroom']);
@@ -386,46 +383,41 @@ class ClassSchedulesTest extends TestCase
             'ends_at' => '2026-10-28 11:00:00',
             'location' => 'سالن امتحان',
         ]);
-        $future = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
-        $regular = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Regular]);
-        $otherClass = ClassSession::factory()->for(Classroom::factory()->for($this->west))->create(['kind' => SessionKind::Exam]);
         $foreignClass = Classroom::factory()->for($this->primary)->create();
-        $otherBranch = ClassSession::factory()->for($foreignClass)->create(['kind' => SessionKind::Exam]);
+        $foreignExam = ClassSession::factory()->for($foreignClass)->create([
+            'kind' => SessionKind::Exam,
+            'starts_at' => '2026-10-28 10:00:00',
+            'ends_at' => '2026-10-28 11:00:00',
+        ]);
         $this->actingInPanel($viewer, $this->west);
 
         Livewire::withoutLazyLoading();
         $teachingUrl = ClassroomResource::getUrl('schedules', ['record' => $this->classroom], tenant: $this->west);
-        $examUrl = ClassroomResource::getUrl('exam-schedules', ['record' => $this->classroom], tenant: $this->west);
+        $calendarUrl = ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west);
         $this->get(ClassroomResource::getUrl('index', tenant: $this->west))
             ->assertOk()
-            ->assertSee('برنامهٔ درسی')
-            ->assertSee('برنامهٔ امتحانی')
             ->assertSee($teachingUrl)
-            ->assertSee($examUrl);
-        $this->get($teachingUrl)
-            ->assertOk()
-            ->assertSee('برنامهٔ درسی')
-            ->assertDontSee('افزودن برنامه امتحانی')
-            ->assertDontSee('سالن امتحان');
-        $this->get($examUrl)
-            ->assertOk()
-            ->assertDontSee('برنامهٔ درسی')
-            ->assertSee('برنامهٔ امتحانی')
-            ->assertSee($this->teacher->name)
-            ->assertSee('گذشته، ثبت‌نشده')
-            ->assertSee('سالن امتحان')
-            ->assertSee(ClassSessionResource::detailsUrl($past, $this->west));
+            ->assertSee($calendarUrl)
+            ->assertDontSee('برنامهٔ امتحانی');
+        $this->get($teachingUrl)->assertOk()->assertDontSee('افزودن برنامه امتحانی');
+        $this->get(ClassroomResource::getUrl('exam-schedules', ['record' => $this->classroom], tenant: $this->west))
+            ->assertRedirect($calendarUrl);
+        $this->get(ClassroomResource::getUrl('exam-schedules', ['record' => $foreignClass], tenant: $this->west))
+            ->assertNotFound();
 
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertCanSeeTableRecords([$future, $past], inOrder: true)
-            ->assertCanNotSeeTableRecords([$regular, $otherClass, $otherBranch]);
-
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $foreignClass, 'pageClass' => ClassExamSchedules::class])
-            ->assertForbidden();
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
+            ->call('showSessions', 'day', '2026-10-28')
+            ->assertSee('امتحانی')
+            ->assertSee(ClassSessionResource::detailsUrl($past, $this->west))
+            ->assertDontSee(ClassSessionResource::detailsUrl($foreignExam, $this->west));
     }
 
-    public function test_the_exam_schedule_opens_a_create_page_that_saves_a_new_exam_for_its_session(): void
+    public function test_the_exam_session_opens_a_create_page_that_saves_its_exam(): void
     {
+        if (! Module::isEnabled('Exam')) {
+            $this->markTestSkipped('Exam is disabled.');
+        }
+
         $admin = User::factory()->superAdmin()->create();
         $this->actingInPanel($admin, $this->west);
         $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
@@ -435,10 +427,10 @@ class ClassSchedulesTest extends TestCase
         $outsider = User::factory()->create();
         $params = ['contextType' => 'class-session', 'contextId' => $session->id];
         $url = ExamResource::getUrl('create-for-context', $params, tenant: $this->west);
-        $returnUrl = ClassroomResource::getUrl('exam-schedules', ['record' => $this->classroom], tenant: $this->west);
+        $returnUrl = ClassSessionResource::detailsUrl($session, $this->west);
 
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHasUrl(TestAction::make('sessionExam')->table($session), $url);
+        Livewire::test(ViewExamSession::class, ['record' => $session->id])
+            ->assertActionHasUrl('sessionExam', $url);
         $this->get($url)->assertOk()->assertSee(['ساخت آزمون جلسه', $this->classroom->title, $bank->title, $group->title]);
 
         Livewire::test(CreateContextExam::class, $params)
@@ -475,13 +467,17 @@ class ClassSchedulesTest extends TestCase
 
         $this->get($url)->assertRedirect(ClassSessionResource::detailsUrl($session, $this->west));
         $editUrl = ExamResource::getUrl('edit', ['record' => $exam], tenant: $this->west);
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHasUrl(TestAction::make('sessionExam')->table($session), $editUrl);
+        Livewire::test(ViewExamSession::class, ['record' => $session->id])
+            ->assertActionHasUrl('sessionExam', $editUrl);
         $this->get($editUrl)->assertOk()->assertSee($exam->title);
     }
 
     public function test_an_already_open_admin_form_cannot_create_a_second_exam(): void
     {
+        if (! Module::isEnabled('Exam')) {
+            $this->markTestSkipped('Exam is disabled.');
+        }
+
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
         $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
         $bank = QuestionBank::factory()->for($this->west)->create();
@@ -497,6 +493,10 @@ class ClassSchedulesTest extends TestCase
 
     public function test_the_exam_create_page_opens_a_printable_preview_of_its_unsaved_questions(): void
     {
+        if (! Module::isEnabled('Exam')) {
+            $this->markTestSkipped('Exam is disabled.');
+        }
+
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
         $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
         $bank = QuestionBank::factory()->for($this->west)->create();
@@ -523,6 +523,10 @@ class ClassSchedulesTest extends TestCase
 
     public function test_the_paper_preview_does_not_print_missing_or_foreign_questions(): void
     {
+        if (! Module::isEnabled('Exam')) {
+            $this->markTestSkipped('Exam is disabled.');
+        }
+
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
         $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
         $foreignBank = QuestionBank::factory()->for($this->primary)->create();
@@ -544,6 +548,10 @@ class ClassSchedulesTest extends TestCase
 
     public function test_exam_creation_requires_a_current_branch_exam_session_and_permission_for_both_resources(): void
     {
+        if (! Module::isEnabled('Exam')) {
+            $this->markTestSkipped('Exam is disabled.');
+        }
+
         $session = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
         $cancelled = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam, 'status' => SessionStatus::Cancelled]);
         $regular = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Regular]);
@@ -556,8 +564,8 @@ class ClassSchedulesTest extends TestCase
         $this->get($url($cancelled))->assertNotFound();
         $this->get($url($foreign))->assertNotFound();
         $this->get($url($regular))->assertForbidden();
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHidden(TestAction::make('sessionExam')->table($cancelled));
+        Livewire::test(ViewExamSession::class, ['record' => $cancelled->id])
+            ->assertActionHidden('sessionExam');
 
         $editor = User::factory()->create();
         $this->roleWithPermissions('class_without_exam_create', ['ViewAny:Classroom', 'View:Classroom', 'Update:Classroom', 'ViewAny:Exam']);
@@ -565,14 +573,14 @@ class ClassSchedulesTest extends TestCase
         $this->grantRole($editor, $this->west, 'class_without_exam_create');
         $this->actingInPanel($editor, $this->west);
         $this->get($url($session))->assertForbidden();
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHidden(TestAction::make('sessionExam')->table($session));
+        Livewire::test(ViewExamSession::class, ['record' => $session->id])
+            ->assertActionHidden('sessionExam');
 
         $exam = Exam::factory()->for($this->west)->create();
         $exam->forceFill(['context_type' => 'class-session', 'context_id' => $session->id])->save();
         $editUrl = ExamResource::getUrl('edit', ['record' => $exam], tenant: $this->west);
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHidden(TestAction::make('sessionExam')->table($session));
+        Livewire::test(ViewExamSession::class, ['record' => $session->id])
+            ->assertActionHidden('sessionExam');
         $this->get($editUrl)->assertForbidden();
     }
 
@@ -590,18 +598,18 @@ class ClassSchedulesTest extends TestCase
         $this->makeStaff($editor, $this->west);
         $this->grantRole($editor, $this->west, 'class_editor');
         $this->actingInPanel($editor, $this->west);
-        $action = TestAction::make('addExamSchedule')->table();
+        $action = 'addExamSchedule';
         $slot = ['date' => '2026-11-06', 'start_time' => '10:00', 'end_time' => '11:00'];
         $label = [$employee->user_id => 'کارمند نمونه (0013542419)'];
         $this->assertSame($label, $this->planner->invigilatorOptions('کارمند نمونه'));
         $this->assertSame($label, $this->planner->invigilatorOptions(selected: [$employee->user_id]));
 
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->callAction($action, data: ['sessions' => [[...$slot, 'teacher_ids' => [$this->teacher->id]]]])
             ->assertHasActionErrors(['sessions.0.teacher_ids.0']);
         $this->assertFalse($this->classroom->sessions()->exists());
 
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->callAction($action, data: ['sessions' => [[...$slot, 'teacher_ids' => [$employee->user_id]]]])
             ->assertHasNoActionErrors();
         $this->assertSame([$employee->user_id], $this->classroom->sessions()->sole()->teachers->modelKeys());
@@ -611,9 +619,9 @@ class ClassSchedulesTest extends TestCase
     {
         $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-07');
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
-        $action = TestAction::make('addExamSchedule')->table();
+        $action = 'addExamSchedule';
 
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->callAction($action, data: ['sessions' => [
                 ['date' => '2026-11-06', 'start_time' => '08:30', 'end_time' => '09:30'],
                 ['date' => '2026-11-07', 'start_time' => '08:30', 'end_time' => '09:30'],
@@ -640,14 +648,14 @@ class ClassSchedulesTest extends TestCase
         $this->planner->addSession($this->classroom, [
             'kind' => SessionKind::Extra, 'date' => '2026-11-07', 'start_time' => '10:00', 'end_time' => '11:00',
         ]);
-        $action = TestAction::make('editExamSchedule')->table($exam);
+        $action = 'editExamSchedule';
         $changes = [
             'date' => '2026-11-07', 'start_time' => '10:00', 'end_time' => '11:00',
             'subject_id' => $subject->id, 'teacher_ids' => [$invigilator->user_id],
             'location' => 'سالن امتحان', 'note' => 'نسخهٔ به‌روزشده',
         ];
 
-        $list = Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+        $page = Livewire::test(ViewExamSession::class, ['record' => $exam->id])
             ->mountAction($action)
             ->assertSchemaStateSet(['date' => '2026-11-06', 'start_time' => '10:00', 'location' => 'کلاس ۱۰۱'], 'mountedActionSchema0')
             ->fillForm($changes)
@@ -657,7 +665,7 @@ class ClassSchedulesTest extends TestCase
         $this->assertNull($exam->fresh()->note);
         $this->assertSame([], $exam->teachers()->pluck('users.id')->all());
 
-        $list->fillForm(['date' => '2026-11-08'])
+        $page->fillForm(['date' => '2026-11-08'])
             ->callMountedAction()
             ->assertHasNoActionErrors()
             ->assertNotified('برنامهٔ امتحانی به‌روز شد.');
@@ -679,8 +687,8 @@ class ClassSchedulesTest extends TestCase
             'kind' => SessionKind::Exam, 'date' => '2026-10-28', 'start_time' => '10:00', 'end_time' => '11:00',
         ]);
 
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->callAction(TestAction::make('editExamSchedule')->table($exam), data: [
+        Livewire::test(ViewExamSession::class, ['record' => $exam->id])
+            ->callAction('editExamSchedule', data: [
                 'date' => '2026-11-08', 'location' => 'سالن امتحان', 'note' => 'اصلاح توضیحات',
             ])
             ->assertHasNoActionErrors()
@@ -695,9 +703,9 @@ class ClassSchedulesTest extends TestCase
     public function test_exam_scheduling_rejects_an_end_time_before_the_start_time(): void
     {
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
-        $action = TestAction::make('addExamSchedule')->table();
+        $action = 'addExamSchedule';
 
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->callAction($action, data: ['sessions' => [
                 ['date' => '2026-11-06', 'start_time' => '10:30', 'end_time' => '09:30'],
             ]])
@@ -717,13 +725,15 @@ class ClassSchedulesTest extends TestCase
 
         $this->actingInPanel($viewer, $this->west);
         $exam = ClassSession::factory()->for($this->classroom)->create(['kind' => SessionKind::Exam]);
-        Livewire::test(ExamSchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassExamSchedules::class])
-            ->assertActionHidden(TestAction::make('addExamSchedule')->table())
-            ->assertActionHidden(TestAction::make('editExamSchedule')->table($exam));
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
+            ->assertActionHidden('addExamSchedule');
+        Livewire::test(ViewExamSession::class, ['record' => $exam->id])
+            ->assertActionHidden('editExamSchedule');
 
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
-        $this->get(ClassroomResource::getUrl('exam-schedules', ['record' => $foreignClass], tenant: $this->west))
-            ->assertNotFound();
+        $foreignExam = ClassSession::factory()->for($foreignClass)->create(['kind' => SessionKind::Exam]);
+        $this->get(ClassroomResource::getUrl('sessions', ['record' => $foreignClass], tenant: $this->west))->assertNotFound();
+        $this->get(ClassSessionResource::detailsUrl($foreignExam, $this->west))->assertNotFound();
     }
 
     public function test_the_sessions_list_shows_the_current_tenants_sessions_only(): void

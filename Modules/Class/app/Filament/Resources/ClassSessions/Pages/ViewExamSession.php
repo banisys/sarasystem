@@ -7,8 +7,10 @@ use App\Models\User;
 use App\Support\EmployeeDirectory;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Gate;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
+use Modules\Class\Filament\Actions\ExamScheduleActions;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Services\SessionExamSource;
 use Modules\Class\Services\SessionScene;
@@ -44,11 +46,20 @@ class ViewExamSession extends ViewClassSession
 
     protected function getHeaderActions(): array
     {
-        $actions = $this->canReadSession() ? parent::getHeaderActions() : [];
+        $session = $this->session();
+        $canReadSession = $this->canReadSession();
+        $actions = $canReadSession ? [...parent::getHeaderActions(), ExamScheduleActions::edit()] : [];
 
         if (Module::isEnabled('Exam')) {
-            $session = $this->session();
-            $actions[] = app(SessionExamAdmin::class)->paperAction(
+            $admin = app(SessionExamAdmin::class);
+            if ($canReadSession) {
+                $actions[] = $admin->manageAction(
+                    SessionExamSource::TYPE, $session->id,
+                    fn (): bool => $session->status !== SessionStatus::Cancelled && Gate::allows('update', $session->classroom),
+                );
+            }
+
+            $actions[] = $admin->paperAction(
                 SessionExamSource::TYPE, $session->id, fn (): bool => $this->canReadPaper(),
                 $session->classroom?->title, $session->starts_at,
             );

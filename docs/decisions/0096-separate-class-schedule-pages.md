@@ -1,7 +1,7 @@
 # 0096 — Separate teaching and exam schedule pages
 
 - **Date:** 2026-11-14
-- **Status:** accepted
+- **Status:** superseded by [ADR 0109](0109-exam-scheduling-from-class-calendar.md)
 
 ## Context
 The class list needs distinct entry points for managing recurring teaching schedules and dated exam sessions.

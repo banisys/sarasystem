@@ -124,7 +124,6 @@ class ClassAdminTest extends TestCase
         foreach ([
             'members' => 'اعضا',
             'schedules' => 'برنامهٔ درسی',
-            'exam-schedules' => 'برنامهٔ امتحانی',
             'sessions' => 'جلسه‌ها',
         ] as $page => $title) {
             $this->get(ClassroomResource::getUrl($page, ['record' => $mine], tenant: $this->west))

@@ -19,6 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Class\Enums\SessionKind;
+use Modules\Class\Filament\Actions\ExamScheduleActions;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Concerns\ShowsSessionCalendar;
 use Modules\Class\Filament\Resources\ClassSessions\Tables\ClassSessionsTable;
@@ -94,6 +95,11 @@ class SessionsRelationManager extends RelationManager
                 fn () => $planner->addSession($this->classroom(), $data),
                 'جلسه اضافه شد.',
             ));
+    }
+
+    public function addExamScheduleAction(): Action
+    {
+        return ExamScheduleActions::add($this->classroom());
     }
 
     public function table(Table $table): Table

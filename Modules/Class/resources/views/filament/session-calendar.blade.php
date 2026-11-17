@@ -66,7 +66,10 @@
             </div>
 
             @if ($canAddSessions)
-                <div class="ms-auto">{{ $this->addSessionAction }}</div>
+                <div class="ms-auto flex flex-wrap gap-2">
+                    {{ $this->addSessionAction }}
+                    {{ $this->addExamScheduleAction }}
+                </div>
             @endif
         </div>
 

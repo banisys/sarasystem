@@ -89,10 +89,6 @@ class ClassroomsTable
                     ->label('برنامهٔ درسی')
                     ->icon(Heroicon::OutlinedCalendarDays)
                     ->url(fn (Classroom $record): string => ClassroomResource::getUrl('schedules', ['record' => $record])),
-                Action::make('examSchedules')
-                    ->label('برنامهٔ امتحانی')
-                    ->icon(Heroicon::OutlinedClipboardDocumentList)
-                    ->url(fn (Classroom $record): string => ClassroomResource::getUrl('exam-schedules', ['record' => $record])),
                 Action::make('sessions')
                     ->label('تقویم جلسات')
                     ->icon(Heroicon::OutlinedClock)

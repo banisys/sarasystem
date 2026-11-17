@@ -11,7 +11,7 @@ Class editors need to set up a new online exam while working from a dated exam s
 - Open a dedicated creation page reusing the admin exam form. The session can supply the window and eligible attendees before the form is saved.
 
 ## Decision
-For a session without an exam, «آزمون جلسه» opens a dedicated create page with the exam's settings and question banks. The page uses the selected session's window and membership and returns to its class exam schedule after saving. The editor sets publication in the form.
+For a session without an exam, «آزمون جلسه» opens a dedicated create page with the exam's settings and question banks. The page uses the selected session's window and membership and returns to the session details after saving or cancelling ([ADR 0109](0109-exam-scheduling-from-class-calendar.md)). The editor sets publication in the form.
 
 The route requires permission to create an exam and edit the class. The optional Exam context resolves eligible exam sessions within the current branch. The page rechecks access on submission and saves the exam and bank sections together.
 
@@ -22,4 +22,4 @@ The admin creation page can assign the new exam to a branch's exam group ([ADR 0
 
 The admin creation page can preview and print a sample paper using the banks and counts in the unsaved form ([ADR 0105](0105-printable-session-exam-draft.md)).
 
-Once an exam exists, the same schedule action opens its edit page for users with exam update permission. If historical duplicates exist, the edit action chooses the same exam as the print modal. A direct visit to the creation form opens session details ([ADR 0107](0107-single-exam-and-staff-paper.md)).
+Once an exam exists, the same action on the session details page opens its edit page for users with exam update permission. If historical duplicates exist, the edit action chooses the same exam as the print modal. A direct visit to the creation form opens session details ([ADR 0107](0107-single-exam-and-staff-paper.md)).

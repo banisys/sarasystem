@@ -2,32 +2,15 @@
 
 namespace Modules\Class\Filament\Resources\Classrooms\Pages;
 
-use Filament\Actions\Action;
-use Filament\Support\Icons\Heroicon;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\ExamSchedulesRelationManager;
 
-class ClassExamSchedules extends ClassroomSectionPage
+/** Redirect old exam schedule links to the calendar. */
+class ClassExamSchedules extends ClassSessions
 {
-    protected function getHeaderActions(): array
+    public function mount(int|string $record): void
     {
-        return [
-            Action::make('sessions')
-                ->label('جلسه‌ها')
-                ->color('gray')
-                ->outlined()
-                ->icon(Heroicon::OutlinedClock)
-                ->url(fn (): string => ClassroomResource::getUrl('sessions', ['record' => $this->getRecord()])),
-        ];
-    }
+        parent::mount($record);
 
-    protected static function manager(): string
-    {
-        return ExamSchedulesRelationManager::class;
-    }
-
-    protected static function sectionTitle(): string
-    {
-        return 'برنامهٔ امتحانی';
+        $this->redirect(ClassroomResource::getUrl('sessions', ['record' => $this->getRecord()]));
     }
 }

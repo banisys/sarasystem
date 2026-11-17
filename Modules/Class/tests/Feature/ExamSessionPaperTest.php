@@ -53,9 +53,11 @@ class ExamSessionPaperTest extends TestCase
 
         $this->actingInPanel($user, $branch);
         $url = ClassSessionResource::detailsUrl($session, $branch);
-        $this->get($url)->assertOk()->assertSee('آزمون جلسه')->assertDontSee('محل مخصوص مدیر');
+        $this->get($url)->assertOk()->assertSee('برگهٔ آزمون جلسه')->assertDontSee('محل مخصوص مدیر');
         Livewire::test(ViewExamSession::class, ['record' => $session->id])
             ->assertActionDoesNotExist('seatLayout')
+            ->assertActionDoesNotExist('sessionExam')
+            ->assertActionDoesNotExist('editExamSchedule')
             ->mountAction('sessionExams')
             ->assertNoRedirect()
             ->assertMountedActionModalSee([

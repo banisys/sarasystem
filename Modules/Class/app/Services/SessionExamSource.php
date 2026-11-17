@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
-use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassSession;
@@ -52,7 +51,7 @@ class SessionExamSource implements ExamContextSource
                 : ClassSessionResource::detailsUrl($session, $session->tenant),
             $canManage, $canParticipate,
             adminCreateReturnUrl: $canEditClass && $session->kind === SessionKind::Exam
-                ? ClassroomResource::getUrl('exam-schedules', ['record' => $session->classroom], tenant: $session->tenant)
+                ? ClassSessionResource::detailsUrl($session, $session->tenant)
                 : null,
             singleExamSessionUrl: $session->kind === SessionKind::Exam ? ClassSessionResource::detailsUrl($session, $session->tenant) : null,
             classTitle: $session->classroom->title,
