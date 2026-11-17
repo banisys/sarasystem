@@ -10,9 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\Weekday;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -168,8 +166,8 @@ class SessionTeachersTest extends TestCase
         $this->grantRole($editor, $this->west, 'class_editor');
         $this->actingInPanel($editor, $this->west);
 
-        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
-            ->callAction(TestAction::make('addSchedule')->table(), data: [
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
+            ->callAction('addSchedule', data: [
                 'frequency' => Frequency::Weekly->value, 'interval' => 1, 'weekdays' => [Weekday::Saturday->value],
                 'starts_on' => '2026-10-31', 'ends_on' => '2026-11-07', 'start_time' => '08:00', 'end_time' => '09:30',
                 'teacher_ids' => [$this->maryam->id, $this->reza->id],

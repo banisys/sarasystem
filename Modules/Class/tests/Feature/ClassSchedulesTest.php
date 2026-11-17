@@ -13,12 +13,11 @@ use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
-use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSchedules;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
-use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SchedulesRelationManager;
 use Modules\Class\Filament\Resources\Classrooms\RelationManagers\SessionsRelationManager;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ListClassSessions;
+use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewClassSession;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\ViewExamSession;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
@@ -284,14 +283,14 @@ class ClassSchedulesTest extends TestCase
         $this->roleWithPermissions('class_viewer', ['ViewAny:Classroom', 'View:Classroom']);
         $this->makeStaff($viewer, $this->west);
         $this->grantRole($viewer, $this->west, 'class_viewer');
-        $owner = ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class];
+        $owner = ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class];
 
         $this->actingInPanel($viewer, $this->west);
-        Livewire::test(SchedulesRelationManager::class, $owner)->assertActionHidden(TestAction::make('addSchedule')->table());
+        Livewire::test(SessionsRelationManager::class, $owner)->assertActionHidden('addSchedule');
 
         $this->actingInPanel($editor, $this->west);
-        Livewire::test(SchedulesRelationManager::class, $owner)
-            ->callAction(TestAction::make('addSchedule')->table(), data: [
+        Livewire::test(SessionsRelationManager::class, $owner)
+            ->callAction('addSchedule', data: [
                 'frequency' => Frequency::Weekly->value, 'interval' => 1, 'weekdays' => [Weekday::Sunday->value, Weekday::Tuesday->value],
                 'starts_on' => '2026-11-01', 'ends_on' => '2026-11-10', 'start_time' => '10:00', 'end_time' => '11:30', 'teacher_ids' => [$this->teacher->id],
             ])
@@ -311,6 +310,27 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame(SessionKind::MakeUp, ClassSession::query()->whereDate('starts_at', '2026-11-05')->sole()->kind);
     }
 
+    public function test_a_teaching_session_can_edit_its_schedule_and_return_to_the_calendar(): void
+    {
+        $schedule = $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-14');
+        $session = $schedule->sessions()->whereDate('starts_at', '2026-11-07')->sole();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
+        $calendarUrl = ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west);
+
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->assertSee('ویرایش برنامهٔ درسی')
+            ->mountAction('editSchedule')
+            ->assertSchemaStateSet(['starts_on' => '2026-10-31', 'ends_on' => '2026-11-14'], 'mountedActionSchema0')
+            ->fillForm(['weekdays' => [Weekday::Sunday->value]])
+            ->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertRedirect($calendarUrl);
+
+        $this->assertSame([Weekday::Sunday->value], $schedule->fresh()->weekdays);
+        $this->assertModelMissing($session);
+        $this->assertTrue($schedule->sessions()->whereDate('starts_at', '2026-11-08')->exists());
+    }
+
     public function test_a_refused_schedule_keeps_its_modal_open_with_the_message(): void
     {
         $editor = User::factory()->create();
@@ -320,13 +340,13 @@ class ClassSchedulesTest extends TestCase
         $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-21');
         $this->actingInPanel($editor, $this->west);
 
-        Livewire::test(SchedulesRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSchedules::class])
-            ->callAction(TestAction::make('addSchedule')->table(), data: [
+        Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
+            ->callAction('addSchedule', data: [
                 'frequency' => Frequency::Weekly->value, 'interval' => 1, 'weekdays' => [Weekday::Saturday->value],
                 'starts_on' => '2026-10-31', 'ends_on' => '2026-11-07', 'start_time' => '08:30', 'end_time' => '09:30',
             ])
             ->assertNotified()
-            ->assertActionMounted(TestAction::make('addSchedule')->table())
+            ->assertActionMounted('addSchedule')
             ->assertSchemaStateSet(['start_time' => '08:30', 'end_time' => '09:30'], 'mountedActionSchema0');
 
         $this->assertSame(1, $this->classroom->schedules()->count());
@@ -371,7 +391,7 @@ class ClassSchedulesTest extends TestCase
             ->assertSee('امتحانی');
     }
 
-    public function test_old_exam_schedule_links_redirect_to_the_class_calendar(): void
+    public function test_old_schedule_links_redirect_to_the_class_calendar(): void
     {
         $viewer = User::factory()->create();
         $this->roleWithPermissions('class_viewer', ['ViewAny:Classroom', 'View:Classroom']);
@@ -396,10 +416,12 @@ class ClassSchedulesTest extends TestCase
         $calendarUrl = ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west);
         $this->get(ClassroomResource::getUrl('index', tenant: $this->west))
             ->assertOk()
-            ->assertSee($teachingUrl)
+            ->assertDontSee($teachingUrl)
             ->assertSee($calendarUrl)
             ->assertDontSee('برنامهٔ امتحانی');
-        $this->get($teachingUrl)->assertOk()->assertDontSee('افزودن برنامه امتحانی');
+        $this->get($teachingUrl)->assertRedirect($calendarUrl);
+        $this->get(ClassroomResource::getUrl('schedules', ['record' => $foreignClass], tenant: $this->west))->assertNotFound();
+        $this->get($calendarUrl)->assertOk()->assertSee('برنامه‌های درسی');
         $this->get(ClassroomResource::getUrl('exam-schedules', ['record' => $this->classroom], tenant: $this->west))
             ->assertRedirect($calendarUrl);
         $this->get(ClassroomResource::getUrl('exam-schedules', ['record' => $foreignClass], tenant: $this->west))

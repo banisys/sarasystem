@@ -21,6 +21,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-17 — Moved teaching schedule creation and the schedule list to the class calendar. Linked teaching sessions can edit their schedule and return to the calendar after saving ([ADR 0110](decisions/0110-teaching-schedules-from-class-calendar.md)). Old schedule links redirect to the calendar. Verified the new entry points in Chromium and passed all 208 Class tests and Pint.
 - 2026-11-17 — Moved exam schedule creation to the class calendar and the session edit and online exam actions to exam session details ([ADR 0109](decisions/0109-exam-scheduling-from-class-calendar.md)). Old links redirect to the calendar. Verified the screens in Chromium and passed all 796 tests and Pint.
 - 2026-11-17 — Added «پیش‌نمایش آزمون» to the admin exam list. The row action opens the shared printable paper for the selected exam. Verified the Mehregan modal in Chromium. All 796 tests, targeted module isolation checks, and Pint passed.
 - 2026-11-17 — Added «انتخاب سؤال‌ها» to each bank row in the admin exam form ([ADR 0108](decisions/0108-manual-admin-exam-question-selection.md)). Confirmed choices set the row count and are used by future attempts and printable papers. Updated the tutorial and migrated the local database. Verified the picker on exam 36 in Chromium and passed all 794 tests and Pint.

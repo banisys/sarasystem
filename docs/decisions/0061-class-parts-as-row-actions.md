@@ -22,3 +22,5 @@ The «جلسه‌ها» row action is now labeled «تقویم جلسات».
 
 ## Consequences
 One more click from the list to the class's parts, but no tabs; the action menu of a row lists everything a class offers.
+
+Teaching and exam scheduling later moved to the calendar and session details. See [ADR 0109](0109-exam-scheduling-from-class-calendar.md) and [ADR 0110](0110-teaching-schedules-from-class-calendar.md).

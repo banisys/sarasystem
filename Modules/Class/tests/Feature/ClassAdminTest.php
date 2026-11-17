@@ -114,7 +114,7 @@ class ClassAdminTest extends TestCase
         $this->actingInPanel($this->manager, $this->west);
         Livewire::test(ListClassrooms::class)
             ->assertTableActionExists('members')
-            ->assertTableActionExists('schedules')
+            ->assertTableActionDoesNotExist('schedules')
             ->assertTableActionExists('sessions')
             ->assertSee('تقویم جلسات')
             ->mountTableAction('view', $mine)
@@ -123,7 +123,6 @@ class ClassAdminTest extends TestCase
 
         foreach ([
             'members' => 'اعضا',
-            'schedules' => 'برنامهٔ درسی',
             'sessions' => 'جلسه‌ها',
         ] as $page => $title) {
             $this->get(ClassroomResource::getUrl($page, ['record' => $mine], tenant: $this->west))

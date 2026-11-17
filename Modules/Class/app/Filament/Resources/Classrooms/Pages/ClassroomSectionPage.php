@@ -10,9 +10,8 @@ use Illuminate\Contracts\Support\Htmlable;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 
 /**
- * One part of a class (members, schedules or sessions) on its own page,
- * opened by a row action of the class list. It shows a single relation
- * manager, with no tabs and no details.
+ * A class's members or calendar page, opened from the class list.
+ * The section's main relation manager is rendered without tabs.
  */
 abstract class ClassroomSectionPage extends ViewRecord
 {

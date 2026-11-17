@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\ExamScheduleActions;
 use Modules\Class\Filament\Actions\SessionActions;
+use Modules\Class\Filament\Actions\TeachingScheduleActions;
 use Modules\Class\Filament\Concerns\ShowsSessionCalendar;
 use Modules\Class\Filament\Resources\ClassSessions\Tables\ClassSessionsTable;
 use Modules\Class\Models\Classroom;
@@ -37,6 +38,8 @@ use Modules\Class\Services\SessionPlanner;
 class SessionsRelationManager extends RelationManager
 {
     use ShowsSessionCalendar;
+
+    protected $listeners = ['teaching-schedules-changed' => '$refresh'];
 
     protected static string $relationship = 'sessions';
 
@@ -100,6 +103,12 @@ class SessionsRelationManager extends RelationManager
     public function addExamScheduleAction(): Action
     {
         return ExamScheduleActions::add($this->classroom());
+    }
+
+    public function addScheduleAction(): Action
+    {
+        return TeachingScheduleActions::add($this->classroom())
+            ->after(fn () => $this->dispatch('teaching-schedules-changed')->to(SchedulesRelationManager::class));
     }
 
     public function table(Table $table): Table

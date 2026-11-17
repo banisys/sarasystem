@@ -6,6 +6,7 @@ use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
+use Modules\Class\Filament\Actions\TeachingScheduleActions;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\ClassSession;
@@ -76,6 +77,14 @@ class ViewClassSession extends ViewRecord
     {
         $exam = $this->isExamPage();
         $actions = SessionActions::pageActions(exam: $exam);
+        if (! $exam && ($schedule = $this->session()->schedule) !== null) {
+            $classroom = $this->session()->classroom;
+            $actions[] = TeachingScheduleActions::edit($classroom)
+                ->record($schedule)
+                ->label('ویرایش برنامهٔ درسی')
+                ->after(fn () => $this->redirect(ClassroomResource::getUrl('sessions', ['record' => $classroom])));
+        }
+
         if (! $exam && Module::isEnabled('Exam')) {
             $url = app(SessionExamSource::class)->link($this->session(), auth()->user());
             if ($url !== null) {
