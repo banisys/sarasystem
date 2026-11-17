@@ -48,6 +48,7 @@ use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\PlanTopic;
+use Modules\Class\Models\Subject;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
 use Modules\Class\Services\ExamSeating;
@@ -399,6 +400,7 @@ class SessionActions
         return [
             self::attendance()->color('success'),
             ...($exam ? [self::seatLayout()] : [self::content()->color('info'), self::grading()->color(Color::Fuchsia)]),
+            ...($exam ? [] : [self::editSession()->color(Color::Indigo)]),
             self::move()->color(Color::Cyan),
             ...($exam ? [] : [self::substitute()->color(Color::Slate)]),
             self::cancel()->color('warning'),
@@ -704,6 +706,26 @@ class SessionActions
         return '<div class="text-sm"><div class="text-gray-500">تحویل: '.$when.'</div>'
             .($submission->answer !== null ? '<div class="mt-1 whitespace-pre-line">'.e($submission->answer).'</div>' : '')
             .($files !== '' ? '<div class="mt-1">'.$files.'</div>' : '').'</div>';
+    }
+
+    private static function editSession(): Action
+    {
+        return Action::make('editSession')
+            ->label('ویرایش جلسه')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->authorize(fn (ClassSession $record): bool => self::canChange($record))
+            ->fillForm(fn (ClassSession $record): array => $record->only(['subject_id', 'location', 'note']))
+            ->schema([
+                Select::make('subject_id')->label('درس')
+                    ->options(fn (ClassSession $record): array => Subject::options($record->subject_id))
+                    ->searchable(),
+                TextInput::make('location')->label('مکان')->maxLength(255),
+                Textarea::make('note')->label('توضیح')->rows(2),
+            ])
+            ->action(fn (array $data, ClassSession $record, SessionPlanner $planner) => self::attempt(
+                fn () => $planner->updateDetails($record, $data['subject_id'] ?? null, $data['location'] ?? null, $data['note'] ?? null),
+                'جلسه ویرایش شد.',
+            ));
     }
 
     private static function move(): Action

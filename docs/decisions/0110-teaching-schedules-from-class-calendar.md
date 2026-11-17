@@ -11,7 +11,7 @@ Class editors use the calendar to find sessions. Teaching schedules had their ow
 - Add schedule management to the calendar and let a linked session open its schedule directly.
 
 ## Decision
-The «افزودن» menu above the class calendar offers «افزودن برنامه درسی». The collapsible «برنامه‌های درسی» section lists all of the class's schedules and gives editors access to edit or delete them. A teaching session linked to a schedule also offers «ویرایش برنامهٔ درسی». Saving from a session returns to the calendar because changing the recurrence may remove that session.
+The «افزودن» menu above the class calendar offers «افزودن برنامه درسی». The collapsible «برنامه‌های درسی» section lists all of the class's schedules and gives editors access to edit or delete them. The teaching session details offer «ویرایش جلسه» for its subject, location and note. This action saves only the selected session, preserves its time, and marks it as manually edited so the recurring schedule does not overwrite the change. The class calendar is where editors manage the recurring schedule.
 
 ## Consequences
 Old teaching schedule links redirect to the calendar after checking class access. The shared scheduling form uses the existing recurrence, planning and clash checks.

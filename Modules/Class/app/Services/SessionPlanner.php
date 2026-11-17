@@ -307,6 +307,31 @@ class SessionPlanner
         });
     }
 
+    public function updateDetails(ClassSession $session, ?int $subjectId, ?string $location, ?string $note): void
+    {
+        $session->fill([
+            'subject_id' => $subjectId,
+            'location' => filled($location) ? trim($location) : null,
+            'note' => $note,
+        ]);
+
+        if (! $session->isDirty()) {
+            return;
+        }
+
+        if ($session->isDirty('location') && $session->status === SessionStatus::Scheduled && ! $session->hasStarted()) {
+            $this->checkClashes(
+                collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]),
+                $session->classroom,
+                [],
+                $session->location ?? $session->classroom?->location,
+                exceptSessionId: $session->getKey(),
+            );
+        }
+
+        $session->fill(['is_modified' => true, ...self::changedNow()])->save();
+    }
+
     /**
      * @throws ClassException
      */

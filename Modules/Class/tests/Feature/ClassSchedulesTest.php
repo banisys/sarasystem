@@ -310,25 +310,36 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame(SessionKind::MakeUp, ClassSession::query()->whereDate('starts_at', '2026-11-05')->sole()->kind);
     }
 
-    public function test_a_teaching_session_can_edit_its_schedule_and_return_to_the_calendar(): void
+    public function test_a_teaching_session_can_edit_its_details_without_changing_its_schedule_or_time(): void
     {
         $schedule = $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-14');
         $session = $schedule->sessions()->whereDate('starts_at', '2026-11-07')->sole();
+        $subject = Subject::factory()->for($this->primary)->create(['is_active' => true]);
+        $before = $schedule->fresh()->getAttributes();
+        $other = $schedule->sessions()->whereKeyNot($session->id)->firstOrFail();
+        $otherBefore = $other->getAttributes();
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
-        $calendarUrl = ClassroomResource::getUrl('sessions', ['record' => $this->classroom], tenant: $this->west);
 
         Livewire::test(ViewClassSession::class, ['record' => $session->id])
-            ->assertSee('ویرایش برنامهٔ درسی')
-            ->mountAction('editSchedule')
-            ->assertSchemaStateSet(['starts_on' => '2026-10-31', 'ends_on' => '2026-11-14'], 'mountedActionSchema0')
-            ->fillForm(['weekdays' => [Weekday::Sunday->value]])
-            ->callMountedAction()
-            ->assertHasNoActionErrors()
-            ->assertRedirect($calendarUrl);
+            ->assertActionDoesNotExist('editSchedule')
+            ->assertSee('ویرایش جلسه')
+            ->callAction('editSession', data: [
+                'subject_id' => $subject->id,
+                'location' => 'اتاق دوم',
+                'note' => 'توضیح این جلسه',
+                'starts_at' => '2026-11-07 12:00:00',
+                'ends_at' => '2026-11-07 13:00:00',
+            ])
+            ->assertHasNoActionErrors();
 
-        $this->assertSame([Weekday::Sunday->value], $schedule->fresh()->weekdays);
-        $this->assertModelMissing($session);
-        $this->assertTrue($schedule->sessions()->whereDate('starts_at', '2026-11-08')->exists());
+        $updated = $session->fresh();
+        $this->assertSame($subject->id, $updated->subject_id);
+        $this->assertSame('اتاق دوم', $updated->location);
+        $this->assertSame('توضیح این جلسه', $updated->note);
+        $this->assertTrue($session->starts_at->equalTo($updated->starts_at));
+        $this->assertTrue($session->ends_at->equalTo($updated->ends_at));
+        $this->assertSame($before, $schedule->fresh()->getAttributes());
+        $this->assertSame($otherBefore, $other->fresh()->getAttributes());
     }
 
     public function test_a_refused_schedule_keeps_its_modal_open_with_the_message(): void
