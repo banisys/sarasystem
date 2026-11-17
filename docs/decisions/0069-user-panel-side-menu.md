@@ -16,7 +16,7 @@ After logging in, a teacher came to an empty dashboard (a greeting and the tenan
 - Below `lg`, the top bar opens the menu in a Reka UI dialog ([ADR 0094](0094-vue-design-system.md)). Escape closes it and returns focus to the trigger.
 - Links from `UserPanel::navigationUsing()` take an optional `icon` (a name known to PanelIcon; unknown names get a default).
 - `UserPanel::homeUsing(name, fn (User, Tenant): ?string)`: the first provider giving a URL is the panel's home. `/dashboard` redirects there; the shared prop `panelHome` carries it, so the menu drops «داشبورد» and the mobile brand links to the module home.
-- Class registers its home: whoever has classes (teaches a session or is a member) opens on `/my-classes`, the week calendar. That includes learners; a guardian without classes of their own still gets the dashboard, now with a card per menu link.
+- Class registers its home: whoever has classes (teaches a session or is a member) opens on `/profile/academic-calendar`, the monthly calendar ([ADR 0111](0111-user-academic-calendar.md)). That includes learners; a guardian without classes of their own still gets the dashboard, now with a card per menu link.
 
 ## Consequences
 - A teacher logs in and sees their week at once; the same for learners.

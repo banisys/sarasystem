@@ -14,6 +14,7 @@ use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\Frequency;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassRole;
@@ -27,7 +28,7 @@ use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
 /**
- * «کلاس‌های من» in the user panel (ADR 0026). Today is Thursday
+ * «تقویم آموزشی» in the user panel (ADR 0026). Today is Thursday
  * 2026-10-29 (1405/08/07); the class meets on Saturdays and Mondays at 8:00.
  */
 class MyClassesTest extends TestCase
@@ -74,7 +75,7 @@ class MyClassesTest extends TestCase
         ClassSession::factory()->create(['classroom_id' => $other->id, 'starts_at' => '2026-11-01 10:00', 'ends_at' => '2026-11-01 11:00']);
         Holiday::factory()->for($this->west)->create(['title' => 'اردو', 'starts_on' => '2026-11-04', 'ends_on' => '2026-11-04']);
 
-        $this->as($this->student, route('my-classes.index', ['date' => '2026-11-01']))->assertInertia(fn (AssertableInertia $page) => $page
+        $this->as($this->student, route('my-classes.index', ['view' => 'week', 'date' => '2026-11-01']))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Class::Index')
             ->where('calendar.view', 'week')
             ->has('calendar.days', 7)
@@ -89,14 +90,41 @@ class MyClassesTest extends TestCase
             ->has('classes', 1));
     }
 
-    public function test_the_month_is_the_jalali_month_from_saturday(): void
+    public function test_the_default_jalali_month_shows_teaching_and_exam_sessions(): void
     {
         // Aban 1405: 2026-10-23 (a Friday) to 2026-11-21.
-        $this->as($this->student, route('my-classes.index', ['view' => 'month', 'date' => '2026-11-10']))->assertInertia(fn (AssertableInertia $page) => $page
+        $exam = ClassSession::factory()->for($this->classroom)->create([
+            'kind' => SessionKind::Exam,
+            'starts_at' => '2026-10-31 10:00',
+            'ends_at' => '2026-10-31 11:00',
+        ]);
+        $otherTenant = Classroom::factory()->for($this->primary)->create();
+        ClassSession::factory()->for($otherTenant)->create([
+            'kind' => SessionKind::Exam,
+            'starts_at' => '2026-10-31 12:00',
+            'ends_at' => '2026-10-31 13:00',
+        ])->teachers()->attach($this->teacher);
+
+        $this->as($this->teacher, '/profile/academic-calendar')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('calendar.view', 'month')
             ->where('calendar.days.0.date', '2026-10-23')
+            ->has('calendar.days.8.sessions', 2)
+            ->where('calendar.days.8.sessions.0.is_exam', false)
+            ->where('calendar.days.8.sessions.1.id', $exam->id)
+            ->where('calendar.days.8.sessions.1.is_exam', true)
+            ->where('calendar.days.8.sessions.1.kind_label', 'امتحانی')
             ->has('calendar.days', 30)
             ->where('calendar.leading_blanks', 6)
             ->where('calendar.next', '2026-11-22'));
+    }
+
+    public function test_old_calendar_links_redirect_with_their_query_parameters(): void
+    {
+        $session = $this->sessionOn('2026-10-31');
+        $this->as($this->student, '/profile/my-classes?view=week&date=2026-11-10')
+            ->assertRedirect('/profile/academic-calendar?view=week&date=2026-11-10');
+        $this->as($this->student, "/profile/my-classes/sessions/{$session->id}?for={$this->student->id}")
+            ->assertRedirect("/profile/academic-calendar/sessions/{$session->id}?for={$this->student->id}");
     }
 
     public function test_a_learner_sees_the_session_and_their_attendance_but_no_forms(): void
@@ -167,7 +195,7 @@ class MyClassesTest extends TestCase
 
     public function test_the_menu_link_is_shown_to_class_members_only(): void
     {
-        $hasLink = fn (User $user): bool => collect($this->as($user, route('profile.edit'))->viewData('page')['props']['navigation'])->contains('title', 'کلاس‌های من');
+        $hasLink = fn (User $user): bool => collect($this->as($user, route('profile.edit'))->viewData('page')['props']['navigation'])->contains('title', 'تقویم آموزشی');
 
         $this->assertTrue($hasLink($this->student));
         $this->assertFalse($hasLink($this->person()));
@@ -183,7 +211,7 @@ class MyClassesTest extends TestCase
         $this->as($this->teacher, route('my-classes.index'))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Class::Index')
             ->where('panelHome', route('my-classes.index'))
-            ->where('navigation.0', ['title' => 'کلاس‌های من', 'url' => route('my-classes.index'), 'icon' => 'calendar']));
+            ->where('navigation.0', ['title' => 'تقویم آموزشی', 'url' => route('my-classes.index'), 'icon' => 'calendar']));
 
         $this->as($this->person(), route('dashboard'))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Dashboard')
@@ -210,10 +238,10 @@ class MyClassesTest extends TestCase
         Attendance::factory()->create(['session_id' => $session->id, 'user_id' => $student->id, 'status' => AttendanceStatus::Absent]);
 
         $nav = collect($this->as($father, route('dashboard'))->viewData('page')['props']['navigation']);
-        $this->assertFalse($nav->contains('title', 'کلاس‌های من'));
+        $this->assertFalse($nav->contains('title', 'تقویم آموزشی'));
         $this->assertTrue($nav->contains('url', route('my-classes.index', ['for' => $student->id])));
 
-        $this->as($father, route('my-classes.index', ['for' => $student->id, 'date' => '2026-10-31']))->assertInertia(fn (AssertableInertia $page) => $page
+        $this->as($father, route('my-classes.index', ['for' => $student->id, 'view' => 'day', 'date' => '2026-10-31']))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('ward.id', $student->id)
             ->where('calendar.days.0.sessions.0.my_attendance', 'غایب'));
 

@@ -134,7 +134,7 @@ class HomeworkTest extends TestCase
         $this->assertSame('18.50', $handedIn->score);
         $this->assertSame($this->teacher->id, $handedIn->graded_by_id);
 
-        $this->as($this->amir, route('my-classes.index', ['date' => '2026-10-31']))->assertInertia(fn (AssertableInertia $page) => $page
+        $this->as($this->amir, route('my-classes.index', ['view' => 'day', 'date' => '2026-10-31']))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('calendar.days.0.sessions.0.my_homework', 'نمره‌ی تکلیف: 18.5 از 20'));
 
         $father = $this->person('محمد محمدی');

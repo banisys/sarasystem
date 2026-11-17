@@ -85,17 +85,17 @@ class ClassServiceProvider extends ModuleServiceProvider
             ]);
         }
 
-        // «کلاس‌های من» for members and teachers of classes (ADR 0026), and
-        // «کلاس‌های …» of each ward in classes for their guardians (ADR 0027).
         BuildingRooms::register('classes', fn (): RoomSource => app(ClassroomRooms::class));
 
+        // The academic calendar for class members and teachers (ADR 0026),
+        // and each ward's calendar for their guardians (ADR 0027).
         UserPanel::navigationUsing('classes', function (User $user, Tenant $tenant): array {
             $myClasses = app(MyClasses::class);
             $wards = app(Guardians::class)->wardsIn($user, $tenant)->filter(fn (User $ward): bool => $myClasses->hasAny($ward));
 
             return [
-                ...($myClasses->hasAny($user) ? [['title' => 'کلاس‌های من', 'url' => route('my-classes.index'), 'icon' => 'calendar']] : []),
-                ...$wards->map(fn (User $ward): array => ['title' => 'کلاس‌های '.$ward->name, 'url' => route('my-classes.index', ['for' => $ward->getKey()]), 'icon' => 'users'])->values()->all(),
+                ...($myClasses->hasAny($user) ? [['title' => 'تقویم آموزشی', 'url' => route('my-classes.index'), 'icon' => 'calendar']] : []),
+                ...$wards->map(fn (User $ward): array => ['title' => 'تقویم آموزشی '.$ward->name, 'url' => route('my-classes.index', ['for' => $ward->getKey()]), 'icon' => 'users'])->values()->all(),
             ];
         });
 

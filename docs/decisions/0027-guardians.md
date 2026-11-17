@@ -27,8 +27,8 @@ The legacy LMS has a `parent` role and parents' data in the User module; this is
   - Rules: the ward is a member of the tenant, nobody is their own guardian, and the actor may give the guardian role.
 - **Student module:** the learner page gets the tab «اولیا» ([GuardiansRelationManager](../../Modules/Student/app/Filament/Resources/Students/RelationManagers/GuardiansRelationManager.php)): add by national code (name and mobile for a new user), edit the relationship and SMS flag, remove. Who may edit the learner (`Update:Student`) manages it.
 - **Class module:**
-  - `/my-classes?for={ward}` and the session pages with `for` show a ward's calendar, sessions, content, homework, materials and the ward's own attendance, read only. A guardian never gets the attendance or content forms through a ward.
-  - The header gets «کلاس‌های {نام}» for each ward in the tenant who is in a class.
+  - `/profile/academic-calendar?for={ward}` and the session pages with `for` show a ward's calendar, sessions, content, homework, materials and the ward's own attendance, read only. A guardian never gets the attendance or content forms through a ward.
+  - The side menu gets «تقویم آموزشی {نام}» for each ward in the tenant who is in a class.
 - **Demo:** [GuardianDemoSeeder](../../Modules/Student/database/seeders/GuardianDemoSeeder.php) (in `module:seed Student`) gives the demo students learner rows and links each demo parent to the student with the same last name; principals get the learners permissions.
 
 ## Consequences

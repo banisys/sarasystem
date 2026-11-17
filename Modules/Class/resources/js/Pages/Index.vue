@@ -11,7 +11,7 @@ import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-// «کلاس‌های من» (ADR 0026): the person's sessions as a day, a week
+// «تقویم آموزشی» (ADR 0026): the person's sessions as a day, a week
 // (Saturday to Friday) or a Jalali month, and their classes. A guardian
 // sees a ward's the same way (`ward`, ADR 0027).
 const props = defineProps({
@@ -20,7 +20,7 @@ const props = defineProps({
     ward: { type: Object, default: null },
 });
 
-const title = computed(() => (props.ward ? `کلاس‌های ${props.ward.name}` : 'کلاس‌های من'));
+const title = computed(() => (props.ward ? `تقویم آموزشی ${props.ward.name}` : 'تقویم آموزشی'));
 const forWard = computed(() => (props.ward ? { for: props.ward.id } : {}));
 
 const views = [
@@ -100,7 +100,8 @@ function at(date, view = props.calendar.view) {
                         class="truncate rounded-md border px-1.5 py-1 leading-4"
                         :class="statusClass[session.status]"
                     >
-                        {{ session.time.split('–')[0] }} {{ session.class }}
+                        <div v-if="session.is_exam" class="font-semibold text-amber-800 panel-dark:text-amber-300">{{ session.kind_label }}</div>
+                        <div class="truncate"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.class }}</div>
                     </div>
                 </PanelCardLink>
             </div>

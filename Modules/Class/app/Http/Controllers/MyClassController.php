@@ -32,7 +32,7 @@ use Modules\Class\Services\SessionExamSource;
 use Nwidart\Modules\Facades\Module;
 
 /**
- * «کلاس‌های من» in the user panel (ADR 0026): the person's calendar of
+ * «تقویم آموزشی» in the user panel (ADR 0026): the person's calendar of
  * sessions, a session's details, content, homework and materials, their own
  * attendance, and — for who may — taking attendance and recording content.
  * Learners hand in homework, and teachers grade it (ADR 0030). A parent or
@@ -42,7 +42,7 @@ class MyClassController extends Controller
 {
     public function index(Request $request, MyClasses $myClasses): Response
     {
-        $view = in_array($request->query('view'), MyClasses::VIEWS, true) ? $request->query('view') : 'week';
+        $view = in_array($request->query('view'), MyClasses::VIEWS, true) ? $request->query('view') : 'month';
         $date = rescue(fn () => CarbonImmutable::parse((string) $request->query('date', today()->toDateString()))->startOfDay(), today()->toImmutable(), report: false);
 
         $user = $this->person($request);

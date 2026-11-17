@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
@@ -129,6 +130,7 @@ class MyClasses
             'status' => $session->status->value,
             'status_label' => $session->status->getLabel(),
             'kind_label' => $session->kind->getLabel(),
+            'is_exam' => $session->kind === SessionKind::Exam,
             'has_homework' => $session->homework !== null,
             'my_attendance' => $attendance?->status->getLabel(),
             'my_homework' => match (true) {

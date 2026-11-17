@@ -27,7 +27,7 @@ defineProps({
             <PanelCard body-class="p-5 text-center sm:p-7">
                 <PanelNotice class="text-start" tone="error">{{ message }}</PanelNotice>
                 <PanelButton :href="route('my-classes.index')" class="mt-6">
-                    کلاس‌های من
+                    تقویم آموزشی
                 </PanelButton>
             </PanelCard>
         </div>

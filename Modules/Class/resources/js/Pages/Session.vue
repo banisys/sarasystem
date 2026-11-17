@@ -19,7 +19,7 @@ import PanelJalaliDateInput from '@/Components/Ui/PanelJalaliDateInput.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-// One session in «کلاس‌های من» (ADR 0026): details, what it covered,
+// One session in «تقویم آموزشی» (ADR 0026): details, what it covered,
 // homework and materials, one's own attendance, and — for who may — the
 // attendance, content and grading forms, each in its own tab.
 const props = defineProps({
@@ -168,7 +168,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 :description="session.subject"
                 icon="calendar"
                 :back-href="route('my-classes.index', ward ? { for: ward.id } : {})"
-                :back-label="ward ? `کلاس‌های ${ward.name}` : 'کلاس‌های من'"
+                :back-label="ward ? `تقویم آموزشی ${ward.name}` : 'تقویم آموزشی'"
             />
             <PanelNotice v-if="flash" tone="success">{{ flash }}</PanelNotice>
 
