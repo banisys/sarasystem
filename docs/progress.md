@@ -23,11 +23,21 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-17 — Added optional titles to teaching and exam sessions and displayed them in the admin and user calendars ([ADR 0112](decisions/0112-session-titles.md)).
 - 2026-11-17 — Removed the staff column from the admin classes list. Class staff are listed on the members page.
+- 2026-11-17 — Replaced schedule editing on teaching session details with «ویرایش جلسه» for that session’s subject, location and note. Date and time remain in the separate move action.
 - 2026-11-17 — Renamed the class calendar action and page to «تقویم کلاسی» and updated the teaching plan help.
 - 2026-11-17: Renamed the class list calendar action and its page to «برنامه ریزی جلسات» and updated the teaching plan help to match.
-- 2026-11-17 — Added optional titles to teaching and exam sessions and displayed them in the admin and user calendars ([ADR 0112](decisions/0112-session-titles.md)).
-- 2026-11-17 — Replaced schedule editing on teaching session details with «ویرایش جلسه» for that session’s subject, location and note. Date and time remain in the separate move action.
+- 2026-11-17 — Marked live sessions in the academic calendar with a blue tag and a blue dot with an expanding ring that respects reduced motion. The calendar refreshes its data every minute while open.
+- 2026-11-17 — Displayed exam session labels as rounded soft-orange tags with a clipboard icon and added icons to the calendar date controls.
+- 2026-11-17 — Added amber borders and labels to distinguish exam sessions in every academic calendar view in both themes.
+- 2026-11-17 — Adjusted the academic calendar for dark mode with a deep green toolbar, a clearer active view button, and brighter attendance text.
+- 2026-11-17 — Set the academic calendar toolbar background to `#00b894` with a white period label and a soft charcoal active view button with white text.
+- 2026-11-17 — Made the view and date navigation controls more compact in the academic calendar.
+- 2026-11-17 — Grouped the academic calendar controls and views in one bordered section with extra space between the controls and the calendar.
+- 2026-11-17 — Moved the academic calendar's period label from the page header to the view controls beside day, week and month, with extra spacing from the view buttons on desktop.
+- 2026-11-17 — Moved the «امروز» button from the academic calendar header to between the previous and next controls. The Vite build passed.
+- 2026-11-17 — Removed both width caps from the shared user-panel layout. Verified the academic calendar and account settings on a 1920 px desktop viewport and account settings on a 390 px mobile viewport in Chromium. The Vite build passed.
 - 2026-11-17 — Renamed «کلاس‌های من» to «تقویم آموزشی» and moved it to `/profile/academic-calendar` ([ADR 0111](decisions/0111-user-academic-calendar.md)). The default Jalali month shows teaching and exam sessions together, with exam labels. Old calendar and session links redirect with their query parameters. All 210 Class tests, Pint and the Vite build passed.
 - 2026-11-17 — Placed overlapping session cards side by side in the admin calendar's day and week views. Verified that both the cancelled session and its replacement exam at 10:00 in Mehregan class 51 open separately in Chromium. All 209 Class tests and Pint passed.
 - 2026-11-17 — Moved «تقویم برنامه ریزی آموزشی» to the top of each class row's actions menu and gave it a calendar icon. Verified the order in the browser. All seven class admin tests and Pint passed.

@@ -131,6 +131,7 @@ class MyClasses
             'status' => $session->status->value,
             'status_label' => $session->status->getLabel(),
             'kind_label' => $session->kind->getLabel(),
+            'is_live' => SessionCalendar::tone($session) === 'live',
             'is_exam' => $session->kind === SessionKind::Exam,
             'has_homework' => $session->homework !== null,
             'my_attendance' => $attendance?->status->getLabel(),

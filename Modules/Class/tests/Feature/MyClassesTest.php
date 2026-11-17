@@ -75,6 +75,8 @@ class MyClassesTest extends TestCase
         ClassSession::factory()->create(['classroom_id' => $other->id, 'starts_at' => '2026-11-01 10:00', 'ends_at' => '2026-11-01 11:00']);
         Holiday::factory()->for($this->west)->create(['title' => 'اردو', 'starts_on' => '2026-11-04', 'ends_on' => '2026-11-04']);
 
+        $this->travelTo(CarbonImmutable::parse('2026-10-31 08:30'));
+
         $this->as($this->student, route('my-classes.index', ['view' => 'week', 'date' => '2026-11-01']))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Class::Index')
             ->where('calendar.view', 'week')
@@ -82,9 +84,11 @@ class MyClassesTest extends TestCase
             ->where('calendar.days.0.date', '2026-10-31')
             ->where('calendar.days.0.sessions.0.class', 'هفتم الف')
             ->where('calendar.days.0.sessions.0.time', '08:00–09:30')
+            ->where('calendar.days.0.sessions.0.is_live', true)
             ->where('calendar.days.0.sessions.0.online_platform', 'لینک')
             ->where('calendar.days.1.sessions', [])
             ->where('calendar.days.2.sessions.0.class', 'هفتم الف')
+            ->where('calendar.days.2.sessions.0.is_live', false)
             ->where('calendar.days.4.holiday', 'اردو')
             ->where('calendar.previous', '2026-10-24')
             ->has('classes', 1));
