@@ -39,13 +39,8 @@ _(TODO: formatter/linter, naming rules, file naming.)_
 
 - Create rows with Eloquent (`create()`, `save()`), not query-builder `insert()`, in code a web request runs. The step-by-step tutorial records rows through model events and deletes them on «شروع دوباره» ([ADR 0040](decisions/0040-step-by-step-tutorial.md)). Public-site lists of tenants or other records a tutorial could make go through `HiddenRecords::exclude()`.
 
-## Keeping the tutorial up to date ([ADR 0040](decisions/0040-step-by-step-tutorial.md))
-The step-by-step tutorial («آموزش گام‌به‌گام», module `Tutorial`) is developed together with the project, not afterwards. At the end of every task:
-
-1. **Check** whether the change adds or changes something a client would do or see: a screen, form, action, workflow, role, public page or setting. Pure refactors, fixes without visible change and internal tooling need nothing.
-2. **If it does**, update the scenarios it applies to in [Modules/Tutorial/app/Scenarios](../Modules/Tutorial/app/Scenarios): add a mission (or steps to an existing one) with its state check, fix missions whose screens, labels or flow changed, and remove missions for removed features. Keep missions in the order a new client would do them.
-3. If a new feature fits a scenario that doesn't exist yet (school, company), note it in `progress.md` under the tutorial's «In progress» item so it is added with that scenario.
-4. Update the tutorial's tests for the changed checks, and mention the tutorial change (or that none was needed) in the task summary.
+## Step-by-step tutorial
+Routine maintenance of «آموزش گام‌به‌گام» is paused. Feature additions and edits can ship without reviewing or updating tutorial missions, adding tutorial-specific tests, or tracking tutorial follow-ups. Work on the tutorial when the user explicitly requests it. [ADR 0040](decisions/0040-step-by-step-tutorial.md) describes the existing module.
 
 ## Patterns we avoid
 _(TODO: things that look tempting but we decided against — link ADR if any.)_
@@ -81,7 +76,7 @@ Some clients pay per feature, so an installation must work with any module disab
 - PHPUnit; tests live in `tests/Feature`, `tests/Unit` and `Modules/{Name}/tests`.
 - **Which tests to run ([ADR 0059](decisions/0059-running-tests.md)):**
   - For small appearance-only changes, check the affected UI once in the browser. Run a build when needed to see the change or a targeted test if it covers the result.
-  - For behavior changes, run only the affected tests while working. Use `php artisan test --compact Modules/{Name}/tests`, a file, or `--filter`. If the change affects a tutorial mission, add `Modules/Tutorial/tests`.
+  - For behavior changes, run only the affected tests while working. Use `php artisan test --compact Modules/{Name}/tests`, a file, or `--filter`. Include `Modules/Tutorial/tests` for changes to the Tutorial module itself.
   - Run the whole suite once at the end for changes to shared infrastructure (such as test helpers, config or core hooks) or behavior across modules. A commit alone does not require the whole suite.
 - The whole suite runs in parallel with `php artisan test --parallel --processes=8` (`brianium/paratest`). More processes gave no real gain on the dev machine. Each process gets its own database (`testing_test_1`, `testing_test_2`, …, created and migrated automatically). Single files or `--filter` runs stay sequential.
 - Before adding expensive work to a `setUp()`, check its cost: it is paid once per test. A slow helper or service used in `setUp()` is usually better fixed at its source.

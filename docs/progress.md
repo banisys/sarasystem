@@ -6,11 +6,13 @@ _Agents: update this at the end of every meaningful task. Newest entries first i
 Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## In progress
-- Step-by-step tutorial (`Tutorial` module, ADR 0040): scenarios «مدیریت سامانه و دسترسی‌ها», «آموزشگاه زبان», «مدرسه», «کارگزینی» and «اداره‌ی روزانه‌ی کلاس‌ها» done; two more designed in [tutorial-scenarios.md](tutorial-scenarios.md), built one at a time. Next: «آموزش سازمانی کارکنان» (decide first how to record the queued CSV import and include question tags in its Exam chapter).
 - Classes (`Class` module, [ADR 0022](decisions/0022-classes.md)): steps 1–5 done (ADR 0022–0026), plus guardians, absence SMS and homework (ADR 0027–0030).
 - School (`School` module, [ADR 0031](decisions/0031-school-structure.md), [ADR 0032](decisions/0032-scores-and-report-cards.md)): parts A and B done. Possible next steps: year-final scores («نوبت» formulas, resits), rankings, activity notebook; admission setting a grade.
 - Page builder (`Site` module, ADR 0010/0011): pages and the widget framework done; first widget: HTML. More widget types next.
 - Online class platforms ([ADR 0073](decisions/0073-online-class-platforms.md)): link, Adobe Connect and Skyroom (ADR 0076) done. A room per class or per session on Adobe Connect (ADR 0074); one reusable room per class on Skyroom. Next: try both API integrations on real servers; recordings and other drivers.
+
+## Paused
+- Step-by-step tutorial (`Tutorial` module, ADR 0040): five scenarios are built. The next planned scenario is «آموزش سازمانی کارکنان». See [scenario designs](tutorial-scenarios.md) for the remaining work.
 
 ## Next
 - Contracts: approval workflow before issuing, the organization's signature, contracts tab on employee / learner pages; later a finance module for installments and payments that attaches to contracts.
@@ -29,6 +31,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-11-17 — Moved teaching schedule creation and the schedule list to the class calendar. Linked teaching sessions can edit their schedule and return to the calendar after saving ([ADR 0110](decisions/0110-teaching-schedules-from-class-calendar.md)). Old schedule links redirect to the calendar. Verified the new entry points in Chromium and passed all 208 Class tests and Pint.
 - 2026-11-17 — Moved exam schedule creation to the class calendar and the session edit and online exam actions to exam session details ([ADR 0109](decisions/0109-exam-scheduling-from-class-calendar.md)). Old links redirect to the calendar. Verified the screens in Chromium and passed all 796 tests and Pint.
 - 2026-11-17 — Added «پیش‌نمایش آزمون» to the admin exam list. The row action opens the shared printable paper for the selected exam. Verified the Mehregan modal in Chromium. All 796 tests, targeted module isolation checks, and Pint passed.
+- 2026-11-17 — Paused the tutorial maintenance requirement for feature development. Tutorial updates are now handled on explicit request. The application's module configuration is unchanged.
 - 2026-11-17 — Added «انتخاب سؤال‌ها» to each bank row in the admin exam form ([ADR 0108](decisions/0108-manual-admin-exam-question-selection.md)). Confirmed choices set the row count and are used by future attempts and printable papers. Updated the tutorial and migrated the local database. Verified the picker on exam 36 in Chromium and passed all 794 tests and Pint.
 - 2026-11-16 — Renamed the exam schedule row action to «آزمون جلسه». It opens creation for an empty session and the existing exam editor when an exam is present. Updated the tutorial and verified both destinations and permission checks with 34 targeted tests and Pint.
 - 2026-11-16 — Restyled the A4 exam paper to match the supplied layout, with a Persian identity grid, scored question rows, written answer space, and a score total. Verified the sample layout in Chromium. All 792 tests and Pint passed. Tutorial steps still match.
