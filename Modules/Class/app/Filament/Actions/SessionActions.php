@@ -222,11 +222,9 @@ class SessionActions
                         ->label('نحوه‌ی برگزاری')
                         ->state(fn (ClassSession $record): ClassMode => $record->deliveryMode())
                         ->badge()
-                        ->icon(fn (?ClassMode $state): ?string => match ($state) {
+                        ->icon(fn (ClassMode $state): string => match ($state) {
                             ClassMode::InPerson => 'heroicon-m-building-office-2',
                             ClassMode::Online => 'heroicon-m-video-camera',
-                            ClassMode::Blended => 'heroicon-m-square-2-stack',
-                            null => null,
                         }),
                     TextEntry::make('kind')
                         ->label('نوع')

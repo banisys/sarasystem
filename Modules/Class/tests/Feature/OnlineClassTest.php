@@ -24,6 +24,7 @@ use Modules\Class\Models\ClassOnlineRoom;
 use Modules\Class\Models\ClassOnlineSessionMeeting;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\OnlineServer;
 use Modules\Class\Models\OnlineServerAccount;
@@ -153,10 +154,28 @@ class OnlineClassTest extends TestCase
     {
         $this->classroom->update(['mode' => ClassMode::InPerson]);
         $this->first->update(['mode' => ClassMode::InPerson]);
-        $this->second->update(['mode' => ClassMode::Blended]);
+        $this->second->update(['mode' => ClassMode::Online]);
 
         $this->refused($this->as($this->teacher, $this->first), 'این جلسه کلاس آنلاین ندارد.');
         $this->as($this->teacher, $this->second)->assertRedirect('https://meet.example.com/7a');
+    }
+
+    public function test_the_delivery_mode_migration_preserves_online_access_for_formerly_blended_sessions(): void
+    {
+        $schedule = ClassSchedule::factory()->for($this->classroom)->create();
+        $this->second->update(['mode' => ClassMode::InPerson]);
+        DB::table('classrooms')->where('id', $this->classroom->id)->update(['mode' => 'blended']);
+        DB::table('class_schedules')->where('id', $schedule->id)->update(['mode' => 'blended']);
+        DB::table('class_sessions')->where('id', $this->first->id)->update(['mode' => 'blended']);
+
+        $migration = require base_path('Modules/Class/database/migrations/2026_11_21_002212_convert_blended_class_delivery_modes_to_online.php');
+        $migration->up();
+
+        $this->assertSame(ClassMode::Online, $this->classroom->fresh()->mode);
+        $this->assertSame(ClassMode::Online, $schedule->fresh()->mode);
+        $this->assertSame(ClassMode::Online, $this->first->fresh()->mode);
+        $this->assertSame(ClassMode::InPerson, $this->second->fresh()->mode);
+        $this->as($this->teacher, $this->first)->assertRedirect('https://meet.example.com/7a');
     }
 
     public function test_nobody_enters_a_cancelled_session_or_one_they_are_not_in(): void

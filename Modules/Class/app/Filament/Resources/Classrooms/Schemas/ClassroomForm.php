@@ -75,7 +75,7 @@ class ClassroomForm
                 Select::make('online_choice')
                     ->label('بستر کلاس آنلاین')
                     ->placeholder('انتخاب نشده')
-                    ->helperText('بستر مشترک جلسات آنلاین و ترکیبی. سرورها در «کلاس‌ها ← سرورهای کلاس آنلاین» تعریف می‌شوند.')
+                    ->helperText('بستر مشترک جلسات آنلاین. سرورها در «کلاس‌ها ← سرورهای کلاس آنلاین» تعریف می‌شوند.')
                     ->options(fn (?Classroom $record): array => OnlineRooms::choices(self::currentRoom($record)?->choice()))
                     ->selectablePlaceholder(fn (?Classroom $record): bool => self::currentRoom($record) === null)
                     ->required(fn (?Classroom $record): bool => self::currentRoom($record) !== null)

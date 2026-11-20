@@ -315,14 +315,14 @@ class ClassSchedulesTest extends TestCase
             ->callAction(TestAction::make('cancelSession')->table($first), data: ['reason' => 'جلسه‌ی اولیا'])
             ->assertHasNoActionErrors()
             ->callAction(TestAction::make('addSession')->table(), data: [
-                'kind' => SessionKind::MakeUp->value, 'mode' => ClassMode::Blended->value, 'date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00',
+                'kind' => SessionKind::MakeUp->value, 'mode' => ClassMode::InPerson->value, 'date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00',
             ])
             ->assertHasNoActionErrors();
 
         $this->assertSame(SessionStatus::Cancelled, $first->fresh()->status);
         $makeUp = ClassSession::query()->whereDate('starts_at', '2026-11-05')->sole();
         $this->assertSame(SessionKind::MakeUp, $makeUp->kind);
-        $this->assertSame(ClassMode::Blended, $makeUp->mode);
+        $this->assertSame(ClassMode::InPerson, $makeUp->mode);
         $this->assertSame('کلاس ۱۰۱', $makeUp->location);
     }
 
@@ -330,6 +330,7 @@ class ClassSchedulesTest extends TestCase
     {
         $schedule = $this->weekly([Weekday::Saturday], '2026-10-31', '2026-11-14');
         $session = $schedule->sessions()->whereDate('starts_at', '2026-11-07')->sole();
+        $session->update(['mode' => ClassMode::Online, 'location' => null]);
         $subject = Subject::factory()->for($this->primary)->create(['is_active' => true]);
         $before = $schedule->fresh()->getAttributes();
         $other = $schedule->sessions()->whereKeyNot($session->id)->firstOrFail();
@@ -341,7 +342,7 @@ class ClassSchedulesTest extends TestCase
             ->assertSee('ویرایش جلسه')
             ->callAction('editSession', data: [
                 'subject_id' => $subject->id,
-                'mode' => ClassMode::Blended->value,
+                'mode' => ClassMode::InPerson->value,
                 'location' => 'اتاق دوم',
                 'note' => 'توضیح این جلسه',
                 'title' => 'مرور فصل اول',
@@ -351,7 +352,7 @@ class ClassSchedulesTest extends TestCase
             ->assertHasNoActionErrors();
 
         $updated = $session->fresh();
-        $this->assertSame(ClassMode::Blended, $updated->mode);
+        $this->assertSame(ClassMode::InPerson, $updated->mode);
         $this->assertSame($subject->id, $updated->subject_id);
         $this->assertSame('اتاق دوم', $updated->location);
         $this->assertSame('توضیح این جلسه', $updated->note);

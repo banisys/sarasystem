@@ -10,6 +10,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Modules\Class\Enums\AttendanceStatus;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
@@ -83,10 +84,13 @@ class SessionCalendar
      *
      * @return array<string, mixed>
      */
-    public function forClassroom(Classroom $classroom, string $view, CarbonImmutable $date, ?int $subjectId = null): array
+    public function forClassroom(Classroom $classroom, string $view, CarbonImmutable $date, ?int $subjectId = null, ?ClassMode $mode = null): array
     {
         $query = $classroom->sessions()->getQuery()
-            ->when($subjectId !== null, fn (Builder $query) => $query->where('subject_id', $subjectId));
+            ->when($subjectId !== null, fn (Builder $query) => $query->where('subject_id', $subjectId))
+            ->when($mode, fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->where('mode', $mode)
+                ->when($classroom->mode === $mode, fn (Builder $query) => $query->orWhereNull('mode'))));
 
         return [
             ...$this->sessions($query, Tenant::query()->findOrFail($classroom->tenant_id), $view, $date),

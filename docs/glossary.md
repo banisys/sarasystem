@@ -103,7 +103,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 ## Classes (`Class` module, [ADR 0022](decisions/0022-classes.md))
 | Term | Persian | Meaning |
 |---|---|---|
-| Class | کلاس | A group of people of one tenant who meet on a schedule: «هفتم الف», «زبان انگلیسی - مقدماتی ۲», «دوره‌ی ایمنی کارگاه» (`Classroom`). It is in person, online or blended, and may have a capacity. |
+| Class | کلاس | A group of people of one tenant who meet on a schedule: «هفتم الف», «زبان انگلیسی - مقدماتی ۲», «دوره‌ی ایمنی کارگاه» (`Classroom`). Each session has a delivery mode. A class may have a capacity. |
 | Online platform / online room | بستر کلاس آنلاین / اتاق کلاس آنلاین | Where an online class meets: a link (Google Meet, Skyroom, …) or a server the system talks to (Adobe Connect, «سرور کلاس آنلاین», `OnlineServer`). A class's room (`ClassOnlineRoom`) is in effect from a day on, so a class can move to another platform mid-term ([ADR 0073](decisions/0073-online-class-platforms.md)); on Adobe Connect it is one meeting for the class or one per session ([ADR 0074](decisions/0074-online-room-per-session.md)). |
 | Sub-class | زیرکلاس | A class under another class (one level), e.g. a lab group; its attendees come from the parent class. |
 | Term | دوره‌ی آموزشی | A teaching period of the organization (سال تحصیلی، ترم، دوره), defined in the head office; classes run in one. A school's academic year is a term. |
@@ -114,7 +114,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Subject | درس | What a schedule teaches (ریاضی، Speaking، ایمنی کار), defined in the head office; optional ([ADR 0023](decisions/0023-class-schedules-and-sessions.md)). |
 | Schedule | برنامه‌ی کلاس | When a class meets: once, daily, weekly or monthly (Jalali months), every N, between two dates, at a time, optionally with a subject, a teacher and a place (`ClassSchedule`). Replaces LMS's classroom plan + weekly schedule. |
 | Session | جلسه | One meeting of a class (`ClassSession`), built from a schedule or added by hand; scheduled, held or cancelled. Replaces LMS's activity session. |
-| Delivery mode | روش برگزاری | Whether a session meets in person, online or both. A teaching schedule supplies the mode to its generated sessions ([ADR 0115](decisions/0115-session-delivery-mode.md)). |
+| Delivery mode | روش برگزاری | Whether a session meets in person or online. A teaching schedule supplies the mode to its generated sessions ([ADR 0115](decisions/0115-session-delivery-mode.md)). |
 | Make-up / extra session | جلسه‌ی جبرانی / فوق‌العاده | A session added by hand: to make up a cancelled one, or in addition to the schedule. |
 | Exam session | جلسهٔ امتحانی | A dated sitting on the class calendar. It can host an online session exam when the Exam module is enabled ([ADR 0084](decisions/0084-class-exam-schedules.md)). |
 | Exam invigilator | مراقب امتحان | An employee assigned to supervise an exam session. The employee may come from any branch ([ADR 0085](decisions/0085-exam-invigilators.md)). |

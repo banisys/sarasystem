@@ -12,7 +12,7 @@ Class editors need to plan several exams with individual dates and times from th
 - Add dated exam sessions directly to the class calendar. This reuses the session lifecycle and supports different details for each sitting.
 
 ## Decision
-«افزودن برنامه امتحانی» records one or more individually dated `ClassSession` rows of kind `exam`. Each row has a Jalali date, start/end times and its own delivery mode ([ADR 0115](0115-session-delivery-mode.md)). Subject, invigilators, location and notes are optional. Invigilators can come from any branch ([ADR 0085](0085-exam-invigilators.md)). In-person and blended rows use the class's location by default. The existing class, teacher and location clash checks apply, including between rows. A conflict rolls back the whole submission.
+«افزودن برنامه امتحانی» records one or more individually dated `ClassSession` rows of kind `exam`. Each row has a Jalali date, start/end times and its own delivery mode ([ADR 0115](0115-session-delivery-mode.md)). Subject, invigilators, location and notes are optional. Invigilators can come from any branch ([ADR 0085](0085-exam-invigilators.md)). In-person rows use the class's location by default. The existing class, teacher and location clash checks apply, including between rows. A conflict rolls back the whole submission.
 
 «افزودن برنامه امتحانی» is on the class calendar under [ADR 0109](0109-exam-scheduling-from-class-calendar.md). Each sitting opens its dedicated details page ([ADR 0086](0086-exam-session-page.md)). The session is independent of teaching recurrence and can be scheduled on a holiday or outside the teaching schedule.
 

@@ -16,7 +16,7 @@ After the session's 3D view (ADR 0049), the next step of the 3D idea is to see a
 **A `Campus` module; a building generated from the classes.**
 - Page `Building` («کلاس‌ها ← ساختمان سه‌بعدی», per tenant). One window per running top-level class (active, not ended); sub-classes share their class's room. Only this page loads the script.
 - Windows: yellow when a session is on now, blue when one is still to come today, dark otherwise; cancelled sessions don't count. Worked out on the server; the page keeps itself current ([ADR 0053](0053-live-3d-windows.md)) and says the time.
-- Classes that meet only online are in a second, glassy block; blended ones are in the main block.
+- A separate glassy block shows classes with an online live or next session. The main block shows classes with an in-person live or next session. When there is no live or next session today, the building uses the class's legacy default ([ADR 0115](0115-session-delivery-mode.md)).
 - Clicking a window opens a card: mode, people, the session now or the next one today, links to the class and session in a new tab, when the user may open them.
 - Core hook [BuildingRooms](../../app/Campus/BuildingRooms.php) / `RoomSource`; [ClassroomRooms](../../Modules/Class/app/Services/ClassroomRooms.php) is Class's source. Seeing the building needs the right to list classes (`ViewAny:Classroom`) in the tenant. With Class off there is no source and the page is off.
 - The camera, controls, names and clean-up moved to the core's [stage.js](../../resources/js/scene/stage.js), because modules can't import each other. Each view keeps its own scene.

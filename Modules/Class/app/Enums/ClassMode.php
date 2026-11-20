@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
 /**
- * How a session takes place: in person, online, or both.
+ * How a session takes place: in person or online.
  */
 enum ClassMode: string implements HasColor, HasLabel
 {
@@ -14,14 +14,11 @@ enum ClassMode: string implements HasColor, HasLabel
 
     case Online = 'online';
 
-    case Blended = 'blended';
-
     public function getLabel(): string
     {
         return match ($this) {
             self::InPerson => 'حضوری',
             self::Online => 'آنلاین',
-            self::Blended => 'ترکیبی',
         };
     }
 
@@ -30,17 +27,16 @@ enum ClassMode: string implements HasColor, HasLabel
         return match ($this) {
             self::InPerson => 'gray',
             self::Online => 'info',
-            self::Blended => 'warning',
         };
     }
 
     public function meetsOnline(): bool
     {
-        return $this !== self::InPerson;
+        return $this === self::Online;
     }
 
     public function meetsInPerson(): bool
     {
-        return $this !== self::Online;
+        return $this === self::InPerson;
     }
 }

@@ -20,6 +20,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\ExamScheduleActions;
 use Modules\Class\Filament\Actions\SessionActions;
@@ -55,6 +56,8 @@ class SessionsRelationManager extends RelationManager
 
     public string $sessionsSubject = '';
 
+    public string $sessionsMode = '';
+
     public function isReadOnly(): bool
     {
         return false;
@@ -86,6 +89,7 @@ class SessionsRelationManager extends RelationManager
                     ->whereIn('id', $this->classroom()->sessions()->select('subject_id'))
                     ->pluck('title', 'id')
                     ->all(),
+                ClassMode::cases(),
             ),
         ]);
     }
@@ -151,7 +155,7 @@ class SessionsRelationManager extends RelationManager
     {
         $subjectId = filter_var($this->sessionsSubject, FILTER_VALIDATE_INT) ?: null;
 
-        return $calendar->forClassroom($this->classroom(), $view, $date, $subjectId);
+        return $calendar->forClassroom($this->classroom(), $view, $date, $subjectId, ClassMode::tryFrom($this->sessionsMode));
     }
 
     private function classroom(): Classroom

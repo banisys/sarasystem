@@ -42,6 +42,16 @@
                     </x-filament::input.select>
                 </x-filament::input.wrapper>
             @endif
+            @if ($modeOptions !== [])
+                <x-filament::input.wrapper class="w-48">
+                    <x-filament::input.select wire:model.live="sessionsMode" aria-label="فیلتر بر اساس روش برگزاری">
+                        <option value="">همهٔ روش‌های برگزاری</option>
+                        @foreach ($modeOptions as $mode)
+                            <option value="{{ $mode->value }}">{{ $mode->getLabel() }}</option>
+                        @endforeach
+                    </x-filament::input.select>
+                </x-filament::input.wrapper>
+            @endif
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div class="flex items-center gap-1">
                     <x-filament::button size="xs" color="gray" icon="heroicon-m-chevron-double-right" :disabled="! $calendar['previous_session']"
@@ -65,7 +75,7 @@
             </div>
         </div>
 
-        <div class="px-4 pb-4 pt-10" wire:loading.class="opacity-60" wire:target="showSessions, sessionsSubject">
+        <div class="px-4 pb-4 pt-10" wire:loading.class="opacity-60" wire:target="showSessions, sessionsSubject, sessionsMode">
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div @class(['grid gap-4', 'lg:grid-cols-[minmax(0,1fr)_16rem]' => $calendar['view'] === 'day'])>
                 {{-- A timeline: hours down, a column per day. --}}

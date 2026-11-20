@@ -7,6 +7,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Resources\Classrooms\Pages\ClassSessions;
@@ -196,6 +197,43 @@ class SessionCalendarTest extends TestCase
             ->set('sessionsSubject', '')
             ->assertSee('آزمایش نور')
             ->assertSee('جلسهٔ معارفه');
+    }
+
+    public function test_the_class_calendar_combines_delivery_mode_and_subject_filters(): void
+    {
+        $math = Subject::factory()->for(Tenant::primary())->create(['title' => 'ریاضی']);
+        $science = Subject::factory()->for(Tenant::primary())->create(['title' => 'علوم']);
+        $this->classSession('2026-10-30 08:00', subject: $math)->update(['title' => 'کسرهای حضوری']);
+        $this->classSession('2026-10-30 10:00', subject: $math)->update(['title' => 'کسرهای آنلاین', 'mode' => ClassMode::Online]);
+        $this->classSession('2026-10-30 12:00', subject: $science)->update(['title' => 'آزمایش نور', 'mode' => ClassMode::Online, 'kind' => SessionKind::Exam]);
+        $this->classSession('2026-10-31 08:00', subject: $math);
+        $this->classSession('2026-11-04 08:00', subject: $math)->update(['mode' => ClassMode::Online]);
+        ClassSession::factory()->for(Classroom::factory()->for(Tenant::factory()), 'classroom')->for($math)->create([
+            'title' => 'جلسهٔ شعبهٔ دیگر', 'mode' => ClassMode::Online, 'starts_at' => '2026-10-30 08:00', 'ends_at' => '2026-10-30 09:00',
+        ]);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(SessionsRelationManager::class, $this->owner())
+            ->assertSeeHtml('wire:model.live="sessionsMode"')
+            ->assertSeeHtml('<option value="in_person">حضوری</option>')
+            ->assertSeeHtml('<option value="online">آنلاین</option>')
+            ->assertDontSee('ترکیبی')
+            ->set('sessionsMode', ClassMode::InPerson->value)
+            ->assertSee('کسرهای حضوری')
+            ->assertDontSee('کسرهای آنلاین')
+            ->set('sessionsMode', ClassMode::Online->value)
+            ->assertSee('کسرهای آنلاین')
+            ->assertSee('آزمایش نور')
+            ->assertDontSee('کسرهای حضوری')
+            ->assertDontSee('جلسهٔ شعبهٔ دیگر')
+            ->set('sessionsSubject', (string) $math->id)
+            ->assertSee('کسرهای آنلاین')
+            ->assertDontSee('آزمایش نور')
+            ->call('showSessions', 'day', '2026-10-30')
+            ->assertSeeHtml('wire:click="showSessions(\'day\', \'2026-11-04\')"')
+            ->set('sessionsMode', '')
+            ->assertSee('کسرهای حضوری')
+            ->assertDontSee('آزمایش نور');
     }
 
     public function test_a_session_links_to_its_page_in_a_new_tab_and_marks_itself_opened(): void

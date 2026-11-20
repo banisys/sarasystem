@@ -8,6 +8,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\View;
 use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Url;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
 use Modules\Class\Services\SessionCalendar;
 
@@ -38,8 +39,9 @@ trait ShowsSessionCalendar
 
     /**
      * @param  array<int, string>  $subjectOptions
+     * @param  list<ClassMode>  $modeOptions
      */
-    protected function sessionCalendarComponent(array $subjectOptions = []): View
+    protected function sessionCalendarComponent(array $subjectOptions = [], array $modeOptions = []): View
     {
         return View::make('class::filament.session-calendar')
             ->viewData(fn (SessionCalendar $calendar): array => [
@@ -48,6 +50,7 @@ trait ShowsSessionCalendar
                 'current' => $this->currentView(),
                 'tones' => SessionCalendar::toneLabels(),
                 'subjectOptions' => $subjectOptions,
+                'modeOptions' => $modeOptions,
                 'sessionUrl' => fn (int $session, bool $isExam): string => ClassSessionResource::getUrl($isExam ? 'view-exam' : 'view', ['record' => $session]),
                 // A page renders the action modals itself; a relation manager without its table doesn't.
                 'rendersModals' => ! $this instanceof Page,
