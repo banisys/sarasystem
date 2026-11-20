@@ -123,7 +123,8 @@ class MyClasses
             'title' => $session->title,
             'subject' => $session->subject?->title,
             'time' => $session->starts_at->format('H:i').'–'.$session->ends_at->format('H:i'),
-            'location' => $session->location,
+            'location' => $session->physicalLocation(),
+            'mode_label' => $session->deliveryMode()->getLabel(),
             // The platform it meets on online (ADR 0073); the way in is
             // added for the person themselves (MyClassController).
             'online_platform' => app(OnlineRooms::class)->forSession($session)?->platformName(),

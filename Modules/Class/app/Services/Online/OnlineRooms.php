@@ -51,7 +51,7 @@ class OnlineRooms
 
     public function forSession(ClassSession $session): ?ClassOnlineRoom
     {
-        if ($session->classroom === null || ! $session->classroom->mode->meetsOnline()) {
+        if (! $session->deliveryMode()->meetsOnline() || $session->classroom === null) {
             return null;
         }
 

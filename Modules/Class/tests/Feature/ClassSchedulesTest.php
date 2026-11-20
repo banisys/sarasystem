@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
@@ -116,7 +117,10 @@ class ClassSchedulesTest extends TestCase
         $past->update(['status' => SessionStatus::Held, 'summary' => 'درس ثبت‌شده']);
         $pastIds = $schedule->sessions()->where('starts_at', '<=', now())->pluck('id')->all();
 
-        $this->planner->saveSchedule($schedule, $this->classroom, $this->data([Weekday::Monday, Weekday::Wednesday], '2026-10-26', '2026-11-04', '10:00', '11:00'));
+        $this->planner->saveSchedule($schedule, $this->classroom, [
+            ...$this->data([Weekday::Monday, Weekday::Wednesday], '2026-10-26', '2026-11-04', '10:00', '11:00'),
+            'mode' => ClassMode::Online,
+        ]);
         $this->planner->sync($schedule->fresh());
 
         $this->assertSame(['2026-10-26', '2026-10-28', '2026-11-02', '2026-11-04'], $this->sessionDays());
@@ -124,7 +128,11 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame('08:00', $past->fresh()->starts_at->format('H:i'));
         $this->assertSame(SessionStatus::Held, $past->fresh()->status);
         $this->assertSame('درس ثبت‌شده', $past->fresh()->summary);
-        $this->assertSame('10:00', $schedule->sessions()->whereDate('starts_at', '2026-11-02')->sole()->starts_at->format('H:i'));
+        $this->assertSame(ClassMode::InPerson, $past->fresh()->mode);
+        $future = $schedule->sessions()->whereDate('starts_at', '2026-11-02')->sole();
+        $this->assertSame('10:00', $future->starts_at->format('H:i'));
+        $this->assertSame(ClassMode::Online, $future->mode);
+        $this->assertNull($future->location);
     }
 
     public function test_editing_a_schedule_rebuilds_only_untouched_future_sessions(): void
@@ -293,22 +301,29 @@ class ClassSchedulesTest extends TestCase
         Livewire::test(SessionsRelationManager::class, $owner)
             ->callAction('addSchedule', data: [
                 'frequency' => Frequency::Weekly->value, 'interval' => 1, 'weekdays' => [Weekday::Sunday->value, Weekday::Tuesday->value],
+                'mode' => ClassMode::Online->value,
                 'starts_on' => '2026-11-01', 'ends_on' => '2026-11-10', 'start_time' => '10:00', 'end_time' => '11:30', 'teacher_ids' => [$this->teacher->id],
             ])
             ->assertHasNoActionErrors();
         $this->assertSame(['2026-11-01', '2026-11-03', '2026-11-08', '2026-11-10'], $this->sessionDays());
 
         $first = ClassSession::query()->orderBy('starts_at')->first();
+        $this->assertSame(ClassMode::Online, $first->schedule->mode);
+        $this->assertSame(ClassMode::Online, $first->mode);
+        $this->assertNull($first->location);
         Livewire::test(SessionsRelationManager::class, $owner)
             ->callAction(TestAction::make('cancelSession')->table($first), data: ['reason' => 'جلسه‌ی اولیا'])
             ->assertHasNoActionErrors()
             ->callAction(TestAction::make('addSession')->table(), data: [
-                'kind' => SessionKind::MakeUp->value, 'date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00',
+                'kind' => SessionKind::MakeUp->value, 'mode' => ClassMode::Blended->value, 'date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00',
             ])
             ->assertHasNoActionErrors();
 
         $this->assertSame(SessionStatus::Cancelled, $first->fresh()->status);
-        $this->assertSame(SessionKind::MakeUp, ClassSession::query()->whereDate('starts_at', '2026-11-05')->sole()->kind);
+        $makeUp = ClassSession::query()->whereDate('starts_at', '2026-11-05')->sole();
+        $this->assertSame(SessionKind::MakeUp, $makeUp->kind);
+        $this->assertSame(ClassMode::Blended, $makeUp->mode);
+        $this->assertSame('کلاس ۱۰۱', $makeUp->location);
     }
 
     public function test_a_teaching_session_can_edit_its_details_without_changing_its_schedule_or_time(): void
@@ -326,6 +341,7 @@ class ClassSchedulesTest extends TestCase
             ->assertSee('ویرایش جلسه')
             ->callAction('editSession', data: [
                 'subject_id' => $subject->id,
+                'mode' => ClassMode::Blended->value,
                 'location' => 'اتاق دوم',
                 'note' => 'توضیح این جلسه',
                 'title' => 'مرور فصل اول',
@@ -335,6 +351,7 @@ class ClassSchedulesTest extends TestCase
             ->assertHasNoActionErrors();
 
         $updated = $session->fresh();
+        $this->assertSame(ClassMode::Blended, $updated->mode);
         $this->assertSame($subject->id, $updated->subject_id);
         $this->assertSame('اتاق دوم', $updated->location);
         $this->assertSame('توضیح این جلسه', $updated->note);
@@ -383,8 +400,8 @@ class ClassSchedulesTest extends TestCase
             ->mountAction($action)
             ->assertActionMounted($action)
             ->fillForm(['sessions' => [
-                ['date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00', 'subject_id' => $subject->id, 'note' => 'آزمون پایان دوره'],
-                ['date' => '2026-11-08', 'start_time' => '13:30', 'end_time' => '15:00', 'location' => 'سالن آزمون'],
+                ['date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00', 'mode' => ClassMode::Online->value, 'subject_id' => $subject->id, 'note' => 'آزمون پایان دوره'],
+                ['date' => '2026-11-08', 'start_time' => '13:30', 'end_time' => '15:00', 'mode' => ClassMode::InPerson->value, 'location' => 'سالن آزمون'],
             ]])
             ->callMountedAction()
             ->assertHasNoActionErrors()
@@ -396,13 +413,19 @@ class ClassSchedulesTest extends TestCase
         $this->assertSame(SessionKind::Exam, $second->kind);
         $this->assertNull($first->schedule_id);
         $this->assertSame($subject->id, $first->subject_id);
-        $this->assertSame('کلاس ۱۰۱', $first->location);
+        $this->assertSame(ClassMode::Online, $first->mode);
+        $this->assertNull($first->location);
         $this->assertSame('آزمون پایان دوره', $first->note);
         $this->assertSame('13:30–15:00', $second->starts_at->format('H:i').'–'.$second->ends_at->format('H:i'));
+        $this->assertSame(ClassMode::InPerson, $second->mode);
         $this->assertSame('سالن آزمون', $second->location);
         $this->assertFalse($this->classroom->schedules()->exists());
         $calendar
             ->call('showSessions', 'day', '2026-11-08')
+            ->assertSeeHtml('title="حضوری"')
+            ->assertSee('امتحانی')
+            ->call('showSessions', 'day', '2026-11-05')
+            ->assertSeeHtml('title="آنلاین"')
             ->assertSee('امتحانی');
     }
 
@@ -636,7 +659,7 @@ class ClassSchedulesTest extends TestCase
         $this->grantRole($editor, $this->west, 'class_editor');
         $this->actingInPanel($editor, $this->west);
         $action = 'addExamSchedule';
-        $slot = ['date' => '2026-11-06', 'start_time' => '10:00', 'end_time' => '11:00'];
+        $slot = ['date' => '2026-11-06', 'start_time' => '10:00', 'end_time' => '11:00', 'mode' => ClassMode::InPerson->value];
         $label = [$employee->user_id => 'کارمند نمونه (0013542419)'];
         $this->assertSame($label, $this->planner->invigilatorOptions('کارمند نمونه'));
         $this->assertSame($label, $this->planner->invigilatorOptions(selected: [$employee->user_id]));
@@ -660,8 +683,8 @@ class ClassSchedulesTest extends TestCase
 
         Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->callAction($action, data: ['sessions' => [
-                ['date' => '2026-11-06', 'start_time' => '08:30', 'end_time' => '09:30'],
-                ['date' => '2026-11-07', 'start_time' => '08:30', 'end_time' => '09:30'],
+                ['date' => '2026-11-06', 'start_time' => '08:30', 'end_time' => '09:30', 'mode' => ClassMode::InPerson->value],
+                ['date' => '2026-11-07', 'start_time' => '08:30', 'end_time' => '09:30', 'mode' => ClassMode::Online->value],
             ]])
             ->assertNotified()
             ->assertActionMounted($action);
@@ -745,7 +768,7 @@ class ClassSchedulesTest extends TestCase
 
         Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
             ->callAction($action, data: ['sessions' => [
-                ['date' => '2026-11-06', 'start_time' => '10:30', 'end_time' => '09:30'],
+                ['date' => '2026-11-06', 'start_time' => '10:30', 'end_time' => '09:30', 'mode' => ClassMode::InPerson->value],
             ]])
             ->assertHasActionErrors(['sessions.0.end_time' => 'after'])
             ->assertActionMounted($action);

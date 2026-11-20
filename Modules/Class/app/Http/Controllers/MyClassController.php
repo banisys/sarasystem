@@ -47,15 +47,14 @@ class MyClassController extends Controller
 
         $user = $this->person($request);
         $classes = ClassMember::query()->where('user_id', $user->getKey())->current()
-            ->with(['classroom', 'classRole'])
+            ->with(['classroom.onlineRooms.server', 'classRole'])
             ->get()
             ->groupBy('classroom_id')
             ->map(fn ($members): array => [
                 'id' => $members->first()->classroom_id,
                 'title' => $members->first()->classroom->title,
                 'roles' => $members->pluck('classRole.title')->join('، '),
-                'mode' => $members->first()->classroom->mode->getLabel(),
-                'online_platform' => $members->first()->classroom->mode->meetsOnline() ? app(OnlineRooms::class)->on($members->first()->classroom, today())?->platformName() : null,
+                'online_platform' => app(OnlineRooms::class)->on($members->first()->classroom, today())?->platformName(),
             ])
             ->values();
 

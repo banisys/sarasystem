@@ -48,8 +48,8 @@ class BuildingTest extends TestCase
     {
         $live = $this->classroom('الف زنده');
         $this->classSession($live, '2026-10-29 11:30', '2026-10-29 13:00');
-        $today = $this->classroom('ب امروز', ['mode' => ClassMode::Online, 'capacity' => 20]);
-        $this->classSession($today, '2026-10-29 16:00', '2026-10-29 17:00');
+        $today = $this->classroom('ب امروز', ['capacity' => 20]);
+        $this->classSession($today, '2026-10-29 16:00', '2026-10-29 17:00')->update(['mode' => ClassMode::Online]);
         $this->classSession($today, '2026-10-29 08:00', '2026-10-29 09:00');
         $idle = $this->classroom('پ بی‌جلسه');
         $this->classSession($idle, '2026-10-29 12:00', '2026-10-29 13:00', SessionStatus::Cancelled);

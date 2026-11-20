@@ -210,8 +210,8 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                             <div class="flex items-start gap-3 bg-ui-surface p-4">
                                 <PanelIcon name="pin" class="mt-0.5 size-5 shrink-0 text-brand-700" />
                                 <div class="min-w-0">
-                                    <dt class="text-xs text-gray-500 panel-dark:text-ui-muted">مکان</dt>
-                                    <dd class="text-sm font-medium text-gray-900 panel-dark:text-ui-ink">{{ session.location || (session.online_platform ? `آنلاین (${session.online_platform})` : '—') }}</dd>
+                                    <dt class="text-xs text-gray-500 panel-dark:text-ui-muted">روش برگزاری</dt>
+                                    <dd class="text-sm font-medium text-gray-900 panel-dark:text-ui-ink">{{ [session.mode_label, session.location, session.online_platform].filter(Boolean).join(' · ') }}</dd>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3 bg-ui-surface p-4">

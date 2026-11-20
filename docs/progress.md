@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-21 — Moved the delivery mode from the class form to teaching schedules, individual exam rows and make-up or extra sessions ([ADR 0115](decisions/0115-session-delivery-mode.md)). Backfilled 13 schedules and 516 sessions in the local database. Verified the four forms in Chromium. All 801 tests, three targeted checks with Exam and Campus disabled, Pint and the Vite build passed.
 - 2026-11-21 — Added a subject filter to «تقویم کلاسی» for all four views and previous/next session navigation ([ADR 0047](decisions/0047-class-session-calendar.md)). Verified selecting and clearing the filter in the North branch sample class in Chromium. All 211 Class tests and Pint passed.
 - 2026-11-20 — Enabled the official Filament skill and added SaraSystem skills for tenancy, optional module integrations and dependency upgrades. Verified that Boost can regenerate all four and that Codex discovers them ([ADR 0114](decisions/0114-codex-project-skills.md)).
 - 2026-11-20 — Moved all five Laravel Boost skills to `.agents/skills/` and set Codex as the Boost target ([ADR 0114](decisions/0114-codex-project-skills.md)). Verified that `boost:update` preserves all 34 skill files and the project rules.

@@ -90,8 +90,6 @@ class SessionCalendar
 
         return [
             ...$this->sessions($query, Tenant::query()->findOrFail($classroom->tenant_id), $view, $date),
-            // Where the class meets; the same for all its sessions.
-            'mode' => ['value' => $classroom->mode->value, 'label' => $classroom->mode->getLabel()],
             'shows_classroom' => false,
             'shows_teacher' => true,
             'attendance' => null,
@@ -111,7 +109,6 @@ class SessionCalendar
             ...$this->sessions(ClassSession::query()->taughtBy($teacher), Tenant::current(), $view, $date, fn (ClassSession $session): array => [
                 'is_substitute' => $session->teachers->contains(fn (User $row): bool => $row->pivot->substitute_id === $teacher->getKey()),
             ]),
-            'mode' => null,
             'shows_classroom' => true,
             'shows_teacher' => false,
             'attendance' => null,
@@ -140,7 +137,6 @@ class SessionCalendar
             ...$this->sessions($query, Tenant::current(), $view, $date, fn (ClassSession $session): array => [
                 'attendance' => $session->attendances->first()?->status,
             ]),
-            'mode' => null,
             'shows_classroom' => true,
             'shows_teacher' => true,
             'attendance' => collect(AttendanceStatus::cases())->mapWithKeys(fn (AttendanceStatus $status): array => [$status->getLabel() => $counts[$status->value] ?? 0])->all(),
@@ -308,9 +304,9 @@ class SessionCalendar
             'custom_title' => $session->title,
             'title' => $session->title ?? $session->subject?->title ?? 'جلسه',
             'classroom' => $session->classroom?->title,
-            'mode' => $session->classroom?->mode->value,
+            'mode' => $session->deliveryMode()->value,
             'teacher' => $session->teacherNames(),
-            'location' => $session->location,
+            'location' => $session->physicalLocation(),
             'tone' => self::tone($session),
             'tone_label' => self::toneLabels()[self::tone($session)],
             'is_exam' => $session->kind === SessionKind::Exam,

@@ -37,7 +37,7 @@ Later steps get their own ADRs.
 - **Tables:**
   - `class_terms` (`Term`) and `class_roles` (`ClassRole`): defined in the primary tenant; read from anywhere with `definedTerms()` / `definedRoles()`.
   - `class_holidays` (`Holiday`): per tenant, plus the primary tenant's (`Holiday::applyingIn($tenant)`); a single day or a date range.
-  - `classrooms` (`Classroom`): per tenant. It has a term (optional), a parent class (one level), title and code (unique per tenant), mode (in person / online / blended), location, meeting link (http/https only), capacity and dates.
+  - `classrooms` (`Classroom`): per tenant. It has an optional term, a parent class (one level), title and code (unique per tenant), default location, capacity and dates. [ADR 0073](0073-online-class-platforms.md) moved the meeting link to dated online rooms. [ADR 0115](0115-session-delivery-mode.md) moved the delivery mode to schedules and sessions.
   - `class_members` (`ClassMember`): user + class role + `joined_on` / `left_on`. Leaving sets `left_on`; the row stays for the class's history, and a person coming back reuses it.
 - **Class role flags:**
   - `is_attendee`: attendance is taken for them, and they count toward the capacity.

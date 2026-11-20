@@ -26,6 +26,7 @@ Online classes had one meeting link per class (ADR 0022). The organization runs 
   - each entry gives the person `host` or `view` on the meeting, logs in as them and redirects to `{host}{url-path}?session=…`. A deleted account is made again; a failed login sets the password again once.
 
 ## Consequences
+- The class form's shared online platform is optional. [ADR 0115](0115-session-delivery-mode.md) determines which sessions use it.
 - A class can change platform mid-term without losing where its earlier sessions met; Adobe's earlier meeting and its recordings stay on the server.
 - Skyroom was initially supported as a link; [ADR 0076](0076-skyroom-online-platform.md) adds its API driver. Google Meet and other platforms still work as links.
 - Changing `APP_KEY` changes every derived password; the next entry resets it on the server, so nobody is locked out.

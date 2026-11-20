@@ -137,7 +137,7 @@ class SessionCalendarTest extends TestCase
         Livewire::test(SessionsRelationManager::class, $this->owner())
             ->assertSee('آبان 1405')
             ->assertSee('ریاضی')
-            ->assertSee($this->classroom->mode->getLabel())
+            ->assertSeeHtml('title="حضوری"')
             ->call('showSessions', 'year', '2027-01-15')
             ->assertSet('sessionsView', 'year')
             ->assertSee('سال 1405')

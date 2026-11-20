@@ -58,12 +58,13 @@ class ClassroomRooms implements RoomSource
             $today = $sessions[$classroom->getKey()] ?? collect();
             $live = $today->first(fn (ClassSession $session): bool => $session->starts_at->lessThanOrEqualTo(now()) && $session->ends_at->greaterThan(now()));
             $next = $today->first(fn (ClassSession $session): bool => $session->starts_at->greaterThan(now()));
+            $mode = ($live ?? $next)?->mode ?? $classroom->mode;
 
             return [
                 'id' => $classroom->getKey(),
                 'title' => $classroom->title,
-                'online' => $classroom->mode === ClassMode::Online,
-                'mode' => $classroom->mode->getLabel(),
+                'online' => $mode === ClassMode::Online,
+                'mode' => $mode->getLabel(),
                 'state' => match (true) {
                     $live !== null => BuildingRooms::LIVE,
                     $next !== null => BuildingRooms::TODAY,

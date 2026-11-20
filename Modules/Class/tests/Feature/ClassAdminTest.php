@@ -69,7 +69,8 @@ class ClassAdminTest extends TestCase
         $this->actingInPanel($this->manager, $this->west);
         Livewire::test(ListClassrooms::class)
             ->mountAction('create')
-            ->fillForm(['title' => 'هفتم الف', 'term_id' => $term->id, 'mode' => ClassMode::Online->value, 'meeting_url' => 'https://meet.example.com/7a', 'capacity' => 25])
+            ->assertFormFieldDoesNotExist('mode')
+            ->fillForm(['title' => 'هفتم الف', 'term_id' => $term->id, 'online_choice' => 'link', 'meeting_url' => 'https://meet.example.com/7a', 'capacity' => 25])
             ->assertSchemaStateSet(['starts_on' => '2026-09-23', 'ends_on' => '2027-06-21'])
             ->callMountedAction()
             ->assertHasNoActionErrors();
@@ -77,7 +78,7 @@ class ClassAdminTest extends TestCase
         $classroom = Classroom::withoutTenantScope()->where('title', 'هفتم الف')->sole();
         $this->assertSame($this->west->id, $classroom->tenant_id);
         $this->assertSame($term->id, $classroom->term_id);
-        $this->assertSame(ClassMode::Online, $classroom->mode);
+        $this->assertSame(ClassMode::InPerson, $classroom->mode);
         $this->assertSame('2026-09-23', $classroom->starts_on->toDateString());
         $room = $classroom->onlineRooms()->sole();
         $this->assertSame('https://meet.example.com/7a', $room->meeting_url);
@@ -88,7 +89,7 @@ class ClassAdminTest extends TestCase
     {
         $this->actingInPanel($this->manager, $this->west);
         Livewire::test(ListClassrooms::class)
-            ->callAction('create', data: ['title' => 'آنلاین', 'mode' => ClassMode::Online->value, 'meeting_url' => 'javascript:alert(1)'])
+            ->callAction('create', data: ['title' => 'آنلاین', 'online_choice' => 'link', 'meeting_url' => 'javascript:alert(1)'])
             ->assertHasActionErrors(['meeting_url']);
     }
 

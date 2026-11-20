@@ -14,6 +14,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
@@ -49,6 +50,7 @@ class SessionPlanner
     public function saveSchedule(?ClassSchedule $schedule, Classroom $classroom, array $data): ClassSchedule
     {
         $schedule ??= new ClassSchedule(['tenant_id' => $classroom->tenant_id, 'classroom_id' => $classroom->getKey()]);
+        $mode = self::mode($data['mode'] ?? $schedule->mode ?? $classroom->mode);
         $schedule->fill([
             'subject_id' => $data['subject_id'] ?? null,
             'teaching_plan_id' => $data['teaching_plan_id'] ?? null,
@@ -61,7 +63,8 @@ class SessionPlanner
             'ends_on' => ($data['frequency'] instanceof Frequency ? $data['frequency'] : Frequency::from($data['frequency'])) === Frequency::Once ? $data['starts_on'] : $data['ends_on'],
             'start_time' => self::time($data['start_time']),
             'end_time' => self::time($data['end_time']),
-            'location' => filled($data['location'] ?? null) ? trim($data['location']) : null,
+            'mode' => $mode,
+            'location' => $mode->meetsInPerson() && filled($data['location'] ?? null) ? trim($data['location']) : null,
         ]);
 
         $teacherIds = self::ids($data['teacher_ids'] ?? []);
@@ -108,6 +111,7 @@ class SessionPlanner
         /** @var Classroom $classroom */
         $classroom = Classroom::withoutTenantScope()->findOrFail($schedule->classroom_id);
         $planned = $this->planned($schedule, $classroom)->keyBy(fn (array $slot): string => $slot['start']->toDateString());
+        $mode = $schedule->mode ?? $classroom->mode;
         $location = $this->locationOf($schedule, $classroom);
         $teacherIds = $schedule->teachers()->pluck('users.id')->all();
 
@@ -133,6 +137,7 @@ class SessionPlanner
                     'starts_at' => $planned[$key]['start'],
                     'ends_at' => $planned[$key]['end'],
                     'subject_id' => $schedule->subject_id,
+                    'mode' => $mode,
                     'location' => $location,
                 ]);
                 $session->teachers()->sync($teacherIds);
@@ -149,6 +154,7 @@ class SessionPlanner
                 'subject_id' => $schedule->subject_id,
                 'starts_at' => $slot['start'],
                 'ends_at' => $slot['end'],
+                'mode' => $mode,
                 'location' => $location,
                 'kind' => SessionKind::Regular,
                 'status' => SessionStatus::Scheduled,
@@ -217,7 +223,8 @@ class SessionPlanner
 
             $subjectId = $data['subject_id'] ?? null;
             $this->checkExamSubject($subjectId);
-            $location = $this->sessionLocation($classroom, $data['location'] ?? null);
+            $mode = self::mode($data['mode'] ?? $session->mode ?? $classroom->mode);
+            $location = $this->sessionLocation($classroom, $mode, $data['location'] ?? null);
             $start = $session->starts_at->toImmutable();
             $end = $session->ends_at->toImmutable();
             if (array_key_exists('date', $data)) {
@@ -253,6 +260,7 @@ class SessionPlanner
                 'subject_id' => $subjectId,
                 'starts_at' => $start,
                 'ends_at' => $end,
+                'mode' => $mode,
                 'location' => $location,
                 'note' => $data['note'] ?? null,
                 'title' => array_key_exists('title', $data) ? (filled($data['title']) ? trim($data['title']) : null) : $session->title,
@@ -286,17 +294,19 @@ class SessionPlanner
         } else {
             $this->checkTeachers($classroom, $teacherIds);
         }
-        $location = $this->sessionLocation($classroom, $data['location'] ?? null);
+        $mode = self::mode($data['mode'] ?? $classroom->mode);
+        $location = $this->sessionLocation($classroom, $mode, $data['location'] ?? null);
 
         $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $classroom, $teacherIds, $location);
 
-        return DB::transaction(function () use ($classroom, $data, $teacherIds, $start, $end, $location): ClassSession {
+        return DB::transaction(function () use ($classroom, $data, $teacherIds, $start, $end, $mode, $location): ClassSession {
             $session = ClassSession::query()->create([
                 'tenant_id' => $classroom->tenant_id,
                 'classroom_id' => $classroom->getKey(),
                 'subject_id' => $data['subject_id'] ?? null,
                 'starts_at' => $start,
                 'ends_at' => $end,
+                'mode' => $mode,
                 'location' => $location,
                 'kind' => $data['kind'],
                 'status' => SessionStatus::Scheduled,
@@ -308,25 +318,28 @@ class SessionPlanner
         });
     }
 
-    public function updateDetails(ClassSession $session, ?int $subjectId, ?string $location, ?string $note, ?string $title): void
+    /** @param array<string, mixed> $data */
+    public function updateDetails(ClassSession $session, array $data): void
     {
+        $mode = self::mode($data['mode'] ?? $session->deliveryMode());
         $session->fill([
-            'subject_id' => $subjectId,
-            'location' => filled($location) ? trim($location) : null,
-            'note' => $note,
-            'title' => filled($title) ? trim($title) : null,
+            'subject_id' => $data['subject_id'] ?? null,
+            'mode' => $mode,
+            'location' => $mode->meetsInPerson() && filled($data['location'] ?? null) ? trim($data['location']) : null,
+            'note' => $data['note'] ?? null,
+            'title' => filled($data['title'] ?? null) ? trim($data['title']) : null,
         ]);
 
         if (! $session->isDirty()) {
             return;
         }
 
-        if ($session->isDirty('location') && $session->status === SessionStatus::Scheduled && ! $session->hasStarted()) {
+        if ($session->isDirty(['mode', 'location']) && $session->status === SessionStatus::Scheduled && ! $session->hasStarted()) {
             $this->checkClashes(
                 collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]),
                 $session->classroom,
                 [],
-                $session->location ?? $session->classroom?->location,
+                $session->physicalLocation(),
                 exceptSessionId: $session->getKey(),
             );
         }
@@ -349,7 +362,7 @@ class SessionPlanner
             throw new ClassException('زمان تازه گذشته است.');
         }
 
-        $location = filled($location) ? trim($location) : null;
+        $location = $this->sessionLocation($session->classroom, $session->deliveryMode(), $location);
         $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $session->classroom, $session->actualTeacherIds(), $location, exceptSessionId: $session->getKey());
 
         $session->update([
@@ -387,7 +400,7 @@ class SessionPlanner
             throw new ClassException('این جلسه لغو نشده است.');
         }
 
-        $this->checkClashes(collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]), $session->classroom, $session->actualTeacherIds(), $session->location, exceptSessionId: $session->getKey());
+        $this->checkClashes(collect([['start' => $session->starts_at->toImmutable(), 'end' => $session->ends_at->toImmutable()]]), $session->classroom, $session->actualTeacherIds(), $session->physicalLocation(), exceptSessionId: $session->getKey());
         $session->update(['status' => SessionStatus::Scheduled, 'cancel_reason' => null, ...self::changedNow()]);
 
         return $session;
@@ -557,9 +570,16 @@ class SessionPlanner
         }
     }
 
-    private function sessionLocation(Classroom $classroom, ?string $location): ?string
+    private static function mode(mixed $mode): ClassMode
     {
-        return filled($location) ? trim($location) : ($classroom->mode->meetsInPerson() ? $classroom->location : null);
+        $resolved = $mode instanceof ClassMode ? $mode : (is_string($mode) ? ClassMode::tryFrom($mode) : null);
+
+        return $resolved ?? throw new ClassException('روش برگزاری معتبر نیست.');
+    }
+
+    private function sessionLocation(?Classroom $classroom, ClassMode $mode, ?string $location): ?string
+    {
+        return $mode->meetsInPerson() ? (filled($location) ? trim($location) : $classroom?->location) : null;
     }
 
     /**
@@ -666,6 +686,7 @@ class SessionPlanner
                     ->whereIn(DB::raw('coalesce(substitute_id, teacher_id)'), $teacherIds)))
                 ->when($classroom && filled($location), fn (Builder $query) => $query->orWhere(fn (Builder $query) => $query
                     ->where('tenant_id', $classroom->tenant_id)
+                    ->where(fn (Builder $query) => $query->whereNull('mode')->orWhere('mode', '!=', ClassMode::Online))
                     ->whereRaw('lower(location) = ?', [mb_strtolower($location)]))))
             ->with(['classroom' => fn ($query) => $query->withoutGlobalScope(TenantScope::class)->with('tenant'), 'teachers'])
             ->get();
@@ -708,7 +729,7 @@ class SessionPlanner
 
     private function locationOf(ClassSchedule $schedule, Classroom $classroom): ?string
     {
-        return $schedule->location ?? ($classroom->mode->meetsInPerson() ? $classroom->location : null);
+        return $this->sessionLocation($classroom, $schedule->mode ?? $classroom->mode, $schedule->location);
     }
 
     private function moment(CarbonInterface $moment): string

@@ -30,6 +30,8 @@ class Classroom extends Model
     /** @use HasFactory<ClassroomFactory> */
     use BelongsToTenant, HasFactory;
 
+    protected $attributes = ['mode' => ClassMode::InPerson->value];
+
     protected static function newFactory(): ClassroomFactory
     {
         return ClassroomFactory::new();

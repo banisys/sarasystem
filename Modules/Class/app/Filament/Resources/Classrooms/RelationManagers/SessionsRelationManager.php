@@ -9,7 +9,6 @@ use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -99,7 +98,11 @@ class SessionsRelationManager extends RelationManager
             ->size(Size::Small)
             ->visible(fn (): bool => auth()->user()?->can('update', $this->classroom()) ?? false)
             ->modalWidth('2xl')
-            ->fillForm(fn (array $arguments): array => ['kind' => SessionKind::MakeUp->value, 'date' => $this->parseDate($arguments['date'] ?? null)?->toDateString()])
+            ->fillForm(fn (array $arguments): array => [
+                'kind' => SessionKind::MakeUp->value,
+                'mode' => $this->classroom()->mode->value,
+                'date' => $this->parseDate($arguments['date'] ?? null)?->toDateString(),
+            ])
             ->schema([
                 ToggleButtons::make('kind')
                     ->label('نوع')
@@ -113,7 +116,8 @@ class SessionsRelationManager extends RelationManager
                 TimePicker::make('end_time')->label('تا ساعت')->seconds(false)->after('start_time')->required(),
                 Select::make('subject_id')->label('درس')->options(fn (): array => Subject::options())->searchable(),
                 Select::make('teacher_ids')->label('مدرس‌ها')->multiple()->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($this->classroom())),
-                TextInput::make('location')->label('مکان')->helperText('خالی یعنی مکان خود کلاس.')->maxLength(255),
+                SessionActions::modeField($this->classroom()->mode),
+                SessionActions::locationField(),
                 Textarea::make('note')->label('توضیح')->rows(2)->columnSpanFull(),
             ])
             ->action(fn (array $data, SessionPlanner $planner) => SessionActions::attempt(

@@ -15,7 +15,6 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Builder;
-use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\OnlinePlatform;
 use Modules\Class\Models\ClassOnlineRoom;
 use Modules\Class\Models\Classroom;
@@ -62,13 +61,6 @@ class ClassroomForm
                     ->searchable()
                     ->preload()
                     ->disabled(fn (?Classroom $record): bool => $record !== null && $record->children()->exists()),
-                ToggleButtons::make('mode')
-                    ->label('برگزاری')
-                    ->options(ClassMode::class)
-                    ->default(ClassMode::InPerson->value)
-                    ->inline()
-                    ->required()
-                    ->live(),
                 TextInput::make('capacity')
                     ->label('ظرفیت')
                     ->helperText('تعداد شرکت‌کنندگان؛ خالی یعنی بدون محدودیت.')
@@ -76,23 +68,25 @@ class ClassroomForm
                     ->minValue(1)
                     ->maxValue(10000),
                 TextInput::make('location')
-                    ->label('مکان')
+                    ->label('مکان پیش‌فرض')
                     ->placeholder('مثلاً: ساختمان ۲، کلاس ۱۰۴')
-                    ->maxLength(255)
-                    ->visible(fn (Get $get): bool => self::mode($get)?->meetsInPerson() ?? true),
+                    ->maxLength(255),
                 // Where it meets online, each platform from a day on (ADR 0073).
                 Select::make('online_choice')
                     ->label('بستر کلاس آنلاین')
-                    ->helperText('سرورها در «کلاس‌ها ← سرورهای کلاس آنلاین» تعریف می‌شوند.')
+                    ->placeholder('انتخاب نشده')
+                    ->helperText('بستر مشترک جلسات آنلاین و ترکیبی. سرورها در «کلاس‌ها ← سرورهای کلاس آنلاین» تعریف می‌شوند.')
                     ->options(fn (?Classroom $record): array => OnlineRooms::choices(self::currentRoom($record)?->choice()))
-                    ->default(OnlinePlatform::Link->value)
-                    ->selectablePlaceholder(false)
-                    ->required()
+                    ->selectablePlaceholder(fn (?Classroom $record): bool => self::currentRoom($record) === null)
+                    ->required(fn (?Classroom $record): bool => self::currentRoom($record) !== null)
                     ->live()
                     ->dehydrated(false)
-                    ->visible(fn (Get $get): bool => self::mode($get)?->meetsOnline() ?? false)
-                    ->loadStateFromRelationshipsUsing(fn (Select $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->choice() ?? OnlinePlatform::Link->value))
+                    ->loadStateFromRelationshipsUsing(fn (Select $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->choice()))
                     ->saveRelationshipsUsing(function (Classroom $record, mixed $state, Get $get): void {
+                        if (blank($state)) {
+                            return;
+                        }
+
                         try {
                             app(OnlineRooms::class)->change(
                                 $record,
@@ -115,7 +109,7 @@ class ClassroomForm
                     ->rule('url:http,https')
                     ->maxLength(500)
                     ->dehydrated(false)
-                    ->visible(fn (Get $get): bool => (self::mode($get)?->meetsOnline() ?? false) && $get('online_choice') === OnlinePlatform::Link->value)
+                    ->visible(fn (Get $get): bool => $get('online_choice') === OnlinePlatform::Link->value)
                     ->loadStateFromRelationshipsUsing(fn (TextInput $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->meeting_url)),
                 // Adobe Connect: one room for the class or one per session (ADR 0074).
                 ToggleButtons::make('online_rooms_per')
@@ -129,7 +123,7 @@ class ClassroomForm
                     ->required()
                     ->dehydrated(false)
                     ->disabled(fn (Get $get, ?Classroom $record): bool => self::keepsRoom($get, $record))
-                    ->visible(fn (Get $get): bool => (self::mode($get)?->meetsOnline() ?? false) && (self::chosenPlatform($get)?->offersRoomPerSession() ?? false))
+                    ->visible(fn (Get $get): bool => self::chosenPlatform($get)?->offersRoomPerSession() ?? false)
                     ->loadStateFromRelationshipsUsing(fn (ToggleButtons $component, ?Classroom $record) => $component->state(self::currentRoom($record)?->per_session ? 'session' : 'class')),
                 DatePicker::make('online_from')
                     ->label('بستر تازه از تاریخ')
@@ -178,7 +172,7 @@ class ClassroomForm
     {
         $current = self::currentRoom($record);
 
-        return $current !== null && (self::mode($get)?->meetsOnline() ?? false) && $get('online_choice') !== $current->choice();
+        return $current !== null && $get('online_choice') !== $current->choice();
     }
 
     /**
@@ -200,12 +194,5 @@ class ClassroomForm
         $choice = (string) $get('online_choice');
 
         return str_starts_with($choice, 'server:') ? OnlineServer::query()->find((int) substr($choice, 7))?->platform : null;
-    }
-
-    private static function mode(Get $get): ?ClassMode
-    {
-        $mode = $get('mode');
-
-        return $mode instanceof ClassMode ? $mode : ClassMode::tryFrom((string) $mode);
     }
 }

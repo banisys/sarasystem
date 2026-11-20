@@ -15,7 +15,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Modules\Class\Enums\ClassMode;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\Classrooms\Schemas\ClassroomInfolist;
 use Modules\Class\Models\ClassMember;
@@ -45,9 +44,6 @@ class ClassroomsTable
                     ->placeholder('—'),
                 // Columns other modules add, e.g. the grade (ADR 0031).
                 ...ClassroomExtensions::components('columns'),
-                TextColumn::make('mode')
-                    ->label('برگزاری')
-                    ->badge(),
                 TextColumn::make('attendees')
                     ->label('شرکت‌کنندگان')
                     ->state(fn (Classroom $record): string => $record->members->filter(fn (ClassMember $member): bool => $member->classRole->is_attendee)->count()
@@ -61,9 +57,6 @@ class ClassroomsTable
                 SelectFilter::make('term_id')
                     ->label('دوره')
                     ->options(fn (): array => Term::definedTerms()->orderByDesc('starts_on')->pluck('title', 'id')->all()),
-                SelectFilter::make('mode')
-                    ->label('برگزاری')
-                    ->options(ClassMode::class),
                 TernaryFilter::make('is_active')->label('فعال'),
                 ...ClassroomExtensions::components('filters'),
             ])

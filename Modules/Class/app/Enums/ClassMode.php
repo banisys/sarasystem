@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
 /**
- * Where a class meets: in a place, at its meeting link, or both.
+ * How a session takes place: in person, online, or both.
  */
 enum ClassMode: string implements HasColor, HasLabel
 {

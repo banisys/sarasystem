@@ -11,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Grid;
 use Filament\Support\Enums\Size;
 use Filament\Support\Icons\Heroicon;
@@ -66,9 +67,10 @@ class ExamScheduleActions
             ->modalWidth('3xl')
             ->modalDescription(fn (ClassSession $record): string => $record->status === SessionStatus::Scheduled && $record->starts_at->isFuture()
                 ? 'تغییر زمان جلسه را در تقویم کلاس می‌بینید. زمان آزمون آنلاینِ متصل، تنظیم جداگانه‌ای دارد.'
-                : 'برای جلسه‌ای که شروع شده، می‌توانید عنوان، درس، مراقبان، مکان و توضیحات را اصلاح کنید.')
+                : 'برای جلسه‌ای که شروع شده، می‌توانید عنوان، درس، مراقبان، روش برگزاری، مکان و توضیحات را اصلاح کنید.')
             ->fillForm(fn (ClassSession $record): array => [
                 ...$record->only(['title', 'subject_id', 'location', 'note']),
+                'mode' => $record->deliveryMode()->value,
                 'date' => $record->starts_at->toDateString(),
                 'start_time' => $record->starts_at->format('H:i'),
                 'end_time' => $record->ends_at->format('H:i'),
@@ -87,7 +89,7 @@ class ExamScheduleActions
             });
     }
 
-    /** @return list<DatePicker|Select|TimePicker|TextInput|Textarea> */
+    /** @return list<DatePicker|Select|TimePicker|TextInput|Textarea|ToggleButtons> */
     private static function fields(Classroom $classroom, ?ClassSession $session = null): array
     {
         $canChangeTime = $session === null || ($session->status === SessionStatus::Scheduled && $session->starts_at->isFuture());
@@ -126,10 +128,8 @@ class ExamScheduleActions
                 ->getSearchResultsUsing(fn (string $search, SessionPlanner $planner): array => self::invigilatorOptions($classroom, $planner, $search))
                 ->getOptionLabelsUsing(fn (array $values, SessionPlanner $planner): array => self::invigilatorOptions($classroom, $planner, selected: $values)
                     + ($session?->teachers->whereIn('id', $values)->pluck('name', 'id')->all() ?? [])),
-            TextInput::make('location')
-                ->label('مکان')
-                ->helperText('خالی یعنی مکان خود کلاس.')
-                ->maxLength(255),
+            SessionActions::modeField($classroom->mode),
+            SessionActions::locationField(),
             Textarea::make('note')
                 ->label('توضیحات')
                 ->rows(2)

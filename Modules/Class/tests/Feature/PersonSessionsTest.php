@@ -73,7 +73,6 @@ class PersonSessionsTest extends TestCase
 
         $this->assertSame(['2026-10-25', '2026-10-28', '2026-10-30'], collect($week['days'])->filter(fn (array $day): bool => $day['sessions'] !== [])->pluck('date')->values()->all());
         $this->assertTrue($week['shows_classroom']);
-        $this->assertNull($week['mode']);
         $this->assertSame('زبان مقدماتی الف', $week['days'][1]['sessions'][0]['classroom']);
         $this->assertTrue($week['days'][4]['sessions'][0]['is_substitute']);
         $this->assertSame(['held' => '1:30', 'planned' => '3:00'], $week['durations']);

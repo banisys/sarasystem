@@ -38,6 +38,7 @@ class TeachingScheduleActions
                 'interval' => 1,
                 'weekdays' => [],
                 'monthly_by' => 'day',
+                'mode' => $classroom->mode->value,
                 'starts_on' => max($classroom->starts_on?->toDateString() ?? today()->toDateString(), today()->toDateString()),
                 'ends_on' => $classroom->ends_on?->toDateString(),
             ])
@@ -61,6 +62,7 @@ class TeachingScheduleActions
                 'teacher_ids' => $record->teachers->modelKeys(),
                 ...$record->only(['subject_id', 'teaching_plan_id', 'interval', 'month_day', 'month_week', 'location']),
                 'frequency' => $record->frequency->value,
+                'mode' => ($record->mode ?? $classroom->mode)->value,
                 'weekdays' => $record->weekdays,
                 'month_weekday' => $record->weekdays[0] ?? null,
                 'monthly_by' => $record->month_week !== null ? 'weekday' : 'day',
@@ -165,11 +167,8 @@ class TeachingScheduleActions
                 ->helperText('یک یا چند نفر از اعضای کلاس که شرکت‌کننده نیستند؛ همه‌ی جلسه‌های برنامه را با هم درس می‌دهند.')
                 ->multiple()
                 ->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($classroom)),
-            TextInput::make('location')
-                ->label('مکان')
-                ->helperText('خالی یعنی مکان خود کلاس.')
-                ->maxLength(255)
-                ->columnSpanFull(),
+            SessionActions::modeField($classroom->mode),
+            SessionActions::locationField()->columnSpanFull(),
         ];
     }
 

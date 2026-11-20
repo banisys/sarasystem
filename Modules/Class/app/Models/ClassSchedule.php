@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Class\Database\Factories\ClassScheduleFactory;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\Weekday;
 
@@ -28,7 +29,7 @@ use Modules\Class\Enums\Weekday;
  */
 #[Fillable([
     'tenant_id', 'classroom_id', 'subject_id', 'teaching_plan_id', 'frequency', 'interval', 'weekdays', 'month_day', 'month_week',
-    'starts_on', 'ends_on', 'start_time', 'end_time', 'location', 'skipped_dates',
+    'starts_on', 'ends_on', 'start_time', 'end_time', 'mode', 'location', 'skipped_dates',
 ])]
 class ClassSchedule extends Model
 {
@@ -126,6 +127,7 @@ class ClassSchedule extends Model
     {
         return [
             'frequency' => Frequency::class,
+            'mode' => ClassMode::class,
             'interval' => 'integer',
             'weekdays' => 'array',
             'month_day' => 'integer',

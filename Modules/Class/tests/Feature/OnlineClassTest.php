@@ -149,6 +149,16 @@ class OnlineClassTest extends TestCase
         $this->as($this->teacher, $this->first)->assertRedirect('https://meet.example.com/7a');
     }
 
+    public function test_online_entry_follows_each_sessions_mode_in_the_same_class(): void
+    {
+        $this->classroom->update(['mode' => ClassMode::InPerson]);
+        $this->first->update(['mode' => ClassMode::InPerson]);
+        $this->second->update(['mode' => ClassMode::Blended]);
+
+        $this->refused($this->as($this->teacher, $this->first), 'این جلسه کلاس آنلاین ندارد.');
+        $this->as($this->teacher, $this->second)->assertRedirect('https://meet.example.com/7a');
+    }
+
     public function test_nobody_enters_a_cancelled_session_or_one_they_are_not_in(): void
     {
         $this->travelTo(CarbonImmutable::parse('2026-11-01 10:00'));
@@ -242,7 +252,7 @@ class OnlineClassTest extends TestCase
         $this->actingInPanel($manager, $this->west);
         Livewire::test(ListClassrooms::class)
             ->mountAction('create')
-            ->fillForm(['title' => 'هشتم ب', 'mode' => ClassMode::Online->value, 'online_choice' => 'server:'.$server->id])
+            ->fillForm(['title' => 'هشتم ب', 'online_choice' => 'server:'.$server->id])
             ->assertFormFieldVisible('online_rooms_per')
             ->fillForm(['online_rooms_per' => 'session'])
             ->callMountedAction()
@@ -254,7 +264,7 @@ class OnlineClassTest extends TestCase
         // A link has no such choice.
         Livewire::test(ListClassrooms::class)
             ->mountAction('create')
-            ->fillForm(['title' => 'هشتم ج', 'mode' => ClassMode::Online->value, 'online_choice' => 'link'])
+            ->fillForm(['title' => 'هشتم ج', 'online_choice' => 'link'])
             ->assertFormFieldHidden('online_rooms_per');
     }
 

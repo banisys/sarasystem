@@ -113,7 +113,7 @@ class SessionScene
         ];
 
         return [
-            'virtual' => $session->classroom?->mode === ClassMode::Online,
+            'virtual' => $session->deliveryMode() === ClassMode::Online,
             ...($people = $this->people($session)),
             'seats' => $seats->all(),
             'layout' => $layout,

@@ -31,17 +31,6 @@
                     wire:click="showSessions('{{ $current }}', '{{ $calendar['next'] }}')" />
             </div>
             <h3 class="text-base font-semibold text-gray-950 dark:text-white">{{ $calendar['label'] }}</h3>
-            @if ($calendar['mode'])
-            <span @class([
-                'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
-                'bg-gray-50 text-gray-700 ring-gray-300 dark:bg-white/5 dark:text-gray-200 dark:ring-white/20' => $calendar['mode']['value'] === 'in_person',
-                'bg-info-50 text-info-700 ring-info-300 dark:bg-info-500/10 dark:text-info-300 dark:ring-info-500/30' => $calendar['mode']['value'] === 'online',
-                'bg-warning-50 text-warning-700 ring-warning-300 dark:bg-warning-500/10 dark:text-warning-300 dark:ring-warning-500/30' => $calendar['mode']['value'] === 'blended',
-            ]) title="نحوه‌ی برگزاری کلاس">
-                @include('class::filament.session-calendar-mode', ['mode' => $calendar['mode']['value']])
-                {{ $calendar['mode']['label'] }}
-            </span>
-            @endif
             <div class="w-48">{{ $getChildSchema() }}</div>
             @if ($subjectOptions !== [])
                 <x-filament::input.wrapper class="w-48">

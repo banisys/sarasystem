@@ -22,7 +22,6 @@ class ClassroomInfolist
                         TextEntry::make('title')->label('عنوان'),
                         TextEntry::make('code')->label('کد')->placeholder('—'),
                         TextEntry::make('term.title')->label('دوره‌ی آموزشی')->placeholder('—'),
-                        TextEntry::make('mode')->label('برگزاری')->badge(),
                         TextEntry::make('attendees')
                             ->label('شرکت‌کنندگان')
                             ->state(fn (Classroom $record): string => $record->attendeeCount().($record->capacity !== null ? ' از '.$record->capacity : '')),
@@ -42,7 +41,7 @@ class ClassroomInfolist
                         // Each platform from its day on (ADR 0073).
                         TextEntry::make('online_rooms')
                             ->label('کلاس آنلاین')
-                            ->state(fn (Classroom $record): array => $record->mode->meetsOnline() ? app(OnlineRooms::class)->history($record) : [])
+                            ->state(fn (Classroom $record): array => app(OnlineRooms::class)->history($record))
                             ->listWithLineBreaks()
                             ->placeholder('—')
                             ->columnSpanFull(),

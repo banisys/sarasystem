@@ -156,6 +156,7 @@ function at(date, view = props.calendar.view) {
                                     <span v-if="session.title">{{ session.class }}</span>
                                     <span v-if="session.subject">{{ session.subject }}</span>
                                     <span v-if="session.teacher">مدرس: {{ session.teacher }}</span>
+                                    <span>{{ session.mode_label }}</span>
                                     <span v-if="session.location">{{ session.location }}</span>
                                     <span v-if="session.status !== 'scheduled'">{{ session.status_label }}</span>
                                     <ElTag v-if="session.is_live" size="small" round :class="liveTagClass">
@@ -188,7 +189,6 @@ function at(date, view = props.calendar.view) {
                         <div class="font-semibold text-ui-ink">{{ item.title }}</div>
                         <div class="flex flex-wrap gap-x-4 gap-y-1 text-ui-muted">
                             <span>نقش: {{ item.roles }}</span>
-                            <span>{{ item.mode }}</span>
                             <span v-if="item.online_platform">کلاس آنلاین: {{ item.online_platform }}</span>
                         </div>
                     </PanelCard>

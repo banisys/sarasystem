@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\URL;
 use Modules\Class\Database\Factories\ClassSessionFactory;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Spatie\MediaLibrary\HasMedia;
@@ -31,7 +32,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * rebuilt by its schedule; past sessions never are.
  */
 #[Fillable([
-    'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'title', 'starts_at', 'ends_at', 'location',
+    'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'title', 'starts_at', 'ends_at', 'mode', 'location',
     'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note', 'changed_by_id', 'changed_at',
     'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'homework_max_score', 'content_recorded_by_id', 'content_recorded_at',
 ])]
@@ -58,6 +59,16 @@ class ClassSession extends Model implements HasMedia
     protected static function newFactory(): ClassSessionFactory
     {
         return ClassSessionFactory::new();
+    }
+
+    public function deliveryMode(): ClassMode
+    {
+        return $this->mode ?? $this->classroom?->mode ?? ClassMode::InPerson;
+    }
+
+    public function physicalLocation(): ?string
+    {
+        return $this->deliveryMode()->meetsInPerson() ? ($this->location ?? $this->classroom?->location) : null;
     }
 
     /**
@@ -312,6 +323,7 @@ class ClassSession extends Model implements HasMedia
     protected function casts(): array
     {
         return [
+            'mode' => ClassMode::class,
             'covered_topic_ids' => 'array',
             'seat_layout' => 'array',
             'homework_due_on' => 'date',

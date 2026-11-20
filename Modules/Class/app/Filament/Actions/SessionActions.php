@@ -200,7 +200,7 @@ class SessionActions
         $location = TextEntry::make('location')
             ->label('مکان')
             ->icon(Heroicon::OutlinedMapPin)
-            ->state(fn (ClassSession $record): ?string => $record->location ?? $record->classroom?->location)
+            ->state(fn (ClassSession $record): ?string => $record->physicalLocation())
             ->placeholder($exam ? 'مشخص نشده' : '—');
         $staff = Group::make(fn (ClassSession $record): array => self::teacherEntries($record, $exam ? 'مراقبان' : 'مدرس‌ها'));
         if ($exam) {
@@ -220,7 +220,7 @@ class SessionActions
                     $staff,
                     TextEntry::make('mode')
                         ->label('نحوه‌ی برگزاری')
-                        ->state(fn (ClassSession $record): ?ClassMode => $record->classroom?->mode)
+                        ->state(fn (ClassSession $record): ClassMode => $record->deliveryMode())
                         ->badge()
                         ->icon(fn (?ClassMode $state): ?string => match ($state) {
                             ClassMode::InPerson => 'heroicon-m-building-office-2',
@@ -708,23 +708,48 @@ class SessionActions
             .($files !== '' ? '<div class="mt-1">'.$files.'</div>' : '').'</div>';
     }
 
+    public static function modeField(ClassMode $default = ClassMode::InPerson): ToggleButtons
+    {
+        return ToggleButtons::make('mode')
+            ->label('روش برگزاری')
+            ->options(ClassMode::class)
+            ->default($default->value)
+            ->inline()
+            ->required()
+            ->live()
+            ->columnSpanFull();
+    }
+
+    public static function locationField(): TextInput
+    {
+        return TextInput::make('location')
+            ->label('مکان')
+            ->helperText('خالی یعنی مکان خود کلاس.')
+            ->maxLength(255)
+            ->visible(fn (Get $get): bool => ! in_array($get('mode'), [ClassMode::Online, ClassMode::Online->value], true));
+    }
+
     private static function editSession(): Action
     {
         return Action::make('editSession')
             ->label('ویرایش جلسه')
             ->icon(Heroicon::OutlinedPencilSquare)
             ->authorize(fn (ClassSession $record): bool => self::canChange($record))
-            ->fillForm(fn (ClassSession $record): array => $record->only(['title', 'subject_id', 'location', 'note']))
+            ->fillForm(fn (ClassSession $record): array => [
+                ...$record->only(['title', 'subject_id', 'location', 'note']),
+                'mode' => $record->deliveryMode()->value,
+            ])
             ->schema([
                 TextInput::make('title')->label('عنوان جلسه')->maxLength(255),
                 Select::make('subject_id')->label('درس')
                     ->options(fn (ClassSession $record): array => Subject::options($record->subject_id))
                     ->searchable(),
-                TextInput::make('location')->label('مکان')->maxLength(255),
+                self::modeField(),
+                self::locationField(),
                 Textarea::make('note')->label('توضیح')->rows(2),
             ])
             ->action(fn (array $data, ClassSession $record, SessionPlanner $planner) => self::attempt(
-                fn () => $planner->updateDetails($record, $data['subject_id'] ?? null, $data['location'] ?? null, $data['note'] ?? null, $data['title'] ?? null),
+                fn () => $planner->updateDetails($record, $data),
                 'جلسه ویرایش شد.',
             ));
     }
@@ -745,7 +770,8 @@ class SessionActions
                 DatePicker::make('date')->label('تاریخ')->jalali()->required(),
                 TimePicker::make('start_time')->label('از ساعت')->seconds(false)->required(),
                 TimePicker::make('end_time')->label('تا ساعت')->seconds(false)->required(),
-                TextInput::make('location')->label('مکان')->maxLength(255),
+                TextInput::make('location')->label('مکان')->maxLength(255)
+                    ->visible(fn (ClassSession $record): bool => $record->deliveryMode()->meetsInPerson()),
             ])
             ->modalDescription('جلسه‌ی جابه‌جاشده دیگر با تغییر برنامه‌ی کلاس عوض نمی‌شود.')
             ->action(fn (array $data, ClassSession $record, SessionPlanner $planner) => self::attempt(
