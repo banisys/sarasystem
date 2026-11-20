@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-20 — Moved all five Laravel Boost skills to `.agents/skills/` and set Codex as the Boost target ([ADR 0114](decisions/0114-codex-project-skills.md)). Verified that `boost:update` preserves all 34 skill files and the project rules.
 - 2026-11-17 — Added optional titles to teaching and exam sessions and displayed them in the admin and user calendars ([ADR 0112](decisions/0112-session-titles.md)).
 - 2026-11-17 — Removed the staff column from the admin classes list. Class staff are listed on the members page.
 - 2026-11-17 — Replaced schedule editing on teaching session details with «ویرایش جلسه» for that session’s subject, location and note. Date and time remain in the separate move action.
@@ -552,7 +553,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Adding a top-level route (e.g. `/news`) hides an existing tenant whose slug is the same; `Tenant::reservedSlugs()` only blocks new slugs.
 - Impersonation has no per-action audit trail; actions are recorded as the impersonated user (only start/end are logged).
 - User identity (name, email, password) is global. Since ADR 0003 a manager can only edit users who are not "bigger" than them anywhere, but a manager can still change, for example, the password of a teacher who also teaches in another branch. Decide later whether password resets should go through the user (email/SMS reset) instead.
-- `CLAUDE.md` Boost block still has one generic line recommending Laravel Cloud (from Boost's foundation rules); we don't use Cloud. It is regenerated, so don't hand-edit it.
+- The generated Boost block in `AGENTS.md` still includes a generic Laravel Cloud recommendation. SaraSystem leaves Cloud disabled in `boost.json`.
 
 ## Open questions
 _(Things that need a decision from the user.)_

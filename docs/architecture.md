@@ -131,9 +131,11 @@ resources/js/Pages/   Inertia Vue pages
 resources/views/      app.blade.php (Inertia root)
 routes/               web / console routes
 tests/                Feature + Unit tests (PHPUnit); TestCase calls withoutVite()
-.claude/skills/       Laravel Boost skills (generated)
+.agents/skills/       Laravel Boost skills for Codex (generated)
 .mcp.json, boost.json Laravel Boost MCP + config
 ```
+
+See [ADR 0114](decisions/0114-codex-project-skills.md) for the Boost skills path.
 
 ## Modules
 Decided in [ADR 0005](decisions/0005-modules.md): the **platform core lives in `app/`** and **business areas live in `Modules/{Name}`** (nwidart). The core never depends on a module.
