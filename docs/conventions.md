@@ -13,6 +13,7 @@ _(Carried over from how the user works on LMS; confirm once the SaraSystem stack
 - **Laravel Boost** is installed: use its MCP tools (`search-docs`, `database-schema`, `database-query`, logs) before guessing about Laravel, Filament or Inertia APIs. Its generated guidelines sit at the bottom of `AGENTS.md`, and its skills live in `.agents/skills/`. The project rules in `AGENTS.md` take precedence.
   - The existing `.mcp.json` runs `boost:mcp` through `docker compose exec` because the host has no PHP.
   - `boost.json` selects `codex` so `php artisan boost:update` writes to these paths. Laravel Cloud is disabled.
+  - Package skills are selected through `boost.json`, including Filament's official skill. Edit SaraSystem's custom skills in `.ai/skills/` and regenerate the agent copies with Boost.
 
 ## Porting from LMS
 Nothing is copied from `../LMS` as-is. Port only on the user's request, one named part at a time:

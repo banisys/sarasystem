@@ -131,6 +131,7 @@ resources/js/Pages/   Inertia Vue pages
 resources/views/      app.blade.php (Inertia root)
 routes/               web / console routes
 tests/                Feature + Unit tests (PHPUnit); TestCase calls withoutVite()
+.ai/skills/           source files for SaraSystem's custom skills
 .agents/skills/       Laravel Boost skills for Codex (generated)
 .mcp.json, boost.json Laravel Boost MCP + config
 ```

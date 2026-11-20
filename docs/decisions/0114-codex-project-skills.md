@@ -14,4 +14,4 @@ SaraSystem used the Claude Code layout for Laravel Boost skills. The user wants 
 Move all existing skills to `.agents/skills/` and set `codex` as the Boost target in `boost.json`. Boost updates the generated guidelines through the existing `AGENTS.md` entry point.
 
 ## Consequences
-The five project skills and their supporting files share the path used by Codex and Boost. The existing `AGENTS.md` symlink still points to `CLAUDE.md`, so both instruction paths share the same file.
+Codex discovers skills in `.agents/skills/`. SaraSystem's custom skills are authored in `.ai/skills/`, and Boost creates relative links to them in the Codex directory. The Filament skill comes from the installed Filament package selected by `boost.json`. The existing `AGENTS.md` symlink still points to `CLAUDE.md`, so both instruction paths share the same file.
