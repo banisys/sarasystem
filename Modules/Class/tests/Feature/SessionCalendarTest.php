@@ -157,6 +157,47 @@ class SessionCalendarTest extends TestCase
             ->assertSee('آبان 1405');
     }
 
+    public function test_the_class_calendar_filters_sessions_and_navigation_by_subject(): void
+    {
+        $subject = Subject::factory()->for(Tenant::primary())->create(['title' => 'ریاضی', 'is_active' => false]);
+        $other = Subject::factory()->for(Tenant::primary())->create(['title' => 'علوم']);
+        $remoteSubject = Subject::factory()->for(Tenant::primary())->create(['title' => 'درس شعبهٔ دیگر']);
+        $this->classSession('2026-10-30 08:00', subject: $subject)->update(['title' => 'تمرین کسرها']);
+        $this->classSession('2026-10-30 10:00', subject: $subject)->update(['title' => 'آزمون کسرها', 'kind' => SessionKind::Exam]);
+        $this->classSession('2026-10-30 12:00', subject: $other)->update(['title' => 'آزمایش نور']);
+        $this->classSession('2026-10-30 14:00')->update(['title' => 'جلسهٔ معارفه']);
+        $this->classSession('2026-10-31 08:00', subject: $other);
+        $this->classSession('2026-11-02 08:00', subject: $subject);
+        $remoteClass = Classroom::factory()->for(Tenant::factory()->create())->create();
+        ClassSession::factory()->for($remoteClass, 'classroom')->for($remoteSubject)->create([
+            'title' => 'جلسهٔ شعبهٔ دیگر',
+            'starts_at' => '2026-10-30 08:00',
+            'ends_at' => '2026-10-30 09:00',
+        ]);
+
+        $this->actingInPanel($this->admin(), $this->west);
+        Livewire::test(SessionsRelationManager::class, $this->owner())
+            ->assertSeeHtml('wire:model.live="sessionsSubject"')
+            ->assertSeeHtml('<option value="'.$subject->id.'">ریاضی</option>')
+            ->assertDontSee('درس شعبهٔ دیگر')
+            ->assertSee('آزمایش نور')
+            ->set('sessionsSubject', (string) $subject->id)
+            ->assertSee('تمرین کسرها')
+            ->assertSee('آزمون کسرها')
+            ->assertDontSee('آزمایش نور')
+            ->assertDontSee('جلسهٔ معارفه')
+            ->call('showSessions', 'day', '2026-10-30')
+            ->assertSee('تمرین کسرها')
+            ->assertDontSee('آزمایش نور')
+            ->assertSeeHtml('wire:click="showSessions(\'day\', \'2026-11-02\')"')
+            ->set('sessionsSubject', (string) $remoteSubject->id)
+            ->assertDontSee('جلسهٔ شعبهٔ دیگر')
+            ->assertSee('جلسه‌ای در این روز نیست')
+            ->set('sessionsSubject', '')
+            ->assertSee('آزمایش نور')
+            ->assertSee('جلسهٔ معارفه');
+    }
+
     public function test_a_session_links_to_its_page_in_a_new_tab_and_marks_itself_opened(): void
     {
         $session = $this->classSession('2026-10-30 10:00');

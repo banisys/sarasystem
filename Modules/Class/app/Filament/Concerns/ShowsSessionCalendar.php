@@ -36,7 +36,10 @@ trait ShowsSessionCalendar
      */
     abstract protected function calendarData(SessionCalendar $calendar, string $view, CarbonImmutable $date): array;
 
-    protected function sessionCalendarComponent(): View
+    /**
+     * @param  array<int, string>  $subjectOptions
+     */
+    protected function sessionCalendarComponent(array $subjectOptions = []): View
     {
         return View::make('class::filament.session-calendar')
             ->viewData(fn (SessionCalendar $calendar): array => [
@@ -44,6 +47,7 @@ trait ShowsSessionCalendar
                 'views' => ['day' => 'روزانه', 'week' => 'هفتگی', 'month' => 'ماهانه', 'year' => 'سالانه'],
                 'current' => $this->currentView(),
                 'tones' => SessionCalendar::toneLabels(),
+                'subjectOptions' => $subjectOptions,
                 'sessionUrl' => fn (int $session, bool $isExam): string => ClassSessionResource::getUrl($isExam ? 'view-exam' : 'view', ['record' => $session]),
                 // A page renders the action modals itself; a relation manager without its table doesn't.
                 'rendersModals' => ! $this instanceof Page,

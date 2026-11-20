@@ -43,6 +43,16 @@
             </span>
             @endif
             <div class="w-48">{{ $getChildSchema() }}</div>
+            @if ($subjectOptions !== [])
+                <x-filament::input.wrapper class="w-48">
+                    <x-filament::input.select wire:model.live="sessionsSubject" aria-label="فیلتر بر اساس درس">
+                        <option value="">همهٔ درس‌ها</option>
+                        @foreach ($subjectOptions as $subjectId => $subjectTitle)
+                            <option value="{{ $subjectId }}">{{ $subjectTitle }}</option>
+                        @endforeach
+                    </x-filament::input.select>
+                </x-filament::input.wrapper>
+            @endif
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div class="flex items-center gap-1">
                     <x-filament::button size="xs" color="gray" icon="heroicon-m-chevron-double-right" :disabled="! $calendar['previous_session']"
@@ -66,7 +76,7 @@
             </div>
         </div>
 
-        <div class="px-4 pb-4 pt-10" wire:loading.class="opacity-60" wire:target="showSessions">
+        <div class="px-4 pb-4 pt-10" wire:loading.class="opacity-60" wire:target="showSessions, sessionsSubject">
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div @class(['grid gap-4', 'lg:grid-cols-[minmax(0,1fr)_16rem]' => $calendar['view'] === 'day'])>
                 {{-- A timeline: hours down, a column per day. --}}

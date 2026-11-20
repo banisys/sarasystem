@@ -54,6 +54,8 @@ class SessionsRelationManager extends RelationManager
 
     protected static ?string $pluralModelLabel = 'جلسه‌ها';
 
+    public string $sessionsSubject = '';
+
     public function isReadOnly(): bool
     {
         return false;
@@ -80,7 +82,12 @@ class SessionsRelationManager extends RelationManager
                     ->icon(Heroicon::OutlinedPlus)
                     ->button(),
             ])->alignment(Alignment::End),
-            $this->sessionCalendarComponent(),
+            $this->sessionCalendarComponent(
+                Subject::definedSubjects()
+                    ->whereIn('id', $this->classroom()->sessions()->select('subject_id'))
+                    ->pluck('title', 'id')
+                    ->all(),
+            ),
         ]);
     }
 
@@ -138,7 +145,9 @@ class SessionsRelationManager extends RelationManager
 
     protected function calendarData(SessionCalendar $calendar, string $view, CarbonImmutable $date): array
     {
-        return $calendar->forClassroom($this->classroom(), $view, $date);
+        $subjectId = filter_var($this->sessionsSubject, FILTER_VALIDATE_INT) ?: null;
+
+        return $calendar->forClassroom($this->classroom(), $view, $date, $subjectId);
     }
 
     private function classroom(): Classroom

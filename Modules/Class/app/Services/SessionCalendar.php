@@ -83,10 +83,13 @@ class SessionCalendar
      *
      * @return array<string, mixed>
      */
-    public function forClassroom(Classroom $classroom, string $view, CarbonImmutable $date): array
+    public function forClassroom(Classroom $classroom, string $view, CarbonImmutable $date, ?int $subjectId = null): array
     {
+        $query = $classroom->sessions()->getQuery()
+            ->when($subjectId !== null, fn (Builder $query) => $query->where('subject_id', $subjectId));
+
         return [
-            ...$this->sessions($classroom->sessions()->getQuery(), Tenant::query()->findOrFail($classroom->tenant_id), $view, $date),
+            ...$this->sessions($query, Tenant::query()->findOrFail($classroom->tenant_id), $view, $date),
             // Where the class meets; the same for all its sessions.
             'mode' => ['value' => $classroom->mode->value, 'label' => $classroom->mode->getLabel()],
             'shows_classroom' => false,
