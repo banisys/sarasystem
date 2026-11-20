@@ -23,6 +23,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -158,6 +159,32 @@ class AdminPanelProvider extends PanelProvider
                     FormsIconAlias::COMPONENTS_RICH_EDITOR_TOOLBAR_ALIGN_END => 'fi-o-align-start',
                 ]);
             }
+        });
+
+        // Configure groups as Filament discovers them, preserving their item-derived order.
+        NavigationGroup::configureUsing(function (NavigationGroup $group): void {
+            $label = $group->getLabel();
+
+            if (blank($label) || Filament::getCurrentOrDefaultPanel()?->getId() !== 'admin') {
+                return;
+            }
+
+            $group->icon(match ($label) {
+                'آموزش سامانه' => Heroicon::OutlinedAcademicCap,
+                'آزمون' => Heroicon::OutlinedClipboardDocument,
+                'پیش‌ثبت‌نام' => Heroicon::OutlinedUserPlus,
+                'قراردادها' => Heroicon::OutlinedDocumentDuplicate,
+                'کارتابل' => Heroicon::OutlinedInboxStack,
+                'کارکنان' => Heroicon::OutlinedIdentification,
+                'کلاس‌ها' => Heroicon::OutlinedCalendarDays,
+                'مدارک' => Heroicon::OutlinedDocumentText,
+                'مدرسه' => Heroicon::OutlinedBuildingLibrary,
+                'همکاری با ما' => Heroicon::OutlinedBriefcase,
+                'وب‌سایت' => Heroicon::OutlinedGlobeAlt,
+                __('filament-shield::filament-shield.nav.group') => Heroicon::OutlinedShieldCheck,
+                config('sarasystem.learner_plural_label') => Heroicon::OutlinedUserGroup,
+                default => Heroicon::OutlinedFolder,
+            });
         });
 
         // Collapsed repeater / builder items are only known to the browser;

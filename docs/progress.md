@@ -25,6 +25,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 ## Done
 - 2026-11-20 — Enabled the official Filament skill and added SaraSystem skills for tenancy, optional module integrations and dependency upgrades. Verified that Boost can regenerate all four and that Codex discovers them ([ADR 0114](decisions/0114-codex-project-skills.md)).
 - 2026-11-20 — Moved all five Laravel Boost skills to `.agents/skills/` and set Codex as the Boost target ([ADR 0114](decisions/0114-codex-project-skills.md)). Verified that `boost:update` preserves all 34 skill files and the project rules.
+- 2026-11-20 — Moved admin sidebar icons to named groups and displayed their links with bullets in both sidebar modes ([ADR 0113](decisions/0113-admin-navigation-group-icons.md)). Verified both modes in Chromium with test data, including collapse with an active search. The Vite build and Pint passed.
 - 2026-11-17 — Added optional titles to teaching and exam sessions and displayed them in the admin and user calendars ([ADR 0112](decisions/0112-session-titles.md)).
 - 2026-11-17 — Removed the staff column from the admin classes list. Class staff are listed on the members page.
 - 2026-11-17 — Replaced schedule editing on teaching session details with «ویرایش جلسه» for that session’s subject, location and note. Date and time remain in the separate move action.

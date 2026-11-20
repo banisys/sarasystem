@@ -119,11 +119,11 @@
         color: rgb(243 244 246);
     }
 
-    .fi-sidebar-nav-groups .fi-nav-search-hidden {
+    .fi-main-sidebar.fi-sidebar-open .fi-sidebar-nav-groups .fi-nav-search-hidden {
         display: none !important;
     }
 
-    .fi-sidebar-nav-groups .fi-nav-search-force-open {
+    .fi-main-sidebar.fi-sidebar-open .fi-sidebar-nav-groups .fi-nav-search-force-open {
         display: block !important;
     }
 
