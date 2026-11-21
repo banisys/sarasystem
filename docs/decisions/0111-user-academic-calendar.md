@@ -24,7 +24,7 @@ Display the subject on session cards when available. The subject and delivery mo
 
 In the month grid, a session opens its details directly. The day number opens the day view.
 
-Session details include a staff timeline for reading and leaving reminders ([ADR 0119](0119-session-reminders.md)).
+The session page has a separate staff tab for reading and leaving reminders ([ADR 0119](0119-session-reminders.md)).
 
 The toolbar uses the panel surface, white in light mode, and highlights the active view with white text on green. Previous and next use chevrons with accessible labels, and «امروز» keeps its visible label.
 

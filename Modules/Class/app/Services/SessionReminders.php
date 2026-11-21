@@ -27,7 +27,7 @@ class SessionReminders
 
         $source->loadMissing('classroom.term', 'reminders.author');
         $upcoming = $this->targets($user, $source)
-            ->with('classroom', 'reminders.author')
+            ->with('reminders.author')
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get();
@@ -77,18 +77,12 @@ class SessionReminders
     /** @return Builder<ClassSession> */
     private function targets(User $user, ClassSession $source): Builder
     {
-        $termId = $source->classroom->term_id;
-
         return $this->staffSessions($user)
             ->upcoming()
             ->where('status', SessionStatus::Scheduled)
             ->where('starts_at', '>', $source->starts_at)
-            ->where('subject_id', $source->subject_id)
-            ->when(
-                $source->subject_id !== null && $termId !== null,
-                fn (Builder $query) => $query->whereRelation('classroom', 'term_id', $termId),
-                fn (Builder $query) => $query->where('classroom_id', $source->classroom_id),
-            );
+            ->where('classroom_id', $source->classroom_id)
+            ->where('subject_id', $source->subject_id);
     }
 
     /** @return array<string, mixed> */
@@ -96,9 +90,7 @@ class SessionReminders
     {
         return [
             'id' => $session->getKey(),
-            'title' => $session->title,
-            'class' => $session->classroom->title,
-            'when' => MyClasses::jalali($session->starts_at->toImmutable(), 'l Y/m/d H:i'),
+            'date' => MyClasses::jalali($session->starts_at->toImmutable(), 'l Y/m/d'),
             'is_current' => $isCurrent,
             'reminders' => $session->reminders->map(fn (ClassSessionReminder $reminder): array => [
                 'id' => $reminder->getKey(),

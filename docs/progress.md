@@ -23,6 +23,12 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-21 — Moved session reminders to a dedicated staff tab and used muted, regular-weight text for accordion items. Verified tab navigation and text weight in a Chromium session-page preview. The Vite build passed.
+- 2026-11-21 — Restyled the reminder accordion with shaded date headers, left-aligned chevrons and separated reminder rows. Verified the expanded list and the upcoming-session editor in a Chromium component preview. The Vite build passed.
+- 2026-11-21 — Changed the staff reminder timeline to an accordion, with reminders and the future-session form inside the selected date row. Verified row navigation and cancellation in a Chromium component preview. The Vite build passed.
+- 2026-11-21 — Made the session reminder buttons compact and added 16 px between the textarea and form actions. Verified the rendered component in Chromium and passed the Vite build.
+- 2026-11-21 — Simplified reminder timeline headings to the session's Jalali date. Checked the live timeline dates for session 7258. All 19 academic calendar tests, Pint and the Vite build passed.
+- 2026-11-21 — Restricted the reminder timeline and targets to the source session's class and subject. Verified session 7258 and its 57 eligible future math sessions in the same class. All 19 academic calendar tests and Pint passed.
 - 2026-11-21 — Added the staff reminder timeline and future-session reminder forms to session details ([ADR 0119](decisions/0119-session-reminders.md)). Applied the local migration and checked the timeline for Mehregan session 7258 with its assigned teacher. All 222 Class tests, Pint and the Vite build passed.
 - 2026-11-21 — Linked each academic calendar month entry directly to its session page and kept the day number linked to the day view. Verified the day link in Chromium. The Vite build and all 17 academic calendar tests passed.
 - 2026-11-21 — Set the active academic calendar view button to white text on green. Verified the rendered colours in Chromium and passed the Vite build.

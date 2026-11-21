@@ -1,6 +1,8 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { ElForm, ElInput } from 'element-plus';
+import { ElCollapse, ElCollapseItem, ElForm, ElInput } from 'element-plus';
+import 'element-plus/es/components/collapse/style/css';
+import 'element-plus/es/components/collapse-item/style/css';
 import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
 import { ref } from 'vue';
@@ -13,86 +15,115 @@ const props = defineProps({
     timeline: { type: Object, required: true },
 });
 
-const editorId = ref(null);
+const openSession = ref('');
 const form = useForm({ body: '' });
 
-function closeEditor() {
-    editorId.value = null;
+function resetForm() {
     form.reset();
     form.clearErrors();
+}
+
+function closeEditor() {
+    openSession.value = '';
+    resetForm();
 }
 
 function save(targetId) {
     form.post(route('my-classes.reminders.store', { session: props.sourceId, target: targetId }), {
         preserveScroll: true,
-        onSuccess: closeEditor,
+        onSuccess: resetForm,
     });
 }
 </script>
 
 <template>
-    <section aria-labelledby="session-reminders-heading" class="space-y-4 border-t border-ui-line p-4 sm:p-5">
-        <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="session-reminders-heading" class="flex items-center gap-2 font-semibold text-ui-ink">
-                <PanelIcon name="clipboard" class="size-5 text-brand-700 panel-dark:text-brand-300" />
-                یادآوری‌های جلسه
-            </h2>
-            <p v-if="timeline.term" class="text-sm text-ui-muted">{{ timeline.term }}</p>
-        </div>
+    <section aria-label="یادآوری‌های جلسه" class="space-y-4 p-4 sm:p-5">
+        <p v-if="timeline.term" class="text-sm text-ui-muted">{{ timeline.term }}</p>
 
-        <ol class="ms-2 space-y-4 border-s border-ui-line">
-            <li v-for="entry in timeline.sessions" :key="entry.id" class="relative ps-5">
-                <span
-                    aria-hidden="true"
-                    class="absolute -start-1.5 top-1.5 size-3 rounded-full ring-4 ring-ui-surface"
-                    :class="entry.is_current ? 'bg-brand-600 panel-dark:bg-brand-300' : 'bg-ui-field'"
-                />
-                <div class="flex flex-wrap items-start justify-between gap-2">
-                    <div class="min-w-0 space-y-0.5">
-                        <h3 class="text-sm font-semibold text-ui-ink">{{ entry.is_current ? 'این جلسه' : (entry.title ?? entry.class) }}</h3>
-                        <p class="text-sm text-ui-muted">
-                            {{ entry.when }}
-                            <template v-if="!entry.is_current && entry.title"> · {{ entry.class }}</template>
-                        </p>
-                    </div>
-                    <PanelButton
-                        v-if="!entry.is_current && editorId !== entry.id"
-                        variant="outline-brand"
-                        :disabled="editorId !== null"
-                        @click="editorId = entry.id"
-                    >
-                        ثبت یادآوری
-                    </PanelButton>
-                </div>
-
-                <ul v-if="entry.reminders.length" class="mt-2.5 divide-y divide-ui-line rounded-ui border border-ui-line bg-ui-canvas">
-                    <li v-for="reminder in entry.reminders" :key="reminder.id" class="space-y-1 px-3 py-2.5">
-                        <p class="whitespace-pre-wrap wrap-break-word text-sm text-ui-ink">{{ reminder.body }}</p>
-                        <p class="text-xs text-ui-muted">
-                            <template v-if="reminder.author">{{ reminder.author }} · </template>{{ reminder.recorded_at }}
-                        </p>
-                    </li>
-                </ul>
-                <p v-else-if="entry.is_current" class="mt-2 text-sm text-ui-muted">برای این جلسه یادآوری ثبت نشده است.</p>
-
-                <ElForm v-if="editorId === entry.id" class="mt-3 space-y-2" @submit.prevent="save(entry.id)">
-                    <PanelFormField label="متن یادآوری" :error="form.errors.body">
-                        <ElInput
-                            v-model="form.body"
-                            type="textarea"
-                            :rows="3"
-                            :maxlength="timeline.max_length"
-                            :disabled="form.processing"
-                            :aria-invalid="!!form.errors.body"
+        <ElCollapse v-model="openSession" accordion class="reminder-accordion overflow-hidden rounded-lg border border-ui-line" @change="resetForm">
+            <ElCollapseItem v-for="entry in timeline.sessions" :key="entry.id" :name="entry.id" :disabled="form.processing">
+                <template #title>
+                    <span class="flex items-center gap-2 text-sm font-normal text-ui-muted">
+                        <span
+                            v-if="entry.is_current"
+                            aria-hidden="true"
+                            class="size-2 shrink-0 rounded-full bg-brand-600 panel-dark:bg-brand-300"
                         />
-                    </PanelFormField>
-                    <div class="flex flex-wrap gap-2">
-                        <PanelButton type="submit" :loading="form.processing" :disabled="!form.body.trim()">ذخیره</PanelButton>
-                        <PanelButton variant="ghost" :disabled="form.processing" @click="closeEditor">انصراف</PanelButton>
-                    </div>
-                </ElForm>
-            </li>
-        </ol>
+                        {{ entry.date }}
+                    </span>
+                </template>
+
+                <div class="px-4 sm:px-5">
+                    <ul v-if="entry.reminders.length" class="divide-y divide-ui-line">
+                        <li v-for="reminder in entry.reminders" :key="reminder.id" class="flex items-start gap-2.5 py-3">
+                            <span class="grid size-6 shrink-0 place-items-center rounded-full border border-ui-line text-ui-muted">
+                                <PanelIcon name="document" class="size-3.5" />
+                            </span>
+                            <div class="grid min-w-0 flex-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-4">
+                                <p class="whitespace-pre-wrap wrap-break-word text-sm font-normal leading-6 text-ui-muted">{{ reminder.body }}</p>
+                                <p class="flex flex-wrap gap-x-2 text-xs leading-6 text-ui-muted sm:justify-end">
+                                    <span v-if="reminder.author">{{ reminder.author }}</span>
+                                    <span class="whitespace-nowrap tabular-nums">{{ reminder.recorded_at }}</span>
+                                </p>
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-else-if="entry.is_current" class="py-3 text-sm text-ui-muted">برای این جلسه یادآوری ثبت نشده است.</p>
+
+                    <ElForm v-if="openSession === entry.id && !entry.is_current" class="grid gap-4 py-4" :class="{ 'border-t border-ui-line': entry.reminders.length }" @submit.prevent="save(entry.id)">
+                        <PanelFormField label="متن یادآوری" :error="form.errors.body">
+                            <ElInput
+                                v-model="form.body"
+                                type="textarea"
+                                :rows="3"
+                                :maxlength="timeline.max_length"
+                                :disabled="form.processing"
+                                :aria-invalid="!!form.errors.body"
+                            />
+                        </PanelFormField>
+                        <div class="flex flex-wrap gap-2">
+                            <PanelButton type="submit" size="small" :loading="form.processing" :disabled="!form.body.trim()">ذخیره</PanelButton>
+                            <PanelButton variant="ghost" size="small" :disabled="form.processing" @click="closeEditor">انصراف</PanelButton>
+                        </div>
+                    </ElForm>
+                </div>
+            </ElCollapseItem>
+        </ElCollapse>
         <p v-if="timeline.sessions.length === 1" class="text-sm text-ui-muted">جلسهٔ آینده‌ای برای ثبت یادآوری وجود ندارد.</p>
     </section>
 </template>
+
+<style scoped>
+.reminder-accordion :deep(.el-collapse-item__header) {
+    min-height: 3.375rem;
+    padding-inline: 1rem;
+    background-color: color-mix(in srgb, var(--color-ui-surface) 35%, var(--color-ui-canvas));
+}
+
+.reminder-accordion :deep(.el-collapse-item__header.is-active) {
+    border-bottom-color: var(--color-ui-line);
+}
+
+.reminder-accordion :deep(.el-collapse-item__header:focus-visible) {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: -2px;
+}
+
+.reminder-accordion :deep(.el-collapse-item__arrow) {
+    margin-inline: auto 0;
+    color: var(--color-ui-ink);
+    transform: rotate(90deg);
+}
+
+.reminder-accordion :deep(.el-collapse-item__arrow.is-active) {
+    transform: rotate(-90deg);
+}
+
+.reminder-accordion :deep(.el-collapse-item__wrap) {
+    background-color: var(--color-ui-surface);
+}
+
+.reminder-accordion :deep(.el-collapse-item__content) {
+    padding-bottom: 0;
+}
+</style>

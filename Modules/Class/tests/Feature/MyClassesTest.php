@@ -345,7 +345,7 @@ class MyClassesTest extends TestCase
         $this->as($this->teacher, $url, 'post', ['body' => 'پس از شروع'])->assertNotFound();
     }
 
-    public function test_the_reminder_timeline_and_posts_are_scoped_to_subject_term_and_staff_access(): void
+    public function test_the_reminder_timeline_and_posts_are_scoped_to_class_subject_and_staff_access(): void
     {
         $term = Term::factory()->for($this->primary)->create();
         $subject = Subject::factory()->for($this->primary)->create();
@@ -356,7 +356,8 @@ class MyClassesTest extends TestCase
         $otherTerm = Classroom::factory()->for($this->west)->for(Term::factory()->for($this->primary))->create();
         $otherBranch = Classroom::factory()->for($this->primary)->for($term)->create();
         $later = ClassSession::factory()->for($subject)->state(['starts_at' => '2026-11-01 10:00', 'ends_at' => '2026-11-01 11:00']);
-        $allowed = $later->for($sameTerm)->taughtBy($this->person(), $this->teacher)->create();
+        $allowed = $later->for($this->classroom)->taughtBy($this->person(), $this->teacher)->create();
+        $wrongClass = $later->for($sameTerm)->taughtBy($this->teacher)->create();
         $wrongTerm = $later->for($otherTerm)->taughtBy($this->teacher)->create();
         $wrongBranch = $later->for($otherBranch)->taughtBy($this->teacher)->create();
         $wrongSubject = $later->for($this->classroom)->for(Subject::factory()->for($this->primary))->create();
@@ -369,7 +370,7 @@ class MyClassesTest extends TestCase
             ->where('reminderTimeline.sessions.0.id', $source->id)
             ->where('reminderTimeline.sessions.1.id', $allowed->id));
 
-        foreach ([$wrongTerm, $wrongBranch, $wrongSubject, $notStaff, $cancelled, $source] as $target) {
+        foreach ([$wrongClass, $wrongTerm, $wrongBranch, $wrongSubject, $notStaff, $cancelled, $source] as $target) {
             $url = route('my-classes.reminders.store', ['session' => $source, 'target' => $target]);
             $this->as($this->teacher, $url, 'post', ['body' => 'این یادآوری نباید ذخیره شود.'])->assertNotFound();
         }
