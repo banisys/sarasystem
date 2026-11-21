@@ -122,6 +122,42 @@ class MyClassesTest extends TestCase
             ->where('calendar.next', '2026-11-22'));
     }
 
+    public function test_the_calendar_shows_class_sessions_only_during_the_membership(): void
+    {
+        $this->classroom->members()->where('user_id', $this->student->id)->update([
+            'joined_on' => '2026-11-02',
+            'left_on' => '2026-11-02',
+        ]);
+        $duringMembership = $this->sessionOn('2026-11-02');
+        ClassSession::factory()->for($this->classroom)->create([
+            'starts_at' => '2026-11-03 10:00',
+            'ends_at' => '2026-11-03 11:00',
+        ]);
+
+        $this->as($this->student, route('my-classes.index', ['view' => 'week', 'date' => '2026-11-02']))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('calendar.days.0.sessions', [])
+            ->has('calendar.days.2.sessions', 1)
+            ->where('calendar.days.2.sessions.0.id', $duringMembership->id)
+            ->where('calendar.days.3.sessions', []));
+    }
+
+    public function test_the_calendar_shows_the_session_to_its_assigned_substitute(): void
+    {
+        $teacher = $this->person();
+        $substitute = $this->person();
+        $session = ClassSession::factory()->for($this->classroom)->taughtBy($teacher, $substitute)->create([
+            'starts_at' => '2026-10-31 10:00',
+            'ends_at' => '2026-10-31 11:00',
+        ]);
+        $url = route('my-classes.index', ['view' => 'day', 'date' => '2026-10-31']);
+
+        $this->as($substitute, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('calendar.days.0.sessions', 1)
+            ->where('calendar.days.0.sessions.0.id', $session->id));
+        $this->as($teacher, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('calendar.days.0.sessions', []));
+    }
+
     public function test_old_calendar_links_redirect_with_their_query_parameters(): void
     {
         $session = $this->sessionOn('2026-10-31');

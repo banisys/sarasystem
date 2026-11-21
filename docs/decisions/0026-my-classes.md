@@ -1,7 +1,7 @@
 # 0026 — «کلاس‌های من» in the user panel
 
 - **Date:** 2026-10-29
-- **Status:** accepted. The current title, URLs and default view are in [ADR 0111](0111-user-academic-calendar.md).
+- **Status:** accepted. The current title, URLs and default view are in [ADR 0111](0111-user-academic-calendar.md). The calendar's session selection is updated by [ADR 0117](0117-academic-calendar-session-membership.md).
 
 ## Context
 This is step 5 of the classes plan ([ADR 0022](0022-classes.md)). Steps 2–4 built sessions, attendance and session content, but only in the admin panel, so teachers needed admin access and learners saw nothing. The user asked for daily, weekly and monthly programs for everyone in a class, whatever their role.

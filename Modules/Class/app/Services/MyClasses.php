@@ -16,10 +16,8 @@ use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Services\Online\OnlineRooms;
 
 /**
- * A person's side of classes in the user panel (ADR 0026): the sessions of
- * the classes they are a member of (in any class role) or teach, in the
- * current tenant, laid out as a day, a Saturday-to-Friday week or a Jalali
- * month.
+ * A person's classes and academic calendar in the user panel (ADR 0026,
+ * ADR 0111, ADR 0117).
  */
 class MyClasses
 {
@@ -75,7 +73,13 @@ class MyClasses
         ['first' => $first, 'last' => $last, 'previous' => $previous, 'next' => $next, 'label' => $label] = SessionCalendar::period($view, $date);
         $label = $view === 'day' ? self::jalali($date, 'l Y/m/d') : $label;
 
-        $sessions = $this->sessions($user)
+        $sessions = ClassSession::query()
+            ->where(fn (Builder $query) => $query
+                ->whereHas('classroom.members', fn (Builder $member) => $member
+                    ->where('user_id', $user->getKey())
+                    ->whereRaw('(class_members.joined_on is null or class_members.joined_on <= cast(class_sessions.starts_at as date))')
+                    ->whereRaw('(class_members.left_on is null or class_members.left_on >= cast(class_sessions.starts_at as date))'))
+                ->orWhere(fn (Builder $query) => $query->taughtBy($user)))
             ->whereBetween('starts_at', [$first->startOfDay(), $last->endOfDay()])
             ->with(['classroom.onlineRooms.server', 'subject', 'teachers', 'substitutes'])
             ->orderBy('starts_at')
