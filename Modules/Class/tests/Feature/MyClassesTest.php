@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
 use Modules\Class\Enums\AttendanceStatus;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\Weekday;
@@ -21,6 +22,7 @@ use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
+use Modules\Class\Models\Subject;
 use Modules\Class\Models\TeachingPlan;
 use Modules\Class\Services\ClassMembers;
 use Modules\Class\Services\SessionPlanner;
@@ -131,6 +133,55 @@ class MyClassesTest extends TestCase
             ->has('calendar.days', 30)
             ->where('calendar.leading_blanks', 6)
             ->where('calendar.next', '2026-11-22'));
+    }
+
+    public function test_the_calendar_filters_by_subject_and_delivery_mode_together(): void
+    {
+        $math = Subject::factory()->for($this->primary)->create(['title' => 'ریاضی', 'is_active' => false, 'sort' => 1]);
+        $science = Subject::factory()->for($this->primary)->create(['title' => 'علوم', 'sort' => 2]);
+        $unrelated = Subject::factory()->for($this->primary)->create();
+        $elsewhere = Subject::factory()->for($this->primary)->create();
+        $onlineMath = $this->sessionOn('2026-10-31');
+        $onlineMath->update(['subject_id' => $math->id, 'mode' => null]);
+        ClassSession::factory()->for($this->classroom)->for($math)->create([
+            'mode' => ClassMode::InPerson, 'starts_at' => '2026-10-31 10:00', 'ends_at' => '2026-10-31 11:00',
+        ]);
+        ClassSession::factory()->for($this->classroom)->for($science)->create([
+            'mode' => ClassMode::Online, 'starts_at' => '2026-10-31 12:00', 'ends_at' => '2026-10-31 13:00',
+        ]);
+        ClassSession::factory()->for(Classroom::factory()->for($this->west))->for($unrelated)->create();
+        ClassSession::factory()->for(Classroom::factory()->for($this->primary))->for($elsewhere)->taughtBy($this->student)->create();
+
+        $url = route('my-classes.index', ['view' => 'month', 'date' => '2026-10-28', 'subject' => $math->id, 'mode' => 'online']);
+
+        $this->as($this->student, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('calendar.filters.subject', $math->id)
+            ->where('calendar.filters.mode', 'online')
+            ->where('calendar.filters.subjects', [
+                ['value' => $math->id, 'label' => 'ریاضی'],
+                ['value' => $science->id, 'label' => 'علوم'],
+            ])
+            ->where('calendar.filters.modes', [
+                ['value' => 'in_person', 'label' => 'حضوری'],
+                ['value' => 'online', 'label' => 'آنلاین'],
+            ])
+            ->has('calendar.days.8.sessions', 1)
+            ->where('calendar.days.8.sessions.0.id', $onlineMath->id)
+            ->where('calendar.days.8.sessions.0.subject', 'ریاضی')
+            ->where('calendar.days.10.sessions', []));
+    }
+
+    public function test_clearing_the_subject_filter_keeps_sessions_without_a_subject(): void
+    {
+        $session = $this->sessionOn('2026-10-31');
+        $url = route('my-classes.index', ['view' => 'day', 'date' => '2026-10-31', 'mode' => 'online']);
+
+        $this->as($this->student, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('calendar.filters.subject', null)
+            ->where('calendar.filters.mode', 'online')
+            ->has('calendar.days.0.sessions', 1)
+            ->where('calendar.days.0.sessions.0.id', $session->id)
+            ->where('calendar.days.0.sessions.0.subject', null));
     }
 
     public function test_a_class_teacher_sees_only_the_sessions_they_are_assigned_to(): void

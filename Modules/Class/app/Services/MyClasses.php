@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Models\Attendance;
@@ -13,6 +14,7 @@ use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
 use Modules\Class\Models\HomeworkSubmission;
+use Modules\Class\Models\Subject;
 use Modules\Class\Services\Online\OnlineRooms;
 
 /**
@@ -66,21 +68,35 @@ class MyClasses
     /**
      * The days of the view around the date, each with its sessions and holiday.
      *
-     * @return array{view: string, date: string, label: string, previous: string, next: string, today: string, leading_blanks: int, days: list<array<string, mixed>>}
+     * @return array{
+     *     view: string, date: string, label: string, previous: string, next: string, today: string, leading_blanks: int,
+     *     filters: array{subject: ?int, mode: ?string, subjects: list<array{value: int, label: string}>, modes: list<array{value: string, label: string}>},
+     *     days: list<array<string, mixed>>
+     * }
      */
-    public function calendar(User $user, Tenant $tenant, string $view, CarbonImmutable $date): array
+    public function calendar(User $user, Tenant $tenant, string $view, CarbonImmutable $date, ?int $subjectId = null, ?ClassMode $mode = null): array
     {
         ['first' => $first, 'last' => $last, 'previous' => $previous, 'next' => $next, 'label' => $label] = SessionCalendar::period($view, $date);
         $label = $view === 'day' ? self::jalali($date, 'l Y/m/d') : $label;
 
-        $sessions = ClassSession::query()
+        $query = ClassSession::query()
             ->where(fn (Builder $query) => $query
                 ->attendedBy($user)
-                ->orWhere(fn (Builder $query) => $query->taughtBy($user)))
+                ->orWhere(fn (Builder $query) => $query->taughtBy($user)));
+        $subjects = Subject::definedSubjects()->whereIn('id', (clone $query)->select('subject_id'))->pluck('title', 'id');
+        $subjectId = $subjectId !== null && $subjects->has($subjectId) ? $subjectId : null;
+
+        $sessions = $query
             ->whereBetween('starts_at', [$first->startOfDay(), $last->endOfDay()])
+            ->when($subjectId !== null, fn (Builder $query) => $query->where('subject_id', $subjectId))
             ->with(['classroom.onlineRooms.server', 'subject', 'teachers', 'substitutes'])
             ->orderBy('starts_at')
             ->get();
+
+        if ($mode !== null) {
+            $sessions = $sessions->filter(fn (ClassSession $session): bool => $session->deliveryMode() === $mode);
+        }
+
         $attendance = Attendance::query()->where('user_id', $user->getKey())->whereIn('session_id', $sessions->modelKeys())->get()->keyBy('session_id');
         $submissions = HomeworkSubmission::query()->where('user_id', $user->getKey())->whereIn('session_id', $sessions->modelKeys())->get()->keyBy('session_id');
         $holidays = Holiday::applyingIn($tenant)->whereDate('starts_on', '<=', $last)->whereDate('ends_on', '>=', $first)->get();
@@ -109,6 +125,12 @@ class MyClasses
             'next' => $next->toDateString(),
             'today' => today()->toDateString(),
             'leading_blanks' => $view === 'month' ? Weekday::from($first->dayOfWeek)->position() : 0,
+            'filters' => [
+                'subject' => $subjectId,
+                'mode' => $mode?->value,
+                'subjects' => $subjects->map(fn (string $label, int $value): array => ['value' => $value, 'label' => $label])->values()->all(),
+                'modes' => array_map(fn (ClassMode $mode): array => ['value' => $mode->value, 'label' => $mode->getLabel()], ClassMode::cases()),
+            ],
             'days' => $days,
         ];
     }

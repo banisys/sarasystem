@@ -15,6 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Class\Enums\AttendanceStatus;
+use Modules\Class\Enums\ClassMode;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassSession;
@@ -42,8 +43,11 @@ class MyClassController extends Controller
 {
     public function index(Request $request, MyClasses $myClasses): Response
     {
-        $view = in_array($request->query('view'), MyClasses::VIEWS, true) ? $request->query('view') : 'month';
+        $query = $request->query();
+        $view = in_array($query['view'] ?? null, MyClasses::VIEWS, true) ? $query['view'] : 'month';
         $date = rescue(fn () => CarbonImmutable::parse((string) $request->query('date', today()->toDateString()))->startOfDay(), today()->toImmutable(), report: false);
+        $subject = filter_var($query['subject'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
+        $mode = is_string($query['mode'] ?? null) ? ClassMode::tryFrom($query['mode']) : null;
 
         $user = $this->person($request);
         $classes = ClassMember::query()->where('user_id', $user->getKey())->current()
@@ -59,7 +63,7 @@ class MyClassController extends Controller
             ->values();
 
         return Inertia::render('Class::Index', [
-            'calendar' => $myClasses->calendar($user, Tenant::current(), $view, $date),
+            'calendar' => $myClasses->calendar($user, Tenant::current(), $view, $date, $subject, $mode),
             'classes' => $classes,
             'ward' => $user->is($request->user()) ? null : ['id' => $user->getKey(), 'name' => $user->name],
         ]);

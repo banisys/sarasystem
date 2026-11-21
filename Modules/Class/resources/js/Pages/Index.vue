@@ -3,10 +3,11 @@ import PanelCard from '@/Components/Ui/PanelCard.vue';
 import PanelCardLink from '@/Components/Ui/PanelCardLink.vue';
 import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import { ElTag } from 'element-plus';
+import { ElOption, ElSelect, ElTag } from 'element-plus';
+import 'element-plus/es/components/select/style/css';
 import 'element-plus/es/components/tag/style/css';
-import { Head, usePoll } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, router, usePoll } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -24,6 +25,7 @@ usePoll(60_000, { only: ['calendar'] });
 
 const title = computed(() => (props.ward ? `تقویم آموزشی ${props.ward.name}` : 'تقویم آموزشی'));
 const forWard = computed(() => (props.ward ? { for: props.ward.id } : {}));
+const filtering = ref(false);
 
 const views = [
     { value: 'day', label: 'روز' },
@@ -45,8 +47,19 @@ const examTagClass = '[--el-tag-bg-color:var(--color-fuchsia-700)]! [--el-tag-bo
 
 const visibleDays = computed(() => (props.calendar.view === 'week' ? props.calendar.days : props.calendar.days.filter((day) => day.sessions.length || day.holiday || day.is_today)));
 
-function at(date, view = props.calendar.view) {
-    return route('my-classes.index', { view, date, ...forWard.value });
+function at(date, view = props.calendar.view, { subject, mode } = props.calendar.filters) {
+    return route('my-classes.index', { view, date, subject, mode, ...forWard.value });
+}
+
+function setFilter(key, value) {
+    const { date, view, filters } = props.calendar;
+    router.visit(at(date, view, { ...filters, [key]: value === '' ? null : value }), {
+        only: ['calendar'],
+        preserveScroll: true,
+        preserveState: true,
+        onStart: () => { filtering.value = true; },
+        onFinish: () => { filtering.value = false; },
+    });
 }
 </script>
 
@@ -58,26 +71,54 @@ function at(date, view = props.calendar.view) {
             <UiPageHeader :title="title" icon="calendar" />
 
             <section aria-label="برنامهٔ جلسات" class="grid gap-7 rounded-ui border border-ui-line bg-ui-surface p-3 sm:gap-9 sm:p-4">
-                <PanelCard role="navigation" class="[--panel-card-bg:#00b894] panel-dark:[--panel-card-bg:var(--color-emerald-950)] panel-dark:[--panel-card-border:var(--color-emerald-800)]" aria-label="نمای تقویم و جابه‌جایی تاریخ" body-class="grid gap-2.5 [--el-card-padding:0.75rem] sm:flex sm:flex-wrap sm:items-center sm:justify-between">
-                    <div class="calendar-views grid grid-cols-3 gap-1 rounded-ui bg-ui-canvas p-1 sm:flex">
-                        <PanelButton
-                            v-for="item in views"
-                            :key="item.value"
-                            :href="at(calendar.date, item.value)"
-                            :variant="item.value === calendar.view ? 'primary' : 'ghost'"
-                            :aria-current="item.value === calendar.view ? 'true' : undefined"
-                            size="default"
+                <div class="grid gap-3">
+                    <PanelCard role="navigation" class="[--panel-card-bg:#00b894] panel-dark:[--panel-card-bg:var(--color-emerald-950)] panel-dark:[--panel-card-border:var(--color-emerald-800)]" aria-label="نمای تقویم و جابه‌جایی تاریخ" body-class="grid gap-2.5 [--el-card-padding:0.75rem] sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+                        <div class="calendar-views grid grid-cols-3 gap-1 rounded-ui bg-ui-canvas p-1 sm:flex">
+                            <PanelButton
+                                v-for="item in views"
+                                :key="item.value"
+                                :href="at(calendar.date, item.value)"
+                                :variant="item.value === calendar.view ? 'primary' : 'ghost'"
+                                :aria-current="item.value === calendar.view ? 'true' : undefined"
+                                size="default"
+                            >
+                                {{ item.label }}
+                            </PanelButton>
+                        </div>
+                        <h2 class="text-center text-base font-semibold text-white sm:me-auto sm:ms-4 sm:text-start">{{ calendar.label }}</h2>
+                        <div class="grid grid-cols-3 gap-2 sm:flex">
+                            <PanelButton :href="at(calendar.previous)" variant="outline" size="default"><PanelIcon name="back" class="size-4 shrink-0" />قبلی</PanelButton>
+                            <PanelButton :href="at(calendar.today)" variant="outline" size="default"><PanelIcon name="calendar" class="size-4 shrink-0" />امروز</PanelButton>
+                            <PanelButton :href="at(calendar.next)" variant="outline" size="default">بعدی<PanelIcon name="back" class="size-4 shrink-0 rotate-180" /></PanelButton>
+                        </div>
+                    </PanelCard>
+                    <div class="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:justify-end" role="group" aria-label="فیلترهای جلسات">
+                        <ElSelect
+                            :model-value="calendar.filters.subject ?? ''"
+                            :empty-values="[null, undefined]"
+                            :disabled="filtering || !calendar.filters.subjects.length"
+                            aria-label="فیلتر بر اساس درس"
+                            :teleported="false"
+                            class="min-w-0 sm:w-48!"
+                            @change="setFilter('subject', $event)"
                         >
-                            {{ item.label }}
-                        </PanelButton>
+                            <ElOption value="" label="همهٔ درس‌ها" />
+                            <ElOption v-for="option in calendar.filters.subjects" :key="option.value" v-bind="option" />
+                        </ElSelect>
+                        <ElSelect
+                            :model-value="calendar.filters.mode ?? ''"
+                            :empty-values="[null, undefined]"
+                            :disabled="filtering"
+                            aria-label="فیلتر بر اساس روش برگزاری"
+                            :teleported="false"
+                            class="min-w-0 sm:w-48!"
+                            @change="setFilter('mode', $event)"
+                        >
+                            <ElOption value="" label="همهٔ روش‌های برگزاری" />
+                            <ElOption v-for="option in calendar.filters.modes" :key="option.value" v-bind="option" />
+                        </ElSelect>
                     </div>
-                    <h2 class="text-center text-base font-semibold text-white sm:me-auto sm:ms-4 sm:text-start">{{ calendar.label }}</h2>
-                    <div class="grid grid-cols-3 gap-2 sm:flex">
-                        <PanelButton :href="at(calendar.previous)" variant="outline" size="default"><PanelIcon name="back" class="size-4 shrink-0" />قبلی</PanelButton>
-                        <PanelButton :href="at(calendar.today)" variant="outline" size="default"><PanelIcon name="calendar" class="size-4 shrink-0" />امروز</PanelButton>
-                        <PanelButton :href="at(calendar.next)" variant="outline" size="default">بعدی<PanelIcon name="back" class="size-4 shrink-0 rotate-180" /></PanelButton>
-                    </div>
-                </PanelCard>
+                </div>
 
                 <!-- Month: a grid of the Jalali month, Saturday first. -->
                 <div v-if="calendar.view === 'month'" class="hidden grid-cols-7 gap-1.5 md:grid xl:gap-2">
@@ -97,7 +138,7 @@ function at(date, view = props.calendar.view) {
                         <div
                             v-for="session in day.sessions"
                             :key="session.id"
-                            class="truncate rounded-md border border-ui-line border-s-4 px-1.5 py-1 leading-4"
+                            class="min-w-0 overflow-hidden rounded-md border border-ui-line border-s-4 px-1.5 py-1 leading-4"
                             :class="sessionToneClass[session.tone]"
                             :title="session.tone_label"
                         >
@@ -113,7 +154,10 @@ function at(date, view = props.calendar.view) {
                             <ElTag v-if="session.is_exam" size="small" round class="mb-1 max-w-full" :class="examTagClass">
                                 <span class="flex items-center gap-1"><PanelIcon name="clipboard" class="size-3 shrink-0" />{{ session.kind_label }}</span>
                             </ElTag>
-                            <div class="truncate" :class="{ 'line-through': session.tone === 'cancelled' }"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.title ?? session.class }}</div>
+                            <div :class="{ 'line-through': session.tone === 'cancelled' }">
+                                <div class="truncate"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.title ?? session.class }}</div>
+                                <div v-if="session.subject" class="wrap-break-word font-medium">{{ session.subject }}</div>
+                            </div>
                         </div>
                     </PanelCardLink>
                 </div>

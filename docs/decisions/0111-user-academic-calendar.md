@@ -20,6 +20,8 @@ Show teaching and exam sessions in the current tenant where the person is on the
 
 Use the class calendar's status classification and colours ([ADR 0047](0047-class-session-calendar.md)) in all views and both themes. Exams use the same status colours and have a separate fuchsia badge.
 
+Display the subject on session cards when available. The subject and delivery mode filters are retained in the calendar URL ([ADR 0118](0118-academic-calendar-filters.md)).
+
 ## Consequences
 
 Existing links generated from route names use the new URL. Bookmarked views keep their selected date, view and ward. Access to sessions still follows the user's class roles and teaching assignments, including the read-only guardian view.
