@@ -18,6 +18,8 @@ Use «تقویم آموزشی» in the side menu and page title and open the Jal
 
 Show teaching and exam sessions in the current tenant where the person is on the attendance roster or has a teaching or invigilation assignment ([ADR 0117](0117-academic-calendar-session-membership.md)). Show the exam label in the month grid and retain the session-kind label in the day and week cards.
 
+Use the class calendar's status classification and colours ([ADR 0047](0047-class-session-calendar.md)) in all views and both themes. Exams use the same status colours and have a separate fuchsia badge.
+
 ## Consequences
 
 Existing links generated from route names use the new URL. Bookmarked views keep their selected date, view and ward. Access to sessions still follows the user's class roles and teaching assignments, including the read-only guardian view.

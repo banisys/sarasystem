@@ -32,21 +32,16 @@ const views = [
 ];
 const weekdays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
 
-const sessionCardClass = {
-    scheduled: '[--panel-card-bg:var(--color-brand-50)]',
-    held: '[--panel-card-bg:var(--color-emerald-50)] panel-dark:[--panel-card-bg:var(--color-emerald-950)]',
-    cancelled: '[--panel-card-bg:var(--color-rose-50)] panel-dark:[--panel-card-bg:var(--color-rose-950)]',
+const sessionToneClass = {
+    scheduled: 'border-s-blue-500! bg-blue-50! text-blue-950! hover:bg-blue-100! panel-dark:bg-blue-500/15! panel-dark:text-blue-100! panel-dark:hover:bg-blue-500/25!',
+    live: 'border-s-violet-600! bg-violet-100! text-violet-950! ring-2 ring-violet-400/60 hover:bg-violet-200! panel-dark:bg-violet-500/25! panel-dark:text-violet-50!',
+    pending: 'border-s-amber-500! bg-amber-50! text-amber-950! hover:bg-amber-100! panel-dark:bg-amber-500/15! panel-dark:text-amber-100! panel-dark:hover:bg-amber-500/25!',
+    held: 'border-s-emerald-500! bg-emerald-50! text-emerald-950! hover:bg-emerald-100! panel-dark:bg-emerald-500/15! panel-dark:text-emerald-100! panel-dark:hover:bg-emerald-500/25!',
+    cancelled: 'border-s-rose-400! bg-rose-50/60! text-rose-800! opacity-75 hover:opacity-100 panel-dark:bg-rose-500/10! panel-dark:text-rose-200!',
 };
 
-const statusClass = {
-    scheduled: 'border-ui-line bg-brand-50/70',
-    held: 'border-emerald-200 panel-dark:border-emerald-800/70 bg-emerald-50 panel-dark:bg-emerald-950/50',
-    cancelled: 'border-rose-200 panel-dark:border-rose-800/70 bg-rose-50 panel-dark:bg-rose-950/50',
-};
-
-const liveTagClass = '[--el-tag-bg-color:var(--color-blue-50)]! [--el-tag-border-color:var(--color-blue-300)]! [--el-tag-text-color:var(--color-blue-800)]! panel-dark:[--el-tag-bg-color:var(--color-blue-950)]! panel-dark:[--el-tag-border-color:var(--color-blue-700)]! panel-dark:[--el-tag-text-color:var(--color-blue-200)]!';
-const examTagClass = '[--el-tag-bg-color:#ffedd5]! [--el-tag-border-color:#fdba74]! [--el-tag-text-color:#9a3412]! panel-dark:[--el-tag-bg-color:#422414]! panel-dark:[--el-tag-border-color:#9a3412]! panel-dark:[--el-tag-text-color:#fed7aa]!';
-const examAccent = 'border-s-4! border-s-amber-600! panel-dark:border-s-amber-400!';
+const liveTagClass = '[--el-tag-bg-color:var(--color-violet-50)]! [--el-tag-border-color:var(--color-violet-300)]! [--el-tag-text-color:var(--color-violet-800)]! panel-dark:[--el-tag-bg-color:var(--color-violet-950)]! panel-dark:[--el-tag-border-color:var(--color-violet-700)]! panel-dark:[--el-tag-text-color:var(--color-violet-200)]!';
+const examTagClass = '[--el-tag-bg-color:var(--color-fuchsia-700)]! [--el-tag-border-color:transparent]! [--el-tag-text-color:white]! panel-dark:[--el-tag-bg-color:var(--color-fuchsia-300)]! panel-dark:[--el-tag-text-color:var(--color-fuchsia-950)]!';
 
 const visibleDays = computed(() => (props.calendar.view === 'week' ? props.calendar.days : props.calendar.days.filter((day) => day.sessions.length || day.holiday || day.is_today)));
 
@@ -102,8 +97,9 @@ function at(date, view = props.calendar.view) {
                         <div
                             v-for="session in day.sessions"
                             :key="session.id"
-                            class="truncate rounded-md border px-1.5 py-1 leading-4"
-                            :class="[statusClass[session.status], session.is_exam && examAccent]"
+                            class="truncate rounded-md border border-ui-line border-s-4 px-1.5 py-1 leading-4"
+                            :class="sessionToneClass[session.tone]"
+                            :title="session.tone_label"
                         >
                             <ElTag v-if="session.is_live" size="small" round :class="liveTagClass">
                                 <span class="flex items-center gap-1">
@@ -111,13 +107,13 @@ function at(date, view = props.calendar.view) {
                                         <span class="absolute inset-0 rounded-full bg-current motion-safe:animate-ping" />
                                         <span class="absolute inset-0 rounded-full bg-current" />
                                     </span>
-                                    در حال برگزاری
+                                    {{ session.tone_label }}
                                 </span>
                             </ElTag>
-                            <ElTag v-if="session.is_exam" type="warning" size="small" round class="mb-1 max-w-full" :class="examTagClass">
+                            <ElTag v-if="session.is_exam" size="small" round class="mb-1 max-w-full" :class="examTagClass">
                                 <span class="flex items-center gap-1"><PanelIcon name="clipboard" class="size-3 shrink-0" />{{ session.kind_label }}</span>
                             </ElTag>
-                            <div class="truncate"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.title ?? session.class }}</div>
+                            <div class="truncate" :class="{ 'line-through': session.tone === 'cancelled' }"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.title ?? session.class }}</div>
                         </div>
                     </PanelCardLink>
                 </div>
@@ -146,10 +142,10 @@ function at(date, view = props.calendar.view) {
                                 :key="session.id"
                                 :href="route('my-classes.session', { session: session.id, ...forWard })"
                                 body-class="grid gap-2 text-sm [--el-card-padding:0.875rem]"
-                                :card-class="[sessionCardClass[session.status], session.is_exam && examAccent]"
+                                :card-class="['border-s-4!', sessionToneClass[session.tone]]"
                             >
                                 <div class="flex flex-wrap items-center justify-between gap-2">
-                                    <span class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ session.title ?? session.class }}</span>
+                                    <span class="min-w-0 wrap-break-word font-semibold" :class="{ 'line-through': session.tone === 'cancelled' }">{{ session.title ?? session.class }}</span>
                                     <span class="inline-flex items-center gap-1.5 rounded-md bg-ui-surface px-2 py-1 font-semibold tabular-nums text-ui-muted"><PanelIcon name="clock" class="size-4" /><bdi dir="ltr">{{ session.time }}</bdi></span>
                                 </div>
                                 <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-ui-muted">
@@ -158,17 +154,17 @@ function at(date, view = props.calendar.view) {
                                     <span v-if="session.teacher">مدرس: {{ session.teacher }}</span>
                                     <span>{{ session.mode_label }}</span>
                                     <span v-if="session.location">{{ session.location }}</span>
-                                    <span v-if="session.status !== 'scheduled'">{{ session.status_label }}</span>
                                     <ElTag v-if="session.is_live" size="small" round :class="liveTagClass">
                                         <span class="flex items-center gap-1">
                                             <span aria-hidden="true" class="relative size-2 shrink-0">
                                                 <span class="absolute inset-0 rounded-full bg-current motion-safe:animate-ping" />
                                                 <span class="absolute inset-0 rounded-full bg-current" />
                                             </span>
-                                            در حال برگزاری
+                                            {{ session.tone_label }}
                                         </span>
                                     </ElTag>
-                                    <ElTag v-if="session.is_exam" type="warning" size="small" round :class="examTagClass">
+                                    <span v-else>{{ session.tone_label }}</span>
+                                    <ElTag v-if="session.is_exam" size="small" round :class="examTagClass">
                                         <span class="flex items-center gap-1"><PanelIcon name="clipboard" class="size-3 shrink-0" />{{ session.kind_label }}</span>
                                     </ElTag>
                                     <span v-else-if="session.kind_label !== 'عادی'">{{ session.kind_label }}</span>

@@ -118,6 +118,8 @@ class MyClasses
      */
     public function sessionCard(ClassSession $session, ?Attendance $attendance = null, ?HomeworkSubmission $submission = null): array
     {
+        $tone = SessionCalendar::tone($session);
+
         return [
             'id' => $session->getKey(),
             'class' => $session->classroom->title,
@@ -133,7 +135,9 @@ class MyClasses
             'status' => $session->status->value,
             'status_label' => $session->status->getLabel(),
             'kind_label' => $session->kind->getLabel(),
-            'is_live' => SessionCalendar::tone($session) === 'live',
+            'tone' => $tone,
+            'tone_label' => SessionCalendar::toneLabels()[$tone],
+            'is_live' => $tone === 'live',
             'is_exam' => $session->kind === SessionKind::Exam,
             'has_homework' => $session->homework !== null,
             'my_attendance' => $attendance?->status->getLabel(),

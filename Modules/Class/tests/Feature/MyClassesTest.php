@@ -84,14 +84,25 @@ class MyClassesTest extends TestCase
             ->where('calendar.days.0.date', '2026-10-31')
             ->where('calendar.days.0.sessions.0.class', 'هفتم الف')
             ->where('calendar.days.0.sessions.0.time', '08:00–09:30')
+            ->where('calendar.days.0.sessions.0.tone', 'live')
             ->where('calendar.days.0.sessions.0.is_live', true)
             ->where('calendar.days.0.sessions.0.online_platform', 'لینک')
             ->where('calendar.days.1.sessions', [])
             ->where('calendar.days.2.sessions.0.class', 'هفتم الف')
+            ->where('calendar.days.2.sessions.0.tone', 'scheduled')
             ->where('calendar.days.2.sessions.0.is_live', false)
             ->where('calendar.days.4.holiday', 'اردو')
             ->where('calendar.previous', '2026-10-24')
             ->has('classes', 1));
+    }
+
+    public function test_the_calendar_marks_past_unrecorded_sessions(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-31 10:00'));
+
+        $this->as($this->student, route('my-classes.index', ['view' => 'day', 'date' => '2026-10-31']))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('calendar.days.0.sessions.0.tone', 'pending')
+            ->where('calendar.days.0.sessions.0.tone_label', 'گذشته، ثبت‌نشده'));
     }
 
     public function test_the_default_jalali_month_shows_teaching_and_exam_sessions(): void
