@@ -10,11 +10,11 @@ The user-panel calendar included all sessions of a class once the user had any m
 ## Options considered
 
 - **A — Use memberships current today.** Simple for future sessions, but drops the user's history after they leave and includes sessions they missed before joining.
-- **B — Check membership on the session date.** Keeps the user's history and follows the session's own teaching assignments when a substitute is scheduled.
+- **B — Use the session's attendance roster and teaching assignments.** Keeps the user's history while limiting the calendar to sessions they participate in.
 
 ## Decision
 
-Use B. The day, week and month views include teaching and exam sessions in the selected tenant where the person held a class role on the session date or is assigned to teach that session. Both membership boundary dates are inclusive. A missing boundary leaves that side of the membership open. When a substitute takes a teaching assignment, the substitute qualifies through that assignment. A guardian's calendar uses the ward's memberships and assignments after verifying access to the ward.
+Use B. The day, week and month views include teaching and exam sessions in the selected tenant where the person is on the attendance roster or is the assigned teacher, substitute or exam invigilator. The roster includes class members with an attendee role on the session date and people with recorded attendance for that session. Membership boundary dates are inclusive and a missing boundary leaves that side open. A class-level staff role on its own does not put sessions on the calendar. A guardian's calendar applies the same rules to the ward after verifying access.
 
 ## Consequences
 

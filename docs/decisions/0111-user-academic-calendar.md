@@ -16,7 +16,7 @@ Users need a monthly schedule of both teaching and exam sessions in the user pan
 
 Use «تقویم آموزشی» in the side menu and page title and open the Jalali month by default. Day and week remain selectable. The new path is `/profile/academic-calendar`. Keep the existing route names and redirect GET links from the former path, including session details.
 
-Show teaching and exam sessions in the current tenant where the person has a class role on the session date or is assigned to teach ([ADR 0117](0117-academic-calendar-session-membership.md)). Show the exam label in the month grid and retain the session-kind label in the day and week cards.
+Show teaching and exam sessions in the current tenant where the person is on the attendance roster or has a teaching or invigilation assignment ([ADR 0117](0117-academic-calendar-session-membership.md)). Show the exam label in the month grid and retain the session-kind label in the day and week cards.
 
 ## Consequences
 

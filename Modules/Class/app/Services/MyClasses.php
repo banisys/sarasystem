@@ -75,10 +75,7 @@ class MyClasses
 
         $sessions = ClassSession::query()
             ->where(fn (Builder $query) => $query
-                ->whereHas('classroom.members', fn (Builder $member) => $member
-                    ->where('user_id', $user->getKey())
-                    ->whereRaw('(class_members.joined_on is null or class_members.joined_on <= cast(class_sessions.starts_at as date))')
-                    ->whereRaw('(class_members.left_on is null or class_members.left_on >= cast(class_sessions.starts_at as date))'))
+                ->attendedBy($user)
                 ->orWhere(fn (Builder $query) => $query->taughtBy($user)))
             ->whereBetween('starts_at', [$first->startOfDay(), $last->endOfDay()])
             ->with(['classroom.onlineRooms.server', 'subject', 'teachers', 'substitutes'])

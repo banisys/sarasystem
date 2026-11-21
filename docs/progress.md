@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-21 — Limited academic calendar entries to the session attendance roster and assigned teachers, substitutes and exam invigilators. Verified the reported session against the local data. All 217 Class tests and Pint passed.
 - 2026-11-21 — Limited the user-panel academic calendar to sessions within the person’s class membership dates and sessions they are assigned to teach ([ADR 0117](decisions/0117-academic-calendar-session-membership.md)). All 216 Class tests and Pint passed.
 - 2026-11-21 — Removed the blended delivery mode and added the delivery mode filter alongside the subject filter in «تقویم کلاسی» ([ADR 0116](decisions/0116-in-person-and-online-delivery-modes.md)). Verified both modes, the combined filters and all three scheduling forms in Chromium. The local migration found no blended records to convert. All 803 tests and Pint passed.
 - 2026-11-21 — Moved the delivery mode from the class form to teaching schedules, individual exam rows and make-up or extra sessions ([ADR 0115](decisions/0115-session-delivery-mode.md)). Backfilled 13 schedules and 516 sessions in the local database. Verified the four forms in Chromium. All 801 tests, three targeted checks with Exam and Campus disabled, Pint and the Vite build passed.

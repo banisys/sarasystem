@@ -97,7 +97,7 @@ class MyClassesTest extends TestCase
     public function test_the_default_jalali_month_shows_teaching_and_exam_sessions(): void
     {
         // Aban 1405: 2026-10-23 (a Friday) to 2026-11-21.
-        $exam = ClassSession::factory()->for($this->classroom)->create([
+        $exam = ClassSession::factory()->for($this->classroom)->taughtBy($this->teacher)->create([
             'kind' => SessionKind::Exam,
             'starts_at' => '2026-10-31 10:00',
             'ends_at' => '2026-10-31 11:00',
@@ -120,6 +120,19 @@ class MyClassesTest extends TestCase
             ->has('calendar.days', 30)
             ->where('calendar.leading_blanks', 6)
             ->where('calendar.next', '2026-11-22'));
+    }
+
+    public function test_a_class_teacher_sees_only_the_sessions_they_are_assigned_to(): void
+    {
+        $assigned = $this->sessionOn('2026-10-31');
+        ClassSession::factory()->for($this->classroom)->taughtBy($this->person())->create([
+            'starts_at' => '2026-10-31 10:00',
+            'ends_at' => '2026-10-31 11:00',
+        ]);
+
+        $this->as($this->teacher, route('my-classes.index', ['view' => 'day', 'date' => '2026-10-31']))->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('calendar.days.0.sessions', 1)
+            ->where('calendar.days.0.sessions.0.id', $assigned->id));
     }
 
     public function test_the_calendar_shows_class_sessions_only_during_the_membership(): void
