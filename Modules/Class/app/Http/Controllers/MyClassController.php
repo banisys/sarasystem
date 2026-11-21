@@ -30,6 +30,7 @@ use Modules\Class\Services\Online\OnlineRooms;
 use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionExamSource;
+use Modules\Class\Services\SessionReminders;
 use Nwidart\Modules\Facades\Module;
 
 /**
@@ -69,7 +70,7 @@ class MyClassController extends Controller
         ]);
     }
 
-    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry): Response
+    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry, SessionReminders $reminders): Response
     {
         $user = $this->person($request);
         abort_unless($myClasses->canSee($user, $session), 404);
@@ -102,6 +103,7 @@ class MyClassController extends Controller
             ],
             'role' => $role,
             'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
+            'reminderTimeline' => $isOwn ? $reminders->timeline($user, $session) : null,
             'myAttendance' => $role['is_attendee'] && $mine ? [
                 'status' => $mine->status->getLabel(),
                 'late_minutes' => $mine->late_minutes,
@@ -145,6 +147,21 @@ class MyClassController extends Controller
                 })->values()
                 : null,
         ]);
+    }
+
+    public function addReminder(Request $request, ClassSession $session, ClassSession $target, SessionReminders $reminders): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_if($request->filled('for') || ! $reminders->canRead($user, $session), 404);
+
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:'.SessionReminders::MAX_LENGTH],
+        ], attributes: ['body' => 'متن یادآوری']);
+
+        $reminders->add($user, $session, $target, $data['body']);
+
+        return to_route('my-classes.session', $session)->with('status', 'یادآوری ثبت شد.');
     }
 
     public function submitHomework(Request $request, ClassSession $session, MyClasses $myClasses, HomeworkBook $homework): RedirectResponse

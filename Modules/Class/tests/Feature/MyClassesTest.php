@@ -16,6 +16,7 @@ use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\SessionKind;
+use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassRole;
@@ -24,6 +25,7 @@ use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
 use Modules\Class\Models\Subject;
 use Modules\Class\Models\TeachingPlan;
+use Modules\Class\Models\Term;
 use Modules\Class\Services\ClassMembers;
 use Modules\Class\Services\SessionPlanner;
 use Tests\Concerns\InteractsWithTenants;
@@ -308,6 +310,75 @@ class MyClassesTest extends TestCase
         $this->as($this->teacher, route('my-classes.session', $elsewhere))->assertNotFound();
     }
 
+    public function test_staff_can_leave_a_reminder_for_a_later_session_and_read_it_there(): void
+    {
+        $source = $this->sessionOn('2026-10-31');
+        $target = $this->sessionOn('2026-11-02');
+        $subject = Subject::factory()->for($this->primary)->create();
+        $source->update(['subject_id' => $subject->id]);
+        $target->update(['subject_id' => $subject->id]);
+        $supporter = $this->person();
+        app(ClassMembers::class)->add($this->classroom, ClassRole::factory()->for($this->primary)->create(['title' => 'پشتیبان']), [$supporter->id]);
+        $this->travelTo(CarbonImmutable::parse('2026-10-31 08:15'));
+        $url = route('my-classes.reminders.store', ['session' => $source, 'target' => $target]);
+
+        $this->as($supporter, $url, 'post', ['body' => '  '])->assertSessionHasErrors('body');
+        $this->as($supporter, $url, 'post', ['body' => 'تمرین فصل دوم مرور شود.'])
+            ->assertRedirect(route('my-classes.session', $source))
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('class_session_reminders', [
+            'tenant_id' => $this->west->id,
+            'session_id' => $target->id,
+            'source_session_id' => $source->id,
+            'author_id' => $supporter->id,
+            'body' => 'تمرین فصل دوم مرور شود.',
+        ]);
+
+        $this->travelTo(CarbonImmutable::parse('2026-11-02 08:15'));
+        $this->as($this->teacher, route('my-classes.session', $target))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('reminderTimeline.sessions.0.id', $target->id)
+            ->where('reminderTimeline.sessions.0.is_current', true)
+            ->where('reminderTimeline.sessions.0.reminders.0.body', 'تمرین فصل دوم مرور شود.')
+            ->where('reminderTimeline.sessions.0.reminders.0.author', $supporter->name));
+        $this->as($this->student, route('my-classes.session', $target))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('reminderTimeline', null));
+        $this->as($this->teacher, $url, 'post', ['body' => 'پس از شروع'])->assertNotFound();
+    }
+
+    public function test_the_reminder_timeline_and_posts_are_scoped_to_subject_term_and_staff_access(): void
+    {
+        $term = Term::factory()->for($this->primary)->create();
+        $subject = Subject::factory()->for($this->primary)->create();
+        $this->classroom->update(['term_id' => $term->id]);
+        $source = $this->sessionOn('2026-10-31');
+        $source->update(['subject_id' => $subject->id]);
+        $sameTerm = Classroom::factory()->for($this->west)->for($term)->create();
+        $otherTerm = Classroom::factory()->for($this->west)->for(Term::factory()->for($this->primary))->create();
+        $otherBranch = Classroom::factory()->for($this->primary)->for($term)->create();
+        $later = ClassSession::factory()->for($subject)->state(['starts_at' => '2026-11-01 10:00', 'ends_at' => '2026-11-01 11:00']);
+        $allowed = $later->for($sameTerm)->taughtBy($this->person(), $this->teacher)->create();
+        $wrongTerm = $later->for($otherTerm)->taughtBy($this->teacher)->create();
+        $wrongBranch = $later->for($otherBranch)->taughtBy($this->teacher)->create();
+        $wrongSubject = $later->for($this->classroom)->for(Subject::factory()->for($this->primary))->create();
+        $notStaff = $later->for($sameTerm)->create();
+        $cancelled = $later->for($this->classroom)->create(['status' => SessionStatus::Cancelled]);
+
+        $this->as($this->teacher, route('my-classes.session', $source))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('reminderTimeline.term', $term->title)
+            ->has('reminderTimeline.sessions', 2)
+            ->where('reminderTimeline.sessions.0.id', $source->id)
+            ->where('reminderTimeline.sessions.1.id', $allowed->id));
+
+        foreach ([$wrongTerm, $wrongBranch, $wrongSubject, $notStaff, $cancelled, $source] as $target) {
+            $url = route('my-classes.reminders.store', ['session' => $source, 'target' => $target]);
+            $this->as($this->teacher, $url, 'post', ['body' => 'این یادآوری نباید ذخیره شود.'])->assertNotFound();
+        }
+        $url = route('my-classes.reminders.store', ['session' => $source, 'target' => $allowed]);
+        $this->as($this->student, $url, 'post', ['body' => 'یادآوری فراگیر'])->assertNotFound();
+        $this->as($this->teacher, $url.'?for='.$this->student->id, 'post', ['body' => 'یادآوری در نمای سرپرست'])->assertNotFound();
+        $this->assertDatabaseCount('class_session_reminders', 0);
+    }
+
     public function test_the_menu_link_is_shown_to_class_members_only(): void
     {
         $hasLink = fn (User $user): bool => collect($this->as($user, route('profile.edit'))->viewData('page')['props']['navigation'])->contains('title', 'تقویم آموزشی');
@@ -366,6 +437,7 @@ class MyClassesTest extends TestCase
         $this->as($this->teacher, route('my-classes.session', ['session' => $session, 'for' => $student->id]))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('ward.name', $student->name)
             ->where('myAttendance.status', 'غایب')
+            ->where('reminderTimeline', null)
             ->where('attendance', null)
             ->where('contentForm', null));
     }

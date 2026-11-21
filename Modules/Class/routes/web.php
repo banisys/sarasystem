@@ -21,6 +21,7 @@ Route::middleware(['auth', 'auth.session'])->get('/online-classes/sessions/{sess
 Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/academic-calendar')->name('my-classes.')->group(function () {
     Route::get('/', [MyClassController::class, 'index'])->name('index');
     Route::get('/sessions/{session}', [MyClassController::class, 'show'])->name('session');
+    Route::post('/sessions/{session}/reminders/{target}', [MyClassController::class, 'addReminder'])->name('reminders.store');
     Route::post('/sessions/{session}/attendance', [MyClassController::class, 'attendance'])->name('attendance');
     Route::post('/sessions/{session}/content', [MyClassController::class, 'content'])->name('content');
     Route::post('/sessions/{session}/homework', [MyClassController::class, 'submitHomework'])->name('homework');

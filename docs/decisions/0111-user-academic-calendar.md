@@ -22,6 +22,8 @@ Use the class calendar's status classification and colours ([ADR 0047](0047-clas
 
 Display the subject on session cards when available. The subject and delivery mode filters are retained in the calendar URL ([ADR 0118](0118-academic-calendar-filters.md)).
 
+Session details include a staff timeline for reading and leaving reminders ([ADR 0119](0119-session-reminders.md)).
+
 ## Consequences
 
 Existing links generated from route names use the new URL. Bookmarked views keep their selected date, view and ward. Access to sessions still follows the user's class roles and teaching assignments, including the read-only guardian view.

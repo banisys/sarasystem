@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-21 — Added the staff reminder timeline and future-session reminder forms to session details ([ADR 0119](decisions/0119-session-reminders.md)). Applied the local migration and checked the timeline for Mehregan session 7258 with its assigned teacher. All 222 Class tests, Pint and the Vite build passed.
 - 2026-11-21 — Added subject names to academic calendar month cards and combined subject and delivery filters across calendar views ([ADR 0118](decisions/0118-academic-calendar-filters.md)). Verified selection, view navigation and clearing the delivery filter in Chromium. All 220 Class tests, Pint and the Vite build passed.
 - 2026-11-21 — Matched the user-panel academic calendar session colours to the class calendar in both themes, including the fuchsia exam badge. The Vite build, 23 calendar tests and Pint passed.
 - 2026-11-21 — Limited academic calendar entries to the session attendance roster and assigned teachers, substitutes and exam invigilators. Verified the reported session against the local data. All 217 Class tests and Pint passed.

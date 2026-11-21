@@ -125,6 +125,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Teaching plan | طرح درس | A course outline: topics in order, each taking some sessions (`TeachingPlan`), defined in the head office; a schedule follows one ([ADR 0025](decisions/0025-teaching-plans-and-session-content.md)). |
 | Topic | سرفصل | One item of a teaching plan (`PlanTopic`); finished when a session records it. Unfinished topics are forecast over the coming sessions. |
 | Session content | مطالب جلسه | What a session covered: topics finished, a summary, homework (تکلیف) with a due date, and materials (files). |
+| Session reminder | یادآوری جلسه | A staff note left for a specific upcoming session and shown in its details ([ADR 0119](decisions/0119-session-reminders.md)). |
 | Homework hand-in | تحویل تکلیف | A learner's answer and/or files for a session's homework (`HomeworkSubmission`), changeable until graded, marked «با تأخیر» after the due day; the teacher gives a score (out of the homework's «نمره از») and feedback ([ADR 0030](decisions/0030-homework-submissions.md)). |
 | Academic calendar | تقویم آموزشی | The user-panel calendar of a person's teaching and exam sessions (Jalali month by default, with day and week views) in the classes they are in or teach; teachers take attendance and record content there ([ADR 0026](decisions/0026-my-classes.md)). |
 

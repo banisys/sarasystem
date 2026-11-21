@@ -18,6 +18,7 @@ import FilePicker from '@/Components/FilePicker.vue';
 import PanelJalaliDateInput from '@/Components/Ui/PanelJalaliDateInput.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SessionReminderTimeline from '../Components/SessionReminderTimeline.vue';
 
 // One session in «تقویم آموزشی» (ADR 0026): details, what it covered,
 // homework and materials, one's own attendance, and — for who may — the
@@ -27,6 +28,7 @@ const props = defineProps({
     role: { type: Object, required: true },
     // A guardian looking at a ward's session (ADR 0027).
     ward: { type: Object, default: null },
+    reminderTimeline: { type: Object, default: null },
     myAttendance: { type: Object, default: null },
     statuses: { type: Array, required: true },
     attendance: { type: Array, default: null },
@@ -247,6 +249,8 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                 ورود به کلاس آنلاین
                             </PanelButton>
                         </div>
+
+                        <SessionReminderTimeline v-if="reminderTimeline" :source-id="session.id" :timeline="reminderTimeline" />
                     </PanelCard>
 
                     <!-- Attendance -->

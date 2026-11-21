@@ -292,6 +292,12 @@ class ClassSession extends Model implements HasMedia
         return $this->hasMany(Attendance::class, 'session_id');
     }
 
+    /** @return HasMany<ClassSessionReminder, $this> */
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(ClassSessionReminder::class, 'session_id')->orderBy('id');
+    }
+
     /**
      * Learners' homework for this session (ADR 0030).
      *
