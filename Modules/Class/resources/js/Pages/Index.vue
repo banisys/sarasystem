@@ -6,7 +6,7 @@ import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import { ElOption, ElSelect, ElTag } from 'element-plus';
 import 'element-plus/es/components/select/style/css';
 import 'element-plus/es/components/tag/style/css';
-import { Head, router, usePoll } from '@inertiajs/vue3';
+import { Head, Link, router, usePoll } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
@@ -51,6 +51,10 @@ function at(date, view = props.calendar.view, { subject, mode } = props.calendar
     return route('my-classes.index', { view, date, subject, mode, ...forWard.value });
 }
 
+function sessionUrl(session) {
+    return route('my-classes.session', { session: session.id, ...forWard.value });
+}
+
 function setFilter(key, value) {
     const { date, view, filters } = props.calendar;
     router.visit(at(date, view, { ...filters, [key]: value === '' ? null : value }), {
@@ -72,7 +76,7 @@ function setFilter(key, value) {
 
             <section aria-label="برنامهٔ جلسات" class="grid gap-7 rounded-ui border border-ui-line bg-ui-surface p-3 sm:gap-9 sm:p-4">
                 <div class="grid gap-3">
-                    <PanelCard role="navigation" class="[--panel-card-bg:#00b894] panel-dark:[--panel-card-bg:var(--color-emerald-950)] panel-dark:[--panel-card-border:var(--color-emerald-800)]" aria-label="نمای تقویم و جابه‌جایی تاریخ" body-class="grid gap-2.5 [--el-card-padding:0.75rem] sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+                    <PanelCard role="navigation" aria-label="نمای تقویم و جابه‌جایی تاریخ" body-class="grid gap-2.5 [--el-card-padding:0.75rem] sm:flex sm:flex-wrap sm:items-center sm:justify-between">
                         <div class="calendar-views grid grid-cols-3 gap-1 rounded-ui bg-ui-canvas p-1 sm:flex">
                             <PanelButton
                                 v-for="item in views"
@@ -85,11 +89,15 @@ function setFilter(key, value) {
                                 {{ item.label }}
                             </PanelButton>
                         </div>
-                        <h2 class="text-center text-base font-semibold text-white sm:me-auto sm:ms-4 sm:text-start">{{ calendar.label }}</h2>
-                        <div class="grid grid-cols-3 gap-2 sm:flex">
-                            <PanelButton :href="at(calendar.previous)" variant="outline" size="default"><PanelIcon name="back" class="size-4 shrink-0" />قبلی</PanelButton>
+                        <h2 class="text-center text-base font-semibold text-ui-ink sm:me-auto sm:ms-4 sm:text-start">{{ calendar.label }}</h2>
+                        <div class="flex justify-center gap-2">
+                            <PanelButton :href="at(calendar.previous)" aria-label="قبلی" variant="outline" size="default" class="size-8! p-0!">
+                                <PanelIcon name="chevron-right" class="size-4 shrink-0" />
+                            </PanelButton>
                             <PanelButton :href="at(calendar.today)" variant="outline" size="default"><PanelIcon name="calendar" class="size-4 shrink-0" />امروز</PanelButton>
-                            <PanelButton :href="at(calendar.next)" variant="outline" size="default">بعدی<PanelIcon name="back" class="size-4 shrink-0 rotate-180" /></PanelButton>
+                            <PanelButton :href="at(calendar.next)" aria-label="بعدی" variant="outline" size="default" class="size-8! p-0!">
+                                <PanelIcon name="chevron-right" class="size-4 shrink-0 rotate-180" />
+                            </PanelButton>
                         </div>
                     </PanelCard>
                     <div class="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:justify-end" role="group" aria-label="فیلترهای جلسات">
@@ -124,21 +132,25 @@ function setFilter(key, value) {
                 <div v-if="calendar.view === 'month'" class="hidden grid-cols-7 gap-1.5 md:grid xl:gap-2">
                     <div v-for="name in weekdays" :key="name" class="truncate px-1 py-1.5 text-center text-xs font-semibold text-gray-500 panel-dark:text-ui-muted">{{ name }}</div>
                     <div v-for="blank in calendar.leading_blanks" :key="`blank-${blank}`" />
-                    <PanelCardLink
+                    <PanelCard
                         v-for="day in calendar.days"
                         :key="day.date"
-                        :href="at(day.date, 'day')"
-                        :aria-current="day.is_today ? 'date' : undefined"
-                        :aria-label="day.label"
                         body-class="grid min-h-24 content-start gap-1 text-xs [--el-card-padding:0.5rem]"
-                        :card-class="[day.is_today ? '[--panel-card-border:var(--color-brand-500)]' : '', day.holiday ? '[--panel-card-bg:var(--color-red-50)] panel-dark:[--panel-card-bg:var(--color-red-950)]' : '']"
+                        :class="[day.is_today ? '[--panel-card-border:var(--color-brand-500)]' : '', day.holiday ? '[--panel-card-bg:var(--color-red-50)] panel-dark:[--panel-card-bg:var(--color-red-950)]' : '']"
                     >
-                        <div class="font-semibold" :class="day.holiday ? 'text-red-600 panel-dark:text-red-300' : 'text-gray-700 panel-dark:text-ui-ink'">{{ day.day_number }}</div>
+                        <Link
+                            :href="at(day.date, 'day')"
+                            :aria-current="day.is_today ? 'date' : undefined"
+                            :aria-label="day.label"
+                            class="justify-self-start rounded font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                            :class="day.holiday ? 'text-red-600 panel-dark:text-red-300' : 'text-gray-700 panel-dark:text-ui-ink'"
+                        >{{ day.day_number }}</Link>
                         <div v-if="day.holiday" class="truncate text-red-600 panel-dark:text-red-300">{{ day.holiday }}</div>
-                        <div
+                        <Link
                             v-for="session in day.sessions"
                             :key="session.id"
-                            class="min-w-0 overflow-hidden rounded-md border border-ui-line border-s-4 px-1.5 py-1 leading-4"
+                            :href="sessionUrl(session)"
+                            class="min-w-0 overflow-hidden rounded-md border border-ui-line border-s-4 px-1.5 py-1 leading-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
                             :class="sessionToneClass[session.tone]"
                             :title="session.tone_label"
                         >
@@ -158,8 +170,8 @@ function setFilter(key, value) {
                                 <div class="truncate"><bdi dir="ltr">{{ session.time.split('–')[0] }}</bdi> {{ session.title ?? session.class }}</div>
                                 <div v-if="session.subject" class="wrap-break-word font-medium">{{ session.subject }}</div>
                             </div>
-                        </div>
-                    </PanelCardLink>
+                        </Link>
+                    </PanelCard>
                 </div>
 
                 <!-- Day and week (and month on small screens): one block per day. -->
@@ -184,7 +196,7 @@ function setFilter(key, value) {
                             <PanelCardLink
                                 v-for="session in day.sessions"
                                 :key="session.id"
-                                :href="route('my-classes.session', { session: session.id, ...forWard })"
+                                :href="sessionUrl(session)"
                                 body-class="grid gap-2 text-sm [--el-card-padding:0.875rem]"
                                 :card-class="['border-s-4!', sessionToneClass[session.tone]]"
                             >
@@ -241,24 +253,14 @@ function setFilter(key, value) {
 <style scoped>
 .calendar-views :deep(.el-button[aria-current="true"]) {
     --el-button-text-color: white;
-    --el-button-hover-text-color: white;
-    --el-button-active-text-color: white;
-    --el-button-bg-color: #383838;
-    --el-button-border-color: #383838;
-    --el-button-hover-bg-color: #414141;
-    --el-button-hover-border-color: #414141;
-    --el-button-active-bg-color: #484848;
-    --el-button-active-border-color: #484848;
-    --el-button-outline-color: #383838;
-}
-
-:global(.profile-panel[data-profile-theme="dark"] .calendar-views .el-button[aria-current="true"]) {
-    --el-button-bg-color: #484848;
-    --el-button-border-color: #737373;
-    --el-button-hover-bg-color: #525252;
-    --el-button-hover-border-color: #a3a3a3;
-    --el-button-active-bg-color: #404040;
-    --el-button-active-border-color: #a3a3a3;
-    --el-button-outline-color: #d4d4d4;
+    --el-button-hover-text-color: var(--el-button-text-color);
+    --el-button-active-text-color: var(--el-button-text-color);
+    --el-button-bg-color: #00b894;
+    --el-button-border-color: var(--el-button-bg-color);
+    --el-button-hover-bg-color: #00ac8a;
+    --el-button-hover-border-color: var(--el-button-hover-bg-color);
+    --el-button-active-bg-color: #00a080;
+    --el-button-active-border-color: var(--el-button-active-bg-color);
+    --el-button-outline-color: #008269;
 }
 </style>

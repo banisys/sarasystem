@@ -24,6 +24,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Done
 - 2026-11-21 — Added the staff reminder timeline and future-session reminder forms to session details ([ADR 0119](decisions/0119-session-reminders.md)). Applied the local migration and checked the timeline for Mehregan session 7258 with its assigned teacher. All 222 Class tests, Pint and the Vite build passed.
+- 2026-11-21 — Linked each academic calendar month entry directly to its session page and kept the day number linked to the day view. Verified the day link in Chromium. The Vite build and all 17 academic calendar tests passed.
+- 2026-11-21 — Set the active academic calendar view button to white text on green. Verified the rendered colours in Chromium and passed the Vite build.
+- 2026-11-21 — Switched the academic calendar toolbar to the panel surface and used its former green for the active view. Previous and next use icon-only chevrons with accessible labels. Verified the colours in both themes and month navigation in Chromium. The Vite build passed.
 - 2026-11-21 — Added subject names to academic calendar month cards and combined subject and delivery filters across calendar views ([ADR 0118](decisions/0118-academic-calendar-filters.md)). Verified selection, view navigation and clearing the delivery filter in Chromium. All 220 Class tests, Pint and the Vite build passed.
 - 2026-11-21 — Matched the user-panel academic calendar session colours to the class calendar in both themes, including the fuchsia exam badge. The Vite build, 23 calendar tests and Pint passed.
 - 2026-11-21 — Limited academic calendar entries to the session attendance roster and assigned teachers, substitutes and exam invigilators. Verified the reported session against the local data. All 217 Class tests and Pint passed.
