@@ -41,7 +41,7 @@ trait ShowsSessionCalendar
      * @param  array<int, string>  $subjectOptions
      * @param  list<ClassMode>  $modeOptions
      */
-    protected function sessionCalendarComponent(array $subjectOptions = [], array $modeOptions = []): View
+    protected function sessionCalendarComponent(array $subjectOptions = [], array $modeOptions = [], bool $showDatePicker = true): View
     {
         return View::make('class::filament.session-calendar')
             ->viewData(fn (SessionCalendar $calendar): array => [
@@ -51,11 +51,12 @@ trait ShowsSessionCalendar
                 'tones' => SessionCalendar::toneLabels(),
                 'subjectOptions' => $subjectOptions,
                 'modeOptions' => $modeOptions,
+                'showDatePicker' => $showDatePicker,
                 'sessionUrl' => fn (int $session, bool $isExam): string => ClassSessionResource::getUrl($isExam ? 'view-exam' : 'view', ['record' => $session]),
                 // A page renders the action modals itself; a relation manager without its table doesn't.
                 'rendersModals' => ! $this instanceof Page,
             ])
-            ->schema([
+            ->schema($showDatePicker ? [
                 // «برو به تاریخ»: picks the calendar's date directly.
                 DatePicker::make('sessionsDate')
                     ->hiddenLabel()
@@ -64,7 +65,7 @@ trait ShowsSessionCalendar
                     ->prefixIcon(Heroicon::OutlinedCalendarDays)
                     ->closeOnDateSelection()
                     ->live(),
-            ]);
+            ] : []);
     }
 
     public function showSessions(string $view, ?string $date = null): void

@@ -90,6 +90,7 @@ class SessionsRelationManager extends RelationManager
                     ->pluck('title', 'id')
                     ->all(),
                 ClassMode::cases(),
+                showDatePicker: false,
             ),
         ]);
     }

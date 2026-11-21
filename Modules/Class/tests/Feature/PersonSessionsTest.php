@@ -91,6 +91,7 @@ class PersonSessionsTest extends TestCase
 
         Livewire::test(TeacherSessions::class, ['user' => $this->teacher->id])
             ->assertSee('آبان 1405')
+            ->assertSee('برو به تاریخ')
             ->assertSee('ساعت برگزارشده')
             ->assertDontSee('جلسه‌ی جبرانی / فوق‌العاده')
             ->assertSeeHtml(ClassSessionResource::getUrl('view', ['record' => $mine]))
@@ -151,6 +152,7 @@ class PersonSessionsTest extends TestCase
             ->assertOk()
             ->assertSee('جلسه‌های کلاس سارا رضایی');
         Livewire::test(LearnerSessions::class, ['user' => $learner->id])
+            ->assertSee('برو به تاریخ')
             ->assertDontSeeHtml(ClassSessionResource::getUrl('view', ['record' => $this->classSession('2026-10-25 12:00')]))
             ->assertSeeHtml(ClassSessionResource::getUrl('view', ['record' => $absent]));
     }

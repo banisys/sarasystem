@@ -31,26 +31,8 @@
                     wire:click="showSessions('{{ $current }}', '{{ $calendar['next'] }}')" />
             </div>
             <h3 class="text-base font-semibold text-gray-950 dark:text-white">{{ $calendar['label'] }}</h3>
-            <div class="w-48">{{ $getChildSchema() }}</div>
-            @if ($subjectOptions !== [])
-                <x-filament::input.wrapper class="w-48">
-                    <x-filament::input.select wire:model.live="sessionsSubject" aria-label="فیلتر بر اساس درس">
-                        <option value="">همهٔ درس‌ها</option>
-                        @foreach ($subjectOptions as $subjectId => $subjectTitle)
-                            <option value="{{ $subjectId }}">{{ $subjectTitle }}</option>
-                        @endforeach
-                    </x-filament::input.select>
-                </x-filament::input.wrapper>
-            @endif
-            @if ($modeOptions !== [])
-                <x-filament::input.wrapper class="w-48">
-                    <x-filament::input.select wire:model.live="sessionsMode" aria-label="فیلتر بر اساس روش برگزاری">
-                        <option value="">همهٔ روش‌های برگزاری</option>
-                        @foreach ($modeOptions as $mode)
-                            <option value="{{ $mode->value }}">{{ $mode->getLabel() }}</option>
-                        @endforeach
-                    </x-filament::input.select>
-                </x-filament::input.wrapper>
+            @if ($showDatePicker)
+                <div class="w-48">{{ $getChildSchema() }}</div>
             @endif
             @if (in_array($calendar['view'], ['day', 'week'], true))
                 <div class="flex items-center gap-1">
@@ -58,6 +40,30 @@
                         wire:click="showSessions('{{ $current }}', '{{ $calendar['previous_session'] }}')">جلسه‌ی قبلی</x-filament::button>
                     <x-filament::button size="xs" color="gray" icon="heroicon-m-chevron-double-left" icon-position="after" :disabled="! $calendar['next_session']"
                         wire:click="showSessions('{{ $current }}', '{{ $calendar['next_session'] }}')">جلسه‌ی بعدی</x-filament::button>
+                </div>
+            @endif
+            @if ($subjectOptions !== [] || $modeOptions !== [])
+                <div class="ms-auto flex max-w-full flex-wrap justify-end gap-3">
+                    @if ($subjectOptions !== [])
+                        <x-filament::input.wrapper class="w-48 max-w-full">
+                            <x-filament::input.select wire:model.live="sessionsSubject" aria-label="فیلتر بر اساس درس">
+                                <option value="">همهٔ درس‌ها</option>
+                                @foreach ($subjectOptions as $subjectId => $subjectTitle)
+                                    <option value="{{ $subjectId }}">{{ $subjectTitle }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    @endif
+                    @if ($modeOptions !== [])
+                        <x-filament::input.wrapper class="w-48 max-w-full">
+                            <x-filament::input.select wire:model.live="sessionsMode" aria-label="فیلتر بر اساس روش برگزاری">
+                                <option value="">همهٔ روش‌های برگزاری</option>
+                                @foreach ($modeOptions as $mode)
+                                    <option value="{{ $mode->value }}">{{ $mode->getLabel() }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    @endif
                 </div>
             @endif
     </div>
