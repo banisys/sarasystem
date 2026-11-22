@@ -237,7 +237,8 @@ class ContextExamController extends Controller
             $locked->recalculate();
         });
 
-        return to_route('exams.context.review', [$type, $context, $attempt])->with('status', 'نمره‌ها ثبت شد.');
+        return to_route('exams.context', ['type' => $type, 'context' => $context, 'tab' => 'results'])
+            ->with('status', 'نمره‌ها ثبت شد.');
     }
 
     private function contextForVisit(Request $request, string $type, int $id, ExamContexts $contexts): ExamContext

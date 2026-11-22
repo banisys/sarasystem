@@ -23,6 +23,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Preselected «نمره به‌همراه پاسخ‌ها» in the user-panel form for new graded session exams. Verified the form default and that an explicit option is saved. All 34 session exam tests and Pint passed.
+- 2026-11-22 — After a successful grade save, the session exam review opens the same session’s results tab and shows the success notification there. Validation errors return to the review form. All 34 session exam tests and Pint passed.
 - 2026-11-22 — Added Filament-style corner notifications for successful actions in the user panel using Element Plus and one-time Inertia flash data ([ADR 0123](decisions/0123-user-panel-status-notifications.md)). Checked grade saves, repeated messages, dismissal and browser history in mobile dark and desktop light Chromium previews. All 817 tests, Pint and the Vite build passed.
 - 2026-11-22 — Refined the session exam attempt review layout with a visible attempt status, separate participant and reference answers, and dedicated grading controls. Checked desktop light and mobile dark layouts, saving, validation and read-only states with sample attempts in Chromium. The two targeted grading tests and the Vite build passed.
 - 2026-11-22 — Added a horizontal gap between academic calendar session tabs. Measured 12 px on mobile and 16 px on desktop in Chromium with sample sessions. Keyboard navigation, narrow-screen scrolling and the Vite build passed.

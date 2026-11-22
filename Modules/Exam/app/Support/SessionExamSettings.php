@@ -21,7 +21,7 @@ class SessionExamSettings
         'negative_marking' => null,
         'max_attempts' => 1,
         'retake_policy' => RetakePolicy::Always->value,
-        'result_visibility' => ResultVisibility::Hidden->value,
+        'result_visibility' => ResultVisibility::ScoreWithAnswers->value,
         'shuffle_questions' => false,
         'shuffle_options' => false,
     ];

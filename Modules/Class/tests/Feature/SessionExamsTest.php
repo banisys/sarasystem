@@ -373,19 +373,22 @@ class SessionExamsTest extends TestCase
         $this->asTeacher();
         $review = route('exams.context.review', ['class-session', $this->session->id, $attempt]);
         $grade = route('exams.context.grade', ['class-session', $this->session->id, $attempt]);
+        $results = $this->url().'?tab=results';
         $this->get($review)->assertInertia(fn (AssertableInertia $page) => $page->component('Exam::Review')
             ->where('can_grade', true)
             ->where('answers.0.answer', 'پاسخ من')
             ->where('answers.0.correct', 'راه‌حل نمونه'));
-        $this->post($grade, ['scores' => [$answer->id => 5]])->assertSessionHasErrors('scores');
+        $this->from($review)->post($grade, ['scores' => [$answer->id => 5]])
+            ->assertRedirect($review)->assertSessionHasErrors('scores');
         $this->assertNull($answer->fresh()->score);
-        $this->post($grade, ['scores' => [$answer->id => 3]])->assertRedirect($review);
+        $this->post($grade, ['scores' => [$answer->id => 3]])->assertRedirect($results);
         $this->assertSame(15.0, $attempt->fresh()->score);
         $this->assertSame(AttemptStatus::Completed, $attempt->fresh()->status);
         $this->assertSame($this->teacher->id, $answer->fresh()->graded_by);
-        $this->get($review)->assertInertia(fn (AssertableInertia $page) => $page->hasFlash('status', 'نمره‌ها ثبت شد.')->missing('flash'));
-        $this->get($review)->assertInertia(fn (AssertableInertia $page) => $page->missingFlash('status'));
-        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('results.data.0.score', 15));
+        $this->get($results)->assertInertia(fn (AssertableInertia $page) => $page->component('Exam::Context')
+            ->where('results.data.0.score', 15)
+            ->hasFlash('status', 'نمره‌ها ثبت شد.')->missing('flash'));
+        $this->get($results)->assertInertia(fn (AssertableInertia $page) => $page->missingFlash('status'));
     }
 
     public function test_running_attempts_and_foreign_answers_cannot_be_graded(): void
@@ -668,6 +671,7 @@ class SessionExamsTest extends TestCase
         $this->assertFalse($exam->is_published);
         $this->assertTrue($exam->starts_at->equalTo($this->session->starts_at));
         $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('settings_form.defaults.result_visibility', 'score_with_answers')
             ->where('exams.0.settings.description', 'راهنمای آزمون')
             ->where('exams.0.settings.grace_minutes', 7)
             ->where('exams.0.settings.questions_per_page', 2)
