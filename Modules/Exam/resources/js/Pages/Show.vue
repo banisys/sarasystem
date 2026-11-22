@@ -35,7 +35,7 @@ function start() {
     <Head :title="exam.title" />
 
     <AppLayout>
-        <div class="space-y-4">
+        <div class="grid gap-3 sm:gap-4">
             <UiPageHeader
                 :title="exam.title"
                 :description="exam.is_practice ? 'آزمون تمرینی · بدون نمره' : undefined"
@@ -50,9 +50,9 @@ function start() {
             <AttemptRunner v-if="attempt" :key="attempt.id" :exam="exam" :attempt="attempt" />
 
             <template v-else>
-                <PanelCard body-class="p-4 sm:p-6">
-                    <p v-if="exam.description" class="mb-4 whitespace-pre-line text-gray-700 panel-dark:text-ui-ink">{{ exam.description }}</p>
-                    <dl class="grid grid-cols-2 gap-3 rounded-ui bg-ui-canvas p-3 text-sm leading-7 sm:grid-cols-3 sm:p-4">
+                <PanelCard body-class="grid gap-3 [--el-card-padding:0.875rem] sm:gap-4 sm:[--el-card-padding:1.25rem]">
+                    <p v-if="exam.description" class="whitespace-pre-line wrap-break-word text-gray-700 panel-dark:text-ui-ink">{{ exam.description }}</p>
+                    <dl class="grid grid-cols-2 gap-x-3 gap-y-2 rounded-ui bg-ui-canvas p-3 text-sm leading-6 sm:grid-cols-3 sm:gap-4 sm:p-4">
                         <div><dt class="text-gray-500 panel-dark:text-ui-muted">تعداد سؤال</dt><dd>{{ exam.question_count }}</dd></div>
                         <div><dt class="text-gray-500 panel-dark:text-ui-muted">مدت</dt><dd>{{ exam.duration_minutes }} دقیقه</dd></div>
                         <div v-if="!exam.is_practice"><dt class="text-gray-500 panel-dark:text-ui-muted">نمره‌ی قبولی</dt><dd>{{ exam.passing_score }} از {{ exam.total_score }}</dd></div>
@@ -66,7 +66,7 @@ function start() {
                         </div>
                     </dl>
 
-                    <div class="mt-6">
+                    <div>
                         <PanelNotice v-if="blocked">{{ blocked }}</PanelNotice>
                         <PanelButton v-else :disabled="starting" @click="start">
                             {{ starting ? 'در حال ورود…' : exam.is_practice ? (attemptsUsed ? 'تمرین دوباره' : 'شروع تمرین') : (attemptsUsed ? 'شرکت دوباره' : 'شروع آزمون') }}
@@ -74,35 +74,39 @@ function start() {
                     </div>
                 </PanelCard>
 
-                <PanelCard v-if="result" body-class="p-4 sm:p-6">
-                    <h2 class="font-semibold text-gray-900 panel-dark:text-ui-ink">{{ exam.is_practice ? 'آخرین تمرین' : 'آخرین شرکت' }}</h2>
-                    <p class="mt-2 text-sm text-gray-600 panel-dark:text-ui-muted">
-                        {{ formatDateTime(result.submitted_at) }}
-                        <span v-if="result.timed_out">(با پایان وقت)</span>
-                        — {{ result.status }}
-                    </p>
-                    <p v-if="result.score !== null" class="mt-3 text-lg">
-                        نمره: <strong>{{ result.score }}</strong> از {{ exam.total_score }}
-                    </p>
-                    <p
-                        v-if="result.passed !== null"
-                        class="mt-2 font-medium"
-                        :class="result.passed ? 'text-emerald-700 panel-dark:text-emerald-300' : 'text-rose-700 panel-dark:text-rose-300'"
-                    >
-                        {{ result.passed ? 'قبول' : 'مردود' }}
-                    </p>
+                <PanelCard v-if="result" body-class="grid gap-3 [--el-card-padding:0.875rem] sm:gap-4 sm:[--el-card-padding:1.25rem]">
+                    <div class="grid gap-1">
+                        <h2 class="font-semibold text-gray-900 panel-dark:text-ui-ink">{{ exam.is_practice ? 'آخرین تمرین' : 'آخرین شرکت' }}</h2>
+                        <p class="text-sm text-gray-600 panel-dark:text-ui-muted">
+                            {{ formatDateTime(result.submitted_at) }}
+                            <span v-if="result.timed_out">(با پایان وقت)</span>
+                            — {{ result.status }}
+                        </p>
+                    </div>
+                    <div v-if="result.score !== null || result.passed !== null" class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                        <p v-if="result.score !== null" class="text-lg">
+                            نمره: <strong>{{ result.score }}</strong> از {{ exam.total_score }}
+                        </p>
+                        <p
+                            v-if="result.passed !== null"
+                            class="font-medium"
+                            :class="result.passed ? 'text-emerald-700 panel-dark:text-emerald-300' : 'text-rose-700 panel-dark:text-rose-300'"
+                        >
+                            {{ result.passed ? 'قبول' : 'مردود' }}
+                        </p>
+                    </div>
 
-                    <ol v-if="result.answers.length" class="mt-6 space-y-3">
-                        <li v-for="(answer, index) in result.answers" :key="answer.id" class="rounded-lg border border-gray-200 panel-dark:border-ui-line p-4">
+                    <ol v-if="result.answers.length" class="grid gap-2 sm:gap-3">
+                        <li v-for="(answer, index) in result.answers" :key="answer.id" class="grid gap-1.5 rounded-lg border border-gray-200 p-3 panel-dark:border-ui-line sm:p-4">
                             <p class="whitespace-pre-line wrap-break-word font-medium text-gray-900 panel-dark:text-ui-ink">{{ index + 1 }}. {{ answer.body }}</p>
-                            <p class="mt-2 whitespace-pre-line wrap-break-word text-sm">
+                            <p class="whitespace-pre-line wrap-break-word text-sm">
                                 <span class="text-gray-500 panel-dark:text-ui-muted">پاسخ شما:</span> {{ answer.your_answer ?? 'بی‌پاسخ' }}
                             </p>
-                            <p v-if="answer.correct_answer" class="mt-1 whitespace-pre-wrap wrap-break-word text-sm text-emerald-700 panel-dark:text-emerald-300">
+                            <p v-if="answer.correct_answer" class="whitespace-pre-wrap wrap-break-word text-sm text-emerald-700 panel-dark:text-emerald-300">
                                 <span class="text-gray-500 panel-dark:text-ui-muted">{{ answer.type === 'descriptive' ? 'پاسخ نمونه:' : 'پاسخ درست:' }}</span> {{ answer.correct_answer }}
                             </p>
                             <PracticeSolution v-if="answer.solution_url" :url="answer.solution_url" :type="answer.type" />
-                            <p v-else class="mt-1 text-xs text-gray-500 panel-dark:text-ui-muted">
+                            <p v-else class="text-xs text-gray-500 panel-dark:text-ui-muted">
                                 {{ answer.score === null ? 'تصحیح نشده' : `${answer.score} از ${answer.max_score}` }}
                             </p>
                         </li>

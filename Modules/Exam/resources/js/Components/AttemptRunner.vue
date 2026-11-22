@@ -106,8 +106,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="space-y-4">
-        <PanelCard class="sticky top-16 z-10 lg:top-0" body-class="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4">
+    <div class="grid gap-3 sm:gap-4">
+        <PanelCard class="sticky top-16 z-10 lg:top-0" body-class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 [--el-card-padding:0.75rem] sm:[--el-card-padding:1rem]">
             <div class="min-w-0 flex-1 space-y-1.5 text-sm text-ui-muted">
                 <p class="font-semibold text-ui-ink">{{ answeredCount }} از {{ attempt.questions.length }} سؤال پاسخ داده شده</p>
                 <ElProgress class="max-w-48" :percentage="Math.round(100 * answeredCount / (attempt.questions.length || 1))" :show-text="false" aria-label="پیشرفت پاسخ‌گویی" />
@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
         <PanelCard
             v-for="(question, index) in pageQuestions"
             :key="question.id"
-            body-class="p-4 sm:p-5"
+            body-class="grid gap-3 [--el-card-padding:0.875rem] sm:[--el-card-padding:1.25rem]"
         >
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div class="min-w-0 flex-1 basis-48 whitespace-pre-line wrap-break-word font-medium leading-8 text-ui-ink">
@@ -155,11 +155,18 @@ onBeforeUnmount(() => {
                 <span v-if="!exam.is_practice" class="shrink-0 text-xs text-gray-500 panel-dark:text-ui-muted">{{ question.max_score }} نمره</span>
             </div>
 
-            <div v-if="question.type === 'choice'" class="mt-4 space-y-2">
-                <ElRadioGroup v-model="autosave.answers[question.id]" :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`" class="panel-option-stack">
-                    <ElRadio v-for="option in question.options" :key="option.key" :value="option.key"
-                        :name="`question-${question.id}`" border class="panel-wrap-option"
-                    >{{ option.text }}</ElRadio>
+            <div v-if="question.type === 'choice'" class="grid justify-items-start gap-2">
+                <ElRadioGroup v-model="autosave.answers[question.id]" :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`" class="panel-option-stack w-full">
+                    <ElRadio
+                        v-for="option in question.options"
+                        :key="option.key"
+                        :value="option.key"
+                        :name="`question-${question.id}`"
+                        border
+                        class="panel-wrap-option h-auto! px-4! py-3! sm:px-5! [&>.el-radio__input]:mt-1!"
+                    >
+                        <span class="block leading-6">{{ option.text }}</span>
+                    </ElRadio>
                 </ElRadioGroup>
                 <PanelButton
                     v-if="autosave.answers[question.id]"
@@ -173,14 +180,14 @@ onBeforeUnmount(() => {
             <ElInput type="textarea"
                 v-else-if="!question.blank_parts"
                 v-model="autosave.answers[question.id]"
-                :rows="5" class="mt-4"
+                :rows="5"
                 :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`"
                 placeholder="پاسخ خود را بنویسید"
             />
             <PracticeSolution v-if="question.solution_url" :url="question.solution_url" :type="question.type" />
         </PanelCard>
 
-        <PanelCard body-class="flex flex-wrap items-center justify-between gap-3 p-3">
+        <PanelCard body-class="flex flex-wrap items-center justify-between gap-3 [--el-card-padding:0.75rem] sm:[--el-card-padding:1rem]">
             <nav v-if="pageCount > 1" aria-label="صفحه‌های آزمون">
                 <PanelPagination :current-page="currentPage + 1" :page-count="pageCount" :disabled="submitting"
                     @update:current-page="goToPage($event - 1)" />

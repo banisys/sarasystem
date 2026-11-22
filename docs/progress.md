@@ -23,6 +23,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Matched the main exam list to the session exam card spacing. Measured 14 px card padding and 12 px gaps on mobile, and 20 px padding and 16 px gaps on desktop. Checked long titles and open and closed badges in Chromium. The Vite build passed.
+- 2026-11-22 — Increased multiple-choice option padding and let bordered radios grow with wrapped text. Measured 12 px vertical padding and 16 px mobile or 20 px desktop horizontal padding in Chromium. The Vite build passed.
+- 2026-11-22 — Matched exam details, results and active question cards to the session exam list spacing. Checked 14 px mobile and 20 px desktop card padding with sample attempts in Chromium. The Vite build passed.
+- 2026-11-22 — Refined spacing in the session exam list. Measured 14 px card padding and 12 px gaps on mobile, and 20 px padding and 16 px gaps on desktop. Checked two cards with sample data in Chromium. The Vite build passed.
 - 2026-11-22 — Kept Tailwind styling throughout the user panel and adopted Element Plus Container components for its shared layout ([ADR 0122](decisions/0122-user-panel-container.md)). Checked the desktop sidebar and mobile sticky header and drawer in Chromium. All 817 tests and the Vite build passed.
 - 2026-11-22 — Added the SaraSystem Element Plus skill as the default user-panel workflow. It records local conventions and uses the installed version and official docs for API checks. Verified the Codex skill link with Boost ([ADR 0114](decisions/0114-codex-project-skills.md)).
 - 2026-11-22 — Installed Element Plus Skills for SaraSystem in `.agents/skills/` and verified the installed files against the pinned upstream revision ([ADR 0114](decisions/0114-codex-project-skills.md)).

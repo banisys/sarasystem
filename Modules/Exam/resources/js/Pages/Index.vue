@@ -17,7 +17,7 @@ defineProps({
     <Head title="آزمون‌ها" />
 
     <AppLayout>
-        <div class="space-y-4">
+        <div class="grid gap-3 sm:gap-4">
             <UiPageHeader title="آزمون‌ها" icon="clipboard" />
 
             <PanelEmpty v-if="!exams.length" description="آزمونی برای شما نیست." />
@@ -26,14 +26,15 @@ defineProps({
                 v-for="exam in exams"
                 :key="exam.id"
                 :href="route('exams.show', exam.id)"
+                body-class="grid gap-3 [--el-card-padding:0.875rem] sm:gap-4 sm:[--el-card-padding:1.25rem]"
             >
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="min-w-0 wrap-break-word font-semibold text-ui-ink">{{ exam.title }}</h2>
+                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    <h2 class="min-w-0 flex-1 basis-40 wrap-break-word font-semibold text-ui-ink">{{ exam.title }}</h2>
                     <ElTag :type="exam.is_open ? 'success' : 'info'" round>
                         {{ exam.is_open ? 'باز' : 'بسته' }}
                     </ElTag>
                 </div>
-                <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ui-muted">
+                <div class="flex flex-wrap gap-x-3 gap-y-2 text-sm text-ui-muted">
                     <span v-if="exam.is_practice" class="font-semibold text-brand-700">آزمون تمرینی</span>
                     <span>مدت: {{ exam.duration_minutes }} دقیقه</span>
                     <span v-if="exam.starts_at">از {{ formatDateTime(exam.starts_at) }}</span>
