@@ -252,13 +252,27 @@ class ExamAdminTest extends TestCase
         $bank = QuestionBank::factory()->for($this->tenant)->create();
         $this->actingInPanel($this->manager, $this->tenant);
 
-        Livewire::test(CreateExam::class)->fillForm([
-            'title' => 'تمرین نمونه',
-            'is_practice' => true,
-            'sections' => [['question_bank_id' => $bank->id, 'question_count' => 1]],
-            'total_score' => null,
-            'passing_score' => null,
-        ])->call('create')->assertHasNoFormErrors();
+        Livewire::test(CreateExam::class)
+            ->assertFormFieldVisible('total_score')
+            ->set('data.is_practice', true)
+            ->assertFormFieldHidden('total_score')
+            ->assertFormFieldHidden('passing_score')
+            ->assertFormFieldHidden('negative_marking')
+            ->assertFormFieldHidden('max_attempts')
+            ->assertFormFieldHidden('retake_policy')
+            ->assertFormFieldHidden('result_visibility')
+            ->assertFormFieldVisible('duration_minutes')
+            ->set('data.is_practice', false)
+            ->assertFormFieldVisible('total_score')
+            ->assertFormFieldVisible('max_attempts')
+            ->fillForm([
+                'title' => 'تمرین نمونه',
+                'is_practice' => true,
+                'sections' => [['question_bank_id' => $bank->id, 'question_count' => 1]],
+                'total_score' => null,
+                'passing_score' => null,
+            ])
+            ->call('create')->assertHasNoFormErrors();
 
         $exam = Exam::query()->sole();
         $this->assertTrue($exam->is_practice);

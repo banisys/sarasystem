@@ -6,6 +6,7 @@ import 'element-plus/es/components/select/style/css';
 import 'element-plus/es/components/input/style/css';
 import { computed, ref } from 'vue';
 import 'element-plus/es/components/collapse/style/css';
+import 'element-plus/es/components/collapse-item/style/css';
 const props = defineProps({
     form: { type: Object, required: true },
     settings: { type: Object, required: true },
@@ -30,26 +31,37 @@ const advanced = computed(() => [
 </script>
 
 <template>
-    <div class="grid gap-[var(--exam-settings-gap,1rem)]">
-        <PanelFormField :label="settings.labels.title">
-            <ElInput v-model="form.title" maxlength="255" />
-        </PanelFormField>
-        <div class="rounded-lg border border-ui-line p-3">
-            <ElCheckbox v-model="form.is_practice" :disabled="modeLocked" class="panel-wrap-option">
-                <span class="block font-medium">{{ settings.labels.is_practice }}</span>
-                <span class="mt-1 block text-ui-muted">فراگیر می‌تواند چند بار تمرین کند و پاسخ درست را ببیند. نمره‌ای ثبت نمی‌شود.</span>
-            </ElCheckbox>
-        </div>
-        <div class="grid gap-[var(--exam-settings-gap,0.75rem)]" :class="{ 'sm:grid-cols-3': !form.is_practice }">
-            <PanelFormField v-for="[key, min, max, step] in basic" :key="key" :label="settings.labels[key]">
-                <ElInput v-model.number="form[key]" type="number" :min="min" :max="max" :step="step" />
+    <div class="@container grid gap-[var(--exam-settings-gap,1rem)]">
+        <div
+            class="contents @min-[44rem]:grid @min-[44rem]:items-end @min-[44rem]:gap-[var(--exam-settings-gap,1rem)]"
+            :class="form.is_practice ? '@min-[44rem]:grid-cols-[2fr_1fr]' : '@min-[44rem]:grid-cols-[2fr_3fr]'"
+        >
+            <PanelFormField :label="settings.labels.title" class="min-w-0">
+                <ElInput v-model="form.title" maxlength="255" />
             </PanelFormField>
+            <div class="grid min-w-0 gap-[var(--exam-settings-gap,0.75rem)]" :class="{ 'sm:grid-cols-3': !form.is_practice }">
+                <PanelFormField v-for="[key, min, max, step] in basic" :key="key" :label="settings.labels[key]" class="min-w-0">
+                    <ElInput v-model.number="form[key]" type="number" :min="min" :max="max" :step="step" />
+                </PanelFormField>
+            </div>
         </div>
-        <div class="rounded-lg border border-ui-line p-3">
-            <ElCheckbox v-model="form.allow_late_start" class="panel-wrap-option">
-                <span class="block font-medium">{{ settings.labels.allow_late_start }}</span>
-                <span class="mt-1 block text-ui-muted">برای شروع آزمون مهلت پایانی وجود ندارد. مدت پاسخ‌گویی از لحظهٔ شروع هر تلاش حساب می‌شود.</span>
-            </ElCheckbox>
+        <div class="contents @min-[44rem]:grid @min-[44rem]:grid-cols-2 @min-[44rem]:gap-[var(--exam-settings-gap,1rem)]">
+            <div class="rounded-lg border border-ui-line p-3">
+                <ElCheckbox v-model="form.is_practice" :disabled="modeLocked" class="panel-wrap-option">
+                    <span class="block font-medium">{{ settings.labels.is_practice }}</span>
+                    <span class="mt-1 block text-ui-muted">
+                        {{ form.is_practice
+                            ? 'فیلدهای نمره، سقف دفعات شرکت و نمایش نتیجه پنهان شده‌اند. مدت و بازهٔ دسترسی همچنان قابل تنظیم‌اند.'
+                            : 'با فعال‌کردن این گزینه، فراگیر می‌تواند چند بار بدون نمره تمرین کند و پاسخ درست را ببیند.' }}
+                    </span>
+                </ElCheckbox>
+            </div>
+            <div class="rounded-lg border border-ui-line p-3">
+                <ElCheckbox v-model="form.allow_late_start" class="panel-wrap-option">
+                    <span class="block font-medium">{{ settings.labels.allow_late_start }}</span>
+                    <span class="mt-1 block text-ui-muted">برای شروع آزمون مهلت پایانی وجود ندارد. مدت پاسخ‌گویی از لحظهٔ شروع هر تلاش حساب می‌شود.</span>
+                </ElCheckbox>
+            </div>
         </div>
         <ElCollapse v-model="openSections" class="panel-settings-collapse sm:[--profile-settings-padding:1.5rem]!">
             <ElCollapseItem name="advanced" title="تنظیمات بیشتر">
@@ -62,7 +74,7 @@ const advanced = computed(() => [
                             <ElInput v-model.number="form[key]" type="number" :min="min" :max="max" />
                         </PanelFormField>
                     </div>
-                    <div v-if="!form.is_practice" class="grid gap-[var(--exam-settings-gap,0.75rem)] sm:grid-cols-2">
+                    <div v-if="!form.is_practice" class="grid gap-[var(--exam-settings-gap,0.75rem)] sm:grid-cols-2 @min-[44rem]:grid-cols-3">
                         <PanelFormField :label="settings.labels.retake_policy">
                             <ElSelect v-model="form.retake_policy" :aria-label="settings.labels.retake_policy" append-to="#profile-overlays">
                                 <ElOption v-for="(label, value) in settings.retake_policies" :key="value" :value="value" :label="label" />
@@ -73,7 +85,7 @@ const advanced = computed(() => [
                                 <ElOption v-for="(label, value) in settings.result_visibility" :key="value" :value="value" :label="label" />
                             </ElSelect>
                         </PanelFormField>
-                        <PanelFormField :label="settings.labels.negative_marking" class="sm:col-span-2">
+                        <PanelFormField :label="settings.labels.negative_marking" class="sm:col-span-2 @min-[44rem]:col-span-1">
                             <ElSelect v-model="form.negative_marking" clearable :value-on-clear="null" placeholder="بدون نمرهٔ منفی" :aria-label="settings.labels.negative_marking" append-to="#profile-overlays">
                                 <ElOption v-for="count in [2, 3, 4, 5, 6]" :key="count" :value="count" :label="`هر ${count} پاسخ غلط، یک پاسخ درست را حذف کند`" />
                             </ElSelect>

@@ -18,6 +18,8 @@ Use B. Standalone and session exam creation offer «آزمون تمرینی». E
 
 Practice supports unlimited starts inside the exam's configured availability. Each start uses the existing question selection and timing rules. Submitting or timing out closes the attempt and keeps the learner's answers. Practice skips automatic scoring, never enters manual grading, and stays out of grading results. Staff can still see the number of attempts on the exam.
 
+Switching to practice in the creation form hides scoring, retake and result settings. Timing and question selection remain available. The user-panel question picker omits point values in practice.
+
 The learner can request the solution for a single question during practice or when viewing their latest completed practice. The participant endpoint checks publication, current branch, eligibility, and ownership of the saved question snapshot. It returns the correct choice, accepted blanks, or a written model answer when available.
 
 ## Consequences

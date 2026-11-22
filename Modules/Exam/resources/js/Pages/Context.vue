@@ -139,7 +139,7 @@ function remove() {
                 back-label="بازگشت به جلسه"
             />
             <PanelNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</PanelNotice>
-            <ElTabs v-model="tab" aria-label="بخش‌های آزمون‌های جلسه">
+            <ElTabs v-model="tab" class="session-exam-tabs pt-4" aria-label="بخش‌های آزمون‌های جلسه">
                 <ElTabPane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label" lazy>
                     <template #label>
                         <PanelIcon :name="item.icon" class="size-4 shrink-0" />
@@ -225,7 +225,9 @@ function remove() {
                                     <ElCheckbox v-for="question in candidates" :key="question.id" :value="question.id" border class="panel-wrap-option"
                                         :disabled="taken.has(question.id) || (checked.length >= 50 && !checked.includes(question.id))">
                                         <span class="block whitespace-pre-wrap text-sm">{{ question.body }}</span>
-                                        <span class="block text-xs text-ui-muted">{{ question.type }} · {{ question.score }} نمره{{ taken.has(question.id) ? ' · انتخاب‌شده در بانک دیگر' : '' }}</span>
+                                        <span class="block text-xs text-ui-muted">
+                                            {{ question.type }}<template v-if="!generation.is_practice"> · {{ question.score }} نمره</template>{{ taken.has(question.id) ? ' · انتخاب‌شده در بانک دیگر' : '' }}
+                                        </span>
                                     </ElCheckbox>
                                 </ElCheckboxGroup>
                             </div>
@@ -265,3 +267,9 @@ function remove() {
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.session-exam-tabs :deep(.el-tabs__nav-wrap:not(.is-scrollable) .el-tabs__nav) {
+    float: inline-start;
+}
+</style>

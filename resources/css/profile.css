@@ -423,7 +423,12 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
 }
 
 .profile-panel .panel-settings-collapse .el-collapse-item__header {
-    padding-inline: var(--profile-settings-padding);
+    padding: 0.75rem var(--profile-settings-padding);
+    line-height: 1.5;
+}
+
+.profile-panel .panel-settings-collapse .el-collapse-item__title {
+    text-align: start;
 }
 
 .profile-panel .panel-settings-collapse .el-collapse-item__content {
