@@ -48,7 +48,7 @@
             :color="\Filament\Support\Colors\Color::Violet"
             size="sm"
             outlined
-            class="w-full"
+            class="w-full py-3!"
             icon="heroicon-m-cube"
         >
             <span x-text="state === 'loading' ? 'در حال بارگذاری…' : 'نمای سه‌بعدی'">نمای سه‌بعدی</span>

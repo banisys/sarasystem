@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-3" role="group" aria-label="{{ $isExam ? 'عملیات جلسهٔ امتحانی' : 'عملیات جلسهٔ درسی' }}">
+<div class="flex flex-col gap-5 [&>.fi-btn]:py-3!" role="group" aria-label="{{ $isExam ? 'عملیات جلسهٔ امتحانی' : 'عملیات جلسهٔ درسی' }}">
     @foreach ($this->getCachedHeaderActions() as $action)
         @if ($action->isVisible())
             {{ $action }}
