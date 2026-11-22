@@ -23,6 +23,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Kept Tailwind styling throughout the user panel and adopted Element Plus Container components for its shared layout ([ADR 0122](decisions/0122-user-panel-container.md)). Checked the desktop sidebar and mobile sticky header and drawer in Chromium. All 817 tests and the Vite build passed.
+- 2026-11-22 — Added the SaraSystem Element Plus skill as the default user-panel workflow. It records local conventions and uses the installed version and official docs for API checks. Verified the Codex skill link with Boost ([ADR 0114](decisions/0114-codex-project-skills.md)).
 - 2026-11-22 — Installed Element Plus Skills for SaraSystem in `.agents/skills/` and verified the installed files against the pinned upstream revision ([ADR 0114](decisions/0114-codex-project-skills.md)).
 - 2026-11-22 — Increased the space above the session exam tab bar by 16 pixels. Measured the 40-pixel gap below the page header in mobile and desktop Chromium previews. The Vite build passed.
 - 2026-11-22 — Right-aligned the session exam tabs in the Persian user panel when the row fits. Verified desktop alignment, narrow-screen scrolling and keyboard tab switching in Chromium. The Vite build passed.

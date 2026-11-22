@@ -23,3 +23,5 @@ After logging in, a teacher came to an empty dashboard (a greeting and the tenan
 - The dashboard is unreachable for people with a module home. If it gets content of its own later, revisit this (e.g. a «داشبورد» link to a separate route).
 - Two modules offering a home: the first registered wins (module boot order). Only Class offers one now.
 - Each page view runs every home provider once more (Class: one or two `exists` queries).
+
+[ADR 0122](0122-user-panel-container.md) defines the Element Plus container structure used by the shared panel layout.

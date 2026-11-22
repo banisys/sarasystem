@@ -1,7 +1,8 @@
 <script setup>
 import { router, usePage } from '@inertiajs/vue3';
-import { ElConfigProvider, ElDrawer } from 'element-plus';
+import { ElAside, ElConfigProvider, ElContainer, ElDrawer, ElHeader, ElMain } from 'element-plus';
 import fa from 'element-plus/es/locale/lang/fa';
+import 'element-plus/es/components/container/style/css';
 import 'element-plus/es/components/drawer/style/css';
 import '../../css/profile.css';
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
@@ -50,17 +51,6 @@ function leaveImpersonation() {
                 </PanelButton>
             </div>
 
-            <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-ui-line bg-ui-surface px-4 lg:hidden">
-                <PanelButton variant="outline" aria-haspopup="dialog" :aria-expanded="menuOpen" aria-label="باز کردن منوی پنل" @click="menuOpen = true">
-                    <PanelIcon name="menu" class="size-5" />
-                </PanelButton>
-                <PanelButton :href="homeUrl" variant="ghost" class="min-w-0 truncate px-3 font-bold">
-                    <span class="truncate">{{ page.props.appName }}</span>
-                </PanelButton>
-                <PanelButton variant="outline" aria-label="تم تیره" title="تم تیره" :aria-pressed="theme === 'dark'" @click="toggleTheme">
-                    <PanelIcon :name="theme === 'dark' ? 'sun' : 'moon'" class="size-5" />
-                </PanelButton>
-            </header>
             <ElDrawer
                 v-model="menuOpen" title="منوی پنل کاربری" direction="rtl"
                 size="min(20rem, calc(100% - 1.5rem))" :with-header="false" destroy-on-close
@@ -74,22 +64,38 @@ function leaveImpersonation() {
                 </PanelNavigation>
             </ElDrawer>
 
-            <div class="px-4 py-6 sm:px-6 lg:flex lg:items-start lg:gap-6 lg:px-8 lg:py-8">
-                <PanelCard role="complementary" class="hidden! h-[min(48rem,calc(100dvh-4rem))] w-64 shrink-0 [--panel-card-overflow:hidden] lg:sticky lg:top-8 lg:block! xl:w-70" body-class="h-full">
-                    <PanelNavigation>
-                        <template #appearance>
-                            <PanelButton variant="ghost" class="panel-row-button" :aria-pressed="theme === 'dark'" @click="toggleTheme">
-                                <PanelIcon :name="theme === 'dark' ? 'sun' : 'moon'" class="size-5" />
-                                تم تیره
-                            </PanelButton>
-                        </template>
-                    </PanelNavigation>
-                </PanelCard>
-                <main class="min-w-0 flex-1">
-                    <!-- Element Plus menus need their teleport target before the page mounts. -->
-                    <slot v-if="overlays" />
-                </main>
-            </div>
+            <ElContainer direction="vertical">
+                <ElHeader height="auto" class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-ui-line bg-ui-surface px-4! lg:hidden">
+                    <PanelButton variant="outline" aria-haspopup="dialog" :aria-expanded="menuOpen" aria-label="باز کردن منوی پنل" @click="menuOpen = true">
+                        <PanelIcon name="menu" class="size-5" />
+                    </PanelButton>
+                    <PanelButton :href="homeUrl" variant="ghost" class="min-w-0 truncate px-3 font-bold">
+                        <span class="truncate">{{ page.props.appName }}</span>
+                    </PanelButton>
+                    <PanelButton variant="outline" aria-label="تم تیره" title="تم تیره" :aria-pressed="theme === 'dark'" @click="toggleTheme">
+                        <PanelIcon :name="theme === 'dark' ? 'sun' : 'moon'" class="size-5" />
+                    </PanelButton>
+                </ElHeader>
+
+                <ElContainer class="items-start px-4 py-6 sm:px-6 lg:gap-6 lg:px-8 lg:py-8">
+                    <ElAside class="hidden overflow-visible! [--el-aside-width:16rem] lg:sticky lg:top-8 lg:block xl:[--el-aside-width:17.5rem]">
+                        <PanelCard class="h-[min(48rem,calc(100dvh-4rem))] [--panel-card-overflow:hidden]" body-class="h-full">
+                            <PanelNavigation>
+                                <template #appearance>
+                                    <PanelButton variant="ghost" class="panel-row-button" :aria-pressed="theme === 'dark'" @click="toggleTheme">
+                                        <PanelIcon :name="theme === 'dark' ? 'sun' : 'moon'" class="size-5" />
+                                        تم تیره
+                                    </PanelButton>
+                                </template>
+                            </PanelNavigation>
+                        </PanelCard>
+                    </ElAside>
+                    <ElMain class="min-w-0 overflow-visible! p-0!">
+                        <!-- Element Plus menus need their teleport target before the page mounts. -->
+                        <slot v-if="overlays" />
+                    </ElMain>
+                </ElContainer>
+            </ElContainer>
         </div>
     </ElConfigProvider>
 </template>

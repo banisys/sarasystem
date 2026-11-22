@@ -18,6 +18,7 @@
         "tailwindcss-development",
         "filament-development",
         "sarasystem-dependency-upgrades",
+        "sarasystem-element-plus",
         "sarasystem-module-integration",
         "sarasystem-tenancy"
     ]
