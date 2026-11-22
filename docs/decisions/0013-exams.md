@@ -57,3 +57,5 @@ A written question can include an optional model answer. The attempt copies it a
 [ADR 0082](0082-question-tags.md) adds a tenant-owned tag catalog and multiple tags per question, with tag filtering in the admin panel.
 
 [ADR 0108](0108-manual-admin-exam-question-selection.md) allows admin editors to save explicit question IDs per bank section.
+
+[ADR 0121](0121-practice-exams.md) adds an ungraded practice mode with repeatable attempts and per-question solutions on request.

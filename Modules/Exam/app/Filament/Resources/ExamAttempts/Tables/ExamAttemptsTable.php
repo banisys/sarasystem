@@ -53,7 +53,7 @@ class ExamAttemptsTable
             ->filters([
                 SelectFilter::make('exam')
                     ->label('آزمون')
-                    ->relationship('exam', 'title'),
+                    ->relationship('exam', 'title', fn (Builder $query) => $query->where('is_practice', false)),
                 SelectFilter::make('status')
                     ->label('وضعیت')
                     ->options(AttemptStatus::class),

@@ -33,6 +33,7 @@ class ExamPaperPreview
                 'title' => $exam->title,
                 'description' => $exam->description,
                 'duration_minutes' => $exam->duration_minutes,
+                'is_practice' => $exam->is_practice,
                 'sections' => $exam->sections()->get(['question_bank_id', 'question_count', 'question_ids'])->toArray(),
             ], $exam->title, $classTitle, $startsAt);
         }
@@ -42,7 +43,7 @@ class ExamPaperPreview
             'duration' => $exam->duration_minutes,
             'questions' => array_map(fn (array $question): array => $this->question(
                 $question['body'], $question['options'] ?? [], QuestionType::tryFrom($question['type']),
-                isset($question['score']) ? (float) $question['score'] : null,
+                ! $exam->is_practice && isset($question['score']) ? (float) $question['score'] : null,
             ), $exam->question_snapshot),
             'error' => $exam->question_snapshot === [] ? 'این آزمون سؤالی برای چاپ ندارد.' : null,
         ]);
@@ -58,6 +59,7 @@ class ExamPaperPreview
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'is_practice' => ['sometimes', 'boolean'],
             'sections' => ['required', 'array', 'min:1'],
             'sections.*' => ['required', 'array'],
             'sections.*.question_bank_id' => ['required', 'integer', 'min:1'],
@@ -94,7 +96,9 @@ class ExamPaperPreview
             }
 
             foreach ($questions as $question) {
-                $paper['questions'][] = $this->question($question->body, $question->options ?? [], $question->type, $question->score);
+                $paper['questions'][] = $this->question(
+                    $question->body, $question->options ?? [], $question->type, empty($data['is_practice']) ? $question->score : null,
+                );
             }
         }
 

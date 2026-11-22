@@ -7,6 +7,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Filament\Resources\ExamAttempts\Pages\GradeExamAttempt;
 use Modules\Exam\Filament\Resources\ExamAttempts\Pages\ListExamAttempts;
 use Modules\Exam\Filament\Resources\ExamAttempts\Schemas\GradeAttemptForm;
@@ -52,6 +53,11 @@ class ExamAttemptResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->forGrading();
     }
 
     /**

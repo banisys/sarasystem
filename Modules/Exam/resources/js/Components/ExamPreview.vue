@@ -19,9 +19,9 @@ const changed = ref(false);
 const orderChanged = ref(false);
 const totalScore = ref(null);
 const preview = useHttp();
-const reorder = useHttp({ order: [], scores: [], revision: '', fix_order: false });
+const reorder = useHttp({ order: [], ...(props.exam.is_practice ? {} : { scores: [] }), revision: '', fix_order: false });
 const canMove = computed(() => editable.value && !reorder.processing);
-const validScores = computed(() => questions.value.every(({ score }) =>
+const validScores = computed(() => props.exam.is_practice || questions.value.every(({ score }) =>
     score >= 0.25 && score <= 1000 && /^\d+(\.\d{1,2})?$/.test(String(score)),
 ));
 const totalCents = computed(() => Math.round(totalScore.value * 100));
@@ -93,7 +93,9 @@ function drop(index) {
 async function save(fixOrder = false) {
     if (!validScores.value) return;
     reorder.order = questions.value.map((question) => question.index);
-    reorder.scores = questions.value.map((question) => Number(question.score));
+    if (!props.exam.is_practice) {
+        reorder.scores = questions.value.map((question) => Number(question.score));
+    }
     reorder.fix_order = fixOrder || orderChanged.value;
     error.value = '';
     try {
@@ -137,8 +139,8 @@ async function save(fixOrder = false) {
                             <ul v-if="question.options.length" class="list-disc space-y-1 ps-5 text-sm text-gray-700 panel-dark:text-ui-ink">
                                 <li v-for="(option, optionIndex) in question.options" :key="optionIndex" class="break-words">{{ option }}</li>
                             </ul>
-                            <p class="text-xs text-gray-600 panel-dark:text-ui-muted">{{ question.type }}<template v-if="!editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
-                            <label v-if="editable" class="inline-flex items-center gap-1.5">
+                            <p class="text-xs text-gray-600 panel-dark:text-ui-muted">{{ question.type }}<template v-if="!exam.is_practice && !editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
+                            <label v-if="!exam.is_practice && editable" class="inline-flex items-center gap-1.5">
                                 <span class="panel-field-label">بارم</span>
                                 <ElInput v-model.number="question.score" type="number" min="0.25" max="1000" step="0.01" inputmode="decimal" dir="ltr"
                                     :aria-label="`بارم سؤال ${index + 1}`" :disabled="reorder.processing"

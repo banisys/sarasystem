@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Added «آزمون تمرینی» to standalone and session exam creation ([ADR 0121](decisions/0121-practice-exams.md)). Learners can repeat practice within its configured window and reveal individual solutions without grading. Applied the local migration and verified creation, taking and review in Chromium previews. All 817 tests, 37 disabled-module checks, Pint and the Vite build passed.
 - 2026-11-22 — Applied shared right alignment and a 12 px option inset to user-panel selects, initialized the overlay target before page content, and added responsive padding to advanced exam settings. Verified the exam dropdown and calendar filters in Chromium, including mobile dark mode, selecting a bank and adding another bank. All 813 tests and the Vite build passed.
 - 2026-11-22 — Increased spacing between settings, question bank rows and the submit area in «ساخت آزمون از بانک سؤال». Verified the rendered form in mobile dark and desktop light Chromium previews. The Vite build passed.
 - 2026-11-22 — Reduced the right padding of academic calendar filter options from 32 to 12 pixels. Verified selected and unselected options in a Chromium preview. The Vite build passed.

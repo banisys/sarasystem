@@ -30,6 +30,7 @@ class ExamsTable
             ->columns([
                 TextColumn::make('title')
                     ->label('عنوان')
+                    ->description(fn (Exam $record): ?string => $record->is_practice ? 'آزمون تمرینی' : null)
                     ->sortable(),
                 TextColumn::make('examGroup.title')
                     ->label('گروه آزمون')
@@ -90,7 +91,7 @@ class ExamsTable
                     ->label('نتایج')
                     ->icon(Heroicon::OutlinedChartBar)
                     ->url(fn (Exam $record): string => ExamAttemptResource::urlForExam($record))
-                    ->visible(fn (): bool => ExamAttemptResource::canViewAny()),
+                    ->visible(fn (Exam $record): bool => ! $record->is_practice && ExamAttemptResource::canViewAny()),
                 EditAction::make(),
                 DeleteAction::make()
                     ->modalDescription('آزمون با همه‌ی نتایج و پاسخ‌های شرکت‌کنندگان حذف می‌شود.'),

@@ -36,6 +36,8 @@ class ExamForm
 {
     public static function configure(Schema $schema, bool $forSession = false): Schema
     {
+        $graded = fn (Get $get, ?Exam $record): bool => ! ($record?->is_practice ?? $get('is_practice'));
+
         return $schema
             ->components([
                 Section::make('مشخصات')
@@ -45,6 +47,13 @@ class ExamForm
                             ->label('عنوان')
                             ->required()
                             ->maxLength(255)
+                            ->columnSpanFull(),
+                        Toggle::make('is_practice')
+                            ->label('آزمون تمرینی')
+                            ->helperText('شرکت مکرر بدون ثبت نمره، با امکان مشاهدهٔ پاسخ درست')
+                            ->default(false)
+                            ->disabledOn('edit')
+                            ->live()
                             ->columnSpanFull(),
                         Select::make('exam_group_id')
                             ->label('گروه آزمون')
@@ -136,32 +145,38 @@ class ExamForm
                             ->required(),
                         TextInput::make('total_score')
                             ->label('نمره‌ی کل')
+                            ->visible($graded)
                             ->numeric()->minValue(1)->maxValue(1000)
                             ->default(20)
                             ->required(),
                         TextInput::make('passing_score')
                             ->label('نمره‌ی قبولی')
+                            ->visible($graded)
                             ->numeric()->minValue(0)
                             ->default(12)
                             ->lte('total_score')
                             ->required(),
                         Select::make('negative_marking')
                             ->label('نمره‌ی منفی')
+                            ->visible($graded)
                             ->options(collect([2, 3, 4, 5, 6])->mapWithKeys(fn (int $count): array => [$count => "هر {$count} پاسخ غلط، یک پاسخ درست را حذف کند"])->all())
                             ->placeholder('بدون نمره‌ی منفی'),
                         TextInput::make('max_attempts')
                             ->label('تعداد دفعات مجاز شرکت')
+                            ->visible($graded)
                             ->integer()->minValue(1)->maxValue(100)
                             ->default(1)
                             ->required(),
                         Select::make('retake_policy')
                             ->label('شرکت دوباره')
+                            ->visible($graded)
                             ->options(RetakePolicy::class)
                             ->default(RetakePolicy::Always)
                             ->selectablePlaceholder(false)
                             ->required(),
                         Select::make('result_visibility')
                             ->label('نمایش نتیجه به شرکت‌کننده')
+                            ->visible($graded)
                             ->options(ResultVisibility::class)
                             ->default(ResultVisibility::Hidden)
                             ->selectablePlaceholder(false)

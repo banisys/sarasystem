@@ -185,6 +185,8 @@ When Exam is enabled, the exam session details can open the admin creation form 
 
 The admin exam form can combine explicit question selections and automatic draws across its bank sections. The attempt and paper use the same bank selection rules ([ADR 0108](decisions/0108-manual-admin-exam-question-selection.md)).
 
+Exam creation can enable practice mode for standalone and session exams. Practice reuses participant access and question snapshots, skips grading and supports per-question solutions from the learner's own attempt ([ADR 0121](decisions/0121-practice-exams.md)).
+
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy

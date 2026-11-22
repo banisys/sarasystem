@@ -8,6 +8,7 @@ import 'element-plus/es/components/radio-group/style/css';
 import 'element-plus/es/components/radio/style/css';
 import PanelConfirm from '@/Components/Ui/PanelConfirm.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PracticeSolution from './PracticeSolution.vue';
 import { router, useHttp } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatDuration } from '../format.js';
@@ -151,7 +152,7 @@ onBeforeUnmount(() => {
                     </template>
                     <template v-else>{{ question.body }}</template>
                 </div>
-                <span class="shrink-0 text-xs text-gray-500 panel-dark:text-ui-muted">{{ question.max_score }} نمره</span>
+                <span v-if="!exam.is_practice" class="shrink-0 text-xs text-gray-500 panel-dark:text-ui-muted">{{ question.max_score }} نمره</span>
             </div>
 
             <div v-if="question.type === 'choice'" class="mt-4 space-y-2">
@@ -176,6 +177,7 @@ onBeforeUnmount(() => {
                 :aria-label="`پاسخ سؤال ${currentPage * perPage + index + 1}`"
                 placeholder="پاسخ خود را بنویسید"
             />
+            <PracticeSolution v-if="question.solution_url" :url="question.solution_url" :type="question.type" />
         </PanelCard>
 
         <PanelCard body-class="flex flex-wrap items-center justify-between gap-3 p-3">
@@ -184,12 +186,15 @@ onBeforeUnmount(() => {
                     @update:current-page="goToPage($event - 1)" />
             </nav>
             <PanelButton :loading="submitting" aria-haspopup="dialog" @click="confirming = true">
-                {{ submitting ? 'در حال ثبت پاسخ‌ها…' : 'پایان آزمون و ثبت پاسخ‌ها' }}
+                {{ submitting ? 'در حال ثبت پاسخ‌ها…' : exam.is_practice ? 'پایان تمرین' : 'پایان آزمون و ثبت پاسخ‌ها' }}
             </PanelButton>
         </PanelCard>
-        <PanelConfirm v-model="confirming" title="پایان آزمون" confirm-label="پایان آزمون و ثبت پاسخ‌ها" @confirm="submit">
-            <p v-if="answeredCount < attempt.questions.length">{{ attempt.questions.length - answeredCount }} سؤال بی‌پاسخ است. آزمون پایان یابد؟</p>
-            <p v-else>آزمون پایان یابد؟</p>
+        <PanelConfirm v-model="confirming" :title="exam.is_practice ? 'پایان تمرین' : 'پایان آزمون'"
+            :confirm-label="exam.is_practice ? 'پایان تمرین' : 'پایان آزمون و ثبت پاسخ‌ها'" @confirm="submit">
+            <p>
+                <template v-if="answeredCount < attempt.questions.length">{{ attempt.questions.length - answeredCount }} سؤال بی‌پاسخ است. </template>
+                {{ exam.is_practice ? 'تمرین پایان یابد؟' : 'آزمون پایان یابد؟' }}
+            </p>
         </PanelConfirm>
     </div>
 </template>

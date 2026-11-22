@@ -14,6 +14,13 @@ class EditExam extends EditRecord
 
     protected ?bool $hasDatabaseTransactions = true;
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        unset($data['is_practice']);
+
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -22,7 +29,7 @@ class EditExam extends EditRecord
                 ->icon(Heroicon::OutlinedChartBar)
                 ->color('gray')
                 ->url(fn (): string => ExamAttemptResource::urlForExam($this->getRecord()))
-                ->visible(fn (): bool => ExamAttemptResource::canViewAny()),
+                ->visible(fn (): bool => ! $this->getRecord()->is_practice && ExamAttemptResource::canViewAny()),
         ];
     }
 }

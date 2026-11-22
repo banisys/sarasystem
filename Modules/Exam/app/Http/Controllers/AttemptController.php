@@ -2,6 +2,7 @@
 
 namespace Modules\Exam\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -9,6 +10,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Validation\ValidationException;
 use Modules\Exam\Http\Controllers\Concerns\ChecksParticipant;
 use Modules\Exam\Http\Requests\AnswersRequest;
+use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Services\ExamTaking;
@@ -41,6 +43,19 @@ class AttemptController extends Controller
         $taking->submit($this->runningAttempt($request, $exam, $taking), $request->answers());
 
         return to_route('exams.show', $exam)->with('status', 'پاسخ‌های شما ثبت شد.');
+    }
+
+    public function solution(Request $request, Exam $exam, int $answer): JsonResponse
+    {
+        $user = $request->user();
+        $this->ensureParticipant($exam, $user);
+        abort_unless($exam->is_practice, 404);
+
+        $served = AttemptAnswer::query()->whereHas('attempt', fn (Builder $attempt) => $attempt
+            ->whereBelongsTo($exam)
+            ->whereBelongsTo($user))->findOrFail($answer);
+
+        return response()->json(['solution' => $served->correctAnswerText()], headers: ['Cache-Control' => 'private, no-store']);
     }
 
     /**

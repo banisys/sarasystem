@@ -94,6 +94,84 @@ class TakeExamTest extends TestCase
         $this->assertSame(0, ExamAttempt::withoutTenantScope()->count());
     }
 
+    public function test_practice_reveals_each_solution_on_request_and_repeats_without_grading(): void
+    {
+        $this->questions(1, [$this->bank]);
+        $this->questions(1, [$this->bank], [
+            'body' => 'مرکز کشور '.Question::BLANK_MARKER.' است.', 'type' => QuestionType::FillInTheBlank,
+            'options' => null, 'accepted_answers' => ['تهران'],
+        ]);
+        $this->questions(1, [$this->bank], [
+            'type' => QuestionType::Descriptive, 'options' => null, 'model_answer' => 'پاسخ نمونه',
+        ]);
+        $exam = $this->examWithBank([
+            'is_practice' => true, 'max_attempts' => 1, 'retake_policy' => RetakePolicy::FailedOnly,
+            'result_visibility' => ResultVisibility::Hidden,
+        ]);
+        $start = route('exams.attempt.start', $exam);
+        $show = route('exams.show', $exam);
+        $this->visit($start, method: 'post')->assertRedirect($show);
+        $attempt = $exam->attempts()->sole();
+        $answers = $attempt->answers()->get()->keyBy(fn (AttemptAnswer $answer): string => $answer->question_type->value);
+
+        $this->visit($show)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exam.is_practice', true)
+            ->where('exam.total_score', null)
+            ->where('exam.max_attempts', null)
+            ->has('attempt.questions', 3)
+            ->missing('attempt.questions.0.correct_answer'));
+        foreach (['choice' => 'گزینه a', 'fill_in_the_blank' => 'تهران', 'descriptive' => 'پاسخ نمونه'] as $type => $solution) {
+            $this->visit(route('exams.attempt.solution', [$exam, $answers->get($type)]))
+                ->assertOk()->assertExactJson(['solution' => $solution]);
+        }
+
+        $this->visit(route('exams.attempt.submit', $exam), method: 'post', data: [
+            'answers' => $answers->mapWithKeys(fn (AttemptAnswer $answer): array => [$answer->id => $answer->isChoice() ? 'a' : 'تهران'])->all(),
+        ])->assertRedirect($show);
+
+        $attempt->refresh();
+        $this->assertSame(AttemptStatus::Completed, $attempt->status);
+        $this->assertNull($attempt->score);
+        $this->assertNull($attempt->raw_score);
+        $this->assertNull($attempt->max_raw_score);
+        $this->assertSame(0, $attempt->answers()->whereNotNull('score')->count());
+        $this->visit($show)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('attemptsUsed', 1)
+            ->where('blocked', null)
+            ->where('result.score', null)
+            ->where('result.passed', null)
+            ->has('result.answers', 3)
+            ->where('result.answers.0.correct_answer', null)
+            ->has('result.answers.0.solution_url'));
+        $this->visit(route('exams.attempt.solution', [$exam, $answers->get('descriptive')]))
+            ->assertOk()->assertExactJson(['solution' => 'پاسخ نمونه']);
+
+        $this->visit($start, method: 'post')->assertRedirect($show);
+        $this->assertSame(2, $exam->attempts()->count());
+    }
+
+    public function test_practice_reveal_requires_an_owned_answer_from_the_same_published_practice_exam(): void
+    {
+        $this->questions(1, [$this->bank]);
+        $practice = $this->examWithBank(['is_practice' => true]);
+        $graded = $this->examWithBank();
+        $otherUser = User::factory()->create();
+        $practice->participantUsers()->attach($otherUser);
+        $this->tenant->makeCurrent();
+        $taking = app(ExamTaking::class);
+        $mine = $taking->start($practice, $this->student)->answers()->sole();
+        $theirs = $taking->start($practice, $otherUser)->answers()->sole();
+        $gradedAnswer = $taking->start($graded, $this->student)->answers()->sole();
+        $foreign = $this->answerOfAnotherTenant();
+
+        $this->visit(route('exams.attempt.solution', [$practice, $theirs]))->assertNotFound();
+        $this->visit(route('exams.attempt.solution', [$practice, $gradedAnswer]))->assertNotFound();
+        $this->visit(route('exams.attempt.solution', [$practice, $foreign]))->assertNotFound();
+        $this->visit(route('exams.attempt.solution', [$graded, $gradedAnswer]))->assertNotFound();
+        $practice->update(['is_published' => false]);
+        $this->visit(route('exams.attempt.solution', [$practice, $mine]))->assertNotFound();
+    }
+
     public function test_starting_draws_each_sections_share_of_active_questions_once(): void
     {
         $other = QuestionBank::factory()->for($this->tenant)->create();

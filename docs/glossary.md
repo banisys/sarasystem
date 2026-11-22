@@ -30,6 +30,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Advising time | وقت مشاوره | Booked counselling/advising slots. |
 | Report card | کارنامه | Term/year result of a student; lesson scores feed it. |
 | Exam balance | تراز آزمون | Normalized/weighted exam score per balance type. |
+| Practice exam | آزمون تمرینی | A repeatable online exam within its configured window that saves answers without grades and lets learners reveal individual solutions ([ADR 0121](decisions/0121-practice-exams.md)). |
 
 ## Finance & admin
 | Term | Persian | Meaning |

@@ -11,6 +11,7 @@ class SessionExamSettings
     public const array DEFAULTS = [
         'title' => '',
         'description' => null,
+        'is_practice' => false,
         'duration_minutes' => 30,
         'allow_late_start' => false,
         'grace_minutes' => 3,
@@ -25,7 +26,7 @@ class SessionExamSettings
         'shuffle_options' => false,
     ];
 
-    public static function rules(): array
+    public static function rules(bool $practice = false): array
     {
         return [
             'title' => ['required', 'string', 'max:255'],
@@ -33,13 +34,13 @@ class SessionExamSettings
             'duration_minutes' => ['required', 'integer', 'between:1,1440'],
             'allow_late_start' => ['sometimes', 'required', 'boolean'],
             'grace_minutes' => ['sometimes', 'required', 'integer', 'between:0,60'],
-            'total_score' => ['required', 'numeric', 'between:1,1000'],
-            'passing_score' => ['required', 'numeric', 'min:0', 'lte:total_score'],
+            'total_score' => [Rule::excludeIf($practice), 'required', 'numeric', 'between:1,1000'],
+            'passing_score' => [Rule::excludeIf($practice), 'required', 'numeric', 'min:0', 'lte:total_score'],
             'questions_per_page' => ['sometimes', 'required', 'integer', 'between:1,100'],
-            'negative_marking' => ['nullable', 'integer', Rule::in([2, 3, 4, 5, 6])],
-            'max_attempts' => ['sometimes', 'required', 'integer', 'between:1,100'],
-            'retake_policy' => ['sometimes', 'required', Rule::enum(RetakePolicy::class)],
-            'result_visibility' => ['sometimes', 'required', Rule::enum(ResultVisibility::class)],
+            'negative_marking' => [Rule::excludeIf($practice), 'nullable', 'integer', Rule::in([2, 3, 4, 5, 6])],
+            'max_attempts' => [Rule::excludeIf($practice), 'sometimes', 'required', 'integer', 'between:1,100'],
+            'retake_policy' => [Rule::excludeIf($practice), 'sometimes', 'required', Rule::enum(RetakePolicy::class)],
+            'result_visibility' => [Rule::excludeIf($practice), 'sometimes', 'required', Rule::enum(ResultVisibility::class)],
             'shuffle_questions' => ['sometimes', 'required', 'boolean'],
             'shuffle_options' => ['sometimes', 'required', 'boolean'],
         ];
@@ -50,6 +51,7 @@ class SessionExamSettings
         return [
             'title' => 'عنوان آزمون',
             'description' => 'توضیحات',
+            'is_practice' => 'آزمون تمرینی',
             'duration_minutes' => 'مدت آزمون (دقیقه)',
             'allow_late_start' => 'امکان شروع آزمون بعد از پایان جلسه',
             'grace_minutes' => 'زمان ارفاق (دقیقه)',

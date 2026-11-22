@@ -75,6 +75,12 @@ class ExamAttempt extends Model
         $query->where('status', '!=', AttemptStatus::InProgress);
     }
 
+    /** @param Builder<self> $query */
+    public function scopeForGrading(Builder $query): void
+    {
+        $query->whereHas('exam', fn (Builder $exam) => $exam->where('is_practice', false));
+    }
+
     public function isInProgress(): bool
     {
         return $this->status === AttemptStatus::InProgress;

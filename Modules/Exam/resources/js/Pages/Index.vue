@@ -34,6 +34,7 @@ defineProps({
                     </ElTag>
                 </div>
                 <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ui-muted">
+                    <span v-if="exam.is_practice" class="font-semibold text-brand-700">آزمون تمرینی</span>
                     <span>مدت: {{ exam.duration_minutes }} دقیقه</span>
                     <span v-if="exam.starts_at">از {{ formatDateTime(exam.starts_at) }}</span>
                     <span v-if="exam.ends_at">تا {{ formatDateTime(exam.ends_at) }}</span>

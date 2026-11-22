@@ -247,6 +247,30 @@ class ExamAdminTest extends TestCase
         $this->assertSame(16.0, $attempt->score);
     }
 
+    public function test_an_admin_can_create_practice_without_scoring_fields_and_cannot_grade_its_attempts(): void
+    {
+        $bank = QuestionBank::factory()->for($this->tenant)->create();
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::test(CreateExam::class)->fillForm([
+            'title' => 'تمرین نمونه',
+            'is_practice' => true,
+            'sections' => [['question_bank_id' => $bank->id, 'question_count' => 1]],
+            'total_score' => null,
+            'passing_score' => null,
+        ])->call('create')->assertHasNoFormErrors();
+
+        $exam = Exam::query()->sole();
+        $this->assertTrue($exam->is_practice);
+        $practice = ExamAttempt::factory()->for($exam)->create();
+        $graded = ExamAttempt::factory()->for(Exam::factory()->for($this->tenant))->create();
+
+        Livewire::test(ListExamAttempts::class)
+            ->assertCanSeeTableRecords([$graded])
+            ->assertCanNotSeeTableRecords([$practice]);
+        $this->get(ExamAttemptResource::getUrl('edit', ['record' => $practice]))->assertNotFound();
+    }
+
     public function test_an_editor_can_pick_questions_and_keep_other_bank_draws(): void
     {
         $firstBank = QuestionBank::factory()->for($this->tenant)->create();

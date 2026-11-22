@@ -40,7 +40,7 @@ class ContextExamController extends Controller
 
         $records = $query->withCount('attempts')->latest('id')->get();
         $results = $host->canManage
-            ? ExamAttempt::query()->whereIn('exam_id', $exams->query($host)->select('id'))
+            ? ExamAttempt::query()->whereIn('exam_id', $exams->query($host)->where('is_practice', false)->select('id'))
                 ->with(['user', 'exam'])->latest('id')->paginate(25)->through(fn (ExamAttempt $attempt): array => [
                     'id' => $attempt->id,
                     'name' => $attempt->user->name,
@@ -70,6 +70,7 @@ class ContextExamController extends Controller
                 ]) : [],
             'exams' => $records->map(fn (Exam $exam): array => [
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
+                'is_practice' => $exam->is_practice,
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->participationEndsAt()?->toIso8601String(),
                 'allow_late_start' => $exam->allow_late_start,
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
@@ -91,7 +92,8 @@ class ContextExamController extends Controller
     public function store(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): RedirectResponse
     {
         $host = $this->context($request, $type, $context, $contexts, manage: true);
-        $data = $request->validate(SessionExamSettings::rules() + [
+        $data = $request->validate(SessionExamSettings::rules(practice: $request->boolean('is_practice')) + [
+            'is_practice' => ['sometimes', 'boolean'],
             'banks' => ['required', 'array', 'list', 'max:10'],
             'banks.*' => ['required', 'array:bank_id,question_count,question_ids'],
             'banks.*.bank_id' => ['required', 'integer', 'distinct'],
@@ -113,7 +115,7 @@ class ContextExamController extends Controller
         $host = $this->context($request, $type, $context, $contexts, manage: true);
         $exam = $exams->query($host)->findOrFail($exam->id);
         abort_unless($exams->mayManageSettings($host, $exam, $request->user()), 403);
-        $settings = $request->validate(SessionExamSettings::rules(), attributes: SessionExamSettings::labels());
+        $settings = $request->validate(SessionExamSettings::rules(practice: $exam->is_practice), attributes: SessionExamSettings::labels());
         $exams->updateSettings($host, $exam->id, $request->user(), $settings);
 
         return to_route('exams.context', [$type, $context])->with('status', 'تنظیمات آزمون ذخیره شد.');
@@ -151,12 +153,12 @@ class ContextExamController extends Controller
 
         return response()->json([
             'questions' => collect($exam->question_snapshot)->map(fn (array $question, int $index): array => [
-                'index' => $index, 'body' => $question['body'], 'score' => $question['score'],
+                'index' => $index, 'body' => $question['body'], 'score' => $exam->is_practice ? null : $question['score'],
                 'type' => QuestionType::from($question['type'])->getLabel(),
                 'options' => array_column($question['options'] ?? [], 'text'),
             ]),
             'revision' => $exams->questionRevision($exam),
-            'total_score' => $exam->total_score,
+            'total_score' => $exam->is_practice ? null : $exam->total_score,
             'can_reorder' => $exams->canEditDraft($exam, $request->user()),
             'shuffled' => $exam->shuffle_questions,
         ], headers: ['Cache-Control' => 'private, no-store']);
@@ -272,6 +274,6 @@ class ContextExamController extends Controller
 
     private function ensureAttempt(ExamContext $context, ExamAttempt $attempt, ContextExams $exams): void
     {
-        abort_unless($exams->query($context)->whereKey($attempt->exam_id)->exists(), 404);
+        abort_unless($exams->query($context)->where('is_practice', false)->whereKey($attempt->exam_id)->exists(), 404);
     }
 }

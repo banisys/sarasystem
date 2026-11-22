@@ -36,7 +36,7 @@ class ContextExams
     }
 
     /**
-     * @param  array{title: string, duration_minutes: int, total_score: float, passing_score: float, banks: list<array{bank_id: int, question_count: int, question_ids?: list<int>}>, ...}  $data
+     * @param  array{title: string, duration_minutes: int, is_practice?: bool, total_score?: float, passing_score?: float, banks: list<array{bank_id: int, question_count: int, question_ids?: list<int>}>, ...}  $data
      */
     public function generate(ExamContext $context, array $data, User $actor, QuestionLibrary $library): Exam
     {
@@ -167,6 +167,7 @@ class ContextExams
             }
 
             $questions = $exam->question_snapshot;
+            $scores = $exam->is_practice ? null : $scores;
             if (count($order) !== count($questions) || array_diff(array_keys($questions), $order) !== []) {
                 throw ValidationException::withMessages(['order' => 'ترتیب باید شامل همهٔ سؤال‌های آزمون، هر کدام یک‌بار، باشد.']);
             }

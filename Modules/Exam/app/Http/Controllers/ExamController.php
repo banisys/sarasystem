@@ -34,6 +34,7 @@ class ExamController extends Controller
             ->map(fn (Exam $exam): array => [
                 'id' => $exam->id,
                 'title' => $exam->title,
+                'is_practice' => $exam->is_practice,
                 'starts_at' => $exam->starts_at?->toIso8601String(),
                 'ends_at' => $exam->participationEndsAt()?->toIso8601String(),
                 'allow_late_start' => $exam->allow_late_start,
@@ -52,6 +53,7 @@ class ExamController extends Controller
 
         $attempt = $taking->currentAttempt($exam, $user);
         $finished = $taking->finishedAttempts($exam, $user);
+        $latest = $attempt === null ? $finished->first() : null;
         $blockedReason = $attempt === null ? $taking->blockedReason($exam, $user) : null;
         $retakesClosed = in_array($blockedReason, [ExamTaking::BLOCKED_ENDED, ExamTaking::BLOCKED_NO_ATTEMPTS_LEFT, ExamTaking::BLOCKED_PASSED], true);
         $exam->load('sections');
@@ -60,30 +62,31 @@ class ExamController extends Controller
             'exam' => [
                 'id' => $exam->id,
                 'title' => $exam->title,
+                'is_practice' => $exam->is_practice,
                 'description' => $exam->description,
                 'context_url' => $exam->context_type === null ? null : app(ExamContexts::class)->url($exam->context_type, $exam->context_id),
                 'starts_at' => $exam->starts_at?->toIso8601String(),
                 'ends_at' => $exam->participationEndsAt()?->toIso8601String(),
                 'allow_late_start' => $exam->allow_late_start,
                 'duration_minutes' => $exam->duration_minutes,
-                'total_score' => $exam->total_score,
-                'passing_score' => $exam->passing_score,
+                'total_score' => $exam->is_practice ? null : $exam->total_score,
+                'passing_score' => $exam->is_practice ? null : $exam->passing_score,
                 'question_count' => $exam->questionCount(),
                 'questions_per_page' => $exam->questions_per_page,
-                'max_attempts' => $exam->max_attempts,
-                'negative_marking' => $exam->negative_marking,
+                'max_attempts' => $exam->is_practice ? null : $exam->max_attempts,
+                'negative_marking' => $exam->is_practice ? null : $exam->negative_marking,
             ],
             'attemptsUsed' => $finished->count(),
             'blocked' => $blockedReason === null ? null : ExamTaking::blockedMessage($blockedReason),
-            'attempt' => $attempt === null ? null : $this->runningAttempt($attempt),
-            'result' => $attempt === null && $finished->isNotEmpty() ? $this->result($exam, $finished->first(), $retakesClosed) : null,
+            'attempt' => $attempt === null ? null : $this->runningAttempt($exam, $attempt),
+            'result' => $latest === null ? null : $this->result($exam, $latest, $retakesClosed),
         ]);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function runningAttempt(ExamAttempt $attempt): array
+    private function runningAttempt(Exam $exam, ExamAttempt $attempt): array
     {
         return [
             'id' => $attempt->id,
@@ -95,7 +98,8 @@ class ExamController extends Controller
                 'body' => $answer->question_body,
                 'blank_parts' => $answer->isFillInTheBlank() ? explode(Question::BLANK_MARKER, $answer->question_body, 2) : null,
                 'options' => $answer->options ?? [],
-                'max_score' => $answer->max_score,
+                'max_score' => $exam->is_practice ? null : $answer->max_score,
+                'solution_url' => $exam->is_practice ? route('exams.attempt.solution', [$exam, $answer]) : null,
                 'answer' => $answer->isChoice() ? $answer->selected_option : $answer->text_answer,
             ])->all(),
         ];
@@ -119,15 +123,16 @@ class ExamController extends Controller
             'is_graded' => $isGraded,
             'passed' => $visibility->showsPassed() && $isGraded ? $attempt->passed() : null,
             'score' => $visibility->showsScore() ? $attempt->score : null,
-            'answers' => $visibility === ResultVisibility::ScoreWithAnswers
+            'answers' => $exam->is_practice || $visibility === ResultVisibility::ScoreWithAnswers
                 ? $attempt->answers()->get()->map(fn (AttemptAnswer $answer): array => [
                     'id' => $answer->id,
                     'body' => $answer->question_body,
                     'type' => $answer->question_type->value,
                     'your_answer' => $answer->isChoice() ? $answer->optionText($answer->selected_option) : $answer->text_answer,
-                    'correct_answer' => $answer->isChoice() || $retakeBlocked ? $answer->correctAnswerText() : null,
+                    'correct_answer' => ! $exam->is_practice && ($answer->isChoice() || $retakeBlocked) ? $answer->correctAnswerText() : null,
+                    'solution_url' => $exam->is_practice ? route('exams.attempt.solution', [$exam, $answer]) : null,
                     'score' => $answer->score,
-                    'max_score' => $answer->max_score,
+                    'max_score' => $exam->is_practice ? null : $answer->max_score,
                 ])->all()
                 : [],
         ];

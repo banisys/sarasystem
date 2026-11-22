@@ -157,6 +157,7 @@ function remove() {
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
+                                <ElTag v-if="exam.is_practice" type="info">آزمون تمرینی</ElTag>
                                 <ElTag :type="exam.is_published ? 'success' : 'info'">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }}</ElTag>
                                 <span v-if="exam.starts_at" class="text-sm text-ui-muted">از {{ formatDateTime(exam.starts_at) }}</span>
                                 <span v-if="exam.ends_at" class="text-sm text-ui-muted">تا {{ formatDateTime(exam.ends_at) }}</span>
@@ -164,7 +165,7 @@ function remove() {
                             </div>
                             <p v-if="context.can_manage" class="text-sm text-gray-600 panel-dark:text-ui-muted">تعداد دفعات شرکت: {{ exam.attempts_count }}</p>
                             <div class="flex flex-wrap gap-4">
-                                <PanelButton v-if="exam.take_url" :href="exam.take_url">ورود به آزمون و مشاهدهٔ نتیجه</PanelButton>
+                                <PanelButton v-if="exam.take_url" :href="exam.take_url">{{ exam.is_practice ? 'ورود به تمرین' : 'ورود به آزمون و مشاهدهٔ نتیجه' }}</PanelButton>
                                 <PanelButton v-if="context.can_manage" :disabled="publication.processing || deletion.processing" variant="link" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</PanelButton>
                                 <PanelButton v-if="exam.delete_url" type="button" :disabled="deletion.processing || publication.processing" variant="danger-link" aria-haspopup="dialog" @click="confirmRemoval(exam)">حذف آزمون</PanelButton>
                             </div>
@@ -208,7 +209,9 @@ function remove() {
                             <div class="grid justify-items-start gap-4">
                                 <p class="text-sm text-gray-600 panel-dark:text-ui-muted">سؤال‌ها به‌طور پیش‌فرض تصادفی و بدون تکرار انتخاب می‌شوند. برای انتخاب دستی، «انتخاب سؤال‌ها» را بزنید. زمان برگزاری از جلسه گرفته می‌شود.</p>
                                 <p v-for="(error, key) in generation.errors" :key="key" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
-                                <PanelButton type="submit" :disabled="generation.processing">{{ generation.processing ? 'در حال ساخت…' : 'ساخت پیش‌نویس آزمون' }}</PanelButton>
+                                <PanelButton type="submit" :disabled="generation.processing">
+                                    {{ generation.processing ? 'در حال ساخت…' : generation.is_practice ? 'ساخت پیش‌نویس آزمون تمرینی' : 'ساخت پیش‌نویس آزمون' }}
+                                </PanelButton>
                             </div>
                         </ElForm>
                         <PanelDialog v-model="pickerOpen" title="انتخاب سؤال‌ها" @close="closeQuestions">

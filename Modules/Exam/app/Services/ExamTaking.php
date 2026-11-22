@@ -3,7 +3,7 @@
 namespace Modules\Exam\Services;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -49,11 +49,11 @@ class ExamTaking
     }
 
     /**
-     * @return Collection<int, ExamAttempt> newest first
+     * @return HasMany<ExamAttempt, Exam>
      */
-    public function finishedAttempts(Exam $exam, User $user): Collection
+    public function finishedAttempts(Exam $exam, User $user): HasMany
     {
-        return $exam->attempts()->whereBelongsTo($user)->finished()->latest('id')->get();
+        return $exam->attempts()->whereBelongsTo($user)->finished()->latest('id');
     }
 
     /**
@@ -70,15 +70,17 @@ class ExamTaking
             return self::BLOCKED_ENDED;
         }
 
+        if ($exam->is_practice) {
+            return null;
+        }
+
         $finished = $this->finishedAttempts($exam, $user);
 
         if ($finished->count() >= $exam->max_attempts) {
             return self::BLOCKED_NO_ATTEMPTS_LEFT;
         }
 
-        $latest = $finished->first();
-
-        if ($latest !== null && $exam->retake_policy === RetakePolicy::FailedOnly) {
+        if ($exam->retake_policy === RetakePolicy::FailedOnly && ($latest = $finished->first()) !== null) {
             if ($latest->status === AttemptStatus::PendingReview) {
                 return self::BLOCKED_PENDING_REVIEW;
             }
@@ -227,6 +229,16 @@ class ExamTaking
         }
 
         $exam = $attempt->exam;
+
+        if ($exam->is_practice) {
+            $attempt->update([
+                'status' => AttemptStatus::Completed,
+                'submitted_at' => now(),
+                'timed_out' => $timedOut,
+            ]);
+
+            return $attempt;
+        }
 
         $attempt->answers()->get()->each(function (AttemptAnswer $answer) use ($exam): void {
             if ($answer->isChoice()) {

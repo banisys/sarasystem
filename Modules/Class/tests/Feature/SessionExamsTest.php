@@ -107,6 +107,38 @@ class SessionExamsTest extends TestCase
         $this->assertSame(2, Exam::query()->where('context_type', 'class-session')->where('context_id', $this->session->id)->count());
     }
 
+    public function test_a_session_practice_exam_can_be_generated_and_stays_out_of_grading(): void
+    {
+        $this->asTeacher();
+        $payload = $this->payload() + ['is_practice' => true];
+        unset($payload['total_score'], $payload['passing_score']);
+        $this->post($this->url(), $payload)->assertSessionHasNoErrors()->assertRedirect($this->url());
+        $exam = Exam::query()->where('context_id', $this->session->id)->sole();
+        $this->assertTrue($exam->is_practice);
+        $this->patch(route('exams.context.settings.update', ['class-session', $this->session->id, $exam]), [
+            'title' => $exam->title, 'duration_minutes' => 20, 'is_practice' => false,
+        ])->assertSessionHasNoErrors()->assertRedirect($this->url());
+        $this->assertTrue($exam->refresh()->is_practice);
+        $this->patch(route('exams.context.publish', ['class-session', $this->session->id, $exam]), ['is_published' => true])->assertRedirect();
+
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertRedirect();
+        $attempt = $exam->attempts()->sole();
+        $answer = $attempt->answers()->sole();
+        $this->post(route('exams.attempt.submit', $exam), ['answers' => [$answer->id => 'پاسخ من']])->assertRedirect();
+
+        $this->asTeacher();
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.is_practice', true)
+            ->where('exams.0.attempts_count', 1)
+            ->has('results.data', 0));
+        $this->get(route('exams.context.review', ['class-session', $this->session->id, $attempt]))->assertNotFound();
+        $this->post(route('exams.context.grade', ['class-session', $this->session->id, $attempt]), [
+            'scores' => [$answer->id => 4],
+        ])->assertNotFound();
+        $this->assertNull($answer->refresh()->score);
+    }
+
     public function test_an_exam_can_reopen_after_the_session_with_the_full_attempt_duration(): void
     {
         $exam = $this->assign();

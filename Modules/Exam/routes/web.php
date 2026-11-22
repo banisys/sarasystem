@@ -39,4 +39,5 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/exams')->
     Route::post('/{exam}/attempt', [AttemptController::class, 'store'])->name('attempt.start');
     Route::put('/{exam}/attempt', [AttemptController::class, 'update'])->name('attempt.save');
     Route::post('/{exam}/attempt/submit', [AttemptController::class, 'submit'])->name('attempt.submit');
+    Route::get('/{exam}/attempt/answers/{answer}/solution', [AttemptController::class, 'solution'])->whereNumber('answer')->name('attempt.solution');
 });
