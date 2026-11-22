@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\UserPanel\UserPanel;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -39,6 +40,13 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $isUserPanel = $request->is('profile', 'profile/*');
+        $status = $isUserPanel ? $request->session()->get('status') : null;
+
+        if ($isUserPanel && is_string($status) && $status !== '') {
+            Inertia::flash('status', $status);
+        }
+
         return [
             ...parent::share($request),
             'appName' => config('app.name'),
@@ -57,9 +65,9 @@ class HandleInertiaRequests extends Middleware
             // and the page the panel opens on when a module offers one (ADR 0069).
             'navigation' => fn (): array => UserPanel::navigation($request->user(), Tenant::current()),
             'panelHome' => fn (): ?string => UserPanel::home($request->user(), Tenant::current()),
-            'flash' => [
-                'status' => fn () => $request->session()->get('status'),
-            ],
+            ...($isUserPanel ? [] : [
+                'flash' => ['status' => fn () => $request->session()->get('status')],
+            ]),
         ];
     }
 

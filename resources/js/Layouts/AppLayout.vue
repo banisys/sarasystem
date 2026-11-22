@@ -1,11 +1,12 @@
 <script setup>
 import { router, usePage } from '@inertiajs/vue3';
-import { ElAside, ElConfigProvider, ElContainer, ElDrawer, ElHeader, ElMain } from 'element-plus';
+import { ElAside, ElConfigProvider, ElContainer, ElDrawer, ElHeader, ElMain, ElNotification } from 'element-plus';
 import fa from 'element-plus/es/locale/lang/fa';
 import 'element-plus/es/components/container/style/css';
 import 'element-plus/es/components/drawer/style/css';
+import 'element-plus/es/components/notification/style/css';
 import '../../css/profile.css';
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelCard from '@/Components/Ui/PanelCard.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
@@ -20,6 +21,18 @@ const menuOpen = ref(false);
 const overlays = useTemplateRef('profile-overlays');
 const { theme, toggleTheme } = useProfileTheme();
 
+watch([overlays, () => page.flash], ([container, flash]) => {
+    if (!container || !flash?.status) return;
+
+    ElNotification.success({
+        title: flash.status,
+        appendTo: container,
+        position: getComputedStyle(container).direction === 'rtl' ? 'top-left' : 'top-right',
+        duration: 6000,
+        customClass: 'profile-status-notification',
+    });
+}, { flush: 'post' });
+
 let desktop;
 function closeDesktopMenu(event) {
     if (event.matches) menuOpen.value = false;
@@ -29,7 +42,10 @@ onMounted(() => {
     desktop = window.matchMedia('(min-width: 64rem)');
     desktop.addEventListener('change', closeDesktopMenu);
 });
-onBeforeUnmount(() => desktop?.removeEventListener('change', closeDesktopMenu));
+onBeforeUnmount(() => {
+    desktop?.removeEventListener('change', closeDesktopMenu);
+    ElNotification.closeAll();
+});
 
 function leaveImpersonation() {
     router.post(route('impersonation.leave'));

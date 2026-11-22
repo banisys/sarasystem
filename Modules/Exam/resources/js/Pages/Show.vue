@@ -44,7 +44,6 @@ function start() {
                 :back-label="exam.context_url ? 'آزمون‌های جلسه' : 'همه‌ی آزمون‌ها'"
             />
 
-            <PanelNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</PanelNotice>
             <PanelNotice v-for="(message, key) in page.props.errors" :key="key" tone="error">{{ message }}</PanelNotice>
 
             <AttemptRunner v-if="attempt" :key="attempt.id" :exam="exam" :attempt="attempt" />

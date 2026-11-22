@@ -7,7 +7,7 @@ import 'element-plus/es/components/input/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 const props = defineProps({ title: String, name: String, status: String, can_grade: Boolean, back_url: String, save_url: String, answers: Array });
 const form = useForm({ scores: Object.fromEntries(props.answers.filter(answer => answer.requires_manual_grading).map(answer => [answer.id, answer.score])) });
@@ -18,7 +18,6 @@ const form = useForm({ scores: Object.fromEntries(props.answers.filter(answer =>
         <Head title="پاسخ‌ها و تصحیح" />
         <div class="space-y-5">
             <UiPageHeader :title="title" :description="`${name} · ${status}`" icon="pencil" :back-href="back_url" back-label="آزمون‌های جلسه" />
-            <PanelNotice v-if="usePage().props.flash.status" tone="success">{{ usePage().props.flash.status }}</PanelNotice>
             <PanelNotice v-if="!can_grade">آزمون هنوز در جریان است. پس از پایان می‌توانید نمره بدهید.</PanelNotice>
             <PanelNotice v-if="!answers.length">پاسخی برای نمایش وجود ندارد.</PanelNotice>
             <ElForm novalidate class="space-y-4" @submit.prevent="form.post(save_url, { preserveScroll: true })">

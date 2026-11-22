@@ -7,9 +7,8 @@ import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
+import { nextTick, onBeforeUnmount, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -19,7 +18,6 @@ const props = defineProps({
     resendAfterSeconds: { type: Number, required: true },
 });
 
-const status = computed(() => usePage().props.flash.status);
 
 // Signing: accept the text, get a code by SMS, then send it back.
 const sendCodeForm = useForm({});
@@ -73,7 +71,6 @@ onBeforeUnmount(() => clearInterval(timer));
                 </template>
             </UiPageHeader>
 
-            <PanelNotice v-if="status" tone="success">{{ status }}</PanelNotice>
             <p v-if="contract.status === 'cancelled'" class="rounded-lg bg-red-50 panel-dark:bg-red-950/50 p-3 text-sm text-red-700 panel-dark:text-red-300">
                 این قرارداد لغو شده است<span v-if="contract.cancellation_reason">: {{ contract.cancellation_reason }}</span>
             </p>

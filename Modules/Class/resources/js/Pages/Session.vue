@@ -10,9 +10,8 @@ import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
 import 'element-plus/es/components/link/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import FilePicker from '@/Components/FilePicker.vue';
 import PanelJalaliDateInput from '@/Components/Ui/PanelJalaliDateInput.vue';
@@ -41,7 +40,6 @@ const props = defineProps({
     submissions: { type: Array, default: null },
 });
 
-const flash = computed(() => usePage().props.flash.status);
 // Stay on the tab and keep what was typed after a save.
 const keep = { preserveScroll: true, preserveState: true };
 
@@ -173,7 +171,6 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 :back-href="route('my-classes.index', ward ? { for: ward.id } : {})"
                 :back-label="ward ? `تقویم آموزشی ${ward.name}` : 'تقویم آموزشی'"
             />
-            <PanelNotice v-if="flash" tone="success">{{ flash }}</PanelNotice>
 
             <ElTabs v-model="tab" aria-label="بخش‌های جلسه">
                 <ElTabPane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label" lazy>

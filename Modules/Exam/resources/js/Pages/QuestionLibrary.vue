@@ -1,7 +1,7 @@
 <script setup>
 import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import {
     ElAlert, ElButton, ElCheckbox, ElDialog, ElForm, ElInput, ElTable, ElTableColumn, ElTag,
 } from 'element-plus';
@@ -22,7 +22,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 
 defineProps({ banks: Object });
 
-const page = usePage();
 const bankDialogOpen = ref(false);
 const deleteDialogOpen = ref(false);
 const editingBank = ref(null);
@@ -74,7 +73,6 @@ function goToBankPage(number) {
         <div class="space-y-6">
             <UiPageHeader title="بانک سؤال" icon="book" />
 
-            <ElAlert v-if="page.props.flash.status" :title="page.props.flash.status" type="success" :closable="false" show-icon />
 
             <PanelCard class="[--panel-card-overflow:hidden]" role="region" aria-label="بانک‌های سؤال">
                 <div class="flex justify-end border-b border-ui-line px-4 py-3">

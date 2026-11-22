@@ -4,7 +4,7 @@ import 'element-plus/es/components/input/style/css';
 import PanelDialog from '@/Components/Ui/PanelDialog.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import { computed, ref } from 'vue';
-import { useHttp } from '@inertiajs/vue3';
+import { router, useHttp } from '@inertiajs/vue3';
 import PanelIcon from '@/Components/PanelIcon.vue';
 
 const props = defineProps({ exam: { type: Object, required: true } });
@@ -14,7 +14,6 @@ const editable = ref(false);
 const shuffled = ref(false);
 const dragged = ref(null);
 const error = ref('');
-const notice = ref('');
 const changed = ref(false);
 const orderChanged = ref(false);
 const totalScore = ref(null);
@@ -37,7 +36,6 @@ async function open() {
     editable.value = false;
     shuffled.value = false;
     error.value = '';
-    notice.value = '';
     changed.value = false;
     orderChanged.value = false;
     totalScore.value = null;
@@ -72,7 +70,6 @@ function move(from, to) {
 
 function markChanged() {
     changed.value = true;
-    notice.value = '';
 }
 
 function startDrag(event, index) {
@@ -103,7 +100,7 @@ async function save(fixOrder = false) {
             onError: (errors) => { error.value = Object.values(errors)[0]; },
         });
         if (!result) return;
-        notice.value = result.message;
+        router.flash('status', result.message);
         changed.value = false;
         orderChanged.value = false;
         shuffled.value = result.shuffled;
@@ -172,7 +169,6 @@ async function save(fixOrder = false) {
                         <p v-else class="text-emerald-700 panel-dark:text-emerald-300">جمع بارم با نمرهٔ کل برابر است.</p>
                     </div>
                     <div class="flex flex-wrap items-center justify-end gap-3">
-                        <span v-if="notice" role="status" class="me-auto text-sm text-emerald-700 panel-dark:text-emerald-300">{{ notice }}</span>
                         <PanelButton type="button" :disabled="reorder.processing" variant="outline" @click="previewOpen = false">بستن</PanelButton>
                         <PanelButton v-if="editable && shuffled && questions.length > 1 && !orderChanged" type="button"
                             :disabled="!validScores || reorder.processing" variant="outline-brand" @click="save(true)">ثابت‌کردن ترتیب</PanelButton>

@@ -138,7 +138,6 @@ function remove() {
                 full-page-back
                 back-label="بازگشت به جلسه"
             />
-            <PanelNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</PanelNotice>
             <ElTabs v-model="tab" class="session-exam-tabs pt-4" aria-label="بخش‌های آزمون‌های جلسه">
                 <ElTabPane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label" lazy>
                     <template #label>

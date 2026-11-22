@@ -18,13 +18,12 @@ import 'element-plus/es/components/input/style/css';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import { computed, ref, watch } from 'vue';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 
 const props = defineProps({ questions: Object, ownBanks: Array, selectedBank: Object, types: Object });
-const page = usePage();
 const blankOptions = () => Array.from({ length: 4 }, (_, index) => ({ text: '', is_correct: index === 0 }));
 const question = useForm({
     type: 'choice', body: '', score: 1, is_active: true, is_shared: false,
@@ -127,7 +126,6 @@ function removeOption(index) {
                 :back-href="route('exams.library')"
                 back-label="بازگشت به بانک‌ها"
             />
-            <PanelNotice v-if="page.props.flash.status" tone="success">{{ page.props.flash.status }}</PanelNotice>
             <PanelCard class="[--panel-card-overflow:hidden]" role="region" aria-label="سؤال‌ها">
                 <div v-if="!selectedBank || selectedBank.can_add_question" class="flex justify-end border-b border-ui-line px-4 py-3">
                     <PanelButton variant="outline-brand" size="default" aria-haspopup="dialog" @click="openQuestion()">

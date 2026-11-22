@@ -383,6 +383,8 @@ class SessionExamsTest extends TestCase
         $this->assertSame(15.0, $attempt->fresh()->score);
         $this->assertSame(AttemptStatus::Completed, $attempt->fresh()->status);
         $this->assertSame($this->teacher->id, $answer->fresh()->graded_by);
+        $this->get($review)->assertInertia(fn (AssertableInertia $page) => $page->hasFlash('status', 'نمره‌ها ثبت شد.')->missing('flash'));
+        $this->get($review)->assertInertia(fn (AssertableInertia $page) => $page->missingFlash('status'));
         $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('results.data.0.score', 15));
     }
 

@@ -8,7 +8,7 @@ import PanelEmpty from '@/Components/Ui/PanelEmpty.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -27,7 +27,6 @@ const props = defineProps({
     rows: { type: Array, required: true },
 });
 
-const flash = computed(() => usePage().props.flash.status);
 const numeric = computed(() => props.scale === 'numeric');
 const form = useForm({ period_id: props.period?.id, rows: props.rows.map((row) => ({ ...row, score: row.score ?? '' })) });
 
@@ -55,7 +54,6 @@ function save() {
                 </PanelButton>
             </PanelCard>
 
-            <PanelNotice v-if="flash" tone="success">{{ flash }}</PanelNotice>
             <PanelNotice v-if="refusal">{{ refusal }}</PanelNotice>
 
             <ElForm v-if="period" class="ui-surface space-y-3 p-4 sm:p-5" @submit.prevent="save">

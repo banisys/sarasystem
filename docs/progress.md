@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Added Filament-style corner notifications for successful actions in the user panel using Element Plus and one-time Inertia flash data ([ADR 0123](decisions/0123-user-panel-status-notifications.md)). Checked grade saves, repeated messages, dismissal and browser history in mobile dark and desktop light Chromium previews. All 817 tests, Pint and the Vite build passed.
 - 2026-11-22 — Matched the main exam list to the session exam card spacing. Measured 14 px card padding and 12 px gaps on mobile, and 20 px padding and 16 px gaps on desktop. Checked long titles and open and closed badges in Chromium. The Vite build passed.
 - 2026-11-22 — Increased multiple-choice option padding and let bordered radios grow with wrapped text. Measured 12 px vertical padding and 16 px mobile or 20 px desktop horizontal padding in Chromium. The Vite build passed.
 - 2026-11-22 — Matched exam details, results and active question cards to the session exam list spacing. Checked 14 px mobile and 20 px desktop card padding with sample attempts in Chromium. The Vite build passed.

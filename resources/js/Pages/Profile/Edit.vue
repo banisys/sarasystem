@@ -6,10 +6,9 @@ import 'element-plus/es/components/descriptions/style/css';
 import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
 import 'element-plus/es/components/tag/style/css';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
-import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
@@ -20,7 +19,6 @@ const props = defineProps({
     resendAfterSeconds: { type: Number, required: true },
 });
 
-const status = computed(() => usePage().props.flash.status);
 
 // Email
 const emailForm = useForm({ email: props.profile.email ?? '' });
@@ -113,7 +111,6 @@ function savePassword() {
     <AppLayout>
         <div class="grid gap-4 sm:gap-5">
             <UiPageHeader title="اطلاعات کاربری" icon="user" />
-            <PanelNotice v-if="status" tone="success">{{ status }}</PanelNotice>
 
             <!-- Account -->
             <PanelCard body-class="grid gap-3 [--el-card-padding:1rem] sm:[--el-card-padding:1.5rem]">
