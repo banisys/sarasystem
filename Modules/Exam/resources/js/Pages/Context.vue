@@ -213,15 +213,17 @@ function remove() {
                                 </PanelButton>
                             </div>
                         </ElForm>
-                        <PanelDialog v-model="pickerOpen" title="انتخاب سؤال‌ها" @close="closeQuestions">
+                        <PanelDialog v-model="pickerOpen" title="انتخاب سؤال‌ها"
+                            class="[--el-dialog-padding-primary:1rem]! sm:[--el-dialog-padding-primary:1.5rem]!" @close="closeQuestions">
                             <div class="space-y-3">
                                 <p class="text-sm text-ui-muted">{{ bankFor(editingRow?.bank_id)?.title }}</p>
                                 <p v-if="questionRequest.processing" role="status" class="text-sm text-ui-muted">در حال دریافت سؤال‌ها…</p>
                                 <PanelNotice v-else-if="loadError" tone="error">دریافت سؤال‌ها ممکن نشد. پنجره را ببندید و دوباره تلاش کنید.</PanelNotice>
                                 <p v-else-if="!candidates.length" class="text-sm text-ui-muted">سؤال فعالی در این بانک در دسترس نیست.</p>
                                 <p v-else-if="!checked.length && candidates.every(({ id }) => taken.has(id))" class="text-sm text-ui-muted">همهٔ سؤال‌های این بانک در ردیف‌های دیگر انتخاب شده‌اند.</p>
-                                <ElCheckboxGroup v-model="checked" aria-label="سؤال‌های بانک" class="panel-option-stack">
-                                    <ElCheckbox v-for="question in candidates" :key="question.id" :value="question.id" border class="panel-wrap-option"
+                                <ElCheckboxGroup v-model="checked" aria-label="سؤال‌های بانک" class="panel-option-stack gap-3!">
+                                    <ElCheckbox v-for="question in candidates" :key="question.id" :value="question.id" border
+                                        class="panel-wrap-option h-auto! px-4! py-3! sm:px-5! [&>.el-checkbox__input]:mt-1!"
                                         :disabled="taken.has(question.id) || (checked.length >= 50 && !checked.includes(question.id))">
                                         <span class="block whitespace-pre-wrap text-sm">{{ question.body }}</span>
                                         <span class="block text-xs text-ui-muted">

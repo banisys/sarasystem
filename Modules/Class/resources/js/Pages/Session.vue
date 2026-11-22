@@ -12,7 +12,7 @@ import 'element-plus/es/components/link/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import FilePicker from '@/Components/FilePicker.vue';
 import PanelJalaliDateInput from '@/Components/Ui/PanelJalaliDateInput.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
@@ -58,6 +58,18 @@ const tabs = computed(() => [
     ...(props.submissions ? [{ key: 'submissions', label: 'تکالیف دریافتی', icon: 'clipboard', badge: `${handedIn.value}/${props.submissions.length}` }] : []),
 ]);
 const tab = ref('details');
+const sessionTabs = useTemplateRef('session-tabs');
+
+watch(sessionTabs, (tabs, previousTabs, onCleanup) => {
+    const nav = tabs?.tabNavRef;
+    const viewport = nav?.tabListRef?.parentElement;
+    if (!viewport) return;
+
+    // Element Plus can add the scroll controls after its initial active-tab scroll.
+    const observer = new ResizeObserver(() => nav.scrollToActiveTab());
+    observer.observe(viewport);
+    onCleanup(() => observer.disconnect());
+}, { flush: 'post' });
 
 // ── Attendance
 const attendanceForm = useForm({ rows: (props.attendance ?? []).map((row) => ({ ...row })) });
@@ -172,7 +184,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 :back-label="ward ? `تقویم آموزشی ${ward.name}` : 'تقویم آموزشی'"
             />
 
-            <ElTabs v-model="tab" aria-label="بخش‌های جلسه">
+            <ElTabs ref="session-tabs" v-model="tab" class="session-tabs pt-4" aria-label="بخش‌های جلسه">
                 <ElTabPane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label" lazy>
                     <template #label>
                         <PanelIcon :name="item.icon" class="size-4 shrink-0" />
@@ -542,3 +554,19 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.session-tabs :deep(.el-tabs__nav) {
+    column-gap: 0.75rem;
+}
+
+@media (min-width: 40rem) {
+    .session-tabs :deep(.el-tabs__nav) {
+        column-gap: 1rem;
+    }
+}
+
+.session-tabs :deep(.el-tabs__nav-wrap:not(.is-scrollable) .el-tabs__nav) {
+    float: inline-start;
+}
+</style>

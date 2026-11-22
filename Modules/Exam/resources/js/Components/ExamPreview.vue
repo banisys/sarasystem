@@ -13,6 +13,7 @@ const questions = ref([]);
 const editable = ref(false);
 const shuffled = ref(false);
 const dragged = ref(null);
+const targetSlot = ref(null);
 const error = ref('');
 const changed = ref(false);
 const orderChanged = ref(false);
@@ -57,7 +58,7 @@ async function open() {
 function close() {
     requestId++;
     preview.cancel();
-    dragged.value = null;
+    endDrag();
 }
 
 function move(from, to) {
@@ -79,12 +80,39 @@ function startDrag(event, index) {
     }
     dragged.value = index;
     event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', String(index));
+    event.dataTransfer.setData('application/x-sarasystem-exam-question', String(index));
 }
 
-function drop(index) {
-    if (dragged.value !== null) move(dragged.value, index);
+function insertionSlot(event, index) {
+    if (!canMove.value || dragged.value === null) return null;
+
+    const { top, height } = event.currentTarget.getBoundingClientRect();
+    const slot = event.clientY < top + height / 2 ? index : index + 1;
+
+    return slot === dragged.value || slot === dragged.value + 1 ? null : slot;
+}
+
+function dragOver(event, index) {
+    targetSlot.value = insertionSlot(event, index);
+    if (targetSlot.value === null) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+}
+
+function leaveList(event) {
+    if (!event.currentTarget.contains(event.relatedTarget)) targetSlot.value = null;
+}
+
+function drop(event, index) {
+    const slot = insertionSlot(event, index);
+    if (slot !== null) move(dragged.value, slot > dragged.value ? slot - 1 : slot);
+    endDrag();
+}
+
+function endDrag() {
     dragged.value = null;
+    targetSlot.value = null;
 }
 
 async function save(fixOrder = false) {
@@ -122,35 +150,47 @@ async function save(fixOrder = false) {
                 <p class="wrap-break-word text-sm text-ui-muted">{{ exam.title }}</p>
                 <p v-if="preview.processing" class="text-sm text-gray-600 panel-dark:text-ui-muted" role="status">در حال دریافت سؤال‌ها…</p>
                 <p v-if="error" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
-                <p v-if="editable && questions.length > 1" class="text-sm text-gray-600 panel-dark:text-ui-muted">برای تغییر ترتیب، سؤال‌ها را بکشید یا از فلش‌های کنارشان استفاده کنید.</p>
+                <p v-if="editable && questions.length > 1" class="text-sm text-gray-600 panel-dark:text-ui-muted">سؤال را تا خط «اینجا رها کنید» بکشید یا از فلش‌های کنارش استفاده کنید.</p>
                 <p v-if="shuffled" class="text-sm text-gray-600 panel-dark:text-ui-muted">ترتیب نمایش برای شرکت‌کنندگان تصادفی است. با ذخیرهٔ یک ترتیب دستی، نمایش ثابت می‌شود.</p>
-                <ol class="space-y-2">
-                    <li v-for="(question, index) in questions" :key="question.index"
-                        class="flex items-start gap-3 rounded-lg border border-gray-200 panel-dark:border-ui-line p-3"
-                        :class="{ 'cursor-grab': canMove && questions.length > 1, 'opacity-50': dragged === index }"
-                        :draggable="canMove && questions.length > 1"
-                        @dragstart="startDrag($event, index)" @dragend="dragged = null" @dragover.prevent @drop.prevent="drop(index)">
-                        <span class="grid size-7 shrink-0 place-items-center rounded-full bg-gray-100 panel-dark:bg-white/8 text-sm">{{ index + 1 }}</span>
-                        <div class="min-w-0 flex-1 space-y-1">
-                            <p class="whitespace-pre-wrap break-words text-sm">{{ question.body }}</p>
-                            <ul v-if="question.options.length" class="list-disc space-y-1 ps-5 text-sm text-gray-700 panel-dark:text-ui-ink">
-                                <li v-for="(option, optionIndex) in question.options" :key="optionIndex" class="break-words">{{ option }}</li>
-                            </ul>
-                            <p class="text-xs text-gray-600 panel-dark:text-ui-muted">{{ question.type }}<template v-if="!exam.is_practice && !editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
-                            <label v-if="!exam.is_practice && editable" class="inline-flex items-center gap-1.5">
-                                <span class="panel-field-label">بارم</span>
-                                <ElInput v-model.number="question.score" type="number" min="0.25" max="1000" step="0.01" inputmode="decimal" dir="ltr"
-                                    :aria-label="`بارم سؤال ${index + 1}`" :disabled="reorder.processing"
-                                    size="small" class="panel-inline-input" @input="markChanged" />
-                            </label>
+                <ol @dragleave="leaveList">
+                    <li v-for="(question, index) in questions" :key="question.index" class="relative py-2"
+                        @dragover="dragOver($event, index)" @drop.prevent="drop($event, index)">
+                        <div v-if="targetSlot === index || (index === questions.length - 1 && targetSlot === questions.length)"
+                            aria-hidden="true" class="pointer-events-none absolute inset-x-0 z-10 flex items-center gap-2 text-brand-700 panel-dark:text-brand-300"
+                            :class="{
+                                'top-2 -translate-y-1/2': targetSlot === 0,
+                                'top-0 -translate-y-1/2': targetSlot === index && index > 0,
+                                'bottom-2 translate-y-1/2': targetSlot === questions.length,
+                            }">
+                            <span class="h-0.5 flex-1 rounded-full bg-current"></span>
+                            <span class="rounded-full bg-brand-700 px-2 py-0.5 text-xs font-semibold text-white panel-dark:bg-brand-300 panel-dark:text-brand-950">اینجا رها کنید</span>
+                            <span class="h-0.5 flex-1 rounded-full bg-current"></span>
                         </div>
-                        <div v-if="editable && questions.length > 1" class="flex shrink-0 gap-1">
-                            <PanelButton type="button" :disabled="!canMove || index === 0" :aria-label="`سؤال ${index + 1} به بالا`"
-                                variant="outline" size="small" circle
-                                @click="move(index, index - 1)">↑</PanelButton>
-                            <PanelButton type="button" :disabled="!canMove || index === questions.length - 1" :aria-label="`سؤال ${index + 1} به پایین`"
-                                variant="outline" size="small" circle
-                                @click="move(index, index + 1)">↓</PanelButton>
+                        <div class="flex items-start gap-3 rounded-lg border border-gray-200 p-3 panel-dark:border-ui-line"
+                            :class="{ 'cursor-grab': canMove && questions.length > 1, 'opacity-50': dragged === index }"
+                            :draggable="canMove && questions.length > 1" @dragstart="startDrag($event, index)" @dragend="endDrag">
+                            <span class="grid size-7 shrink-0 place-items-center rounded-full bg-gray-100 panel-dark:bg-white/8 text-sm">{{ index + 1 }}</span>
+                            <div class="min-w-0 flex-1 space-y-1">
+                                <p class="whitespace-pre-wrap break-words text-sm">{{ question.body }}</p>
+                                <ul v-if="question.options.length" class="list-disc space-y-1 ps-5 text-sm text-gray-700 panel-dark:text-ui-ink">
+                                    <li v-for="(option, optionIndex) in question.options" :key="optionIndex" class="break-words">{{ option }}</li>
+                                </ul>
+                                <p class="text-xs text-gray-600 panel-dark:text-ui-muted">{{ question.type }}<template v-if="!exam.is_practice && !editable"> · {{ formatScore.format(question.score) }} نمره</template></p>
+                                <label v-if="!exam.is_practice && editable" class="inline-flex items-center gap-1.5">
+                                    <span class="panel-field-label">بارم</span>
+                                    <ElInput v-model.number="question.score" type="number" min="0.25" max="1000" step="0.01" inputmode="decimal" dir="ltr"
+                                        :aria-label="`بارم سؤال ${index + 1}`" :disabled="reorder.processing"
+                                        size="small" class="panel-inline-input" @input="markChanged" />
+                                </label>
+                            </div>
+                            <div v-if="editable && questions.length > 1" class="flex shrink-0 gap-1">
+                                <PanelButton type="button" :disabled="!canMove || index === 0" :aria-label="`سؤال ${index + 1} به بالا`"
+                                    variant="outline" size="small" circle
+                                    @click="move(index, index - 1)">↑</PanelButton>
+                                <PanelButton type="button" :disabled="!canMove || index === questions.length - 1" :aria-label="`سؤال ${index + 1} به پایین`"
+                                    variant="outline" size="small" circle
+                                    @click="move(index, index + 1)">↓</PanelButton>
+                            </div>
                         </div>
                     </li>
                 </ol>

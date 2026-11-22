@@ -13,6 +13,8 @@ After generating a draft, its author needs to review the actual question set and
 ## Decision
 Session managers can preview the question text, options and scores of generated exams. Only the author may reorder an unpublished draft with no attempts. The server validates a complete permutation against the preview revision and uses the same exam row lock as attempt start. Saving a manual order disables question shuffling for that exam.
 
+Dragging a question shows an insertion line above or below the hovered question. The up and down buttons also move questions by one position. The updated order is applied to the exam when the author saves.
+
 ## Consequences
 Existing bank-based exams without a snapshot have no fixed set to preview. Published exams and exams with attempts can still be previewed if they have a snapshot. A stale preview must be reopened before saving.
 
