@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Installed Element Plus Skills for SaraSystem in `.agents/skills/` and verified the installed files against the pinned upstream revision ([ADR 0114](decisions/0114-codex-project-skills.md)).
 - 2026-11-22 — Increased the space above the session exam tab bar by 16 pixels. Measured the 40-pixel gap below the page header in mobile and desktop Chromium previews. The Vite build passed.
 - 2026-11-22 — Right-aligned the session exam tabs in the Persian user panel when the row fits. Verified desktop alignment, narrow-screen scrolling and keyboard tab switching in Chromium. The Vite build passed.
 - 2026-11-22 — Placed the exam title beside the numeric fields, paired the exam options, and aligned the three advanced selects in one row when the form is wide enough. Verified wide and narrow layouts for graded and practice modes in Chromium. The Vite build passed.
