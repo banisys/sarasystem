@@ -47,6 +47,7 @@ class MyClassController extends Controller
         $query = $request->query();
         $view = in_array($query['view'] ?? null, MyClasses::VIEWS, true) ? $query['view'] : 'month';
         $date = rescue(fn () => CarbonImmutable::parse((string) $request->query('date', today()->toDateString()))->startOfDay(), today()->toImmutable(), report: false);
+        $classroomId = filter_var($query['classroom'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
         $subject = filter_var($query['subject'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
         $mode = is_string($query['mode'] ?? null) ? ClassMode::tryFrom($query['mode']) : null;
 
@@ -63,8 +64,10 @@ class MyClassController extends Controller
             ])
             ->values();
 
+        $classroomId = $classes->containsStrict('id', $classroomId) ? $classroomId : null;
+
         return Inertia::render('Class::Index', [
-            'calendar' => $myClasses->calendar($user, Tenant::current(), $view, $date, $subject, $mode),
+            'calendar' => $myClasses->calendar($user, Tenant::current(), $view, $date, $subject, $mode, classroomId: $classroomId),
             'classes' => $classes,
             'ward' => $user->is($request->user()) ? null : ['id' => $user->getKey(), 'name' => $user->name],
         ]);

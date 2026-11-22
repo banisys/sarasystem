@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Added a class membership filter to the user-panel academic calendar ([ADR 0120](decisions/0120-academic-calendar-class-filter.md)) and right-aligned all three filter labels and options. Verified alignment in mobile and desktop Chromium previews. All 224 Class tests, Pint and the Vite build passed.
 - 2026-11-21 — Moved session reminders to a dedicated staff tab and used muted, regular-weight text for accordion items. Verified tab navigation and text weight in a Chromium session-page preview. The Vite build passed.
 - 2026-11-21 — Restyled the reminder accordion with shaded date headers, left-aligned chevrons and separated reminder rows. Verified the expanded list and the upcoming-session editor in a Chromium component preview. The Vite build passed.
 - 2026-11-21 — Changed the staff reminder timeline to an accordion, with reminders and the future-session form inside the selected date row. Verified row navigation and cancellation in a Chromium component preview. The Vite build passed.

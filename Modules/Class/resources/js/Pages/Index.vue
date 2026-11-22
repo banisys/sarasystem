@@ -21,7 +21,7 @@ const props = defineProps({
     ward: { type: Object, default: null },
 });
 
-usePoll(60_000, { only: ['calendar'] });
+usePoll(60_000, { only: ['calendar', 'classes'] });
 
 const title = computed(() => (props.ward ? `تقویم آموزشی ${props.ward.name}` : 'تقویم آموزشی'));
 const forWard = computed(() => (props.ward ? { for: props.ward.id } : {}));
@@ -47,8 +47,8 @@ const examTagClass = '[--el-tag-bg-color:var(--color-fuchsia-700)]! [--el-tag-bo
 
 const visibleDays = computed(() => (props.calendar.view === 'week' ? props.calendar.days : props.calendar.days.filter((day) => day.sessions.length || day.holiday || day.is_today)));
 
-function at(date, view = props.calendar.view, { subject, mode } = props.calendar.filters) {
-    return route('my-classes.index', { view, date, subject, mode, ...forWard.value });
+function at(date, view = props.calendar.view, { classroom, subject, mode } = props.calendar.filters) {
+    return route('my-classes.index', { view, date, classroom, subject, mode, ...forWard.value });
 }
 
 function sessionUrl(session) {
@@ -58,7 +58,7 @@ function sessionUrl(session) {
 function setFilter(key, value) {
     const { date, view, filters } = props.calendar;
     router.visit(at(date, view, { ...filters, [key]: value === '' ? null : value }), {
-        only: ['calendar'],
+        only: ['calendar', 'classes'],
         preserveScroll: true,
         preserveState: true,
         onStart: () => { filtering.value = true; },
@@ -100,7 +100,23 @@ function setFilter(key, value) {
                             </PanelButton>
                         </div>
                     </PanelCard>
-                    <div class="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:justify-end" role="group" aria-label="فیلترهای جلسات">
+                    <div
+                        class="calendar-filters grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap sm:justify-end"
+                        role="group"
+                        aria-label="فیلترهای جلسات"
+                    >
+                        <ElSelect
+                            :model-value="calendar.filters.classroom ?? ''"
+                            :empty-values="[null, undefined]"
+                            :disabled="filtering || !classes.length"
+                            aria-label="فیلتر بر اساس کلاس"
+                            :teleported="false"
+                            class="min-w-0 min-[360px]:col-span-2 sm:w-48!"
+                            @change="setFilter('classroom', $event)"
+                        >
+                            <ElOption value="" label="همهٔ کلاس‌ها" />
+                            <ElOption v-for="item in classes" :key="item.id" :value="item.id" :label="item.title" />
+                        </ElSelect>
                         <ElSelect
                             :model-value="calendar.filters.subject ?? ''"
                             :empty-values="[null, undefined]"
@@ -251,6 +267,11 @@ function setFilter(key, value) {
 </template>
 
 <style scoped>
+.calendar-filters :deep(.el-select__wrapper),
+.calendar-filters :deep(.el-select-dropdown__item) {
+    text-align: right;
+}
+
 .calendar-views :deep(.el-button[aria-current="true"]) {
     --el-button-text-color: white;
     --el-button-hover-text-color: var(--el-button-text-color);

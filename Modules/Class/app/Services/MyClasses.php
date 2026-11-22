@@ -70,11 +70,11 @@ class MyClasses
      *
      * @return array{
      *     view: string, date: string, label: string, previous: string, next: string, today: string, leading_blanks: int,
-     *     filters: array{subject: ?int, mode: ?string, subjects: list<array{value: int, label: string}>, modes: list<array{value: string, label: string}>},
+     *     filters: array{classroom: ?int, subject: ?int, mode: ?string, subjects: list<array{value: int, label: string}>, modes: list<array{value: string, label: string}>},
      *     days: list<array<string, mixed>>
      * }
      */
-    public function calendar(User $user, Tenant $tenant, string $view, CarbonImmutable $date, ?int $subjectId = null, ?ClassMode $mode = null): array
+    public function calendar(User $user, Tenant $tenant, string $view, CarbonImmutable $date, ?int $subjectId = null, ?ClassMode $mode = null, ?int $classroomId = null): array
     {
         ['first' => $first, 'last' => $last, 'previous' => $previous, 'next' => $next, 'label' => $label] = SessionCalendar::period($view, $date);
         $label = $view === 'day' ? self::jalali($date, 'l Y/m/d') : $label;
@@ -88,6 +88,7 @@ class MyClasses
 
         $sessions = $query
             ->whereBetween('starts_at', [$first->startOfDay(), $last->endOfDay()])
+            ->when($classroomId !== null, fn (Builder $query) => $query->where('classroom_id', $classroomId))
             ->when($subjectId !== null, fn (Builder $query) => $query->where('subject_id', $subjectId))
             ->with(['classroom.onlineRooms.server', 'subject', 'teachers', 'substitutes'])
             ->orderBy('starts_at')
@@ -126,6 +127,7 @@ class MyClasses
             'today' => today()->toDateString(),
             'leading_blanks' => $view === 'month' ? Weekday::from($first->dayOfWeek)->position() : 0,
             'filters' => [
+                'classroom' => $classroomId,
                 'subject' => $subjectId,
                 'mode' => $mode?->value,
                 'subjects' => $subjects->map(fn (string $label, int $value): array => ['value' => $value, 'label' => $label])->values()->all(),
