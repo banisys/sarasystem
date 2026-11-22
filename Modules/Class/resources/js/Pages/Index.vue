@@ -101,7 +101,7 @@ function setFilter(key, value) {
                         </div>
                     </PanelCard>
                     <div
-                        class="calendar-filters grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap sm:justify-end"
+                        class="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap sm:justify-end"
                         role="group"
                         aria-label="فیلترهای جلسات"
                     >
@@ -267,11 +267,6 @@ function setFilter(key, value) {
 </template>
 
 <style scoped>
-.calendar-filters :deep(.el-select__wrapper),
-.calendar-filters :deep(.el-select-dropdown__item) {
-    text-align: right;
-}
-
 .calendar-views :deep(.el-button[aria-current="true"]) {
     --el-button-text-color: white;
     --el-button-hover-text-color: var(--el-button-text-color);

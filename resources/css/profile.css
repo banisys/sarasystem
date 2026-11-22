@@ -247,6 +247,26 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
     box-shadow: 0 0 0 1px var(--el-color-danger) inset;
 }
 
+.profile-panel .el-select__wrapper,
+.profile-panel .el-select__input,
+.profile-panel .el-select-dropdown__item,
+.profile-panel select {
+    text-align: right;
+}
+
+.profile-panel .el-select-dropdown__item {
+    padding-inline: 0.75rem;
+}
+
+.profile-panel .el-select-dropdown.is-multiple .el-select-dropdown__item {
+    padding-left: 2rem;
+}
+
+.profile-panel .el-select-dropdown.is-multiple .el-select-dropdown__item.is-selected::after {
+    right: auto;
+    left: 0.75rem;
+}
+
 .profile-panel .el-button.panel-wrap-button,
 .profile-panel .el-button.panel-row-button {
     max-width: 100%;
@@ -397,12 +417,17 @@ html:has(.profile-panel[data-profile-theme="dark"]) {
 }
 
 .profile-panel .panel-settings-collapse {
+    --profile-settings-padding: 1.25rem;
     border: 1px solid var(--color-ui-line);
     border-radius: var(--el-border-radius-base);
 }
 
 .profile-panel .panel-settings-collapse .el-collapse-item__header {
-    padding-inline: 0.75rem;
+    padding-inline: var(--profile-settings-padding);
+}
+
+.profile-panel .panel-settings-collapse .el-collapse-item__content {
+    padding: var(--profile-settings-padding);
 }
 
 .profile-panel .el-link.panel-file-link {

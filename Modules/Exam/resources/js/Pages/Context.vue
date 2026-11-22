@@ -175,37 +175,41 @@ function remove() {
                             <PanelNotice v-if="deletion.errors.delete_exam" tone="error" class="mt-3">{{ deletion.errors.delete_exam }}</PanelNotice>
                         </PanelConfirm>
                     </section>
-                    <PanelCard v-if="item.key === 'create'" body-class="space-y-4 p-4 sm:p-5">
+                    <PanelCard v-if="item.key === 'create'" body-class="[--el-card-padding:1rem] sm:[--el-card-padding:1.5rem]">
                         <p v-if="!banks.some((bank) => bank.question_count > 0)" class="text-sm text-gray-600 panel-dark:text-ui-muted">
                             برای ساخت آزمون، در بانک خودتان سؤال فعال ثبت کنید یا از یک بانک عمومیِ دارای سؤال استفاده کنید.
                         </p>
-                        <ElForm v-else novalidate class="space-y-4" @submit.prevent="generate">
-                            <SessionExamFields :form="generation" :settings="settings_form" />
-                            <div v-for="(row, index) in generation.banks" :key="index" class="grid items-end gap-3 rounded-ui bg-ui-canvas p-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
-                                <PanelFormField label="بانک سؤال" :for="`exam-bank-${index}`">
-                                    <ElSelect :id="`exam-bank-${index}`" v-model="row.bank_id" placeholder="انتخاب کنید" append-to="#profile-overlays" @change="delete row.question_ids">
-                                        <ElOption v-for="bank in banks" :key="bank.id" :value="bank.id"
-                                            :label="`${bank.title} · ${bank.is_mine ? 'بانک من' : 'عمومی'} · ${bank.question_count} سؤال`"
-                                            :disabled="!bank.question_count || generation.banks.some((other) => other !== row && other.bank_id === bank.id)" />
-                                    </ElSelect>
-                                </PanelFormField>
-                                <PanelFormField label="تعداد سؤال">
-                                    <ElInput v-model.number="row.question_count" type="number" min="1" :max="Math.min(bankFor(row.bank_id)?.question_count ?? 50, 50)" :readonly="!!row.question_ids" />
-                                </PanelFormField>
-                                <div class="flex flex-wrap items-center gap-2 sm:col-span-2 xl:col-span-1">
-                                    <PanelButton v-if="row.question_ids" variant="link" @click="delete row.question_ids">انتخاب تصادفی</PanelButton>
-                                    <PanelButton v-if="generation.banks.length > 1" variant="danger-link" @click="generation.banks.splice(index, 1)">حذف بانک</PanelButton>
-                                    <PanelButton type="button" :disabled="!row.bank_id" title="انتخاب سؤال‌ها" aria-label="انتخاب سؤال‌ها" aria-haspopup="dialog"
-                                        variant="outline-brand" @click="openQuestions(row)">
-                                        <PanelIcon name="clipboard" class="size-5" />
-                                        انتخاب سؤال‌ها
-                                    </PanelButton>
+                        <ElForm v-else novalidate class="grid gap-6 sm:gap-8" @submit.prevent="generate">
+                            <SessionExamFields :form="generation" :settings="settings_form" class="[--exam-settings-gap:1.25rem] sm:[--exam-settings-gap:1.5rem]" />
+                            <div class="grid gap-4 sm:gap-5">
+                                <div v-for="(row, index) in generation.banks" :key="index" class="grid items-end gap-4 rounded-ui bg-ui-canvas p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:gap-5 sm:p-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
+                                    <PanelFormField label="بانک سؤال" :for="`exam-bank-${index}`">
+                                        <ElSelect :id="`exam-bank-${index}`" v-model="row.bank_id" placeholder="انتخاب کنید" append-to="#profile-overlays" @change="delete row.question_ids">
+                                            <ElOption v-for="bank in banks" :key="bank.id" :value="bank.id"
+                                                :label="`${bank.title} · ${bank.is_mine ? 'بانک من' : 'عمومی'} · ${bank.question_count} سؤال`"
+                                                :disabled="!bank.question_count || generation.banks.some((other) => other !== row && other.bank_id === bank.id)" />
+                                        </ElSelect>
+                                    </PanelFormField>
+                                    <PanelFormField label="تعداد سؤال">
+                                        <ElInput v-model.number="row.question_count" type="number" min="1" :max="Math.min(bankFor(row.bank_id)?.question_count ?? 50, 50)" :readonly="!!row.question_ids" />
+                                    </PanelFormField>
+                                    <div class="flex flex-wrap items-center gap-3 sm:col-span-2 xl:col-span-1">
+                                        <PanelButton v-if="row.question_ids" variant="link" @click="delete row.question_ids">انتخاب تصادفی</PanelButton>
+                                        <PanelButton v-if="generation.banks.length > 1" variant="danger-link" @click="generation.banks.splice(index, 1)">حذف بانک</PanelButton>
+                                        <PanelButton type="button" :disabled="!row.bank_id" title="انتخاب سؤال‌ها" aria-label="انتخاب سؤال‌ها" aria-haspopup="dialog"
+                                            variant="outline-brand" @click="openQuestions(row)">
+                                            <PanelIcon name="clipboard" class="size-5" />
+                                            انتخاب سؤال‌ها
+                                        </PanelButton>
+                                    </div>
                                 </div>
+                                <PanelButton v-if="generation.banks.length < Math.min(10, banks.filter((bank) => bank.question_count > 0).length)" variant="link" class="justify-self-start" @click="generation.banks.push(bankRow())">افزودن بانک دیگر</PanelButton>
                             </div>
-                            <PanelButton v-if="generation.banks.length < Math.min(10, banks.filter((bank) => bank.question_count > 0).length)" variant="link" @click="generation.banks.push(bankRow())">افزودن بانک دیگر</PanelButton>
-                            <p class="text-sm text-gray-600 panel-dark:text-ui-muted">سؤال‌ها به‌طور پیش‌فرض تصادفی و بدون تکرار انتخاب می‌شوند. برای انتخاب دستی، «انتخاب سؤال‌ها» را بزنید. زمان برگزاری از جلسه گرفته می‌شود.</p>
-                            <p v-for="(error, key) in generation.errors" :key="key" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
-                            <PanelButton type="submit" :disabled="generation.processing">{{ generation.processing ? 'در حال ساخت…' : 'ساخت پیش‌نویس آزمون' }}</PanelButton>
+                            <div class="grid justify-items-start gap-4">
+                                <p class="text-sm text-gray-600 panel-dark:text-ui-muted">سؤال‌ها به‌طور پیش‌فرض تصادفی و بدون تکرار انتخاب می‌شوند. برای انتخاب دستی، «انتخاب سؤال‌ها» را بزنید. زمان برگزاری از جلسه گرفته می‌شود.</p>
+                                <p v-for="(error, key) in generation.errors" :key="key" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
+                                <PanelButton type="submit" :disabled="generation.processing">{{ generation.processing ? 'در حال ساخت…' : 'ساخت پیش‌نویس آزمون' }}</PanelButton>
+                            </div>
                         </ElForm>
                         <PanelDialog v-model="pickerOpen" title="انتخاب سؤال‌ها" @close="closeQuestions">
                             <div class="space-y-3">

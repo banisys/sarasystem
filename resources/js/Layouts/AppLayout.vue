@@ -4,7 +4,7 @@ import { ElConfigProvider, ElDrawer } from 'element-plus';
 import fa from 'element-plus/es/locale/lang/fa';
 import 'element-plus/es/components/drawer/style/css';
 import '../../css/profile.css';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import PanelCard from '@/Components/Ui/PanelCard.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
@@ -16,6 +16,7 @@ const page = usePage();
 const impersonator = computed(() => page.props.auth.impersonator);
 const homeUrl = computed(() => page.props.panelHome ?? route('dashboard'));
 const menuOpen = ref(false);
+const overlays = useTemplateRef('profile-overlays');
 const { theme, toggleTheme } = useProfileTheme();
 
 let desktop;
@@ -37,7 +38,7 @@ function leaveImpersonation() {
 <template>
     <ElConfigProvider :locale="fa" size="large">
         <div class="profile-panel min-h-screen bg-ui-canvas text-ui-ink" :data-profile-theme="theme">
-            <div id="profile-overlays" class="relative" />
+            <div id="profile-overlays" ref="profile-overlays" class="relative" />
             <TutorialBar :action="PanelButton" />
             <div
                 v-if="impersonator"
@@ -85,7 +86,8 @@ function leaveImpersonation() {
                     </PanelNavigation>
                 </PanelCard>
                 <main class="min-w-0 flex-1">
-                    <slot />
+                    <!-- Element Plus menus need their teleport target before the page mounts. -->
+                    <slot v-if="overlays" />
                 </main>
             </div>
         </div>

@@ -27,11 +27,11 @@ const advanced = [
 </script>
 
 <template>
-    <div class="space-y-4">
+    <div class="grid gap-[var(--exam-settings-gap,1rem)]">
         <PanelFormField :label="settings.labels.title">
             <ElInput v-model="form.title" maxlength="255" />
         </PanelFormField>
-        <div class="grid gap-3 sm:grid-cols-3">
+        <div class="grid gap-[var(--exam-settings-gap,0.75rem)] sm:grid-cols-3">
             <PanelFormField v-for="[key, min, max, step] in basic" :key="key" :label="settings.labels[key]">
                 <ElInput v-model.number="form[key]" type="number" :min="min" :max="max" :step="step" />
             </PanelFormField>
@@ -42,18 +42,18 @@ const advanced = [
                 <span class="mt-1 block text-ui-muted">برای شروع آزمون مهلت پایانی وجود ندارد. مدت پاسخ‌گویی از لحظهٔ شروع هر تلاش حساب می‌شود.</span>
             </ElCheckbox>
         </div>
-        <ElCollapse v-model="openSections" class="panel-settings-collapse">
+        <ElCollapse v-model="openSections" class="panel-settings-collapse sm:[--profile-settings-padding:1.5rem]!">
             <ElCollapseItem name="advanced" title="تنظیمات بیشتر">
-                <div class="space-y-4 p-3">
+                <div class="grid gap-[var(--exam-settings-gap,1rem)]">
                     <PanelFormField :label="settings.labels.description">
                         <ElInput type="textarea" v-model="form.description" :rows="3" maxlength="20000" />
                     </PanelFormField>
-                    <div class="grid gap-3 sm:grid-cols-3">
+                    <div class="grid gap-[var(--exam-settings-gap,0.75rem)] sm:grid-cols-3">
                         <PanelFormField v-for="[key, min, max] in advanced" :key="key" :label="settings.labels[key]">
                             <ElInput v-model.number="form[key]" type="number" :min="min" :max="max" />
                         </PanelFormField>
                     </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="grid gap-[var(--exam-settings-gap,0.75rem)] sm:grid-cols-2">
                         <PanelFormField :label="settings.labels.retake_policy">
                             <ElSelect v-model="form.retake_policy" :aria-label="settings.labels.retake_policy" append-to="#profile-overlays">
                                 <ElOption v-for="(label, value) in settings.retake_policies" :key="value" :value="value" :label="label" />

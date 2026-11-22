@@ -23,6 +23,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-22 — Applied shared right alignment and a 12 px option inset to user-panel selects, initialized the overlay target before page content, and added responsive padding to advanced exam settings. Verified the exam dropdown and calendar filters in Chromium, including mobile dark mode, selecting a bank and adding another bank. All 813 tests and the Vite build passed.
+- 2026-11-22 — Increased spacing between settings, question bank rows and the submit area in «ساخت آزمون از بانک سؤال». Verified the rendered form in mobile dark and desktop light Chromium previews. The Vite build passed.
+- 2026-11-22 — Reduced the right padding of academic calendar filter options from 32 to 12 pixels. Verified selected and unselected options in a Chromium preview. The Vite build passed.
 - 2026-11-22 — Added a class membership filter to the user-panel academic calendar ([ADR 0120](decisions/0120-academic-calendar-class-filter.md)) and right-aligned all three filter labels and options. Verified alignment in mobile and desktop Chromium previews. All 224 Class tests, Pint and the Vite build passed.
 - 2026-11-21 — Moved session reminders to a dedicated staff tab and used muted, regular-weight text for accordion items. Verified tab navigation and text weight in a Chromium session-page preview. The Vite build passed.
 - 2026-11-21 — Restyled the reminder accordion with shaded date headers, left-aligned chevrons and separated reminder rows. Verified the expanded list and the upcoming-session editor in a Chromium component preview. The Vite build passed.

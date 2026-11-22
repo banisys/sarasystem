@@ -17,6 +17,8 @@ Use Element Plus for standard interface components throughout `/profile`, includ
 ## Consequences
 Panel forms use [PanelFormField](../../resources/js/Components/Ui/PanelFormField.vue) for stacked labels above Element Plus controls. The shared style uses muted 14 px text, a 6 px gap, and a small inset on the leading edge in both themes. Compact controls in tables and inline answers retain their layouts. Validation errors still come from Laravel through Inertia.
 
+Select fields and their dropdown options use shared right alignment. Options have a 12 px right inset. Teleported menus stay inside the panel's `#profile-overlays` container to inherit these styles. The layout mounts page content once the overlay container is in the DOM.
+
 The public frontend and Filament keep their own controls; the public app entry does not register Element Plus. The class calendar keeps its Jalali grid and server-provided sessions. The deadline picker shares the same Jalali calculation as the public date field and uses Element Plus controls inside a dialog. The file picker queues files with Element Plus, then the existing Inertia form sends them when it is saved. Exam timing, question reordering and 3D previews retain their domain logic.
 
 [ADR 0101](0101-user-panel-dark-theme.md) defines dark mode for the panel and its Element Plus controls.
