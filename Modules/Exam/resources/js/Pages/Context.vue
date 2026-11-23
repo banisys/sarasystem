@@ -22,6 +22,7 @@ import { Head, router, useForm, useHttp, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import ExamPreview from '../Components/ExamPreview.vue';
+import ExamGroupSelect from '../Components/ExamGroupSelect.vue';
 import SessionExamFields from '../Components/SessionExamFields.vue';
 import SessionExamSettingsDialog from '../Components/SessionExamSettingsDialog.vue';
 import { formatDateTime } from '../format.js';
@@ -104,10 +105,26 @@ function generate() {
     });
 }
 const publication = useForm({ is_published: false });
+const groupForm = useForm({ exam_group_id: null });
+const groupOpen = ref(false);
+const groupingExam = ref(null);
 const deletion = useForm({});
 const removalOpen = ref(false);
 const removingExam = ref(null);
 const parameters = () => [props.context.type, props.context.id];
+function openGroup(exam) {
+    groupingExam.value = exam;
+    groupForm.defaults('exam_group_id', exam.exam_group?.id ?? null).resetAndClearErrors();
+    groupOpen.value = true;
+}
+
+function saveGroup() {
+    groupForm.patch(groupingExam.value.group_url, {
+        preserveScroll: true,
+        onSuccess: () => { groupOpen.value = false; },
+    });
+}
+
 function publish(exam) {
     publication.is_published = !exam.is_published;
     publication.patch(route('exams.context.publish', [...parameters(), exam.id]), { preserveScroll: true });
@@ -149,14 +166,16 @@ function remove() {
                         <PanelCard v-for="exam in exams" :key="exam.id" body-class="grid gap-3 [--el-card-padding:0.875rem] sm:gap-4 sm:[--el-card-padding:1.25rem]">
                             <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                                 <h2 class="min-w-0 flex-1 basis-full wrap-break-word font-semibold sm:basis-48">{{ exam.title }}</h2>
-                                <div v-if="exam.preview_url || exam.settings" class="flex max-w-full flex-wrap items-center gap-2">
+                                <div v-if="exam.preview_url || exam.settings || exam.group_url" class="flex max-w-full flex-wrap items-center gap-2">
                                     <ExamPreview v-if="exam.preview_url" :exam="exam" />
+                                    <PanelButton v-if="exam.group_url" variant="outline" aria-haspopup="dialog" @click="openGroup(exam)">گروه آزمون</PanelButton>
                                     <SessionExamSettingsDialog v-if="exam.settings" :exam="exam" :settings="settings_form"
                                         :url="route('exams.context.settings.update', [...parameters(), exam.id])" />
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                                 <ElTag v-if="exam.is_practice" type="info">آزمون تمرینی</ElTag>
+                                <ElTag v-if="exam.exam_group" type="info">{{ exam.exam_group.title }}</ElTag>
                                 <ElTag :type="exam.is_published ? 'success' : 'info'">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }}</ElTag>
                                 <span v-if="exam.starts_at" class="text-sm text-ui-muted">از {{ formatDateTime(exam.starts_at) }}</span>
                                 <span v-if="exam.ends_at" class="text-sm text-ui-muted">تا {{ formatDateTime(exam.ends_at) }}</span>
@@ -170,6 +189,14 @@ function remove() {
                             </div>
                         </PanelCard>
                         <p v-for="(error, key) in publication.errors" :key="key" class="text-sm text-red-600 panel-dark:text-red-300" role="alert">{{ error }}</p>
+                        <PanelDialog v-if="groupingExam" v-model="groupOpen" title="گروه آزمون" :busy="groupForm.processing">
+                            <ElForm novalidate class="grid gap-3" @submit.prevent="saveGroup">
+                                <p class="wrap-break-word text-sm text-ui-muted">{{ groupingExam.title }}</p>
+                                <ExamGroupSelect v-model="groupForm.exam_group_id" :groups="settings_form.exam_groups" />
+                                <p v-if="groupForm.errors.exam_group_id" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ groupForm.errors.exam_group_id }}</p>
+                                <PanelButton type="submit" class="justify-self-end" :loading="groupForm.processing">ذخیرهٔ گروه</PanelButton>
+                            </ElForm>
+                        </PanelDialog>
                         <PanelConfirm v-model="removalOpen" title="حذف آزمون" confirm-label="حذف آزمون" danger :busy="deletion.processing" @confirm="remove">
                             <p>«{{ removingExam?.title }}» از این جلسه حذف شود؟</p>
                             <PanelNotice v-if="deletion.errors.delete_exam" tone="error" class="mt-3">{{ deletion.errors.delete_exam }}</PanelNotice>
@@ -181,6 +208,7 @@ function remove() {
                         </p>
                         <ElForm v-else novalidate class="grid gap-6 sm:gap-8" @submit.prevent="generate">
                             <SessionExamFields :form="generation" :settings="settings_form" class="[--exam-settings-gap:1.25rem] sm:[--exam-settings-gap:1.5rem]" />
+                            <ExamGroupSelect v-model="generation.exam_group_id" :groups="settings_form.exam_groups" class="sm:max-w-sm" />
                             <div class="grid gap-4 sm:gap-5">
                                 <div v-for="(row, index) in generation.banks" :key="index" class="grid items-end gap-4 rounded-ui bg-ui-canvas p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:gap-5 sm:p-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
                                     <PanelFormField label="بانک سؤال" :for="`exam-bank-${index}`">

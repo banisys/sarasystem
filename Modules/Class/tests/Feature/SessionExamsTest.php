@@ -15,6 +15,7 @@ use Modules\Class\Models\ClassSession;
 use Modules\Exam\Enums\AttemptStatus;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\ExamGroup;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Support\ExamContexts;
@@ -740,6 +741,48 @@ class SessionExamsTest extends TestCase
         $this->patch($url, $data)->assertSessionHasErrors('settings');
         $exam->update(['is_published' => false]);
         $this->patch($url, $data)->assertSessionHasErrors('settings');
+    }
+
+    public function test_session_exam_groups_can_be_assigned_and_cleared_using_only_the_session_branch_catalog(): void
+    {
+        $this->asTeacher();
+        $group = ExamGroup::factory()->for($this->tenant)->create();
+        $foreignGroup = ExamGroup::factory()->create();
+
+        $this->post($this->url(), $this->payload() + ['exam_group_id' => $foreignGroup->id])
+            ->assertSessionHasErrors('exam_group_id');
+        $this->post($this->url(), $this->payload() + ['exam_group_id' => $group->id])->assertRedirect($this->url());
+        $exam = Exam::query()->whereNotNull('question_snapshot')->sole();
+        $this->assertSame($group->id, $exam->exam_group_id);
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('settings_form.exam_groups', 1)
+            ->where('settings_form.exam_groups.0.id', $group->id)
+            ->where('exams.0.exam_group.title', $group->title));
+
+        $exam->update(['is_published' => true]);
+        ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create();
+        $url = route('exams.context.group.update', ['class-session', $this->session->id, $exam]);
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.group_url', $url)
+            ->where('exams.0.settings', null));
+        $this->patch($url, ['exam_group_id' => $foreignGroup->id])->assertSessionHasErrors('exam_group_id');
+        $this->assertSame($group->id, $exam->refresh()->exam_group_id);
+
+        $this->asLearner();
+        $this->patch($url, ['exam_group_id' => null])->assertForbidden();
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('settings_form', null)
+            ->where('exams.0.group_url', null));
+
+        $this->asTeacher();
+        $this->patch($url, ['exam_group_id' => null, 'title' => 'Ignored'])->assertRedirect($this->url());
+        $updated = $exam->fresh();
+        $this->assertNull($updated->exam_group_id);
+        $this->assertSame($exam->title, $updated->title);
+        $this->assertTrue($updated->is_published);
+        $this->assertSame(1, $updated->attempts()->count());
+        $this->patch($url, ['exam_group_id' => $group->id])->assertRedirect($this->url());
+        $this->assertSame($group->id, $exam->refresh()->exam_group_id);
     }
 
     private function assign(?ClassSession $session = null): Exam

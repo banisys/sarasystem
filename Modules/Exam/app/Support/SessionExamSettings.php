@@ -10,6 +10,7 @@ class SessionExamSettings
 {
     public const array DEFAULTS = [
         'title' => '',
+        'exam_group_id' => null,
         'description' => null,
         'is_practice' => false,
         'duration_minutes' => 30,
@@ -50,6 +51,7 @@ class SessionExamSettings
     {
         return [
             'title' => 'عنوان آزمون',
+            'exam_group_id' => 'گروه آزمون',
             'description' => 'توضیحات',
             'is_practice' => 'آزمون تمرینی',
             'duration_minutes' => 'مدت آزمون (دقیقه)',

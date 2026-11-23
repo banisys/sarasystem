@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,6 +20,7 @@ use Modules\Exam\Enums\RetakePolicy;
 use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
+use Modules\Exam\Models\ExamGroup;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Services\ContextExams;
@@ -39,6 +41,9 @@ class ContextExamController extends Controller
         }
 
         $records = $query->withCount('attempts')->latest('id')->get();
+        $groups = $host->canManage
+            ? ExamGroup::query()->where('tenant_id', $host->tenantId)->orderBy('title')->get(['id', 'title'])->keyBy('id')
+            : collect();
         $results = $host->canManage
             ? ExamAttempt::query()->whereIn('exam_id', $exams->query($host)->where('is_practice', false)->select('id'))
                 ->with(['user', 'exam'])->latest('id')->paginate(25)->through(fn (ExamAttempt $attempt): array => [
@@ -58,6 +63,7 @@ class ContextExamController extends Controller
             'settings_form' => $host->canManage ? [
                 'defaults' => SessionExamSettings::DEFAULTS,
                 'labels' => SessionExamSettings::labels(),
+                'exam_groups' => $groups->values(),
                 'retake_policies' => collect(RetakePolicy::cases())->mapWithKeys(fn (RetakePolicy $policy): array => [$policy->value => $policy->getLabel()]),
                 'result_visibility' => collect(ResultVisibility::cases())->mapWithKeys(fn (ResultVisibility $visibility): array => [$visibility->value => $visibility->getLabel()]),
             ] : null,
@@ -74,6 +80,10 @@ class ContextExamController extends Controller
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->participationEndsAt()?->toIso8601String(),
                 'allow_late_start' => $exam->allow_late_start,
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
+                'exam_group' => $groups->get($exam->exam_group_id),
+                'group_url' => $exams->mayManageSettings($host, $exam, $request->user())
+                    ? route('exams.context.group.update', [$type, $context, $exam])
+                    : null,
                 'settings' => $exam->attempts_count === 0 && $exams->mayManageSettings($host, $exam, $request->user())
                     ? array_intersect_key($exam->attributesToArray(), SessionExamSettings::DEFAULTS)
                     : null,
@@ -94,6 +104,7 @@ class ContextExamController extends Controller
         $host = $this->context($request, $type, $context, $contexts, manage: true);
         $data = $request->validate(SessionExamSettings::rules(practice: $request->boolean('is_practice')) + [
             'is_practice' => ['sometimes', 'boolean'],
+            'exam_group_id' => $this->examGroupRules($host),
             'banks' => ['required', 'array', 'list', 'max:10'],
             'banks.*' => ['required', 'array:bank_id,question_count,question_ids'],
             'banks.*.bank_id' => ['required', 'integer', 'distinct'],
@@ -119,6 +130,19 @@ class ContextExamController extends Controller
         $exams->updateSettings($host, $exam->id, $request->user(), $settings);
 
         return to_route('exams.context', [$type, $context])->with('status', 'تنظیمات آزمون ذخیره شد.');
+    }
+
+    public function updateGroup(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse
+    {
+        $host = $this->context($request, $type, $context, $contexts, manage: true);
+        $exam = $exams->query($host)->findOrFail($exam->id);
+        abort_unless($exams->mayManageSettings($host, $exam, $request->user()), 403);
+        $data = $request->validate([
+            'exam_group_id' => ['present', ...$this->examGroupRules($host)],
+        ], attributes: SessionExamSettings::labels());
+        $exam->update($data);
+
+        return to_route('exams.context', [$type, $context])->with('status', 'گروه آزمون ذخیره شد.');
     }
 
     public function bankQuestions(Request $request, string $type, int $context, int $bank, ExamContexts $contexts, QuestionLibrary $library): JsonResponse
@@ -271,6 +295,11 @@ class ContextExamController extends Controller
         abort_if($manage && ! $context->canManage, 403);
 
         return $context;
+    }
+
+    private function examGroupRules(ExamContext $context): array
+    {
+        return ['bail', 'nullable', 'integer', Rule::exists(ExamGroup::class, 'id')->where('tenant_id', $context->tenantId)];
     }
 
     private function ensureAttempt(ExamContext $context, ExamAttempt $attempt, ContextExams $exams): void
