@@ -14,6 +14,8 @@ import TutorialBar from '@/Components/TutorialBar.vue';
 import PanelNavigation from './PanelNavigation.vue';
 import { useProfileTheme } from './useProfileTheme.js';
 
+defineProps({ fullWidth: Boolean });
+
 const page = usePage();
 const impersonator = computed(() => page.props.auth.impersonator);
 const homeUrl = computed(() => page.props.panelHome ?? route('dashboard'));
@@ -93,7 +95,8 @@ function leaveImpersonation() {
                     </PanelButton>
                 </ElHeader>
 
-                <ElContainer class="items-start px-4 py-6 sm:px-6 lg:gap-6 lg:px-8 lg:py-8">
+                <ElContainer class="mx-auto w-full items-start px-4 py-6 sm:px-6 lg:gap-6 lg:px-8 lg:py-8"
+                    :class="{ 'max-w-7xl': !fullWidth }">
                     <ElAside class="hidden overflow-visible! [--el-aside-width:16rem] lg:sticky lg:top-8 lg:block xl:[--el-aside-width:17.5rem]">
                         <PanelCard class="h-[min(48rem,calc(100dvh-4rem))] [--panel-card-overflow:hidden]" body-class="h-full">
                             <PanelNavigation>

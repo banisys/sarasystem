@@ -71,7 +71,7 @@ function setFilter(key, value) {
 <template>
     <Head :title="title" />
 
-    <AppLayout>
+    <AppLayout full-width>
         <div class="grid gap-4 sm:gap-5">
             <UiPageHeader :title="title" icon="calendar" />
 
