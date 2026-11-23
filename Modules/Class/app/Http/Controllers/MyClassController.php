@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Rules\JalaliDate;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -31,6 +32,7 @@ use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionExamSource;
 use Modules\Class\Services\SessionReminders;
+use Modules\Exam\Services\ExamPerformance;
 use Nwidart\Modules\Facades\Module;
 
 /**
@@ -95,6 +97,30 @@ class MyClassController extends Controller
 
         return Inertia::render('Class::Membership', [
             'classroom' => $myClasses->membershipDetails($user, $classroom),
+        ]);
+    }
+
+    public function learnerPerformance(Request $request, int $classroom, int $learner, MyClasses $myClasses): Response
+    {
+        abort_unless(Module::isEnabled('Exam'), 404);
+        $viewer = $request->user();
+        abort_unless($myClasses->canBrowseMemberships($viewer), 403);
+
+        $class = $myClasses->memberClassrooms($viewer)->findOrFail($classroom);
+        abort_unless($class->members()->activeToday()->whereBelongsTo($viewer)
+            ->whereHas('classRole', fn (Builder $role) => $role->where('is_attendee', false))->exists(), 403);
+        $student = $class->members()->activeToday()->attendees()->where('user_id', $learner)->firstOrFail()->user;
+        $sessions = $class->sessions()->select('class_sessions.id');
+        $report = app(ExamPerformance::class)->report(
+            $student,
+            $request->query('group'),
+            fn (Builder $exams): Builder => $exams->where('context_type', SessionExamSource::TYPE)->whereIn('context_id', $sessions),
+        );
+
+        return Inertia::render('Exam::Performance', $report + [
+            'learnerName' => $student->name,
+            'reportUrl' => route('my-classes.learner-performance', [$classroom, $learner]),
+            'backUrl' => route('my-classes.membership', $classroom),
         ]);
     }
 

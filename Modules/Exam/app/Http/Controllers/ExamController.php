@@ -49,16 +49,7 @@ class ExamController extends Controller
 
     public function performance(Request $request, ExamPerformance $performance): Response
     {
-        $user = $request->user();
-        $groups = $performance->groups($user)->latest('id')->get(['id', 'title']);
-        $groupId = filter_var($request->query('group'), FILTER_VALIDATE_INT);
-        $group = $groups->find($groupId ?: 0) ?? $groups->first();
-
-        return Inertia::render('Exam::Performance', [
-            'groups' => $groups,
-            'selectedGroup' => $group?->id,
-            'subjects' => $group === null ? [] : $performance->results($user, $group),
-        ]);
+        return Inertia::render('Exam::Performance', $performance->report($request->user(), $request->query('group')));
     }
 
     public function show(Request $request, Exam $exam, ExamTaking $taking): Response

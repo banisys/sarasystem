@@ -8,17 +8,20 @@ import { ElOption, ElSelect } from 'element-plus';
 import 'element-plus/es/components/select/style/css';
 import { ref } from 'vue';
 
-defineProps({
+const props = defineProps({
     groups: { type: Array, required: true },
     selectedGroup: { type: Number, default: null },
     subjects: { type: Array, required: true },
+    learnerName: { type: String, default: null },
+    reportUrl: { type: String, default: null },
+    backUrl: { type: String, default: null },
 });
 
 const loading = ref(false);
 const scoreFormat = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 });
 
 function selectGroup(group) {
-    router.get(route('exams.performance'), { group }, {
+    router.get(props.reportUrl ?? route('exams.performance'), { group }, {
         preserveScroll: true,
         preserveState: true,
         onStart: () => { loading.value = true; },
@@ -28,11 +31,14 @@ function selectGroup(group) {
 </script>
 
 <template>
-    <Head title="گزارش عملکرد" />
+    <Head :title="learnerName ? `گزارش عملکرد ${learnerName}` : 'گزارش عملکرد'" />
 
     <AppLayout>
         <div class="grid min-w-0 gap-3 sm:gap-4">
-            <UiPageHeader title="گزارش عملکرد" icon="document" />
+            <Link v-if="backUrl" :href="backUrl" class="w-fit text-sm font-semibold text-brand-700 hover:underline">
+                بازگشت به کلاس
+            </Link>
+            <UiPageHeader :title="learnerName ? `گزارش عملکرد ${learnerName}` : 'گزارش عملکرد'" icon="document" />
 
             <PanelEmpty v-if="!groups.length" description="گروه آزمونی برای نمایش گزارش ندارید." />
 
@@ -62,9 +68,14 @@ function selectGroup(group) {
                             <h2 :id="'performance-' + subject.key" class="mb-3 wrap-break-word font-bold text-ui-ink">{{ subject.title }}</h2>
                             <ul class="divide-y divide-ui-line border-t border-ui-line">
                                 <li v-for="exam in subject.exams" :key="exam.id" class="flex items-baseline justify-between gap-3 py-3 last:pb-0">
-                                    <Link :href="route('exams.show', exam.id)" class="min-w-0 wrap-break-word text-sm font-semibold text-ui-ink hover:underline">
+                                    <component
+                                        :is="learnerName ? 'span' : Link"
+                                        :href="learnerName ? undefined : route('exams.show', exam.id)"
+                                        class="min-w-0 wrap-break-word text-sm text-ui-ink"
+                                        :class="{ 'hover:underline': !learnerName }"
+                                    >
                                         {{ exam.title }}
-                                    </Link>
+                                    </component>
                                     <span class="shrink-0 text-sm text-ui-muted">
                                         <span class="sr-only">نمره </span>
                                         <strong class="font-bold text-ui-ink">{{ scoreFormat.format(exam.score) }}</strong>

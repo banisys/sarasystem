@@ -20,4 +20,4 @@ List classes in the current branch where the signed-in user is a current member.
 
 ## Consequences
 
-Teaching assignments still appear on the calendar. A user needs a class membership for that class to appear on the membership page. Rosters expose member names and class roles.
+Teaching assignments still appear on the calendar. A user needs a class membership for that class to appear on the membership page. Rosters expose member names and class roles. Staff can open an attendee’s class-scoped exam report from the roster when Exam is enabled ([ADR 0129](0129-class-learner-performance.md)).

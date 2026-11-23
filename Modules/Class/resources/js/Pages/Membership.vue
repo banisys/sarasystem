@@ -67,7 +67,12 @@ const facts = computed(() => {
                 <ul class="divide-y divide-ui-line border-t border-ui-line text-sm">
                     <li v-for="member in classroom.members" :key="member.id" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3 last:pb-0">
                         <span class="min-w-0 wrap-break-word font-medium text-ui-ink">{{ member.name }}</span>
-                        <span class="min-w-0 wrap-break-word text-ui-muted">{{ member.roles }}</span>
+                        <div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+                            <span class="min-w-0 wrap-break-word text-ui-muted">{{ member.roles }}</span>
+                            <Link v-if="member.performance_url" :href="member.performance_url" class="font-semibold text-brand-700 hover:underline">
+                                گزارش عملکرد<span class="sr-only"> {{ member.name }}</span>
+                            </Link>
+                        </div>
                     </li>
                 </ul>
             </PanelCard>

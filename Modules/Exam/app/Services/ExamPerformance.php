@@ -3,6 +3,7 @@
 namespace Modules\Exam\Services;
 
 use App\Models\User;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Models\Exam;
@@ -13,17 +14,36 @@ class ExamPerformance
 {
     public function __construct(private ExamContexts $contexts) {}
 
-    /** @return Builder<ExamGroup> */
-    public function groups(User $user): Builder
+    /**
+     * @param  (Closure(Builder<Exam>): Builder<Exam>)|null  $scope
+     * @return array<string, mixed>
+     */
+    public function report(User $user, mixed $group, ?Closure $scope = null): array
     {
-        return ExamGroup::query()->whereIn('id', $this->eligibleExams($user)->select('exam_group_id'));
+        $groups = $this->groups($user, $scope)->latest('id')->get(['id', 'title']);
+        $groupId = filter_var($group, FILTER_VALIDATE_INT);
+        $selected = $groups->find($groupId ?: 0) ?? $groups->first();
+
+        return [
+            'groups' => $groups,
+            'selectedGroup' => $selected?->id,
+            'subjects' => $selected === null ? [] : $this->results($user, $selected, $scope),
+        ];
+    }
+
+    /** @return Builder<ExamGroup> */
+    public function groups(User $user, ?Closure $scope = null): Builder
+    {
+        $exams = $this->eligibleExams($user);
+
+        return ExamGroup::query()->whereIn('id', ($scope ? $scope($exams) : $exams)->select('exam_group_id'));
     }
 
     /** @return list<array{key: string, title: string, exams: list<array{id: int, title: string, score: float, total_score: float}>}> */
-    public function results(User $user, ExamGroup $group): array
+    public function results(User $user, ExamGroup $group, ?Closure $scope = null): array
     {
-        $exams = $this->eligibleExams($user)
-            ->whereBelongsTo($group)
+        $exams = $this->eligibleExams($user);
+        $exams = ($scope ? $scope($exams) : $exams)->whereBelongsTo($group)
             ->with(['attempts' => fn ($query) => $query->whereBelongsTo($user)->finished()
                 ->latest('id')->limit(1)->select('id', 'exam_id', 'score')])
             ->orderByRaw('starts_at desc nulls last')->orderByDesc('id')

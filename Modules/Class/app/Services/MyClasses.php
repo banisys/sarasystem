@@ -18,6 +18,7 @@ use Modules\Class\Models\Holiday;
 use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\Subject;
 use Modules\Class\Services\Online\OnlineRooms;
+use Nwidart\Modules\Facades\Module;
 
 /**
  * A person's classes and academic calendar in the user panel (ADR 0026,
@@ -67,8 +68,12 @@ class MyClasses
     {
         $classroom = $this->memberClassrooms($user)->with([
             'term:id,title',
-            'members' => fn ($query) => $query->activeToday()->with(['user:id,name', 'classRole:id,title']),
+            'members' => fn ($query) => $query->activeToday()->with(['user:id,name', 'classRole:id,title,is_attendee']),
         ])->findOrFail($classroomId);
+
+        $canViewReports = Module::isEnabled('Exam') && $classroom->members->contains(
+            fn (ClassMember $member): bool => $member->user_id === $user->id && ! $member->classRole->is_attendee,
+        );
 
         return [
             'title' => $classroom->title,
@@ -86,6 +91,9 @@ class MyClasses
                     'id' => $members->first()->user_id,
                     'name' => $members->first()->user->name,
                     'roles' => $members->pluck('classRole.title')->unique()->join('، '),
+                    'performance_url' => $canViewReports && $members->contains(fn (ClassMember $member): bool => $member->classRole->is_attendee)
+                        ? route('my-classes.learner-performance', [$classroom->id, $members->first()->user_id])
+                        : null,
                 ])->sortBy('name', SORT_NATURAL)->values()->all(),
         ];
     }

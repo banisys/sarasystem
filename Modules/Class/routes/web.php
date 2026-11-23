@@ -31,6 +31,8 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/academic-
 // Preserve bookmarked calendar views and session details.
 Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/my-classes')->group(function () {
     Route::get('/', [MyClassController::class, 'memberships'])->name('my-classes.memberships');
+    Route::get('/{classroom}/learners/{learner}/performance', [MyClassController::class, 'learnerPerformance'])
+        ->whereNumber(['classroom', 'learner'])->name('my-classes.learner-performance');
     Route::get('/{classroom}', [MyClassController::class, 'membership'])->whereNumber('classroom')->name('my-classes.membership');
     Route::get('/sessions/{session}', fn (Request $request, string $session): RedirectResponse => to_route(
         'my-classes.session', ['session' => $session] + $request->query(),

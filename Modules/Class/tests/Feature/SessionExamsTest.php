@@ -820,6 +820,33 @@ class SessionExamsTest extends TestCase
             ->where('subjects.1.title', 'علوم')
             ->has('subjects.1.exams', 1)
             ->where('subjects.1.exams.0.score', 16));
+
+        $otherExam = Exam::factory()->for($this->tenant)->for($group)->create();
+        $otherExam->participantUsers()->attach($this->learner);
+        ExamAttempt::factory()->for($otherExam)->for($this->learner, 'user')->create([
+            'status' => AttemptStatus::Completed,
+            'submitted_at' => now(),
+            'score' => 20,
+        ]);
+        $url = route('my-classes.learner-performance', [$classroom, $this->learner, 'group' => $group->id]);
+
+        $this->get($url)->assertForbidden();
+        $this->asTeacher();
+        $this->get($url)->assertNotFound();
+
+        ClassMember::factory()->for($classroom)->for($this->teacher, 'user')
+            ->for(ClassRole::factory()->for($this->tenant)->teacher())->create();
+        $this->get(route('my-classes.membership', $classroom))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('classroom.members', fn ($members) => $members->contains('performance_url', route('my-classes.learner-performance', [$classroom, $this->learner]))));
+        $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Exam::Performance')
+            ->where('learnerName', $this->learner->name)
+            ->where('selectedGroup', $group->id)
+            ->where('backUrl', route('my-classes.membership', $classroom))
+            ->has('subjects', 2)
+            ->has('subjects.0.exams', 2)
+            ->has('subjects.1.exams', 1));
+        $this->get(route('my-classes.learner-performance', [$classroom, $this->teacher]))->assertNotFound();
     }
 
     private function assign(?ClassSession $session = null): Exam
