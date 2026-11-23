@@ -110,16 +110,23 @@ class MyClassController extends Controller
         abort_unless($class->members()->activeToday()->whereBelongsTo($viewer)
             ->whereHas('classRole', fn (Builder $role) => $role->where('is_attendee', false))->exists(), 403);
         $student = $class->members()->activeToday()->attendees()->where('user_id', $learner)->firstOrFail()->user;
-        $sessions = $class->sessions()->select('class_sessions.id');
-        $report = app(ExamPerformance::class)->report(
-            $student,
-            $request->query('group'),
-            fn (Builder $exams): Builder => $exams->where('context_type', SessionExamSource::TYPE)->whereIn('context_id', $sessions),
-        );
+        $term = $class->term()->current()->first();
+        $subjects = [];
+        if ($term !== null) {
+            $sessions = $class->sessions()->takingPlace()
+                ->whereBetween('starts_at', [$term->starts_on->startOfDay(), $term->ends_on->endOfDay()])
+                ->whereIn('subject_id', $myClasses->assignedSubjects($viewer, $class)->reorder()->select('id'))
+                ->select('class_sessions.id');
+            $subjects = app(ExamPerformance::class)->staffResults(
+                $student,
+                fn (Builder $exams): Builder => $exams->where('context_type', SessionExamSource::TYPE)->whereIn('context_id', $sessions),
+            );
+        }
 
-        return Inertia::render('Exam::Performance', $report + [
+        return Inertia::render('Exam::Performance', [
+            'subjects' => $subjects,
             'learnerName' => $student->name,
-            'reportUrl' => route('my-classes.learner-performance', [$classroom, $learner]),
+            'academicTerm' => $term?->title,
             'backUrl' => route('my-classes.membership', $classroom),
         ]);
     }

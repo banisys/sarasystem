@@ -98,6 +98,14 @@ class MyClasses
         ];
     }
 
+    /** @return Builder<Subject> */
+    public function assignedSubjects(User $user, Classroom $classroom): Builder
+    {
+        return Subject::definedSubjects()->whereIn('id', $classroom->schedules()
+            ->whereHas('teachers', fn (Builder $teachers) => $teachers->whereKey($user->getKey()))
+            ->select('subject_id'));
+    }
+
     public function canSee(User $user, ClassSession $session): bool
     {
         return $this->sessions($user)->whereKey($session->getKey())->exists();

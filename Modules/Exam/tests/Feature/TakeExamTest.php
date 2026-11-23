@@ -62,7 +62,9 @@ class TakeExamTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Exam::Index')
                 ->has('exams', 2)
-                ->where('navigation.0.title', 'آزمون‌ها'));
+                ->where('navigation', fn ($links) => $links->contains(
+                    fn (array $link): bool => $link['title'] === 'آزمون‌ها' && $link['url'] === route('exams.index'),
+                )));
 
         $this->visit(route('exams.show', $byName))->assertOk();
         $this->visit(route('exams.show', $byRole))->assertOk();

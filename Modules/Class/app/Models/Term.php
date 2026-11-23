@@ -50,12 +50,18 @@ class Term extends Model
         return static::definedTerms()->where('is_active', true)->orderByDesc('starts_on')->pluck('title', 'id')->all();
     }
 
-    public static function currentTitle(): ?string
+    /** @param Builder<Term> $query */
+    public function scopeCurrent(Builder $query): void
     {
         $today = today()->toDateString();
 
-        return static::definedTerms()->where('is_active', true)
-            ->where('starts_on', '<=', $today)->where('ends_on', '>=', $today)
+        $query->where('is_active', true)
+            ->where('starts_on', '<=', $today)->where('ends_on', '>=', $today);
+    }
+
+    public static function currentTitle(): ?string
+    {
+        return static::definedTerms()->current()
             ->orderByDesc('starts_on')->orderByDesc('id')->value('title');
     }
 

@@ -43,8 +43,31 @@ class ExamPerformance
     public function results(User $user, ExamGroup $group, ?Closure $scope = null): array
     {
         $exams = $this->eligibleExams($user);
-        $exams = ($scope ? $scope($exams) : $exams)->whereBelongsTo($group)
-            ->with(['attempts' => fn ($query) => $query->whereBelongsTo($user)->finished()
+        $exams = ($scope ? $scope($exams) : $exams)->whereBelongsTo($group);
+
+        return $this->subjectScores($user, $exams);
+    }
+
+    /**
+     * The caller must authorize the learner and restrict the report to the staff member's assignments.
+     *
+     * @param  Closure(Builder<Exam>): Builder<Exam>  $scope
+     * @return list<array{key: string, title: string, exams: list<array{id: int, title: string, score: float, total_score: float}>}>
+     */
+    public function staffResults(User $user, Closure $scope): array
+    {
+        return $this->subjectScores($user, $scope(Exam::query()->where('is_practice', false)));
+    }
+
+    /**
+     * @param  Builder<Exam>  $exams
+     * @return list<array{key: string, title: string, exams: list<array{id: int, title: string, score: float, total_score: float}>}>
+     */
+    private function subjectScores(User $user, Builder $exams): array
+    {
+        $finishedAttempts = fn ($query) => $query->whereBelongsTo($user)->finished();
+        $exams = $exams->whereHas('attempts', $finishedAttempts)
+            ->with(['attempts' => fn ($query) => $finishedAttempts($query)
                 ->latest('id')->limit(1)->select('id', 'exam_id', 'score')])
             ->orderByRaw('starts_at desc nulls last')->orderByDesc('id')
             ->get(['id', 'title', 'total_score', 'context_type', 'context_id'])

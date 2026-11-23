@@ -11,8 +11,10 @@ use Modules\Class\Enums\SessionKind;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Subject;
+use Modules\Class\Models\Term;
 use Modules\Exam\Enums\AttemptStatus;
 use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Models\Exam;
@@ -821,32 +823,96 @@ class SessionExamsTest extends TestCase
             ->has('subjects.1.exams', 1)
             ->where('subjects.1.exams.0.score', 16));
 
-        $otherExam = Exam::factory()->for($this->tenant)->for($group)->create();
-        $otherExam->participantUsers()->attach($this->learner);
-        ExamAttempt::factory()->for($otherExam)->for($this->learner, 'user')->create([
-            'status' => AttemptStatus::Completed,
-            'submitted_at' => now(),
-            'score' => 20,
-        ]);
-        $url = route('my-classes.learner-performance', [$classroom, $this->learner, 'group' => $group->id]);
+        $this->get(route('my-classes.learner-performance', [$classroom, $this->learner]))->assertForbidden();
+    }
 
-        $this->get($url)->assertForbidden();
+    public function test_class_staff_report_covers_all_groups_for_assigned_subjects_in_the_class_term(): void
+    {
+        $this->tenant->makePrimary();
+        $term = Term::factory()->for($this->tenant)->create();
+        Term::factory()->for($this->tenant)->create(['starts_on' => today()]);
+        $classroom = $this->session->classroom;
+        $classroom->term()->associate($term)->save();
+        $url = route('my-classes.learner-performance', [$classroom, $this->learner]);
         $this->asTeacher();
         $this->get($url)->assertNotFound();
 
         ClassMember::factory()->for($classroom)->for($this->teacher, 'user')
             ->for(ClassRole::factory()->for($this->tenant)->teacher())->create();
+        $supporter = User::factory()->create();
+        $supervisor = User::factory()->create();
+        foreach ([[$supporter, 'پشتیبان'], [$supervisor, 'ناظر']] as [$staff, $title]) {
+            $this->grantRole($staff, $this->tenant, 'staff');
+            $role = ClassRole::factory()->for($this->tenant)->create(['title' => $title, 'is_attendee' => false]);
+            ClassMember::factory()->for($classroom)->for($staff, 'user')->for($role)->create();
+        }
+
+        $math = Subject::factory()->for($this->tenant)->create(['title' => 'ریاضی']);
+        $english = Subject::factory()->for($this->tenant)->create(['title' => 'زبان انگلیسی']);
+        $science = Subject::factory()->for($this->tenant)->create(['title' => 'علوم']);
+        ClassSchedule::factory()->for($classroom)->for($math)
+            ->hasAttached([$this->teacher, $supporter], [], 'teachers')->create();
+        ClassSchedule::factory()->for($classroom)->for($english)
+            ->hasAttached([$this->teacher, $supervisor], [], 'teachers')->create();
+
+        $firstGroup = ExamGroup::factory()->for($this->tenant)->create();
+        $secondGroup = ExamGroup::factory()->for($this->tenant)->create();
+        $mathSession = ClassSession::factory()->for($classroom)->for($math)
+            ->create(['starts_at' => $term->starts_on->startOfDay(), 'ends_at' => $term->starts_on->addHour()]);
+        $englishSession = ClassSession::factory()->for($classroom)->for($english)->create();
+        $scienceSession = ClassSession::factory()->for($classroom)->for($science)->create();
+        $outsideTerm = ClassSession::factory()->for($classroom)->for($math)
+            ->create(['starts_at' => $term->starts_on->subDay(), 'ends_at' => $term->starts_on->subDay()->addHour()]);
+        $otherClassSession = ClassSession::factory()->for(Classroom::factory()->for($this->tenant))->for($math)->create();
+        foreach ([
+            [$mathSession, $firstGroup->id, 17, ResultVisibility::Score],
+            [$mathSession, $secondGroup->id, 18, ResultVisibility::Hidden],
+            [$englishSession, null, 19, ResultVisibility::Score],
+            [$scienceSession, $firstGroup->id, 20, ResultVisibility::Score],
+            [$outsideTerm, $firstGroup->id, 20, ResultVisibility::Score],
+            [$otherClassSession, $firstGroup->id, 20, ResultVisibility::Score],
+        ] as [$session, $groupId, $score, $visibility]) {
+            $exam = Exam::factory()->for($this->tenant)->create([
+                'context_type' => 'class-session',
+                'context_id' => $session->id,
+                'exam_group_id' => $groupId,
+                'result_visibility' => $visibility,
+            ]);
+            ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create([
+                'status' => AttemptStatus::Completed,
+                'submitted_at' => now(),
+                'score' => $score,
+            ]);
+        }
+        Exam::factory()->for($this->tenant)->create(['context_type' => 'class-session', 'context_id' => $mathSession->id]);
+
         $this->get(route('my-classes.membership', $classroom))->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('classroom.members', fn ($members) => $members->contains('performance_url', route('my-classes.learner-performance', [$classroom, $this->learner]))));
-        $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('classroom.members', fn ($members) => $members->contains('performance_url', $url)));
+        $this->get($url.'?group='.$firstGroup->id)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Exam::Performance')
             ->where('learnerName', $this->learner->name)
-            ->where('selectedGroup', $group->id)
+            ->where('academicTerm', $term->title)
             ->where('backUrl', route('my-classes.membership', $classroom))
             ->has('subjects', 2)
-            ->has('subjects.0.exams', 2)
-            ->has('subjects.1.exams', 1));
+            ->missing('groups')
+            ->where('subjects', fn ($subjects) => $subjects->pluck('exams')->flatten(1)->pluck('score')->sort()->values()->all() === [17, 18, 19]));
         $this->get(route('my-classes.learner-performance', [$classroom, $this->teacher]))->assertNotFound();
+
+        foreach ([[$supporter, 'ریاضی', 2], [$supervisor, 'زبان انگلیسی', 1]] as [$staff, $title, $count]) {
+            $this->actingAs($staff)->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('subjects', 1)
+                ->where('subjects.0.title', $title)
+                ->has('subjects.0.exams', $count));
+        }
+
+        $term->update(['is_active' => false]);
+        $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('academicTerm', null)
+            ->has('subjects', 0));
+
+        $otherBranch = Tenant::factory()->create();
+        $this->grantRole($this->teacher, $otherBranch, 'teacher');
+        $this->actingAs($this->teacher)->withSession([ResolveCurrentTenant::SESSION_KEY => $otherBranch->id])->get($url)->assertNotFound();
     }
 
     private function assign(?ClassSession $session = null): Exam
