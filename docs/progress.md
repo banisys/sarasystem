@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-23 — Expanded the user-panel class details with a responsive overview of class fields and a roster count. All 24 targeted tests, Pint and the Vite build passed.
 - 2026-11-23 — Split «کلاس‌های من» into a class list and a dedicated detail page for each class. Verified member-only access, branch isolation and list payloads with 24 targeted tests. Pint and the Vite build passed.
 - 2026-11-23 — Moved class cards for non-learner accounts from the academic calendar to «کلاس‌های من», with descriptions and expandable current rosters in the user’s branch ([ADR 0128](decisions/0128-staff-class-memberships.md)). Verified the roster with browser sample data. All 230 Class tests, Pint and the Vite build passed.
 - 2026-11-23 — Added the learner’s «گزارش عملکرد» with visible exam scores grouped by subject and filtered by the selected branch exam group ([ADR 0127](decisions/0127-learner-exam-performance.md)). Verified group switching and the empty state with sample data in desktop and mobile browser previews. All 824 tests, 15 disabled-module checks, Pint and the Vite build passed.

@@ -75,6 +75,12 @@ class MyClasses
             'description' => $classroom->description,
             'term' => $classroom->term?->title,
             'location' => $classroom->location,
+            'code' => $classroom->code,
+            'mode' => $classroom->mode->getLabel(),
+            'capacity' => $classroom->capacity,
+            'is_active' => $classroom->is_active,
+            'starts_on' => $classroom->starts_on === null ? null : self::jalali($classroom->starts_on->toImmutable(), 'Y/m/d'),
+            'ends_on' => $classroom->ends_on === null ? null : self::jalali($classroom->ends_on->toImmutable(), 'Y/m/d'),
             'members' => $classroom->members->groupBy('user_id')
                 ->map(fn ($members): array => [
                     'id' => $members->first()->user_id,

@@ -285,7 +285,12 @@ class MyClassesTest extends TestCase
 
     public function test_class_membership_pages_separate_the_users_class_list_from_each_roster(): void
     {
-        $this->classroom->update(['description' => 'توضیحات کلاس هفتم']);
+        $this->classroom->update([
+            'description' => 'توضیحات کلاس هفتم',
+            'code' => '7-A',
+            'capacity' => 30,
+            'starts_on' => '2026-10-29',
+        ]);
         $unrelated = Classroom::factory()->for($this->west)->create();
         $outside = Classroom::factory()->create();
         $role = $this->classroom->members()->whereBelongsTo($this->teacher, 'user')->firstOrFail()->classRole;
@@ -303,6 +308,12 @@ class MyClassesTest extends TestCase
             ->component('Class::Membership')
             ->where('classroom.title', $this->classroom->title)
             ->where('classroom.description', 'توضیحات کلاس هفتم')
+            ->where('classroom.code', '7-A')
+            ->where('classroom.capacity', 30)
+            ->where('classroom.is_active', true)
+            ->where('classroom.mode', 'آنلاین')
+            ->where('classroom.starts_on', '1405/08/07')
+            ->where('classroom.ends_on', null)
             ->has('classroom.members', 2)
             ->where('classroom.members', fn ($members) => $members->contains('name', $this->student->name)));
 
