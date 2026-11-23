@@ -20,11 +20,26 @@ class ExamPerformanceTest extends TestCase
 {
     use InteractsWithTenants, RefreshDatabase;
 
-    public function test_a_learner_can_switch_groups_and_see_their_latest_finished_score(): void
+    public function test_the_learner_menu_shows_the_report_before_any_exams_are_assigned(): void
     {
         $tenant = Tenant::factory()->create();
         $learner = User::factory()->create();
         $this->grantRole($learner, $tenant, DefaultRoles::LEARNER);
+
+        $this->actingAs($learner)->get(route('dashboard'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('navigation', fn ($items) => $items->contains('url', route('exams.performance'))));
+
+        $this->get(route('exams.performance'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Exam::Performance')
+            ->has('groups', 0)
+            ->has('subjects', 0));
+    }
+
+    public function test_a_participant_can_switch_groups_and_see_their_latest_finished_score(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $learner = User::factory()->create();
+        $this->grantRole($learner, $tenant, 'exam-participant');
         $aban = ExamGroup::factory()->for($tenant)->create(['title' => 'آزمون‌های کلاسی آبان']);
         $azar = ExamGroup::factory()->for($tenant)->create(['title' => 'آزمون‌های کلاسی آذر']);
         $exam = Exam::factory()->for($tenant)->for($aban, 'examGroup')->hasAttached($learner, relationship: 'participantUsers')->create();
@@ -86,7 +101,7 @@ class ExamPerformanceTest extends TestCase
         $current = Tenant::factory()->create();
         $other = Tenant::factory()->create();
         $learner = User::factory()->create();
-        $this->grantRole($learner, $current, DefaultRoles::LEARNER);
+        $this->grantRole($learner, $current, 'staff');
         $this->grantRole($learner, $other, DefaultRoles::LEARNER);
         $foreignGroup = ExamGroup::factory()->for($other)->create();
         $foreignExam = Exam::factory()->for($other)->for($foreignGroup, 'examGroup')->hasAttached($learner, relationship: 'participantUsers')->create();

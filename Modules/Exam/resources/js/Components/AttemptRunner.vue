@@ -163,7 +163,7 @@ onBeforeUnmount(() => {
                         :value="option.key"
                         :name="`question-${question.id}`"
                         border
-                        class="panel-wrap-option h-auto! px-4! py-3! sm:px-5! [&>.el-radio__input]:mt-1!"
+                        class="panel-wrap-option h-auto! px-4! py-3! sm:px-5! [&>.el-radio__input]:mt-1! panel-dark:[&:not(.is-checked)]:border-ui-field! panel-dark:[&.is-checked]:border-brand-700! panel-dark:[&.is-checked]:bg-brand-50! focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-700"
                     >
                         <span class="block leading-6">{{ option.text }}</span>
                     </ElRadio>
@@ -187,12 +187,13 @@ onBeforeUnmount(() => {
             <PracticeSolution v-if="question.solution_url" :url="question.solution_url" :type="question.type" />
         </PanelCard>
 
-        <PanelCard body-class="flex flex-wrap items-center justify-between gap-3 [--el-card-padding:0.75rem] sm:[--el-card-padding:1rem]">
-            <nav v-if="pageCount > 1" aria-label="صفحه‌های آزمون">
+        <PanelCard body-class="grid gap-3 [--el-card-padding:0.75rem] lg:flex lg:flex-wrap lg:items-center lg:justify-between sm:[--el-card-padding:1rem]">
+            <nav v-if="pageCount > 1" class="min-w-0 rounded-ui border border-ui-line bg-ui-canvas p-2" aria-label="صفحه‌های آزمون">
                 <PanelPagination :current-page="currentPage + 1" :page-count="pageCount" :disabled="submitting"
+                    class="flex-wrap justify-center gap-y-2 [&_.el-pager]:flex-wrap [&_.el-pager]:justify-center [&_.el-pager]:gap-y-2 [&_.el-pager_li]:min-w-8! [&_.el-pager_li]:border [&_.el-pager_li]:border-ui-line"
                     @update:current-page="goToPage($event - 1)" />
             </nav>
-            <PanelButton :loading="submitting" aria-haspopup="dialog" @click="confirming = true">
+            <PanelButton class="lg:ms-auto" :loading="submitting" aria-haspopup="dialog" @click="confirming = true">
                 {{ submitting ? 'در حال ثبت پاسخ‌ها…' : exam.is_practice ? 'پایان تمرین' : 'پایان آزمون و ثبت پاسخ‌ها' }}
             </PanelButton>
         </PanelCard>

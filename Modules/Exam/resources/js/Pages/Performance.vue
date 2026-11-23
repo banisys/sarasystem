@@ -42,52 +42,48 @@ function selectGroup(group) {
 
             <PanelEmpty v-if="!learnerName && !groups.length" description="گروه آزمونی برای نمایش گزارش ندارید." />
 
-            <template v-else>
-                <PanelCard v-if="!learnerName" body-class="[--el-card-padding:0.875rem] sm:[--el-card-padding:1.25rem]">
-                    <div class="grid gap-2 sm:max-w-sm">
-                        <label for="performance-exam-group" class="text-sm font-semibold text-ui-ink">گروه آزمون</label>
-                        <ElSelect
-                            id="performance-exam-group"
-                            :model-value="selectedGroup"
-                            :disabled="loading"
-                            append-to="#profile-overlays"
-                            filterable
-                            class="w-full"
-                            @change="selectGroup"
-                        >
-                            <ElOption v-for="group in groups" :key="group.id" :label="group.title" :value="group.id" />
-                        </ElSelect>
-                    </div>
-                </PanelCard>
+            <PanelCard v-else body-class="grid gap-5 sm:gap-6 [--el-card-padding:0.875rem] sm:[--el-card-padding:1.25rem]">
+                <div v-if="!learnerName" class="grid gap-2 sm:max-w-sm">
+                    <label for="performance-exam-group" class="text-sm font-semibold text-ui-ink">گروه آزمون</label>
+                    <ElSelect
+                        id="performance-exam-group"
+                        :model-value="selectedGroup"
+                        :disabled="loading"
+                        append-to="#profile-overlays"
+                        filterable
+                        class="w-full"
+                        @change="selectGroup"
+                    >
+                        <ElOption v-for="group in groups" :key="group.id" :label="group.title" :value="group.id" />
+                    </ElSelect>
+                </div>
 
-                <div class="grid gap-3 sm:gap-4" aria-live="polite" :aria-busy="loading">
+                <div :class="{ 'border-t border-ui-line': !learnerName }" aria-live="polite" :aria-busy="loading">
                     <PanelEmpty v-if="learnerName && !academicTerm" description="برای این کلاس دورهٔ آموزشی جاری ثبت نشده است." />
                     <PanelEmpty v-else-if="!subjects.length" :description="learnerName ? 'در این دوره نمره‌ای برای درس‌های واگذارشده به شما ثبت نشده است.' : 'هنوز نمره‌ای برای نمایش در این گروه ندارید.'" />
 
-                    <PanelCard v-for="subject in subjects" :key="subject.key" body-class="[--el-card-padding:0.875rem] sm:[--el-card-padding:1.25rem]">
-                        <section :aria-labelledby="'performance-' + subject.key">
-                            <h2 :id="'performance-' + subject.key" class="mb-3 wrap-break-word font-bold text-ui-ink">{{ subject.title }}</h2>
-                            <ul class="divide-y divide-ui-line border-t border-ui-line">
-                                <li v-for="exam in subject.exams" :key="exam.id" class="flex items-baseline justify-between gap-3 py-3 last:pb-0">
-                                    <component
-                                        :is="learnerName ? 'span' : Link"
-                                        :href="learnerName ? undefined : route('exams.show', exam.id)"
-                                        class="min-w-0 wrap-break-word text-sm text-ui-ink"
-                                        :class="{ 'hover:underline': !learnerName }"
-                                    >
-                                        {{ exam.title }}
-                                    </component>
-                                    <span class="shrink-0 text-sm text-ui-muted">
-                                        <span class="sr-only">نمره </span>
-                                        <strong class="font-bold text-ui-ink">{{ scoreFormat.format(exam.score) }}</strong>
-                                        از {{ scoreFormat.format(exam.total_score) }}
-                                    </span>
-                                </li>
-                            </ul>
-                        </section>
-                    </PanelCard>
+                    <ul v-if="subjects.length" class="divide-y divide-ui-line">
+                        <template v-for="subject in subjects" :key="subject.key">
+                            <li v-for="exam in subject.exams" :key="exam.id" class="flex items-baseline justify-between gap-3 py-4">
+                                <component
+                                    :is="learnerName ? 'span' : Link"
+                                    :href="learnerName ? undefined : route('exams.show', exam.id)"
+                                    class="min-w-0 wrap-break-word text-sm text-ui-ink"
+                                    :class="{ 'hover:underline': !learnerName }"
+                                >
+                                    <span class="font-semibold">{{ subject.title }}</span>
+                                    <span class="ms-1 text-ui-muted">({{ exam.title }})</span>
+                                </component>
+                                <span class="shrink-0 text-sm text-ui-muted">
+                                    <span class="sr-only">نمره </span>
+                                    <strong class="font-bold text-ui-ink">{{ scoreFormat.format(exam.score) }}</strong>
+                                    از {{ scoreFormat.format(exam.total_score) }}
+                                </span>
+                            </li>
+                        </template>
+                    </ul>
                 </div>
-            </template>
+            </PanelCard>
         </div>
     </AppLayout>
 </template>

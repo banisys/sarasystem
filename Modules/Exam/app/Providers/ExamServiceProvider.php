@@ -62,7 +62,7 @@ class ExamServiceProvider extends ModuleServiceProvider
         UserPanel::navigationUsing('exams', fn (User $user, Tenant $tenant): array => Exam::query()->published()->forParticipant($user)->exists()
             ? [['title' => 'آزمون‌ها', 'url' => route('exams.index'), 'icon' => 'clipboard']]
             : []);
-        UserPanel::navigationUsing('exam-performance', fn (User $user, Tenant $tenant): array => app(ExamPerformance::class)->groups($user)->exists()
+        UserPanel::navigationUsing('exam-performance', fn (User $user, Tenant $tenant): array => $user->hasRole(DefaultRoles::LEARNER) || app(ExamPerformance::class)->groups($user)->exists()
             ? [['title' => 'گزارش عملکرد', 'url' => route('exams.performance'), 'icon' => 'document']]
             : []);
         UserPanel::navigationUsing('question-library', fn (User $user, Tenant $tenant): array => app(QuestionLibrary::class)->canAccess($user, $tenant)
