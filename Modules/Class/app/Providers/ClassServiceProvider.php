@@ -15,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\LearnerSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
+use Modules\Class\Models\Term;
 use Modules\Class\Services\ClassroomRooms;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Class\Services\MyClasses;
@@ -102,5 +103,7 @@ class ClassServiceProvider extends ModuleServiceProvider
         // Whoever teaches or attends classes opens the panel on their
         // calendar of sessions (ADR 0069).
         UserPanel::homeUsing('classes', fn (User $user, Tenant $tenant): ?string => app(MyClasses::class)->hasAny($user) ? route('my-classes.index') : null);
+
+        UserPanel::navigationSubtitleUsing('academic-term', fn (): ?string => Term::currentTitle());
     }
 }

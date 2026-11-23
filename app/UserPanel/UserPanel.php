@@ -23,6 +23,30 @@ class UserPanel
      */
     protected static array $homeProviders = [];
 
+    /** @var array<string, Closure(User, Tenant): ?string> */
+    protected static array $navigationSubtitleProviders = [];
+
+    /** @param Closure(User, Tenant): ?string $callback */
+    public static function navigationSubtitleUsing(string $name, Closure $callback): void
+    {
+        static::$navigationSubtitleProviders[$name] = $callback;
+    }
+
+    public static function navigationSubtitle(?User $user, ?Tenant $tenant): ?string
+    {
+        if ($user === null || $tenant === null) {
+            return null;
+        }
+
+        foreach (static::$navigationSubtitleProviders as $callback) {
+            if (($subtitle = $callback($user, $tenant)) !== null) {
+                return $subtitle;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Let a module supply side-menu links for the user in the current tenant,
      * e.g. «آزمون‌ها». The links of all providers are shown in order.

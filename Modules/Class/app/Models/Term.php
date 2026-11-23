@@ -50,6 +50,15 @@ class Term extends Model
         return static::definedTerms()->where('is_active', true)->orderByDesc('starts_on')->pluck('title', 'id')->all();
     }
 
+    public static function currentTitle(): ?string
+    {
+        $today = today()->toDateString();
+
+        return static::definedTerms()->where('is_active', true)
+            ->where('starts_on', '<=', $today)->where('ends_on', '>=', $today)
+            ->orderByDesc('starts_on')->orderByDesc('id')->value('title');
+    }
+
     /**
      * Classes of every tenant run in it.
      *

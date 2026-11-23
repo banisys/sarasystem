@@ -65,6 +65,9 @@ class HandleInertiaRequests extends Middleware
             // and the page the panel opens on when a module offers one (ADR 0069).
             'navigation' => fn (): array => UserPanel::navigation($request->user(), Tenant::current()),
             'panelHome' => fn (): ?string => UserPanel::home($request->user(), Tenant::current()),
+            ...($isUserPanel ? [
+                'navigationSubtitle' => fn (): ?string => UserPanel::navigationSubtitle($request->user(), Tenant::current()),
+            ] : []),
             ...($isUserPanel ? [] : [
                 'flash' => ['status' => fn () => $request->session()->get('status')],
             ]),

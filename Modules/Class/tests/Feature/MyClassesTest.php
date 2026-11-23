@@ -436,6 +436,24 @@ class MyClassesTest extends TestCase
         $this->assertFalse($hasLink($this->person()));
     }
 
+    public function test_the_menu_shows_the_current_organization_term_in_a_branch(): void
+    {
+        $url = route('profile.edit');
+        $this->as($this->student, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('navigationSubtitle', null));
+
+        Term::factory()->for($this->primary)->create(['starts_on' => '2026-09-01']);
+        $current = Term::factory()->for($this->primary)->create(['starts_on' => '2026-10-01', 'ends_on' => '2026-10-29']);
+        Term::factory()->for($this->primary)->create(['starts_on' => '2026-10-10', 'ends_on' => '2026-10-28']);
+        Term::factory()->for($this->primary)->create(['starts_on' => '2026-10-15', 'is_active' => false]);
+        Term::factory()->for($this->primary)->create(['starts_on' => '2026-11-01']);
+        Term::factory()->for($this->west)->create(['starts_on' => '2026-10-20']);
+
+        $this->as($this->student, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('tenant.current.id', $this->west->id)
+            ->where('navigationSubtitle', $current->title));
+    }
+
     /**
      * ADR 0069: a teacher (or anyone in classes) opens the panel on their
      * calendar; others stay on the dashboard.

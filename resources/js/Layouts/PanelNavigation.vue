@@ -39,19 +39,24 @@ function logout() {
 
 <template>
     <div class="flex h-full min-h-0 flex-col">
-        <div class="flex items-center justify-between gap-2 border-b border-ui-line px-4 py-3.5">
-            <div class="flex min-w-0 items-center gap-3">
-                <ElAvatar :size="32" class="shrink-0 panel-account-avatar">
-                    <PanelIcon name="user" class="size-5" />
-                </ElAvatar>
-                <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold">{{ user?.name }}</p>
-                    <bdi v-if="user?.mobile || user?.email" dir="ltr" class="block truncate text-xs text-ui-muted">
-                        {{ user.mobile || user.email }}
-                    </bdi>
+        <div class="grid gap-2 border-b border-ui-line px-4 py-3.5">
+            <div class="flex min-w-0 items-center justify-between gap-2">
+                <div class="flex min-w-0 items-center gap-3">
+                    <ElAvatar :size="32" class="shrink-0 panel-account-avatar">
+                        <PanelIcon name="user" class="size-5" />
+                    </ElAvatar>
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold">{{ user?.name }}</p>
+                        <bdi v-if="user?.mobile || user?.email" dir="ltr" class="block truncate text-xs text-ui-muted">
+                            {{ user.mobile || user.email }}
+                        </bdi>
+                    </div>
                 </div>
+                <slot name="close" />
             </div>
-            <slot name="close" />
+            <p v-if="page.props.navigationSubtitle" class="wrap-break-word text-xs font-medium text-ui-muted">
+                {{ page.props.navigationSubtitle }}
+            </p>
         </div>
 
         <nav aria-label="منوی پنل کاربری" class="min-h-0 flex-1 overflow-y-auto px-4 py-2">
