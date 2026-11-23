@@ -74,10 +74,13 @@ class MyClasses
         $canViewReports = Module::isEnabled('Exam') && $classroom->members->contains(
             fn (ClassMember $member): bool => $member->user_id === $user->id && ! $member->classRole->is_attendee,
         );
+        $membersByUser = $classroom->members->groupBy('user_id');
 
         return [
             'title' => $classroom->title,
             'description' => $classroom->description,
+            'my_roles' => $membersByUser->get($user->id)?->pluck('classRole.title')->unique()->join('، '),
+            'teaching_subjects' => $this->assignedSubjects($user, $classroom)->pluck('title')->all(),
             'term' => $classroom->term?->title,
             'location' => $classroom->location,
             'code' => $classroom->code,
@@ -86,7 +89,7 @@ class MyClasses
             'is_active' => $classroom->is_active,
             'starts_on' => $classroom->starts_on === null ? null : self::jalali($classroom->starts_on->toImmutable(), 'Y/m/d'),
             'ends_on' => $classroom->ends_on === null ? null : self::jalali($classroom->ends_on->toImmutable(), 'Y/m/d'),
-            'members' => $classroom->members->groupBy('user_id')
+            'members' => $membersByUser
                 ->map(fn ($members): array => [
                     'id' => $members->first()->user_id,
                     'name' => $members->first()->user->name,

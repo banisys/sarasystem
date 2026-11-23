@@ -13,8 +13,11 @@ const props = defineProps({
 const number = new Intl.NumberFormat('fa-IR');
 const facts = computed(() => {
     const item = props.classroom;
+    const subjects = item.teaching_subjects;
+    const role = subjects.length ? `مدرس ${subjects.join('، ')}` : item.my_roles;
 
     return [
+        { label: 'نقش شما', value: role },
         { label: 'شیوهٔ پیش‌فرض', value: item.mode },
         { label: 'دورهٔ آموزشی', value: item.term },
         { label: 'کد کلاس', value: item.code },

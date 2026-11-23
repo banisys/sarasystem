@@ -22,6 +22,7 @@ use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
+use Modules\Class\Models\ClassSchedule;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
 use Modules\Class\Models\Subject;
@@ -314,6 +315,8 @@ class MyClassesTest extends TestCase
             ->where('classroom.mode', 'آنلاین')
             ->where('classroom.starts_on', '1405/08/07')
             ->where('classroom.ends_on', null)
+            ->where('classroom.my_roles', $role->title)
+            ->where('classroom.teaching_subjects', [])
             ->has('classroom.members', 2)
             ->where('classroom.members', fn ($members) => $members->contains('name', $this->student->name)));
 
@@ -323,6 +326,33 @@ class MyClassesTest extends TestCase
         $this->as($this->teacher, route('my-classes.index'))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showClassList', false)
             ->where('classes.0.id', $this->classroom->id));
+    }
+
+    public function test_class_details_show_the_viewers_own_teaching_subjects(): void
+    {
+        $supporter = $this->person();
+        $supportRole = ClassRole::factory()->for($this->primary)->create(['title' => 'پشتیبان', 'is_attendee' => false]);
+        app(ClassMembers::class)->add($this->classroom, $supportRole, [$supporter->id]);
+
+        $literature = Subject::factory()->for($this->primary)->create(['title' => 'ادبیات فارسی']);
+        $physics = Subject::factory()->for($this->primary)->create(['title' => 'فیزیک']);
+        $chemistry = Subject::factory()->for($this->primary)->create(['title' => 'شیمی']);
+        $history = Subject::factory()->for($this->primary)->create(['title' => 'تاریخ']);
+
+        $otherTeacher = $this->person();
+        ClassSchedule::factory()->count(2)->for($this->classroom)->for($literature)->hasAttached($this->teacher, [], 'teachers')->create();
+        ClassSchedule::factory()->for($this->classroom)->for($physics)->hasAttached($otherTeacher, [], 'teachers')->create();
+        ClassSchedule::factory()->for(Classroom::factory()->for($this->primary))->for($chemistry)->hasAttached($this->teacher, [], 'teachers')->create();
+        ClassSession::factory()->for($this->classroom)->for($history)->taughtBy($otherTeacher, $this->teacher)->create();
+
+        $url = route('my-classes.membership', $this->classroom);
+
+        $this->as($this->teacher, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('classroom.teaching_subjects', ['ادبیات فارسی']));
+
+        $this->as($supporter, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('classroom.my_roles', 'پشتیبان')
+            ->where('classroom.teaching_subjects', []));
     }
 
     public function test_an_attendee_keeps_the_calendar_class_list_without_access_to_class_rosters(): void

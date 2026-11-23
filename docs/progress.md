@@ -24,8 +24,10 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Done
 - 2026-11-23 — Scoped the class roster performance report to each staff member’s assigned subjects and the class’s current term. Exam scores from every group and ungrouped session exams appear together. All 829 tests, 30 disabled-module checks, Pint and the Vite build passed.
+- 2026-11-23 — Added «نقش شما» to «اطلاعات کلاس», showing the signed-in user’s teaching subjects or their current roles in the class.
 - 2026-11-23 — Linked class rosters to a read-only, class-scoped learner exam performance report ([ADR 0129](decisions/0129-class-learner-performance.md)). Verified permissions, score visibility scope and module independence. All 65 targeted tests, 29 disabled-module checks, Pint and the Vite build passed.
 - 2026-11-23 — Expanded the user-panel class details with a responsive overview of class fields and a roster count. All 24 targeted tests, Pint and the Vite build passed.
+- 2026-11-23 — Arranged the class links in a responsive grid of cards with an icon and navigation chevron. The Vite build passed.
 - 2026-11-23 — Split «کلاس‌های من» into a class list and a dedicated detail page for each class. Verified member-only access, branch isolation and list payloads with 24 targeted tests. Pint and the Vite build passed.
 - 2026-11-23 — Moved class cards for non-learner accounts from the academic calendar to «کلاس‌های من», with descriptions and expandable current rosters in the user’s branch ([ADR 0128](decisions/0128-staff-class-memberships.md)). Verified the roster with browser sample data. All 230 Class tests, Pint and the Vite build passed.
 - 2026-11-23 — Added the learner’s «گزارش عملکرد» with visible exam scores grouped by subject and filtered by the selected branch exam group ([ADR 0127](decisions/0127-learner-exam-performance.md)). Verified group switching and the empty state with sample data in desktop and mobile browser previews. All 824 tests, 15 disabled-module checks, Pint and the Vite build passed.
