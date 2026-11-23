@@ -2,6 +2,7 @@
 
 namespace Modules\Class\Services;
 
+use App\Authorization\DefaultRoles;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -11,6 +12,7 @@ use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\Weekday;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassMember;
+use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
 use Modules\Class\Models\Holiday;
 use Modules\Class\Models\HomeworkSubmission;
@@ -39,6 +41,44 @@ class MyClasses
     {
         return ClassMember::query()->where('user_id', $user->getKey())->exists()
             || ClassSession::query()->withTeacher($user)->exists();
+    }
+
+    public function canBrowseMemberships(User $user): bool
+    {
+        if ($user->hasRole(DefaultRoles::LEARNER)) {
+            return false;
+        }
+
+        $roles = ClassMember::query()->whereBelongsTo($user)->current()
+            ->where(fn (Builder $members) => $members->whereNull('joined_on')->orWhereDate('joined_on', '<=', today()))
+            ->with('classRole:id,is_attendee')->distinct()->get(['class_role_id']);
+
+        return $roles->isEmpty() || $roles->contains(fn (ClassMember $member): bool => ! $member->classRole->is_attendee);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function memberships(User $user): array
+    {
+        $currentMembers = fn ($query) => $query->current()
+            ->where(fn (Builder $members) => $members->whereNull('joined_on')->orWhereDate('joined_on', '<=', today()));
+
+        return Classroom::query()
+            ->whereHas('members', fn ($query) => $currentMembers($query)->whereBelongsTo($user))
+            ->with(['term:id,title', 'members' => fn ($query) => $currentMembers($query)->with(['user:id,name', 'classRole:id,title'])])
+            ->orderBy('title')->orderBy('id')->get()
+            ->map(fn (Classroom $classroom): array => [
+                'id' => $classroom->id,
+                'title' => $classroom->title,
+                'description' => $classroom->description,
+                'term' => $classroom->term?->title,
+                'location' => $classroom->location,
+                'members' => $classroom->members->groupBy('user_id')
+                    ->map(fn ($members): array => [
+                        'id' => $members->first()->user_id,
+                        'name' => $members->first()->user->name,
+                        'roles' => $members->pluck('classRole.title')->unique()->join('، '),
+                    ])->sortBy('name', SORT_NATURAL)->values()->all(),
+            ])->all();
     }
 
     public function canSee(User $user, ClassSession $session): bool

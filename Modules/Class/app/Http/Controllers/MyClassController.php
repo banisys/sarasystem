@@ -69,8 +69,21 @@ class MyClassController extends Controller
         return Inertia::render('Class::Index', [
             'calendar' => $myClasses->calendar($user, Tenant::current(), $view, $date, $subject, $mode, classroomId: $classroomId),
             'classes' => $classes,
+            'showClassList' => ! $user->is($request->user()) || ! $myClasses->canBrowseMemberships($user),
             'ward' => $user->is($request->user()) ? null : ['id' => $user->getKey(), 'name' => $user->name],
         ]);
+    }
+
+    public function memberships(Request $request, MyClasses $myClasses): Response|RedirectResponse
+    {
+        if ($request->hasAny(['view', 'date', 'classroom', 'subject', 'mode', 'for'])) {
+            return to_route('my-classes.index', $request->query());
+        }
+
+        $user = $request->user();
+        abort_unless($myClasses->canBrowseMemberships($user), 403);
+
+        return Inertia::render('Class::Memberships', ['classes' => $myClasses->memberships($user)]);
     }
 
     public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry, SessionReminders $reminders): Response

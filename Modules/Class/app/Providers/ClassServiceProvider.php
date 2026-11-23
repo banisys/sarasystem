@@ -96,6 +96,7 @@ class ClassServiceProvider extends ModuleServiceProvider
 
             return [
                 ...($myClasses->hasAny($user) ? [['title' => 'تقویم آموزشی', 'url' => route('my-classes.index'), 'icon' => 'calendar']] : []),
+                ...($myClasses->canBrowseMemberships($user) ? [['title' => 'کلاس‌های من', 'url' => route('my-classes.memberships'), 'icon' => 'users']] : []),
                 ...$wards->map(fn (User $ward): array => ['title' => 'تقویم آموزشی '.$ward->name, 'url' => route('my-classes.index', ['for' => $ward->getKey()]), 'icon' => 'users'])->values()->all(),
             ];
         });

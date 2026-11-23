@@ -18,10 +18,11 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 const props = defineProps({
     calendar: { type: Object, required: true },
     classes: { type: Array, required: true },
+    showClassList: { type: Boolean, required: true },
     ward: { type: Object, default: null },
 });
 
-usePoll(60_000, { only: ['calendar', 'classes'] });
+usePoll(60_000, { only: ['calendar', 'classes', 'showClassList'] });
 
 const title = computed(() => (props.ward ? `تقویم آموزشی ${props.ward.name}` : 'تقویم آموزشی'));
 const forWard = computed(() => (props.ward ? { for: props.ward.id } : {}));
@@ -58,7 +59,7 @@ function sessionUrl(session) {
 function setFilter(key, value) {
     const { date, view, filters } = props.calendar;
     router.visit(at(date, view, { ...filters, [key]: value === '' ? null : value }), {
-        only: ['calendar', 'classes'],
+        only: ['calendar', 'classes', 'showClassList'],
         preserveScroll: true,
         preserveState: true,
         onStart: () => { filtering.value = true; },
@@ -250,7 +251,7 @@ function setFilter(key, value) {
                 </div>
             </section>
 
-            <section v-if="classes.length" class="grid gap-2.5">
+            <section v-if="showClassList && classes.length" class="grid gap-2.5">
                 <h2 class="text-xl font-bold text-ui-ink">کلاس‌ها</h2>
                 <div class="grid gap-2 sm:grid-cols-2">
                     <PanelCard v-for="item in classes" :key="item.id" body-class="grid gap-1.5 text-sm [--el-card-padding:0.875rem] sm:[--el-card-padding:1rem]">

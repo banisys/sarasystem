@@ -283,6 +283,39 @@ class MyClassesTest extends TestCase
             ->where('calendar.days.0.sessions', []));
     }
 
+    public function test_class_membership_page_lists_only_the_users_current_branch_classes_and_their_rosters(): void
+    {
+        $this->classroom->update(['description' => 'توضیحات کلاس هفتم']);
+        $unrelated = Classroom::factory()->for($this->west)->create();
+        $outside = Classroom::factory()->create();
+        $role = $this->classroom->members()->whereBelongsTo($this->teacher, 'user')->firstOrFail()->classRole;
+        ClassMember::factory()->for($outside)->for($this->teacher, 'user')->for($role)->create();
+        ClassMember::factory()->for($unrelated)->for($this->teacher, 'user')->for($role)->create(['left_on' => today()->subDay()]);
+        ClassMember::factory()->for($this->classroom)->for($this->person(), 'user')->for($role)->create(['joined_on' => today()->addDay()]);
+
+        $this->as($this->teacher, route('my-classes.memberships'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Class::Memberships')
+            ->where('navigation.1.title', 'کلاس‌های من')
+            ->has('classes', 1)
+            ->where('classes.0.id', $this->classroom->id)
+            ->where('classes.0.description', 'توضیحات کلاس هفتم')
+            ->has('classes.0.members', 2)
+            ->where('classes.0.members', fn ($members) => $members->contains('name', $this->student->name)));
+
+        $this->as($this->teacher, route('my-classes.index'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showClassList', false)
+            ->where('classes.0.id', $this->classroom->id));
+    }
+
+    public function test_an_attendee_keeps_the_calendar_class_list_without_access_to_class_rosters(): void
+    {
+        $this->as($this->student, route('my-classes.index'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showClassList', true)
+            ->where('navigation', fn ($links) => ! $links->contains('title', 'کلاس‌های من')));
+
+        $this->as($this->student, route('my-classes.memberships'))->assertForbidden();
+    }
+
     public function test_old_calendar_links_redirect_with_their_query_parameters(): void
     {
         $session = $this->sessionOn('2026-10-31');
