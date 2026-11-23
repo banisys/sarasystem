@@ -77,6 +77,16 @@ class SessionExamSource implements ExamContextSource
             || ClassSession::query()->takingPlace()->withTeacher($user)->exists();
     }
 
+    public function subjectsFor(array $contextIds): array
+    {
+        return ClassSession::query()->takingPlace()->whereKey($contextIds)->whereNotNull('subject_id')
+            ->with('subject:id,title')->get(['id', 'subject_id'])
+            ->filter(fn (ClassSession $session): bool => $session->subject !== null)
+            ->mapWithKeys(fn (ClassSession $session): array => [
+                $session->id => ['id' => $session->subject->id, 'title' => $session->subject->title],
+            ])->all();
+    }
+
     public function link(ClassSession $session, User $user): ?string
     {
         return $this->resolve($session->getKey(), $user) === null

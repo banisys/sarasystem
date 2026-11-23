@@ -19,4 +19,12 @@ interface ExamContextSource
 
     /** A tenant-scoped, single-column query of contexts this user may participate in. */
     public function participantIds(User $user): Builder;
+
+    /**
+     * Subjects for contexts already authorized through participantIds.
+     *
+     * @param  list<int>  $contextIds
+     * @return array<int, array{id: int, title: string}> Keyed by context ID.
+     */
+    public function subjectsFor(array $contextIds): array;
 }

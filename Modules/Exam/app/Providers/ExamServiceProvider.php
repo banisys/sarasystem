@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\UserPanel\UserPanel;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Services\ExamPerformance;
 use Modules\Exam\Support\ExamContexts;
 use Modules\Exam\Support\QuestionLibrary;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -60,6 +61,9 @@ class ExamServiceProvider extends ModuleServiceProvider
         // published exam in the current tenant (ADR 0013).
         UserPanel::navigationUsing('exams', fn (User $user, Tenant $tenant): array => Exam::query()->published()->forParticipant($user)->exists()
             ? [['title' => 'آزمون‌ها', 'url' => route('exams.index'), 'icon' => 'clipboard']]
+            : []);
+        UserPanel::navigationUsing('exam-performance', fn (User $user, Tenant $tenant): array => app(ExamPerformance::class)->groups($user)->exists()
+            ? [['title' => 'گزارش عملکرد', 'url' => route('exams.performance'), 'icon' => 'document']]
             : []);
         UserPanel::navigationUsing('question-library', fn (User $user, Tenant $tenant): array => app(QuestionLibrary::class)->canAccess($user, $tenant)
             ? [['title' => 'بانک سؤال', 'url' => route('exams.library'), 'icon' => 'clipboard']]

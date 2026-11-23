@@ -48,6 +48,15 @@ class ExamContexts
         return false;
     }
 
+    /**
+     * @param  list<int>  $contextIds
+     * @return array<int, array{id: int, title: string}>
+     */
+    public function subjectsFor(string $type, array $contextIds): array
+    {
+        return ($this->sources[$type] ?? null)?->subjectsFor($contextIds) ?? [];
+    }
+
     public function url(string $type, int $id): string
     {
         return route('exams.context', ['type' => $type, 'context' => $id]);

@@ -12,7 +12,9 @@ use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
 use Modules\Class\Models\ClassSession;
+use Modules\Class\Models\Subject;
 use Modules\Exam\Enums\AttemptStatus;
+use Modules\Exam\Enums\ResultVisibility;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\ExamGroup;
@@ -783,6 +785,41 @@ class SessionExamsTest extends TestCase
         $this->assertSame(1, $updated->attempts()->count());
         $this->patch($url, ['exam_group_id' => $group->id])->assertRedirect($this->url());
         $this->assertSame($group->id, $exam->refresh()->exam_group_id);
+    }
+
+    public function test_the_learner_performance_report_groups_session_exam_scores_by_subject(): void
+    {
+        $group = ExamGroup::factory()->for($this->tenant)->create();
+        $math = Subject::factory()->for($this->tenant)->create(['title' => 'ریاضی']);
+        $science = Subject::factory()->for($this->tenant)->create(['title' => 'علوم']);
+        $classroom = $this->session->classroom;
+        $scores = [
+            ['subject' => $math, 'score' => 13],
+            ['subject' => $science, 'score' => 16],
+            ['subject' => $math, 'score' => 18],
+        ];
+        foreach ($scores as ['subject' => $subject, 'score' => $score]) {
+            $session = ClassSession::factory()->for($classroom)->for($subject)->taughtBy($this->teacher)
+                ->create(['starts_at' => now(), 'ends_at' => now()->addHour()]);
+            $exam = $this->assign($session);
+            $exam->update(['exam_group_id' => $group->id, 'result_visibility' => ResultVisibility::Score]);
+            ExamAttempt::factory()->for($exam)->for($this->learner, 'user')->create([
+                'status' => AttemptStatus::Completed,
+                'submitted_at' => now(),
+                'score' => $score,
+            ]);
+        }
+
+        $this->asLearner();
+        $this->get(route('exams.performance', ['group' => $group->id]))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('subjects', 2)
+            ->where('subjects.0.title', 'ریاضی')
+            ->has('subjects.0.exams', 2)
+            ->where('subjects.0.exams.0.score', 18)
+            ->where('subjects.0.exams.1.score', 13)
+            ->where('subjects.1.title', 'علوم')
+            ->has('subjects.1.exams', 1)
+            ->where('subjects.1.exams.0.score', 16));
     }
 
     private function assign(?ClassSession $session = null): Exam

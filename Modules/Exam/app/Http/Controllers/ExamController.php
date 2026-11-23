@@ -12,6 +12,7 @@ use Modules\Exam\Models\AttemptAnswer;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\Question;
+use Modules\Exam\Services\ExamPerformance;
 use Modules\Exam\Services\ExamTaking;
 use Modules\Exam\Support\ExamContexts;
 
@@ -44,6 +45,20 @@ class ExamController extends Controller
             ]);
 
         return Inertia::render('Exam::Index', ['exams' => $exams]);
+    }
+
+    public function performance(Request $request, ExamPerformance $performance): Response
+    {
+        $user = $request->user();
+        $groups = $performance->groups($user)->latest('id')->get(['id', 'title']);
+        $groupId = filter_var($request->query('group'), FILTER_VALIDATE_INT);
+        $group = $groups->find($groupId ?: 0) ?? $groups->first();
+
+        return Inertia::render('Exam::Performance', [
+            'groups' => $groups,
+            'selectedGroup' => $group?->id,
+            'subjects' => $group === null ? [] : $performance->results($user, $group),
+        ]);
     }
 
     public function show(Request $request, Exam $exam, ExamTaking $taking): Response
