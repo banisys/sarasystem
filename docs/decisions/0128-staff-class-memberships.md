@@ -16,7 +16,7 @@ Teachers, supervisors and other class staff need a place to see their classes, e
 
 Add «کلاس‌های من» at `/profile/my-classes` for non-learner accounts. Accounts with the learner role in the current branch and accounts whose current class memberships are all attendee roles keep their calendar class cards. Guardians' ward calendars also keep their cards.
 
-List classes in the current branch where the signed-in user is a current member. Show the class description and the names and class roles of current members, including learners. Each class has an expandable roster. Calendar filtering still uses the same classes. Legacy calendar view URLs with parameters and session URLs still redirect to the calendar.
+List classes in the current branch where the signed-in user is a current member. The index lists class names only. Each name links to its own page at `/profile/my-classes/{classroom}`, which shows the description, term, location and names and class roles of current members, including learners. Both pages scope access to current class memberships in the selected branch. Calendar filtering still uses the same classes. Legacy calendar view URLs with parameters and session URLs still redirect to the calendar.
 
 ## Consequences
 

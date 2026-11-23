@@ -49,36 +49,39 @@ class MyClasses
             return false;
         }
 
-        $roles = ClassMember::query()->whereBelongsTo($user)->current()
-            ->where(fn (Builder $members) => $members->whereNull('joined_on')->orWhereDate('joined_on', '<=', today()))
+        $roles = ClassMember::query()->whereBelongsTo($user)->activeToday()
             ->with('classRole:id,is_attendee')->distinct()->get(['class_role_id']);
 
         return $roles->isEmpty() || $roles->contains(fn (ClassMember $member): bool => ! $member->classRole->is_attendee);
     }
 
-    /** @return list<array<string, mixed>> */
-    public function memberships(User $user): array
+    /** @return Builder<Classroom> */
+    public function memberClassrooms(User $user): Builder
     {
-        $currentMembers = fn ($query) => $query->current()
-            ->where(fn (Builder $members) => $members->whereNull('joined_on')->orWhereDate('joined_on', '<=', today()));
-
         return Classroom::query()
-            ->whereHas('members', fn ($query) => $currentMembers($query)->whereBelongsTo($user))
-            ->with(['term:id,title', 'members' => fn ($query) => $currentMembers($query)->with(['user:id,name', 'classRole:id,title'])])
-            ->orderBy('title')->orderBy('id')->get()
-            ->map(fn (Classroom $classroom): array => [
-                'id' => $classroom->id,
-                'title' => $classroom->title,
-                'description' => $classroom->description,
-                'term' => $classroom->term?->title,
-                'location' => $classroom->location,
-                'members' => $classroom->members->groupBy('user_id')
-                    ->map(fn ($members): array => [
-                        'id' => $members->first()->user_id,
-                        'name' => $members->first()->user->name,
-                        'roles' => $members->pluck('classRole.title')->unique()->join('، '),
-                    ])->sortBy('name', SORT_NATURAL)->values()->all(),
-            ])->all();
+            ->whereHas('members', fn (Builder $query) => $query->activeToday()->whereBelongsTo($user));
+    }
+
+    /** @return array<string, mixed> */
+    public function membershipDetails(User $user, int $classroomId): array
+    {
+        $classroom = $this->memberClassrooms($user)->with([
+            'term:id,title',
+            'members' => fn ($query) => $query->activeToday()->with(['user:id,name', 'classRole:id,title']),
+        ])->findOrFail($classroomId);
+
+        return [
+            'title' => $classroom->title,
+            'description' => $classroom->description,
+            'term' => $classroom->term?->title,
+            'location' => $classroom->location,
+            'members' => $classroom->members->groupBy('user_id')
+                ->map(fn ($members): array => [
+                    'id' => $members->first()->user_id,
+                    'name' => $members->first()->user->name,
+                    'roles' => $members->pluck('classRole.title')->unique()->join('، '),
+                ])->sortBy('name', SORT_NATURAL)->values()->all(),
+        ];
     }
 
     public function canSee(User $user, ClassSession $session): bool

@@ -83,7 +83,19 @@ class MyClassController extends Controller
         $user = $request->user();
         abort_unless($myClasses->canBrowseMemberships($user), 403);
 
-        return Inertia::render('Class::Memberships', ['classes' => $myClasses->memberships($user)]);
+        return Inertia::render('Class::Memberships', [
+            'classes' => $myClasses->memberClassrooms($user)->orderBy('title')->orderBy('id')->get(['id', 'title']),
+        ]);
+    }
+
+    public function membership(Request $request, int $classroom, MyClasses $myClasses): Response
+    {
+        $user = $request->user();
+        abort_unless($myClasses->canBrowseMemberships($user), 403);
+
+        return Inertia::render('Class::Membership', [
+            'classroom' => $myClasses->membershipDetails($user, $classroom),
+        ]);
     }
 
     public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry, SessionReminders $reminders): Response

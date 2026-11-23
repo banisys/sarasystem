@@ -39,6 +39,12 @@ class ClassMember extends Model
         $query->where(fn (Builder $query) => $query->whereNull('left_on')->orWhereDate('left_on', '>=', today()));
     }
 
+    /** @param Builder<ClassMember> $query */
+    public function scopeActiveToday(Builder $query): void
+    {
+        $query->current()->where(fn (Builder $members) => $members->whereNull('joined_on')->orWhereDate('joined_on', '<=', today()));
+    }
+
     /**
      * @param  Builder<ClassMember>  $query
      */

@@ -283,7 +283,7 @@ class MyClassesTest extends TestCase
             ->where('calendar.days.0.sessions', []));
     }
 
-    public function test_class_membership_page_lists_only_the_users_current_branch_classes_and_their_rosters(): void
+    public function test_class_membership_pages_separate_the_users_class_list_from_each_roster(): void
     {
         $this->classroom->update(['description' => 'توضیحات کلاس هفتم']);
         $unrelated = Classroom::factory()->for($this->west)->create();
@@ -297,10 +297,17 @@ class MyClassesTest extends TestCase
             ->component('Class::Memberships')
             ->where('navigation.1.title', 'کلاس‌های من')
             ->has('classes', 1)
-            ->where('classes.0.id', $this->classroom->id)
-            ->where('classes.0.description', 'توضیحات کلاس هفتم')
-            ->has('classes.0.members', 2)
-            ->where('classes.0.members', fn ($members) => $members->contains('name', $this->student->name)));
+            ->where('classes.0', ['id' => $this->classroom->id, 'title' => $this->classroom->title]));
+
+        $this->as($this->teacher, route('my-classes.membership', $this->classroom))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Class::Membership')
+            ->where('classroom.title', $this->classroom->title)
+            ->where('classroom.description', 'توضیحات کلاس هفتم')
+            ->has('classroom.members', 2)
+            ->where('classroom.members', fn ($members) => $members->contains('name', $this->student->name)));
+
+        $this->as($this->teacher, route('my-classes.membership', $outside))->assertNotFound();
+        $this->as($this->teacher, route('my-classes.membership', $unrelated))->assertNotFound();
 
         $this->as($this->teacher, route('my-classes.index'))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showClassList', false)
@@ -314,6 +321,7 @@ class MyClassesTest extends TestCase
             ->where('navigation', fn ($links) => ! $links->contains('title', 'کلاس‌های من')));
 
         $this->as($this->student, route('my-classes.memberships'))->assertForbidden();
+        $this->as($this->student, route('my-classes.membership', $this->classroom))->assertForbidden();
     }
 
     public function test_old_calendar_links_redirect_with_their_query_parameters(): void
