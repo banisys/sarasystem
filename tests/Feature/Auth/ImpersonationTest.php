@@ -70,6 +70,21 @@ class ImpersonationTest extends TestCase
             ->assertRedirect(url('cpadmin'));
     }
 
+    public function test_a_super_admin_can_impersonate_a_user_from_all_branches_search(): void
+    {
+        $primary = Tenant::factory()->create(['is_primary' => true]);
+        $this->actingInPanel($this->admin, $primary);
+        $filters = ['all_branches' => ['isActive' => true], 'name' => ['value' => $this->teacher->name]];
+
+        Livewire::withQueryParams(['filters' => $filters])
+            ->test(ListUsers::class)
+            ->callAction(TestAction::make('impersonate')->table($this->teacher))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($this->teacher);
+        $this->assertSame(UserResource::getUrl('index', ['filters' => $filters], tenant: $primary), session(Impersonation::RETURN_URL_SESSION_KEY));
+    }
+
     public function test_the_user_panel_shows_the_way_back(): void
     {
         $this->actingAs($this->admin);

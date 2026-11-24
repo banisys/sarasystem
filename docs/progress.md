@@ -23,6 +23,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-24 — Enabled authorized edit, branch membership removal, account deletion and impersonation from the primary tenant's cross-branch user search ([ADR 0131](decisions/0131-cross-branch-user-actions.md)). All 34 affected tests and Pint passed.
+- 2026-11-24 — Added a visible branch-names column to the users list, including all memberships for accounts linked to multiple branches.
 - 2026-11-24 — Added «جستجو در همه شعبات» to the primary tenant's users list. The existing search filters work across all accounts, with record actions kept within the selected branch ([ADR 0130](decisions/0130-primary-tenant-user-search.md)). All 32 affected tests and Pint passed.
 - 2026-11-23 — Scoped the class roster performance report to each staff member’s assigned subjects and the class’s current term. Exam scores from every group and ungrouped session exams appear together. All 829 tests, 30 disabled-module checks, Pint and the Vite build passed.
 - 2026-11-23 — Added «نقش شما» to «اطلاعات کلاس», showing the signed-in user’s teaching subjects or their current roles in the class.

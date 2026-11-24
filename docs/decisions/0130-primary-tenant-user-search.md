@@ -18,4 +18,4 @@ Add the «جستجو در همه شعبات» toggle to the existing filters for
 
 ## Consequences
 
-Staff can look up an account from the primary tenant without switching branches. Cross-branch results are read-only in this list. Record actions and edit routes continue to require membership in the selected branch and the existing action permissions.
+Staff can look up an account from the primary tenant without switching branches. Actions on the results follow [ADR 0131](0131-cross-branch-user-actions.md).

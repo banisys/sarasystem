@@ -74,7 +74,7 @@ class UserResourceTest extends TestCase
             ->assertCanNotSeeTableRecords([$sara]);
     }
 
-    public function test_the_primary_tenant_can_search_all_branches_without_granting_record_access(): void
+    public function test_search_results_respect_permissions_in_the_users_branch(): void
     {
         $primary = Tenant::factory()->create(['is_primary' => true]);
         $this->makeStaff($this->manager, $primary);
@@ -93,14 +93,57 @@ class UserResourceTest extends TestCase
             ->assertCanSeeTableRecords([$member, $outsider])
             ->filterTable('name', ['value' => 'رضوی'])
             ->assertCanSeeTableRecords([$outsider])
+            ->assertSeeText($this->otherTenant->name)
             ->assertCanNotSeeTableRecords([$member]);
 
-        $editUrl = UserResource::getUrl('edit', ['record' => $outsider], tenant: $primary);
-        $list->assertDontSee($editUrl);
-        $this->assertNull($list->instance()->getTableRecord((string) $outsider->getKey()));
-        $this->get($editUrl)->assertNotFound();
+        $editUrl = UserResource::getUrl('edit', ['record' => $outsider], tenant: $this->otherTenant);
+        $list->assertDontSee($editUrl)
+            ->assertActionHidden(TestAction::make('removeFromTenant')->table($outsider))
+            ->assertActionHidden(TestAction::make('delete')->table($outsider));
 
         $list->removeTableFilter('all_branches')->assertCanNotSeeTableRecords([$outsider]);
+
+        $this->makeStaff($this->manager, $this->otherTenant);
+        $this->grantRole($this->manager, $this->otherTenant, 'manager');
+        $restrictedBranch = Tenant::factory()->create();
+        $this->grantRole($outsider, $restrictedBranch, 'teacher');
+
+        Livewire::test(ListUsers::class)
+            ->filterTable('all_branches')
+            ->assertSee($editUrl)
+            ->assertActionVisible(TestAction::make('removeFromTenant')->table($outsider))
+            ->assertActionHidden(TestAction::make('delete')->table($outsider))
+            ->callAction(TestAction::make('removeFromTenant')->table($outsider), ['tenant_id' => $restrictedBranch->id])
+            ->assertHasActionErrors(['tenant_id']);
+
+        $this->assertSame(['teacher'], $this->roleNamesIn($outsider, $restrictedBranch));
+        $this->get(UserResource::getUrl('edit', ['record' => $outsider], tenant: $primary))->assertNotFound();
+        $this->get($editUrl)->assertOk();
+    }
+
+    public function test_a_super_admin_manages_cross_branch_search_results(): void
+    {
+        $primary = Tenant::factory()->create(['is_primary' => true]);
+        $admin = User::factory()->superAdmin()->create();
+        $outsider = User::factory()->create();
+        $this->grantRole($outsider, $this->tenant, 'teacher');
+        $this->grantRole($outsider, $this->otherTenant, 'teacher');
+        $this->actingInPanel($admin, $primary);
+
+        $list = Livewire::test(ListUsers::class)
+            ->filterTable('all_branches')
+            ->assertActionVisible(TestAction::make('edit')->table($outsider))
+            ->assertActionVisible(TestAction::make('impersonate')->table($outsider))
+            ->assertActionVisible(TestAction::make('delete')->table($outsider))
+            ->callAction(TestAction::make('removeFromTenant')->table($outsider), ['tenant_id' => $this->otherTenant->id])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(['teacher'], $this->roleNamesIn($outsider, $this->tenant));
+        $this->assertSame([], $this->roleNamesIn($outsider, $this->otherTenant));
+
+        $list->callAction(TestAction::make('delete')->table($outsider));
+
+        $this->assertModelMissing($outsider);
     }
 
     public function test_another_branch_cannot_enable_the_all_branches_filter(): void
@@ -117,8 +160,10 @@ class UserResourceTest extends TestCase
             ->assertCanNotSeeTableRecords([$outsider]);
     }
 
-    public function test_the_list_shows_in_how_many_tenants_each_user_is_a_member(): void
+    public function test_the_list_shows_the_names_and_count_of_each_users_tenants(): void
     {
+        $this->tenant->update(['name' => 'Central']);
+        $this->otherTenant->update(['name' => 'East']);
         $teacher = User::factory()->create();
         $this->grantRole($teacher, $this->tenant, 'teacher');
         $this->grantRole($teacher, $this->tenant, 'manager');
@@ -127,6 +172,9 @@ class UserResourceTest extends TestCase
         $this->actingInPanel($this->manager, $this->tenant);
 
         Livewire::test(ListUsers::class)
+            ->assertTableColumnVisible('tenant_names')
+            ->assertTableColumnStateSet('tenant_names', ['Central', 'East'], $teacher)
+            ->assertTableColumnStateSet('tenant_names', ['Central'], $this->manager)
             ->assertTableColumnStateSet('tenants_count', 2, $teacher)
             ->assertTableColumnStateSet('tenants_count', 1, $this->manager)
             ->sortTable('tenants_count', 'desc')
