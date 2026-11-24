@@ -113,18 +113,18 @@ class ContextExams
 
     public function canDelete(ExamContext $context, Exam $exam, User $actor): bool
     {
-        return $context->canManage && ($exam->assigned_by_id === $actor->id
+        return $context->canManage && ! $exam->user_panel_locked && ($exam->assigned_by_id === $actor->id
             || ($exam->assigned_by_id === null && Gate::forUser($actor)->allows('delete', $exam)));
     }
 
     public function canEditDraft(Exam $exam, User $actor): bool
     {
-        return $exam->assigned_by_id === $actor->id && ! $exam->is_published && $exam->attempts_count === 0;
+        return ! $exam->user_panel_locked && $exam->assigned_by_id === $actor->id && ! $exam->is_published && $exam->attempts_count === 0;
     }
 
     public function mayManageSettings(ExamContext $context, Exam $exam, User $actor): bool
     {
-        return $context->canManage && ($exam->assigned_by_id === $actor->id
+        return $context->canManage && ! $exam->user_panel_locked && ($exam->assigned_by_id === $actor->id
             || Gate::forUser($actor)->allows('update', $exam));
     }
 
@@ -140,6 +140,26 @@ class ContextExams
             }
 
             $exam->update(array_intersect_key($settings, SessionExamSettings::DEFAULTS));
+        });
+    }
+
+    public function updateGroup(ExamContext $context, int $examId, User $actor, ?int $groupId): void
+    {
+        DB::transaction(function () use ($context, $examId, $actor, $groupId): void {
+            $exam = $this->query($context)->lockForUpdate()->findOrFail($examId);
+            abort_unless($this->mayManageSettings($context, $exam, $actor), 403);
+            $exam->update(['exam_group_id' => $groupId]);
+        });
+    }
+
+    public function updatePublication(ExamContext $context, int $examId, bool $published): void
+    {
+        abort_unless($context->canManage, 403);
+
+        DB::transaction(function () use ($context, $examId, $published): void {
+            $exam = $this->query($context)->lockForUpdate()->findOrFail($examId);
+            abort_if($exam->user_panel_locked, 403);
+            $exam->update(['is_published' => $published]);
         });
     }
 
@@ -159,7 +179,7 @@ class ContextExams
 
         return DB::transaction(function () use ($context, $examId, $actor, $order, $revision, $scores, $fixOrder): array {
             $exam = $this->query($context)->whereNotNull('question_snapshot')->lockForUpdate()->findOrFail($examId);
-            abort_unless($exam->assigned_by_id === $actor->id, 403);
+            abort_unless(! $exam->user_panel_locked && $exam->assigned_by_id === $actor->id, 403);
 
             $exam->loadCount('attempts');
             if (! $this->canEditDraft($exam, $actor)) {

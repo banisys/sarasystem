@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
+use Livewire\Livewire;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassMember;
@@ -18,6 +19,7 @@ use Modules\Class\Models\Subject;
 use Modules\Class\Models\Term;
 use Modules\Exam\Enums\AttemptStatus;
 use Modules\Exam\Enums\ResultVisibility;
+use Modules\Exam\Filament\Resources\Exams\Pages\EditExam;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\ExamGroup;
@@ -710,6 +712,66 @@ class SessionExamsTest extends TestCase
         $this->getJson($url)->assertJsonPath('can_reorder', false);
         $this->patchJson($url, ['order' => [1, 0], 'revision' => $revision])->assertUnprocessable();
         $this->assertSame($exam->question_snapshot, $exam->fresh()->question_snapshot);
+    }
+
+    public function test_an_admin_can_lock_and_unlock_exam_changes_from_the_user_panel(): void
+    {
+        $exam = $this->generatePreviewDraft();
+        $params = ['class-session', $this->session->id, $exam];
+        $preview = route('exams.context.preview', $params);
+        $revision = $this->getJson($preview)->assertOk()->assertJsonPath('can_reorder', true)->json('revision');
+        $group = ExamGroup::factory()->for($this->tenant)->create();
+        $admin = User::factory()->superAdmin()->create();
+        $this->actingInPanel($admin, $this->tenant);
+
+        Livewire::test(EditExam::class, ['record' => $exam->id])
+            ->assertActionVisible('lockUserPanel')
+            ->callAction('lockUserPanel')
+            ->assertNotified('ویرایش آزمون در پنل کاربری قفل شد.')
+            ->assertActionVisible('unlockUserPanel')
+            ->fillForm(['description' => 'توضیح مدیر'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+        $this->assertTrue($exam->refresh()->user_panel_locked);
+        $this->assertSame('توضیح مدیر', $exam->description);
+
+        $this->asTeacher();
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exams.0.user_panel_locked', true)
+            ->where('exams.0.settings', null)
+            ->where('exams.0.group_url', null)
+            ->where('exams.0.delete_url', null)
+            ->where('exams.0.preview_url', $preview));
+        $this->getJson($preview)->assertOk()->assertJsonPath('can_reorder', false);
+        $this->patch(route('exams.context.settings.update', $params), $this->payload())->assertForbidden();
+        $this->patch(route('exams.context.group.update', $params), ['exam_group_id' => $group->id])->assertForbidden();
+        $this->patch(route('exams.context.publish', $params), ['is_published' => true])->assertForbidden();
+        $this->patchJson($preview, ['order' => [1, 0], 'revision' => $revision])->assertForbidden();
+        $this->delete($this->deleteUrl($exam))->assertForbidden();
+        $this->assertSame('توضیح مدیر', $exam->refresh()->description);
+        $this->assertFalse($exam->is_published);
+        $this->assertNull($exam->exam_group_id);
+
+        $this->actingInPanel($admin, $this->tenant);
+        Livewire::test(EditExam::class, ['record' => $exam->id])
+            ->callAction('unlockUserPanel')
+            ->assertNotified('قفل آزمون در پنل کاربری باز شد.');
+        $this->assertFalse($exam->refresh()->user_panel_locked);
+
+        $this->asTeacher();
+        $this->patchJson($preview, ['order' => [1, 0], 'revision' => $revision])->assertOk();
+        $this->delete($this->deleteUrl($exam))->assertRedirect($this->url());
+        $this->assertModelMissing($exam);
+    }
+
+    public function test_learners_can_take_a_published_exam_while_user_panel_edits_are_locked(): void
+    {
+        $exam = $this->assign();
+        $exam->forceFill(['user_panel_locked' => true])->save();
+
+        $this->asLearner();
+        $this->post(route('exams.attempt.start', $exam))->assertRedirect();
+        $this->assertSame($this->learner->id, $exam->attempts()->sole()->user_id);
     }
 
     private function generatePreviewDraft(): Exam

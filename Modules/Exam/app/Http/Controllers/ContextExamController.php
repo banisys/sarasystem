@@ -80,6 +80,7 @@ class ContextExamController extends Controller
             'exams' => $records->map(fn (Exam $exam): array => [
                 'id' => $exam->id, 'title' => $exam->title, 'is_published' => $exam->is_published,
                 'is_practice' => $exam->is_practice,
+                'user_panel_locked' => $host->canManage && $exam->user_panel_locked,
                 'starts_at' => $exam->starts_at?->toIso8601String(), 'ends_at' => $exam->participationEndsAt()?->toIso8601String(),
                 'allow_late_start' => $exam->allow_late_start,
                 'attempts_count' => $host->canManage ? $exam->attempts_count : null,
@@ -161,7 +162,7 @@ class ContextExamController extends Controller
         $data = $request->validate([
             'exam_group_id' => ['present', ...$this->examGroupRules($host)],
         ], attributes: SessionExamSettings::labels());
-        $exam->update($data);
+        $exams->updateGroup($host, $exam->id, $request->user(), $data['exam_group_id']);
 
         return to_route('exams.context', [$type, $context])->with('status', 'گروه آزمون ذخیره شد.');
     }
@@ -186,7 +187,7 @@ class ContextExamController extends Controller
         $host = $this->context($request, $type, $context, $contexts, manage: true);
         abort_unless($exams->query($host)->whereKey($exam->id)->exists(), 404);
         $data = $request->validate(['is_published' => ['required', 'boolean']]);
-        $exam->update(['is_published' => $data['is_published']]);
+        $exams->updatePublication($host, $exam->id, $data['is_published']);
 
         return to_route('exams.context', [$type, $context])->with('status', 'وضعیت انتشار آزمون تغییر کرد.');
     }

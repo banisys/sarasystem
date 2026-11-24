@@ -35,7 +35,7 @@ class Exam extends Model
     /** @use HasFactory<ExamFactory> */
     use BelongsToTenant, HasFactory;
 
-    protected $attributes = ['is_practice' => false];
+    protected $attributes = ['is_practice' => false, 'user_panel_locked' => false];
 
     protected $hidden = ['question_snapshot'];
 
@@ -155,6 +155,7 @@ class Exam extends Model
         return [
             'is_published' => 'boolean',
             'is_practice' => 'boolean',
+            'user_panel_locked' => 'boolean',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'allow_late_start' => 'boolean',

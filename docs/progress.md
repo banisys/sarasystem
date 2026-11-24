@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-24 — Added a reversible admin lock for settings, question changes, publication and deletion of session exams from the user panel ([ADR 0133](decisions/0133-session-exam-user-panel-lock.md)). Applied the migration locally. All 840 tests, 39 checks with modules disabled, Pint and the Vite build passed.
 - 2026-11-24 — Enabled user-panel seating controls for the effective invigilator of each exam, including a substitute when assigned ([ADR 0132](decisions/0132-invigilator-seat-layout-access.md)). All 41 affected tests and Pint passed.
 - 2026-11-24 — Added «چیدمان صندلی‌ها» to exam session details in the user panel, sharing the roster, permissions and saved plan with the admin editor ([ADR 0087](decisions/0087-exam-seating.md)). All 40 affected tests, 18 checks with modules disabled, Pint and the Vite build passed.
 - 2026-11-24 — Added the shared printable «برگهٔ آزمون جلسه» to the formal session details and exam pages for session exam managers in the user panel. All 835 tests, 46 checks with modules disabled, Pint and the Vite build passed.

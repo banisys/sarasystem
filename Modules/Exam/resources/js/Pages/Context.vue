@@ -183,6 +183,7 @@ function remove() {
                                 <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
                                     <ElTag v-if="exam.is_practice" type="info">آزمون تمرینی</ElTag>
                                     <ElTag v-if="exam.exam_group" type="info">{{ exam.exam_group.title }}</ElTag>
+                                    <ElTag v-if="exam.user_panel_locked" type="warning">ویرایش قفل است</ElTag>
                                     <ElTag :type="exam.is_published ? 'success' : 'info'">{{ exam.is_published ? 'منتشرشده' : 'پنهان از شرکت‌کنندگان' }}</ElTag>
                                     <span v-if="exam.starts_at" class="text-sm text-ui-muted">از {{ formatDateTime(exam.starts_at) }}</span>
                                     <span v-if="exam.ends_at" class="text-sm text-ui-muted">تا {{ formatDateTime(exam.ends_at) }}</span>
@@ -191,8 +192,8 @@ function remove() {
                                 </div>
                                 <PanelButton v-if="exam.take_url" :href="exam.take_url" class="ms-auto">{{ exam.is_practice ? 'ورود به تمرین' : 'ورود به آزمون و مشاهدهٔ نتیجه' }}</PanelButton>
                             </div>
-                            <div v-if="context.can_manage || exam.delete_url" class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
-                                <PanelButton v-if="context.can_manage" :disabled="publication.processing || deletion.processing" variant="link" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</PanelButton>
+                            <div v-if="context.can_manage && !exam.user_panel_locked" class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+                                <PanelButton :disabled="publication.processing || deletion.processing" variant="link" @click="publish(exam)">{{ exam.is_published ? 'توقف انتشار' : 'انتشار آزمون' }}</PanelButton>
                                 <PanelButton v-if="exam.delete_url" type="button" :disabled="deletion.processing || publication.processing" variant="danger-link" aria-haspopup="dialog" @click="confirmRemoval(exam)">حذف آزمون</PanelButton>
                             </div>
                         </PanelCard>
