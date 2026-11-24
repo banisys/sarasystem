@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Course\Models\Course;
+use Modules\Course\Models\CourseEnrollmentSettings;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
 use Modules\Course\Support\CourseCategoryTree;
@@ -60,6 +61,7 @@ class CourseCatalogController extends Controller
         $category = max(0, $request->integer('category'));
         $search = mb_substr(trim((string) $request->string('search')), 0, 100);
         $tree = CourseCategoryTree::current(catalog: true);
+        $freeEnrollmentEnabled = CourseEnrollmentSettings::current()->free_enabled;
         $courses = Course::query()->published()
             ->when($category, fn (Builder $query): Builder => $query->whereIn('course_category_id', $tree->branchIds($category)))
             ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('title', '%'.$search.'%'))
@@ -69,7 +71,8 @@ class CourseCatalogController extends Controller
             ->paginate(15)
             ->withQueryString()
             ->through(fn (Course $course): array => [
-                ...$course->only('id', 'title', 'allows_self_enrollment', 'lessons_count'),
+                ...$course->only('id', 'title', 'lessons_count'),
+                'allows_self_enrollment' => $freeEnrollmentEnabled && $course->allows_self_enrollment,
                 'category' => $course->category?->title,
                 'url' => PublicSite::url($tenant, '/courses/'.$course->getKey()),
             ]);
@@ -95,7 +98,8 @@ class CourseCatalogController extends Controller
         return Inertia::render('Course::CatalogCourse', [
             ...$layout,
             'course' => [
-                ...$course->only('title', 'description', 'allows_self_enrollment'),
+                ...$course->only('title', 'description'),
+                'allows_self_enrollment' => $course->allows_self_enrollment && CourseEnrollmentSettings::current()->free_enabled,
                 'category' => $course->category?->title,
                 'instructors' => $course->instructors->pluck('user.name')->all(),
             ],

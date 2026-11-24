@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Course\Integrations\CourseExamSource;
 use Modules\Course\Models\Course;
+use Modules\Course\Models\CourseEnrollmentSettings;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
 use Nwidart\Modules\Facades\Module;
@@ -25,6 +26,7 @@ class CourseController extends Controller
     public function index(Request $request): Response
     {
         $onlyMine = $request->boolean('mine');
+        $freeEnrollmentEnabled = CourseEnrollmentSettings::current()->free_enabled;
         $myActiveEnrollment = fn (Builder $query): Builder => $query->active()->where('user_id', $request->user()->getKey());
 
         $courses = Course::query()->published()
@@ -36,7 +38,8 @@ class CourseController extends Controller
             ->paginate(15)
             ->withQueryString()
             ->through(fn (Course $course): array => [
-                ...$course->only('title', 'enrolled', 'lessons_count', 'allows_self_enrollment'),
+                ...$course->only('title', 'enrolled', 'lessons_count'),
+                'allows_self_enrollment' => $freeEnrollmentEnabled && $course->allows_self_enrollment,
                 'category' => $course->category?->title,
                 'url' => route('courses.show', $course),
             ]);
@@ -69,7 +72,7 @@ class CourseController extends Controller
                 ]),
             ]),
             'enrolled' => $enrolled,
-            'canEnroll' => $course->allows_self_enrollment && $enrollment === null,
+            'canEnroll' => $course->allows_self_enrollment && $enrollment === null && CourseEnrollmentSettings::current()->free_enabled,
             'hasInactiveEnrollment' => $enrollment !== null && ! $enrolled,
         ]);
     }
@@ -79,7 +82,7 @@ class CourseController extends Controller
         DB::transaction(function () use ($request, $course): void {
             $current = Course::query()->lockForUpdate()->findOrFail($course->getKey());
             abort_unless($current->is_published, 404);
-            abort_unless($current->allows_self_enrollment, 403);
+            abort_unless($current->allows_self_enrollment && CourseEnrollmentSettings::current()->free_enabled, 403);
 
             $current->enrollments()->firstOrCreate(['user_id' => $request->user()->getKey()]);
             abort_unless($this->isEnrolled($current, $request->user()), 403);

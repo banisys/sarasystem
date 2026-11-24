@@ -12,6 +12,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Course\Models\CourseEnrollmentSettings;
 
 class EnrollmentsRelationManager extends CoursePeopleRelationManager
 {
@@ -47,7 +48,12 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
             TextColumn::make('completions_count')->label('درس‌های تکمیل‌شده')->sortable(),
             IconColumn::make('is_revoked')->label('لغوشده')->boolean(),
         ])
-            ->headerActions([CreateAction::make()])
+            ->headerActions([
+                CreateAction::make()
+                    ->label(fn (): string => CourseEnrollmentSettings::current()->manual_name)
+                    ->visible(fn (): bool => CourseEnrollmentSettings::current()->manual_enabled)
+                    ->before(fn () => abort_unless(CourseEnrollmentSettings::current()->manual_enabled, 403)),
+            ])
             ->recordActions([EditAction::make()]);
     }
 }

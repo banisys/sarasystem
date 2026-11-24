@@ -24,6 +24,7 @@ use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationMa
 use Modules\Course\Filament\Resources\Courses\RelationManagers\SectionsRelationManager;
 use Modules\Course\Models\Course;
 use Modules\Course\Models\CourseCategory;
+use Modules\Course\Models\CourseEnrollmentSettings;
 use Modules\Course\Support\CourseCategoryTree;
 use UnitEnum;
 
@@ -54,8 +55,11 @@ class CourseResource extends Resource
                 ->scopedExists(CourseCategory::class, 'id'),
             Textarea::make('description')->label('معرفی دوره')->maxLength(10000)->columnSpanFull(),
             Toggle::make('is_published')->label('منتشرشده'),
-            Toggle::make('allows_self_enrollment')->label('ثبت‌نام رایگان')
-                ->helperText('با فعال کردن این گزینه، اعضای واردشده می‌توانند در دورهٔ منتشرشده ثبت‌نام کنند.'),
+            Toggle::make('allows_self_enrollment')
+                ->label(fn (): string => CourseEnrollmentSettings::current()->free_name)
+                ->helperText(fn (): string => CourseEnrollmentSettings::current()->free_enabled
+                    ? 'با فعال کردن این گزینه، اعضای واردشده می‌توانند در دورهٔ منتشرشده ثبت‌نام کنند.'
+                    : 'روش ثبت‌نام رایگان برای این شعبه غیرفعال است.'),
         ]);
     }
 
