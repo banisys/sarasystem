@@ -34,9 +34,9 @@ use Modules\Exam\Models\QuestionBank;
 
 class ExamForm
 {
-    public static function configure(Schema $schema, bool $forSession = false): Schema
+    public static function configure(Schema $schema, bool $forSession = false, bool $formalSession = false): Schema
     {
-        $graded = fn (Get $get, ?Exam $record): bool => ! ($record?->is_practice ?? $get('is_practice'));
+        $graded = fn (Get $get, ?Exam $record): bool => $formalSession || ! ($record?->is_practice ?? $get('is_practice'));
 
         return $schema
             ->components([
@@ -50,6 +50,7 @@ class ExamForm
                             ->columnSpanFull(),
                         Toggle::make('is_practice')
                             ->label('آزمون تمرینی')
+                            ->hidden($formalSession)
                             ->helperText('شرکت مکرر بدون ثبت نمره، با امکان مشاهدهٔ پاسخ درست')
                             ->default(false)
                             ->disabledOn('edit')

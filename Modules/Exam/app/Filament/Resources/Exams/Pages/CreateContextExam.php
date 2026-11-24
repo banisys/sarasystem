@@ -15,6 +15,7 @@ use Modules\Exam\Services\ContextExams;
 use Modules\Exam\Services\ExamPaperPreview;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
+use Modules\Exam\Support\SessionExamSettings;
 
 class CreateContextExam extends CreateExam
 {
@@ -61,7 +62,7 @@ class CreateContextExam extends CreateExam
 
     public function form(Schema $schema): Schema
     {
-        return ExamForm::configure($schema, forSession: true);
+        return ExamForm::configure($schema, forSession: true, formalSession: $this->examContext()->isFormalSession());
     }
 
     protected function getHeaderActions(): array
@@ -91,6 +92,10 @@ class CreateContextExam extends CreateExam
     {
         $context = $this->examContext();
         app(ContextExams::class)->ensureCanCreate($context, 'data.title');
+        if ($context->isFormalSession()) {
+            $data = SessionExamSettings::FORMAL_DEFAULTS + $data;
+        }
+
         $exam = new Exam($data);
         $exam->forceFill([
             'context_type' => $context->type,

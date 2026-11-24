@@ -100,14 +100,33 @@ class SessionExamsTest extends TestCase
     {
         $formal = ClassSession::factory()->for($this->session->classroom)->taughtBy($this->teacher)
             ->create(['kind' => SessionKind::Exam]);
-        $this->assign($formal);
+        $this->asTeacher();
+        $this->get($this->url($formal))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('context.can_create', true)
+            ->where('settings_form.formal_session', true));
+
+        $payload = $this->payload() + ['is_practice' => true, 'allow_late_start' => true];
+        $this->post($this->url($formal), $payload)->assertSessionHasNoErrors()->assertRedirect($this->url($formal));
+        $exam = Exam::query()->where('context_type', 'class-session')->where('context_id', $formal->id)->sole();
+        $this->assertFalse($exam->is_practice);
+        $this->assertFalse($exam->allow_late_start);
+        $this->assertSame(20.0, $exam->total_score);
+
+        $this->patch(route('exams.context.settings.update', ['class-session', $formal->id, $exam]), [
+            'title' => 'عنوان اصلاح‌شده', 'duration_minutes' => 15, 'total_score' => 20, 'passing_score' => 12,
+            'allow_late_start' => true,
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('عنوان اصلاح‌شده', $exam->refresh()->title);
+        $this->assertFalse($exam->allow_late_start);
 
         $this->get($this->url($formal))->assertInertia(fn (AssertableInertia $page) => $page->where('context.can_create', false));
         $this->post($this->url($formal), $this->payload())->assertSessionHasErrors('banks');
         $this->assertSame(1, Exam::query()->where('context_type', 'class-session')->where('context_id', $formal->id)->count());
 
         $this->assign();
-        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('context.can_create', true));
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('context.can_create', true)
+            ->where('settings_form.formal_session', false));
         $this->post($this->url(), $this->payload())->assertSessionHasNoErrors()->assertRedirect($this->url());
         $this->assertSame(2, Exam::query()->where('context_type', 'class-session')->where('context_id', $this->session->id)->count());
     }

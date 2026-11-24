@@ -14,7 +14,7 @@ Instructors need to create practice from their question banks. Learners should b
 
 ## Decision
 
-Use B. Standalone and session exam creation offer «آزمون تمرینی». Existing exams default to graded mode. The mode is fixed when the exam is created so that revealing a solution can never change the scoring contract of its attempts.
+Use B. Standalone exams and exams created in teaching sessions offer «آزمون تمرینی». Formal exam sessions accept graded exams only ([ADR 0107](0107-single-exam-and-staff-paper.md)). The mode is fixed when the exam is created so that revealing a solution can never change the scoring contract of its attempts.
 
 Practice supports unlimited starts inside the exam's configured availability. Each start uses the existing question selection and timing rules. Submitting or timing out closes the attempt and keeps the learner's answers. Practice skips automatic scoring, never enters manual grading, and stays out of grading results. Staff can still see the number of attempts on the exam.
 

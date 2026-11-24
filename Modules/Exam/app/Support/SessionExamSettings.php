@@ -8,6 +8,11 @@ use Modules\Exam\Enums\RetakePolicy;
 
 class SessionExamSettings
 {
+    public const array FORMAL_DEFAULTS = [
+        'is_practice' => false,
+        'allow_late_start' => false,
+    ];
+
     public const array DEFAULTS = [
         'title' => '',
         'exam_group_id' => null,
@@ -27,13 +32,13 @@ class SessionExamSettings
         'shuffle_options' => false,
     ];
 
-    public static function rules(bool $practice = false): array
+    public static function rules(bool $practice = false, bool $formal = false): array
     {
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:20000'],
             'duration_minutes' => ['required', 'integer', 'between:1,1440'],
-            'allow_late_start' => ['sometimes', 'required', 'boolean'],
+            'allow_late_start' => [Rule::excludeIf($formal), 'sometimes', 'required', 'boolean'],
             'grace_minutes' => ['sometimes', 'required', 'integer', 'between:0,60'],
             'total_score' => [Rule::excludeIf($practice), 'required', 'numeric', 'between:1,1000'],
             'passing_score' => [Rule::excludeIf($practice), 'required', 'numeric', 'min:0', 'lte:total_score'],

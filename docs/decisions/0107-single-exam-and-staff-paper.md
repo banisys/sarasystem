@@ -13,6 +13,8 @@ A dated class session of kind Exam represents one formal sitting. Staff need a q
 ## Decision
 Both exam creation flows check for an existing exam while holding the branch row lock in the save transaction. The rule applies to sessions of kind Exam. Legacy duplicate records and results remain available through the existing management flows. The modal chooses the latest published exam, or the latest draft if none is published.
 
+New exams in a session of kind Exam are graded and use the session's saved closing time. The creation forms omit practice and late start. The user-panel settings editor also omits both options and preserves any values already saved on legacy exams.
+
 The exam session's «برگهٔ آزمون جلسه» action ([ADR 0109](0109-exam-scheduling-from-class-calendar.md)) opens the printable sheet without navigation. Active employees in the branch who already have branch panel access may open it without class or exam permissions. Those employees see only the paper on this page unless the existing class policy also allows the session details. Class managers who can see the session retain the paper action. The Employee integration uses the optional core directory contract.
 
 ## Consequences

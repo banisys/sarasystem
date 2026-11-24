@@ -495,6 +495,7 @@ class ClassSchedulesTest extends TestCase
         $this->get($url)->assertOk()->assertSee(['ساخت آزمون جلسه', $this->classroom->title, $bank->title, $group->title]);
 
         Livewire::test(CreateContextExam::class, $params)
+            ->assertFormFieldIsHidden('is_practice')
             ->assertFormFieldIsHidden('starts_at')
             ->assertFormFieldIsHidden('ends_at')
             ->assertFormFieldIsHidden('participantUsers')
@@ -510,6 +511,8 @@ class ClassSchedulesTest extends TestCase
             ->assertRedirect($returnUrl);
 
         $exam = Exam::query()->sole();
+        $this->assertFalse($exam->is_practice);
+        $this->assertFalse($exam->allow_late_start);
         $this->assertSame('آزمون این جلسه', $exam->title);
         $this->assertSame($group->id, $exam->exam_group_id);
         $this->assertSame($this->west->id, $exam->tenant_id);

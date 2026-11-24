@@ -21,4 +21,9 @@ readonly class ExamContext
         public ?string $singleExamSessionUrl = null,
         public ?string $classTitle = null,
     ) {}
+
+    public function isFormalSession(): bool
+    {
+        return $this->singleExamSessionUrl !== null;
+    }
 }

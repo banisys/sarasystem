@@ -21,7 +21,7 @@ This is step 5 of the classes plan ([ADR 0022](0022-classes.md)). Steps 2–4 bu
   - `GET /my-classes/sessions/{session}` (`Class::Session`):
     - «جزئیات جلسه» opens first with session details, the online link and the user's own attendance.
     - «حضور و غیاب» shows the attendance form for staff who may use it.
-    - «مطالب و تکلیف» shows the content form or the session's topics, homework and signed material links. Learners submit homework here when eligible.
+    - «مطالب و تکلیف» shows the content form or the session's topics, homework and signed material links for teaching sessions. Learners submit homework here when eligible. Exam sessions omit this tab.
     - «تکالیف دریافتی» follows for staff who may grade homework.
   - `POST …/attendance` and `POST …/content`: the same services as the admin actions. Their refusals come back as a `form` error. The content form takes the due date as a Jalali date (`JalaliDateInput`) and files directly.
 - **Service** [MyClasses](../../Modules/Class/app/Services/MyClasses.php): the user's sessions query, whether they may see a session, their role in it, and the calendar data.

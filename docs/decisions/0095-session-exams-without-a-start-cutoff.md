@@ -14,7 +14,7 @@ An eligible learner may need to take a published exam after the class session en
 
 ## Decision
 
-Store a Boolean on the exam, off by default. The session exam form allows enabling it during creation or from the exam list before the first attempt, under the existing settings permissions. The saved opening time still applies. With the option enabled, each attempt gets the configured duration from its own start, even if that duration extends past the session end.
+Store a Boolean on the exam, off by default. For teaching sessions, the session exam form allows enabling it during creation or from the exam list before the first attempt, under the existing settings permissions. Formal exam sessions omit the option ([ADR 0107](0107-single-exam-and-staff-paper.md)). The saved opening time still applies. With the option enabled, each attempt gets the configured duration from its own start, even if that duration extends past the session end.
 
 ## Consequences
 

@@ -54,7 +54,7 @@ const tabs = computed(() => [
     { key: 'details', label: 'جزئیات جلسه', icon: 'document', badge: null },
     ...(props.reminderTimeline ? [{ key: 'reminders', label: 'یادآوری‌های جلسه', icon: 'clipboard', badge: null }] : []),
     ...(props.attendance ? [{ key: 'attendance', label: 'حضور و غیاب', icon: 'users', badge: props.attendance.length }] : []),
-    { key: 'content', label: 'مطالب و تکلیف', icon: 'book', badge: null },
+    ...(!props.session.is_exam ? [{ key: 'content', label: 'مطالب و تکلیف', icon: 'book', badge: null }] : []),
     ...(props.submissions ? [{ key: 'submissions', label: 'تکالیف دریافتی', icon: 'clipboard', badge: `${handedIn.value}/${props.submissions.length}` }] : []),
 ]);
 const tab = ref('details');

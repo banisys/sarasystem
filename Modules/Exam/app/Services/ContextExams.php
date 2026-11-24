@@ -24,7 +24,7 @@ class ContextExams
     /** Both creation paths call this inside their save transaction. */
     public function ensureCanCreate(ExamContext $context, string $errorField): void
     {
-        if ($context->singleExamSessionUrl === null) {
+        if (! $context->isFormalSession()) {
             return;
         }
 
@@ -90,6 +90,10 @@ class ContextExams
             }
 
             ksort($selections);
+            if ($context->isFormalSession()) {
+                $data = SessionExamSettings::FORMAL_DEFAULTS + $data;
+            }
+
             $exam = new Exam(array_intersect_key($data, SessionExamSettings::DEFAULTS));
             $exam->forceFill([
                 'context_type' => $context->type,

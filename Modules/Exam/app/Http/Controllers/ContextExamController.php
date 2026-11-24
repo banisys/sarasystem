@@ -59,8 +59,9 @@ class ContextExamController extends Controller
 
         return Inertia::render('Exam::Context', [
             'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage,
-                'can_create' => $host->canManage && ($host->singleExamSessionUrl === null || $records->isEmpty())],
+                'can_create' => $host->canManage && (! $host->isFormalSession() || $records->isEmpty())],
             'settings_form' => $host->canManage ? [
+                'formal_session' => $host->isFormalSession(),
                 'defaults' => SessionExamSettings::DEFAULTS,
                 'labels' => SessionExamSettings::labels(),
                 'exam_groups' => $groups->values(),
@@ -102,8 +103,9 @@ class ContextExamController extends Controller
     public function store(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): RedirectResponse
     {
         $host = $this->context($request, $type, $context, $contexts, manage: true);
-        $data = $request->validate(SessionExamSettings::rules(practice: $request->boolean('is_practice')) + [
-            'is_practice' => ['sometimes', 'boolean'],
+        $formal = $host->isFormalSession();
+        $data = $request->validate(SessionExamSettings::rules(practice: ! $formal && $request->boolean('is_practice'), formal: $formal) + [
+            'is_practice' => [Rule::excludeIf($formal), 'sometimes', 'boolean'],
             'exam_group_id' => $this->examGroupRules($host),
             'banks' => ['required', 'array', 'list', 'max:10'],
             'banks.*' => ['required', 'array:bank_id,question_count,question_ids'],
@@ -126,7 +128,7 @@ class ContextExamController extends Controller
         $host = $this->context($request, $type, $context, $contexts, manage: true);
         $exam = $exams->query($host)->findOrFail($exam->id);
         abort_unless($exams->mayManageSettings($host, $exam, $request->user()), 403);
-        $settings = $request->validate(SessionExamSettings::rules(practice: $exam->is_practice), attributes: SessionExamSettings::labels());
+        $settings = $request->validate(SessionExamSettings::rules(practice: $exam->is_practice, formal: $host->isFormalSession()), attributes: SessionExamSettings::labels());
         $exams->updateSettings($host, $exam->id, $request->user(), $settings);
 
         return to_route('exams.context', [$type, $context])->with('status', 'تنظیمات آزمون ذخیره شد.');

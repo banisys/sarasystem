@@ -45,7 +45,7 @@ const advanced = computed(() => [
                 </PanelFormField>
             </div>
         </div>
-        <div class="contents @min-[44rem]:grid @min-[44rem]:grid-cols-2 @min-[44rem]:gap-[var(--exam-settings-gap,1rem)]">
+        <div v-if="!settings.formal_session" class="contents @min-[44rem]:grid @min-[44rem]:grid-cols-2 @min-[44rem]:gap-[var(--exam-settings-gap,1rem)]">
             <div class="rounded-lg border border-ui-line p-3">
                 <ElCheckbox v-model="form.is_practice" :disabled="modeLocked" class="panel-wrap-option">
                     <span class="block font-medium">{{ settings.labels.is_practice }}</span>
