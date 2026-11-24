@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Tables;
 
 use App\Auth\Impersonation;
+use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Support\TextFilter;
 use App\Models\Tenant;
@@ -13,6 +14,7 @@ use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
@@ -22,6 +24,12 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->query(fn (): Builder => User::query())
+            ->modifyQueryUsing(function (Builder $query, ListUsers $livewire, bool $isResolvingRecord): void {
+                if ($isResolvingRecord || ! static::canSearchAllBranches() || ! ($livewire->getTableFilterState('all_branches')['isActive'] ?? false)) {
+                    $query->inTenant(Tenant::current());
+                }
+            })
             ->modifyQueryUsing(fn (Builder $query) => $query->withTenantsCount()->with('tenants:id,name'))
             ->columns([
                 TextColumn::make('name')
@@ -51,21 +59,38 @@ class UsersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Filter::make('all_branches')
+                    ->label('جستجو در همه شعبات')
+                    ->toggle()
+                    ->visible(static::canSearchAllBranches(...)),
                 TextFilter::make('name')->label('نام'),
                 TextFilter::make('mobile')->label('موبایل'),
                 TextFilter::make('national_code')->label('کد ملی'),
                 TextFilter::make('email')->label('ایمیل'),
             ])
+            ->recordUrl(fn (User $record): ?string => static::isCurrentTenantMember($record) && UserResource::canEdit($record)
+                ? UserResource::getUrl('edit', ['record' => $record])
+                : null)
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()->visible(static::isCurrentTenantMember(...)),
                 static::impersonateAction(),
                 static::removeFromTenantAction(),
                 // Deleting is done here, not on the edit page (ADR 0006).
                 DeleteAction::make()
                     ->label('حذف حساب')
                     ->modalDescription('حساب کاربری از سامانه و از همه‌ی '.config('sarasystem.tenant_plural_label').' حذف می‌شود. برای برداشتن فقط از این '.config('sarasystem.tenant_label').' «حذف از '.config('sarasystem.tenant_label').'» را بزنید.')
-                    ->visible(fn (User $record): bool => $record->isNot(auth()->user()) && UserResource::canEdit($record)),
+                    ->visible(fn (User $record): bool => static::isCurrentTenantMember($record) && $record->isNot(auth()->user()) && UserResource::canEdit($record)),
             ]);
+    }
+
+    private static function canSearchAllBranches(): bool
+    {
+        return Tenant::current()?->is_primary && UserResource::canViewAny();
+    }
+
+    private static function isCurrentTenantMember(User $record): bool
+    {
+        return $record->tenants->contains(Tenant::current()->getKey());
     }
 
     /**
@@ -79,7 +104,7 @@ class UsersTable
             ->icon(Heroicon::OutlinedArrowRightEndOnRectangle)
             ->requiresConfirmation()
             ->modalDescription('تا وقتی «بازگشت به حساب خودم» را نزنید، همه‌ی کارها به نام این کاربر انجام می‌شود.')
-            ->visible(fn (User $record): bool => Impersonation::canImpersonate(auth()->user(), $record))
+            ->visible(fn (User $record): bool => static::isCurrentTenantMember($record) && Impersonation::canImpersonate(auth()->user(), $record))
             ->action(function (User $record, Component $livewire): void {
                 Impersonation::start(auth()->user(), $record, UserResource::getUrl('index'));
 
@@ -102,7 +127,7 @@ class UsersTable
             ->color('danger')
             ->requiresConfirmation()
             ->modalDescription(fn (User $record): string => "همه‌ی نقش‌های {$record->name} در «".Tenant::current()->name.'» گرفته می‌شود. حساب کاربر و عضویت او در جاهای دیگر باقی می‌ماند.')
-            ->visible(fn (User $record): bool => $record->isNot(auth()->user()) && UserResource::canEdit($record))
+            ->visible(fn (User $record): bool => static::isCurrentTenantMember($record) && $record->isNot(auth()->user()) && UserResource::canEdit($record))
             ->action(fn (User $record) => $record->roles()->detach());
     }
 }

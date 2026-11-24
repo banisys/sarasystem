@@ -23,6 +23,8 @@ Use it as the reference for existing behaviour, data model and business rules. *
 - Deployment notes: `../LMS/docs/deploy.md` (dump/import, broken legacy views `vw_payments*`)
 
 ## Key architectural concepts in LMS
+
+- The users list's all-instances search toggle was ported to SaraSystem's [users table](../app/Filament/Resources/Users/Tables/UsersTable.php) for the primary tenant ([ADR 0130](decisions/0130-primary-tenant-user-search.md)).
 - **Instance (multi-tenant):** the `instances` table holds about 34 instances. Each school branch is an instance (`marzdaran1`, `resalat3`, `hafez1`, `saadatabad2`, `tizhoshan`, `saratech`, …). There are also system instances (`www`, `cpadmin`, `api`, `admin`) and dead ones (`kish`, `turkey`, `dubai`, `tourism`, …). Most tables carry an `instance_id`.
 - **Instance detection:** the `getInstanceObject` singleton detects the instance from the request (`Core\Http\Middleware\Loader`, `App\Http\Middleware\RefreshInstanceContext`). Admins switch instance, year and school from the topbar switchers. Data is then scoped by the current instance and the current academic year.
 - **Access:** `BridgeHelper::getAccess()` checks roles (`roles`, `user_roles`), permissions (`permissions`, `role_permissions`) and per-record `model_permissions`. Admins can work only in instances they are allowed (`getAdminInstancesId()`).

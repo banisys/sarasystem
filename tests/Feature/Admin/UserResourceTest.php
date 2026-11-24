@@ -6,6 +6,7 @@ use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Schemas\UserForm;
+use App\Filament\Resources\Users\UserResource;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -71,6 +72,49 @@ class UserResourceTest extends TestCase
             ->filterTable('mobile', ['value' => '۰۹۳۵'])
             ->assertCanSeeTableRecords([$reza])
             ->assertCanNotSeeTableRecords([$sara]);
+    }
+
+    public function test_the_primary_tenant_can_search_all_branches_without_granting_record_access(): void
+    {
+        $primary = Tenant::factory()->create(['is_primary' => true]);
+        $this->makeStaff($this->manager, $primary);
+        $this->grantRole($this->manager, $primary, 'manager');
+        $member = User::factory()->create(['name' => 'آتنا احمدی']);
+        $this->grantRole($member, $primary, 'teacher');
+        $outsider = User::factory()->create(['name' => 'آتنا رضوی']);
+        $this->grantRole($outsider, $this->otherTenant, 'teacher');
+        $this->actingInPanel($this->manager, $primary);
+
+        $list = Livewire::test(ListUsers::class)
+            ->assertTableFilterVisible('all_branches')
+            ->assertCanSeeTableRecords([$member])
+            ->assertCanNotSeeTableRecords([$outsider])
+            ->filterTable('all_branches')
+            ->assertCanSeeTableRecords([$member, $outsider])
+            ->filterTable('name', ['value' => 'رضوی'])
+            ->assertCanSeeTableRecords([$outsider])
+            ->assertCanNotSeeTableRecords([$member]);
+
+        $editUrl = UserResource::getUrl('edit', ['record' => $outsider], tenant: $primary);
+        $list->assertDontSee($editUrl);
+        $this->assertNull($list->instance()->getTableRecord((string) $outsider->getKey()));
+        $this->get($editUrl)->assertNotFound();
+
+        $list->removeTableFilter('all_branches')->assertCanNotSeeTableRecords([$outsider]);
+    }
+
+    public function test_another_branch_cannot_enable_the_all_branches_filter(): void
+    {
+        $outsider = User::factory()->create();
+        $this->grantRole($outsider, $this->otherTenant, 'teacher');
+        $this->actingInPanel($this->manager, $this->tenant);
+
+        Livewire::withQueryParams(['filters' => ['all_branches' => ['isActive' => true]]])
+            ->test(ListUsers::class)
+            ->assertSet('tableFilters.all_branches.isActive', true)
+            ->assertTableFilterHidden('all_branches')
+            ->assertCanSeeTableRecords([$this->manager])
+            ->assertCanNotSeeTableRecords([$outsider]);
     }
 
     public function test_the_list_shows_in_how_many_tenants_each_user_is_a_member(): void
