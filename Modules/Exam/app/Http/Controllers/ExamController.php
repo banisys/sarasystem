@@ -63,6 +63,7 @@ class ExamController extends Controller
         $blockedReason = $attempt === null ? $taking->blockedReason($exam, $user) : null;
         $retakesClosed = in_array($blockedReason, [ExamTaking::BLOCKED_ENDED, ExamTaking::BLOCKED_NO_ATTEMPTS_LEFT, ExamTaking::BLOCKED_PASSED], true);
         $exam->load('sections');
+        $context = $exam->context_type === null ? null : app(ExamContexts::class)->resolve($exam->context_type, $exam->context_id, $user);
 
         return Inertia::render('Exam::Show', [
             'exam' => [
@@ -71,6 +72,7 @@ class ExamController extends Controller
                 'is_practice' => $exam->is_practice,
                 'description' => $exam->description,
                 'context_url' => $exam->context_type === null ? null : app(ExamContexts::class)->url($exam->context_type, $exam->context_id),
+                'context_label' => $context?->hostLabel,
                 'starts_at' => $exam->starts_at?->toIso8601String(),
                 'ends_at' => $exam->participationEndsAt()?->toIso8601String(),
                 'allow_late_start' => $exam->allow_late_start,

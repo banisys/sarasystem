@@ -12,14 +12,15 @@ readonly class ExamContext
         public int $id,
         public int $tenantId,
         public string $title,
-        public CarbonInterface $startsAt,
-        public CarbonInterface $endsAt,
+        public ?CarbonInterface $startsAt,
+        public ?CarbonInterface $endsAt,
         public string $backUrl,
         public bool $canManage,
         public bool $canParticipate,
         public ?string $adminCreateReturnUrl = null,
         public ?string $singleExamSessionUrl = null,
         public ?string $classTitle = null,
+        public string $hostLabel = 'جلسه',
     ) {}
 
     public function isFormalSession(): bool

@@ -60,7 +60,7 @@ class ContextExamController extends Controller
 
         return Inertia::render('Exam::Context', [
             'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage,
-                'paper_url' => $host->paperUrl(),
+                'paper_url' => $host->paperUrl(), 'host_label' => $host->hostLabel, 'uses_host_window' => $host->startsAt !== null || $host->endsAt !== null,
                 'can_create' => $host->canManage && (! $host->isFormalSession() || $records->isEmpty())],
             'settings_form' => $host->canManage ? [
                 'formal_session' => $host->isFormalSession(),
@@ -140,7 +140,7 @@ class ContextExamController extends Controller
         ]);
         $exams->generate($host, $data, $request->user(), $library);
 
-        return to_route('exams.context', [$type, $context])->with('status', 'پیش‌نویس آزمون جلسه ساخته شد.');
+        return to_route('exams.context', [$type, $context])->with('status', "پیش‌نویس آزمون {$host->hostLabel} ساخته شد.");
     }
 
     public function updateSettings(Request $request, string $type, int $context, Exam $exam, ExamContexts $contexts, ContextExams $exams): RedirectResponse

@@ -1,0 +1,64 @@
+<?php
+
+namespace Modules\Course\Models;
+
+use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Course\Database\Factories\CourseFactory;
+
+#[Fillable(['course_category_id', 'title', 'description', 'is_published', 'allows_self_enrollment'])]
+class Course extends Model
+{
+    /** @use HasFactory<CourseFactory> */
+    use BelongsToTenant, HasFactory;
+
+    protected static function newFactory(): CourseFactory
+    {
+        return CourseFactory::new();
+    }
+
+    /** @return BelongsTo<CourseCategory, $this> */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(CourseCategory::class, 'course_category_id');
+    }
+
+    /** @return HasMany<CourseSection, $this> */
+    public function sections(): HasMany
+    {
+        return $this->hasMany(CourseSection::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** @return HasMany<CourseLesson, $this> */
+    public function lessons(): HasMany
+    {
+        return $this->hasMany(CourseLesson::class);
+    }
+
+    /** @return HasMany<CourseEnrollment, $this> */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class);
+    }
+
+    /** @return HasMany<CourseInstructor, $this> */
+    public function instructors(): HasMany
+    {
+        return $this->hasMany(CourseInstructor::class);
+    }
+
+    public function scopePublished(Builder $query): void
+    {
+        $query->where('is_published', true);
+    }
+
+    protected function casts(): array
+    {
+        return ['is_published' => 'boolean', 'allows_self_enrollment' => 'boolean'];
+    }
+}

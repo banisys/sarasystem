@@ -41,7 +41,7 @@ function start() {
                 :description="exam.is_practice ? 'آزمون تمرینی · بدون نمره' : undefined"
                 icon="clipboard"
                 :back-href="attempt ? null : exam.context_url || route('exams.index')"
-                :back-label="exam.context_url ? 'آزمون‌های جلسه' : 'همه‌ی آزمون‌ها'"
+                :back-label="exam.context_url ? `آزمون‌های ${exam.context_label ?? 'جلسه'}` : 'همه‌ی آزمون‌ها'"
             />
 
             <PanelNotice v-for="(message, key) in page.props.errors" :key="key" tone="error">{{ message }}</PanelNotice>

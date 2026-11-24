@@ -8,5 +8,6 @@
     "Class": true,
     "School": true,
     "Tutorial": true,
-    "Campus": true
+    "Campus": true,
+    "Course": true
 }

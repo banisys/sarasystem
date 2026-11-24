@@ -101,6 +101,15 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Electronic signature | امضای الکترونیکی | Accepting an issued contract in the user panel with an SMS code sent to one's own mobile; time, mobile and IP are kept. Not a certificate-based digital signature. |
 | Step extension | تنظیمات اضافه‌ی مرحله | Work a module adds to workflow steps, e.g. documents to upload or check, or contracts to prepare, before the step can be approved (`StepExtension`, ADR 0019, ADR 0020). |
 
+## Self-paced courses ([ADR 0135](decisions/0135-self-paced-courses.md))
+
+| Term | Persian | Meaning |
+|---|---|---|
+| Course | دورهٔ آموزشی | A branch-owned program of on-demand lessons. Learners enroll and progress independently of scheduled class sessions. |
+| Course section | بخش دوره | An ordered group of lessons within a course. |
+| Lesson | درس دوره | A unit of learning that can contain text, video, attachments and exams. |
+| Course enrollment | ثبت‌نام دوره | A branch member’s access to a course’s lessons and progress, with optional access dates and revocation. |
+
 ## Classes (`Class` module, [ADR 0022](decisions/0022-classes.md))
 | Term | Persian | Meaning |
 |---|---|---|

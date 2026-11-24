@@ -155,20 +155,20 @@ function remove() {
                 icon="clipboard"
                 :back-href="context.back_url"
                 full-page-back
-                back-label="بازگشت به جلسه"
+                :back-label="`بازگشت به ${context.host_label}`"
             >
                 <template v-if="context.paper_url" #actions>
                     <PanelPrintPreview :url="context.paper_url" title="برگهٔ آزمون جلسه" print-label="چاپ آزمون" />
                 </template>
             </UiPageHeader>
-            <ElTabs v-model="tab" class="session-exam-tabs pt-4" aria-label="بخش‌های آزمون‌های جلسه">
+            <ElTabs v-model="tab" class="session-exam-tabs pt-4" :aria-label="`بخش‌های آزمون‌های ${context.host_label}`">
                 <ElTabPane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label" lazy>
                     <template #label>
                         <PanelIcon :name="item.icon" class="size-4 shrink-0" />
                         {{ item.label }}
                     </template>
                     <section v-if="item.key === 'exams'" class="grid gap-3 sm:gap-4" :aria-label="item.label">
-                        <PanelEmpty v-if="!exams.length" description="آزمونی برای این جلسه ثبت نشده است." />
+                        <PanelEmpty v-if="!exams.length" :description="`آزمونی برای این ${context.host_label} ثبت نشده است.`" />
                         <PanelCard v-for="exam in exams" :key="exam.id" body-class="grid gap-3 [--el-card-padding:0.875rem] sm:gap-4 sm:[--el-card-padding:1.25rem]">
                             <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                                 <h2 class="min-w-0 flex-1 basis-full wrap-break-word font-semibold sm:basis-48">{{ exam.title }}</h2>
@@ -207,7 +207,7 @@ function remove() {
                             </ElForm>
                         </PanelDialog>
                         <PanelConfirm v-model="removalOpen" title="حذف آزمون" confirm-label="حذف آزمون" danger :busy="deletion.processing" @confirm="remove">
-                            <p>«{{ removingExam?.title }}» از این جلسه حذف شود؟</p>
+                            <p>«{{ removingExam?.title }}» از این {{ context.host_label }} حذف شود؟</p>
                             <PanelNotice v-if="deletion.errors.delete_exam" tone="error" class="mt-3">{{ deletion.errors.delete_exam }}</PanelNotice>
                         </PanelConfirm>
                     </section>
@@ -243,7 +243,7 @@ function remove() {
                                 <PanelButton v-if="generation.banks.length < Math.min(10, banks.filter((bank) => bank.question_count > 0).length)" variant="link" class="justify-self-start" @click="generation.banks.push(bankRow())">افزودن بانک دیگر</PanelButton>
                             </div>
                             <div class="grid justify-items-start gap-4">
-                                <p class="text-sm text-gray-600 panel-dark:text-ui-muted">سؤال‌ها به‌طور پیش‌فرض تصادفی و بدون تکرار انتخاب می‌شوند. برای انتخاب دستی، «انتخاب سؤال‌ها» را بزنید. زمان برگزاری از جلسه گرفته می‌شود.</p>
+                                <p class="text-sm text-gray-600 panel-dark:text-ui-muted">سؤال‌ها به‌طور پیش‌فرض تصادفی و بدون تکرار انتخاب می‌شوند. برای انتخاب دستی، «انتخاب سؤال‌ها» را بزنید. <span v-if="context.uses_host_window">زمان برگزاری از {{ context.host_label }} گرفته می‌شود.</span></p>
                                 <p v-for="(error, key) in generation.errors" :key="key" class="text-sm text-red-700 panel-dark:text-red-300" role="alert">{{ error }}</p>
                                 <PanelButton type="submit" :disabled="generation.processing">
                                     {{ generation.processing ? 'در حال ساخت…' : generation.is_practice ? 'ساخت پیش‌نویس آزمون تمرینی' : 'ساخت پیش‌نویس آزمون' }}

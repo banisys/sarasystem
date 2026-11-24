@@ -1,0 +1,17 @@
+{
+    "name": "Course",
+    "alias": "course",
+    "description": "دوره‌های آموزشی، درس‌ها، ثبت‌نام و پیشرفت فراگیران",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Course\\Providers\\CourseServiceProvider"
+    ],
+    "files": [],
+    "sitemap": {
+        "label": "دوره‌های آموزشی",
+        "group": "education",
+        "surfaces": ["admin", "user", "public"],
+        "connections": [{ "target": "Exam", "label": "آزمون‌های درس" }]
+    }
+}
