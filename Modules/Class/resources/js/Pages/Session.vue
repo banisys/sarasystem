@@ -10,6 +10,7 @@ import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/input/style/css';
 import 'element-plus/es/components/link/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelPrintPreview from '@/Components/Ui/PanelPrintPreview.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref, useTemplateRef, watch } from 'vue';
@@ -197,10 +198,14 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                 <ElTag v-if="session.kind_label !== 'عادی'" type="info" round>{{ session.kind_label }}</ElTag>
                                 <ElTag :type="statusBadge[session.status]" round>{{ session.status_label }}</ElTag>
                             </div>
-                            <PanelButton v-if="session.exams_url" :href="session.exams_url" variant="outline-brand" class="border-2">
-                                <PanelIcon name="clipboard" class="size-5" />
-                                آزمون‌های جلسه
-                            </PanelButton>
+                            <div v-if="session.exams_url || session.exam_paper_url" class="flex flex-wrap items-center gap-2">
+                                <PanelButton v-if="session.exams_url" :href="session.exams_url" variant="outline-brand" class="border-2">
+                                    <PanelIcon name="clipboard" class="size-5" />
+                                    آزمون‌های جلسه
+                                </PanelButton>
+                                <PanelPrintPreview v-if="session.exam_paper_url" :url="session.exam_paper_url"
+                                    title="برگهٔ آزمون جلسه" print-label="چاپ آزمون" />
+                            </div>
                         </div>
 
                         <dl class="grid gap-px bg-gray-100 panel-dark:bg-white/8 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">

@@ -7,9 +7,7 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Filament\Resources\Exams\ExamResource;
-use Modules\Exam\Models\Exam;
 use Modules\Exam\Services\ExamPaperPreview;
 
 /** Admin controls exposed to session hosts when Exam is enabled. */
@@ -17,7 +15,7 @@ class SessionExamAdmin
 {
     public function manageAction(string $type, int $id, Closure $canCreate): Action
     {
-        $exam = $this->orderedExams($type, $id)->first();
+        $exam = app(ExamPaperPreview::class)->sessionExam($type, $id);
 
         return Action::make('sessionExam')
             ->label('آزمون جلسه')
@@ -43,16 +41,11 @@ class SessionExamAdmin
             ->modalContent(function (ExamPaperPreview $preview) use ($type, $id, $canRead, $classTitle, $startsAt): View {
                 abort_unless($canRead(), 403);
 
-                $exam = $this->orderedExams($type, $id)->first();
+                $exam = $preview->sessionExam($type, $id);
 
                 return $exam === null
                     ? view('exam::filament.exam-paper-preview', ['paper' => ['error' => 'برای این جلسه هنوز آزمونی تعریف نشده است.']])
                     : $preview->savedModal($exam, $classTitle, $startsAt);
             });
-    }
-
-    private function orderedExams(string $type, int $id): Builder
-    {
-        return Exam::query()->where('context_type', $type)->where('context_id', $id)->orderByDesc('is_published')->latest('id');
     }
 }

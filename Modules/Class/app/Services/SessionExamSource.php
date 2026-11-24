@@ -89,8 +89,17 @@ class SessionExamSource implements ExamContextSource
 
     public function link(ClassSession $session, User $user): ?string
     {
-        return $this->resolve($session->getKey(), $user) === null
-            ? null
-            : app(ExamContexts::class)->url(self::TYPE, $session->getKey());
+        return $this->panelLinks($session, $user)['exams_url'];
+    }
+
+    /** @return array{exams_url: ?string, exam_paper_url: ?string} */
+    public function panelLinks(ClassSession $session, User $user): array
+    {
+        $context = $this->resolve($session->getKey(), $user);
+
+        return [
+            'exams_url' => $context ? app(ExamContexts::class)->url($context->type, $context->id) : null,
+            'exam_paper_url' => $context?->paperUrl(),
+        ];
     }
 }

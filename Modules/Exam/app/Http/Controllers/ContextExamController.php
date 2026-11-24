@@ -24,6 +24,7 @@ use Modules\Exam\Models\ExamGroup;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Modules\Exam\Services\ContextExams;
+use Modules\Exam\Services\ExamPaperPreview;
 use Modules\Exam\Services\ExamTaking;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
@@ -59,6 +60,7 @@ class ContextExamController extends Controller
 
         return Inertia::render('Exam::Context', [
             'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage,
+                'paper_url' => $host->paperUrl(),
                 'can_create' => $host->canManage && (! $host->isFormalSession() || $records->isEmpty())],
             'settings_form' => $host->canManage ? [
                 'formal_session' => $host->isFormalSession(),
@@ -98,6 +100,23 @@ class ContextExamController extends Controller
             ]),
             'results' => $results,
         ]);
+    }
+
+    public function paper(Request $request, string $type, int $context, ExamContexts $contexts, ExamPaperPreview $preview): JsonResponse
+    {
+        $host = $this->context($request, $type, $context, $contexts, manage: true);
+        abort_unless($host->isFormalSession(), 404);
+
+        $exam = $preview->sessionExam($host->type, $host->id);
+        $data = $exam === null
+            ? ['paper' => ['error' => 'برای این جلسه هنوز آزمونی تعریف نشده است.'], 'notice' => null]
+            : $preview->savedPreview($exam, $host->classTitle, $host->startsAt);
+
+        return response()->json([
+            'html' => $data['paper']['error'] === null ? view('exam::filament.exam-paper', ['paper' => $data['paper']])->render() : null,
+            'notice' => $data['notice'],
+            'error' => $data['paper']['error'],
+        ], headers: ['Cache-Control' => 'private, no-store']);
     }
 
     public function store(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): RedirectResponse

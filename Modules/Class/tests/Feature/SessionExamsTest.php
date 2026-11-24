@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Modules\Class\Enums\SessionKind;
+use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\ClassMember;
 use Modules\Class\Models\ClassRole;
 use Modules\Class\Models\Classroom;
@@ -129,6 +130,68 @@ class SessionExamsTest extends TestCase
             ->where('settings_form.formal_session', false));
         $this->post($this->url(), $this->payload())->assertSessionHasNoErrors()->assertRedirect($this->url());
         $this->assertSame(2, Exam::query()->where('context_type', 'class-session')->where('context_id', $this->session->id)->count());
+    }
+
+    public function test_the_exam_manager_can_open_the_printable_paper_from_both_user_panel_pages(): void
+    {
+        $this->session->update(['kind' => SessionKind::Exam]);
+        $url = route('exams.context.paper', ['class-session', $this->session->id]);
+        $this->asTeacher();
+
+        $this->get(route('my-classes.session', $this->session))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('session.exam_paper_url', $url));
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('context.paper_url', $url));
+        $this->getJson($url)->assertOk()
+            ->assertJsonPath('html', null)
+            ->assertJsonPath('error', 'برای این جلسه هنوز آزمونی تعریف نشده است.');
+
+        $exam = $this->assign();
+        $exam->update(['title' => 'برگهٔ آزمون منتشرشده']);
+        Exam::factory()->for($this->tenant)->create([
+            'context_type' => 'class-session',
+            'context_id' => $this->session->id,
+            'title' => 'پیش‌نویس قدیمی',
+            'is_published' => false,
+        ]);
+
+        $response = $this->getJson($url)->assertOk()->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonPath('error', null);
+        $html = $response->json('html');
+        $this->assertStringContainsString('برگهٔ آزمون منتشرشده', $html);
+        $this->assertStringContainsString('جمع نمرات برگه', $html);
+        $this->assertStringNotContainsString('پیش‌نویس قدیمی', $html);
+        $this->assertStringNotContainsString('راه‌حل نمونه', $html);
+    }
+
+    public function test_the_printable_paper_is_limited_to_formal_exam_managers_in_the_current_branch(): void
+    {
+        $url = route('exams.context.paper', ['class-session', $this->session->id]);
+        $this->asTeacher();
+        $this->getJson($url)->assertNotFound();
+
+        $this->session->update(['kind' => SessionKind::Exam]);
+        $this->assign();
+        $this->asLearner();
+        $this->get(route('my-classes.session', $this->session))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('session.exam_paper_url', null));
+        $this->get($this->url())->assertInertia(fn (AssertableInertia $page) => $page->where('context.paper_url', null));
+        $this->getJson($url)->assertForbidden();
+
+        $guardian = User::factory()->create();
+        $this->grantRole($guardian, $this->tenant, config('sarasystem.guardian_role'));
+        $guardian->wards()->attach($this->learner->id, ['relationship' => 'mother']);
+        $this->actingAs($guardian)->get(route('my-classes.session', ['session' => $this->session, 'for' => $this->learner->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('session.exam_paper_url', null));
+        $this->getJson($url)->assertNotFound();
+
+        $otherBranch = Tenant::factory()->create();
+        $this->grantRole($this->teacher, $otherBranch, 'teacher');
+        $this->actingAs($this->teacher)->withSession([ResolveCurrentTenant::SESSION_KEY => $otherBranch->id]);
+        $this->getJson($url)->assertNotFound();
+
+        $this->asTeacher();
+        $this->session->update(['status' => SessionStatus::Cancelled]);
+        $this->getJson($url)->assertNotFound();
     }
 
     public function test_a_session_practice_exam_can_be_generated_and_stays_out_of_grading(): void

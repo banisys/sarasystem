@@ -17,6 +17,8 @@ New exams in a session of kind Exam are graded and use the session's saved closi
 
 The exam session's «برگهٔ آزمون جلسه» action ([ADR 0109](0109-exam-scheduling-from-class-calendar.md)) opens the printable sheet without navigation. Active employees in the branch who already have branch panel access may open it without class or exam permissions. Those employees see only the paper on this page unless the existing class policy also allows the session details. Class managers who can see the session retain the paper action. The Employee integration uses the optional core directory contract.
 
+In the user panel, session exam managers can open and print the same sheet from «جزئیات جلسه» and the session exam page. The preview checks the selected branch and session-management permission when requested. Learner and guardian views do not offer the paper.
+
 ## Consequences
 The paper uses saved questions when present and a representative bank draw for exams that draw questions at attempt time. It omits grading keys. The session details, other admin actions, online participation, and results keep their existing authorization. Regular class sessions still support multiple exams.
 

@@ -27,6 +27,8 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/exams')->
     });
     Route::get('/contexts/{type}/{context}', [ContextExamController::class, 'show'])
         ->withoutMiddleware('tenant')->whereNumber('context')->name('context');
+    Route::get('/contexts/{type}/{context}/paper', [ContextExamController::class, 'paper'])
+        ->whereNumber('context')->name('context.paper');
     Route::post('/contexts/{type}/{context}', [ContextExamController::class, 'store'])->whereNumber('context')->name('context.store');
     Route::get('/contexts/{type}/{context}/banks/{bank}/questions', [ContextExamController::class, 'bankQuestions'])
         ->whereNumber(['context', 'bank'])->name('context.bank-questions');

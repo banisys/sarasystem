@@ -17,6 +17,7 @@ import PanelConfirm from '@/Components/Ui/PanelConfirm.vue';
 import PanelDialog from '@/Components/Ui/PanelDialog.vue';
 import PanelNotice from '@/Components/Ui/PanelNotice.vue';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
+import PanelPrintPreview from '@/Components/Ui/PanelPrintPreview.vue';
 import { computed, ref } from 'vue';
 import { Head, router, useForm, useHttp, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -29,8 +30,9 @@ import { formatDateTime } from '../format.js';
 
 const props = defineProps({ context: Object, banks: Array, exams: Array, results: Object, settings_form: Object });
 const page = usePage();
+const examListTitle = 'آزمون ساخته‌شده';
 const tabs = computed(() => [
-    { key: 'exams', label: 'لیست آزمون‌های ساخته‌شده', icon: 'clipboard' },
+    { key: 'exams', label: examListTitle, icon: 'clipboard' },
     ...(props.context.can_create ? [{ key: 'create', label: 'ساخت آزمون از بانک سؤال', icon: 'book' }] : []),
     ...(props.results ? [{ key: 'results', label: 'نتایج و تصحیح', icon: 'pencil' }] : []),
 ]);
@@ -145,23 +147,27 @@ function remove() {
 
 <template>
     <AppLayout>
-        <Head title="آزمون‌های جلسه" />
+        <Head :title="examListTitle" />
         <div class="space-y-6">
             <UiPageHeader
-                title="آزمون‌های جلسه"
+                :title="examListTitle"
                 :description="context.title"
                 icon="clipboard"
                 :back-href="context.back_url"
                 full-page-back
                 back-label="بازگشت به جلسه"
-            />
+            >
+                <template v-if="context.paper_url" #actions>
+                    <PanelPrintPreview :url="context.paper_url" title="برگهٔ آزمون جلسه" print-label="چاپ آزمون" />
+                </template>
+            </UiPageHeader>
             <ElTabs v-model="tab" class="session-exam-tabs pt-4" aria-label="بخش‌های آزمون‌های جلسه">
                 <ElTabPane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label" lazy>
                     <template #label>
                         <PanelIcon :name="item.icon" class="size-4 shrink-0" />
                         {{ item.label }}
                     </template>
-                    <section v-if="item.key === 'exams'" class="grid gap-3 sm:gap-4" aria-label="لیست آزمون‌های ساخته‌شده">
+                    <section v-if="item.key === 'exams'" class="grid gap-3 sm:gap-4" :aria-label="item.label">
                         <PanelEmpty v-if="!exams.length" description="آزمونی برای این جلسه ثبت نشده است." />
                         <PanelCard v-for="exam in exams" :key="exam.id" body-class="grid gap-3 [--el-card-padding:0.875rem] sm:gap-4 sm:[--el-card-padding:1.25rem]">
                             <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">

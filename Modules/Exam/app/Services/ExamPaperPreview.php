@@ -16,12 +16,23 @@ class ExamPaperPreview
 {
     public function savedModal(Exam $exam, ?string $classTitle, ?CarbonInterface $startsAt): View
     {
-        return view('exam::filament.exam-paper-preview', [
+        return view('exam::filament.exam-paper-preview', $this->savedPreview($exam, $classTitle, $startsAt));
+    }
+
+    public function sessionExam(string $type, int $id): ?Exam
+    {
+        return Exam::query()->where('context_type', $type)->where('context_id', $id)
+            ->orderByDesc('is_published')->latest('id')->first();
+    }
+
+    public function savedPreview(Exam $exam, ?string $classTitle, ?CarbonInterface $startsAt): array
+    {
+        return [
             'paper' => $this->forSaved($exam, $classTitle, $startsAt),
             'notice' => $exam->question_snapshot === null
                 ? 'برگه از سؤال‌های گلچین‌شده و نمونه‌ای از ردیف‌های خودکار تهیه می‌شود. برداشت ردیف‌های خودکار و ترتیب سؤال‌ها در آزمون آنلاین ممکن است متفاوت باشد.'
                 : null,
-        ]);
+        ];
     }
 
     public function forSaved(Exam $exam, ?string $classTitle, ?CarbonInterface $startsAt): array

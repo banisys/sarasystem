@@ -26,4 +26,11 @@ readonly class ExamContext
     {
         return $this->singleExamSessionUrl !== null;
     }
+
+    public function paperUrl(): ?string
+    {
+        return $this->isFormalSession() && $this->canManage
+            ? route('exams.context.paper', [$this->type, $this->id])
+            : null;
+    }
 }

@@ -187,6 +187,8 @@ The admin exam form can combine explicit question selections and automatic draws
 
 Exam creation can enable practice mode for standalone exams and exams in teaching sessions. A formal exam session accepts one new graded exam with the session's closing time ([ADR 0107](decisions/0107-single-exam-and-staff-paper.md)). Practice reuses participant access and question snapshots, skips grading and supports per-question solutions from the learner's own attempt ([ADR 0121](decisions/0121-practice-exams.md)).
 
+The formal session details and exam pages in the user panel give session exam managers the same printable A4 paper used in the admin panel. The exam context authorizes preview requests in the selected branch and the shared paper omits answer keys ([ADR 0107](decisions/0107-single-exam-and-staff-paper.md)).
+
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy

@@ -149,7 +149,9 @@ class MyClassController extends Controller
                 ...$myClasses->sessionCard($session),
                 // Only for the person themselves, not a guardian (ADR 0073).
                 'join_url' => $isOwn && $entry->offers($user, $session) ? route('class.online.enter', $session) : null,
-                'exams_url' => $isOwn && Module::isEnabled('Exam') ? app(SessionExamSource::class)->link($session, $user) : null,
+                ...($isOwn && Module::isEnabled('Exam')
+                    ? app(SessionExamSource::class)->panelLinks($session, $user)
+                    : ['exams_url' => null, 'exam_paper_url' => null]),
                 'when' => SessionActions::when($session),
                 'moved_from' => $session->wasMoved() ? SessionActions::when($session, original: true) : null,
                 'cancel_reason' => $session->cancel_reason,
