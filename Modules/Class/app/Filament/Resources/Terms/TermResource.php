@@ -38,9 +38,9 @@ class TermResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    protected static ?string $modelLabel = 'دوره‌ی آموزشی';
+    protected static ?string $modelLabel = 'ترم آموزشی';
 
-    protected static ?string $pluralModelLabel = 'دوره‌های آموزشی';
+    protected static ?string $pluralModelLabel = 'ترم‌های آموزشی';
 
     public static function form(Schema $schema): Schema
     {

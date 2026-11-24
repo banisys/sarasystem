@@ -30,7 +30,7 @@ class TermForm
                     ->required(),
                 Toggle::make('is_active')
                     ->label('فعال')
-                    ->helperText('کلاس جدید فقط در دوره‌ی فعال ساخته می‌شود.')
+                    ->helperText('کلاس جدید فقط در ترم فعال ساخته می‌شود.')
                     ->default(true),
             ])
             ->columns(2);

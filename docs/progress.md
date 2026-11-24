@@ -24,6 +24,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Done
 - 2026-11-24 — Ported the enrollment methods admin page for manual and free course registration ([ADR 0138](decisions/0138-course-enrollment-methods.md)). Applied the local migration and checked the page and system-map link in the browser. All 24 targeted tests, five checks with Course disabled and Pint passed.
+- 2026-11-24 — Renamed the admin terms page to «ترم‌های آموزشی» and the Course page and navigation group to «دوره‌های خودآموز». Verified both pages in the browser. All 23 targeted tests and Pint passed.
 - 2026-11-24 — Removed «توضیح کوتاه» from course teacher profiles and dropped the `course_teachers.short_description` column ([ADR 0137](decisions/0137-course-teacher-profiles.md)). Applied the local migration. All 16 Course tests and Pint passed.
 - 2026-11-24 — Ported the course teacher directory as branch profiles ([ADR 0137](decisions/0137-course-teacher-profiles.md)). Added the legacy teaching fields, assignment counts, and an active status that controls new assignments. Applied the local migration and checked the form and system-map links. All 16 Course tests, 14 disabled-module checks and Pint passed.
 - 2026-11-24 — Removed visible aliases from course category tree rows. Verified the tree with local samples, including the inactive label. All four category tests and Pint passed.

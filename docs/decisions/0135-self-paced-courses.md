@@ -24,6 +24,8 @@ When Exam is enabled, its context contract exposes lesson exams. Course editors 
 
 ## Consequences
 
+In the admin panel, «دوره‌های خودآموز» identifies on-demand learning and «ترم‌های آموزشی» identifies the calendar periods used by scheduled classes ([ADR 0022](0022-classes.md)).
+
 Branch administrators control the availability and display names of supported enrollment methods through [ADR 0138](0138-course-enrollment-methods.md).
 
 SaraSystem uses branches and user accounts for the organizational and instructor roles of the legacy Academy and Teacher records. Branch teacher profiles for those accounts were added in [ADR 0137](0137-course-teacher-profiles.md). Category trees were added in [ADR 0136](0136-course-category-trees.md). Paid and package enrollments, individual activity sales, related-course merchandising, gallery and site widgets, and inline video quizzes remain outside this port. Data import needs a separate mapping for branches, accounts and stored files.

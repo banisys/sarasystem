@@ -40,7 +40,7 @@ class ClassroomsTable
                     ->placeholder('—')
                     ->toggleable(),
                 TextColumn::make('term.title')
-                    ->label('دوره')
+                    ->label('ترم')
                     ->placeholder('—'),
                 // Columns other modules add, e.g. the grade (ADR 0031).
                 ...ClassroomExtensions::components('columns'),
@@ -55,7 +55,7 @@ class ClassroomsTable
             ->filters([
                 TextFilter::make('title')->label('عنوان'),
                 SelectFilter::make('term_id')
-                    ->label('دوره')
+                    ->label('ترم')
                     ->options(fn (): array => Term::definedTerms()->orderByDesc('starts_on')->pluck('title', 'id')->all()),
                 TernaryFilter::make('is_active')->label('فعال'),
                 ...ClassroomExtensions::components('filters'),

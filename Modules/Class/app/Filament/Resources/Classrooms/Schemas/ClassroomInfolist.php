@@ -21,7 +21,7 @@ class ClassroomInfolist
                     ->schema([
                         TextEntry::make('title')->label('عنوان'),
                         TextEntry::make('code')->label('کد')->placeholder('—'),
-                        TextEntry::make('term.title')->label('دوره‌ی آموزشی')->placeholder('—'),
+                        TextEntry::make('term.title')->label('ترم آموزشی')->placeholder('—'),
                         TextEntry::make('attendees')
                             ->label('شرکت‌کنندگان')
                             ->state(fn (Classroom $record): string => $record->attendeeCount().($record->capacity !== null ? ' از '.$record->capacity : '')),

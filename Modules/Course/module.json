@@ -1,7 +1,7 @@
 {
     "name": "Course",
     "alias": "course",
-    "description": "دوره‌های آموزشی، درس‌ها، ثبت‌نام و پیشرفت فراگیران",
+    "description": "دوره‌های خودآموز، درس‌ها، ثبت‌نام و پیشرفت فراگیران",
     "keywords": [],
     "priority": 0,
     "providers": [
@@ -9,7 +9,7 @@
     ],
     "files": [],
     "sitemap": {
-        "label": "دوره‌های آموزشی",
+        "label": "دوره‌های خودآموز",
         "group": "education",
         "surfaces": ["admin", "user", "public"],
         "connections": [{ "target": "Exam", "label": "آزمون‌های درس" }]

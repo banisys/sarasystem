@@ -105,7 +105,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 
 | Term | Persian | Meaning |
 |---|---|---|
-| Course | دورهٔ آموزشی | A branch-owned program of on-demand lessons. Learners enroll and progress independently of scheduled class sessions. |
+| Course | دورهٔ خودآموز | A branch-owned program of on-demand lessons. Learners enroll and progress independently of scheduled class sessions. |
 | Course category | دسته‌بندی دوره | A node in the branch catalog tree, used to classify courses and filter the catalog by branch of the tree. |
 | Course section | بخش دوره | An ordered group of lessons within a course. |
 | Lesson | درس دوره | A unit of learning that can contain text, video, attachments and exams. |
@@ -118,7 +118,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Class | کلاس | A group of people of one tenant who meet on a schedule: «هفتم الف», «زبان انگلیسی - مقدماتی ۲», «دوره‌ی ایمنی کارگاه» (`Classroom`). Each session has a delivery mode. A class may have a capacity. |
 | Online platform / online room | بستر کلاس آنلاین / اتاق کلاس آنلاین | Where an online class meets: a link (Google Meet, Skyroom, …) or a server the system talks to (Adobe Connect, «سرور کلاس آنلاین», `OnlineServer`). A class's room (`ClassOnlineRoom`) is in effect from a day on, so a class can move to another platform mid-term ([ADR 0073](decisions/0073-online-class-platforms.md)); on Adobe Connect it is one meeting for the class or one per session ([ADR 0074](decisions/0074-online-room-per-session.md)). |
 | Sub-class | زیرکلاس | A class under another class (one level), e.g. a lab group; its attendees come from the parent class. |
-| Term | دوره‌ی آموزشی | A teaching period of the organization (سال تحصیلی، ترم، دوره), defined in the head office; classes run in one. A school's academic year is a term. |
+| Term | ترم آموزشی | A teaching period defined in the head office. A term can be an academic year, an institute term, or a company training round. |
 | Class role | نقش کلاس | What a person is in a class (فراگیر، مدرس، ناظر، پشتیبان…), separate from system roles; its flags say whether its members are attendees, take attendance or record session content. |
 | Attendee | شرکت‌کننده | A class member whose class role is marked «شرکت‌کننده است»: attendance is taken for them and they fill the capacity. |
 | Class member | عضو کلاس | A user in a class with a class role, from a join date to a leave date (`ClassMember`). |

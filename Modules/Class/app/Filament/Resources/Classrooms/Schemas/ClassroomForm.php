@@ -44,7 +44,7 @@ class ClassroomForm
                     ->maxLength(30)
                     ->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule) => $rule->where('tenant_id', filament()->getTenant()?->getKey())),
                 Select::make('term_id')
-                    ->label('دوره‌ی آموزشی')
+                    ->label('ترم آموزشی')
                     ->options(fn (?Classroom $record): array => Term::options() + ($record?->term ? [$record->term->getKey() => $record->term->title] : []))
                     ->default(fn (): ?int => array_key_first(Term::options()))
                     ->live()

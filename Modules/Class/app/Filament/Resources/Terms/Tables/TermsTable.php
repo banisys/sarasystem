@@ -42,7 +42,7 @@ class TermsTable
                 EditAction::make(),
                 DeleteAction::make()
                     ->visible(fn (Term $record): bool => $record->classrooms_count === 0)
-                    ->modalDescription('دوره‌ای که کلاسی در آن هست حذف نمی‌شود؛ آن را غیرفعال کنید.'),
+                    ->modalDescription('اگر ترم کلاس دارد، آن را غیرفعال کنید.'),
             ]);
     }
 }

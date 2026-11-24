@@ -32,7 +32,7 @@ class CourseTeacherResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    protected static string|UnitEnum|null $navigationGroup = 'دوره‌های آموزشی';
+    protected static string|UnitEnum|null $navigationGroup = 'دوره‌های خودآموز';
 
     protected static ?string $modelLabel = 'مدرس دوره';
 

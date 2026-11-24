@@ -36,11 +36,13 @@ class CourseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
-    protected static string|UnitEnum|null $navigationGroup = 'دوره‌های آموزشی';
+    protected static string|UnitEnum|null $navigationGroup = 'دوره‌های خودآموز';
 
-    protected static ?string $modelLabel = 'دورهٔ آموزشی';
+    protected static ?string $navigationLabel = 'دوره‌ها';
 
-    protected static ?string $pluralModelLabel = 'دوره‌ها';
+    protected static ?string $modelLabel = 'دورهٔ خودآموز';
+
+    protected static ?string $pluralModelLabel = 'دوره‌های خودآموز';
 
     protected static ?string $recordTitleAttribute = 'title';
 
