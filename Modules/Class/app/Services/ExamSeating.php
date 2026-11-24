@@ -17,12 +17,13 @@ class ExamSeating
 
     public function __construct(private AttendanceRegister $attendance) {}
 
-    public function canEdit(User $user, ClassSession $session): bool
+    public function canEdit(User $user, ClassSession $session, bool $inUserPanel = false): bool
     {
         return $session->kind === SessionKind::Exam
             && $session->status !== SessionStatus::Cancelled
             && $session->classroom !== null
-            && $user->can('update', $session->classroom);
+            && ($user->can('update', $session->classroom)
+                || ($inUserPanel && ClassSession::query()->whereKey($session->getKey())->taughtBy($user)->exists()));
     }
 
     /**
@@ -75,11 +76,11 @@ class ExamSeating
     }
 
     /** @throws ClassException */
-    public function save(ClassSession $session, User $by, mixed $layout): void
+    public function save(ClassSession $session, User $by, mixed $layout, bool $inUserPanel = false): void
     {
-        DB::transaction(function () use ($session, $by, $layout): void {
+        DB::transaction(function () use ($session, $by, $layout, $inUserPanel): void {
             $locked = ClassSession::query()->lockForUpdate()->findOrFail($session->getKey());
-            abort_unless($this->canEdit($by, $locked), 403);
+            abort_unless($this->canEdit($by, $locked, $inUserPanel), 403);
 
             $validator = Validator::make(['layout' => $layout], [
                 'layout' => 'required|array:rows,columns,seats',

@@ -20,7 +20,7 @@ This is step 5 of the classes plan ([ADR 0022](0022-classes.md)). Steps 2–4 bu
   - `GET /my-classes` (`Class::Index`): the calendar and the user's classes, with their roles and the online link.
   - `GET /my-classes/sessions/{session}` (`Class::Session`):
     - «جزئیات جلسه» opens first with session details, the online link and the user's own attendance.
-    - For exam sessions, authorized class editors can open «چیدمان صندلی‌ها» from the details tab ([ADR 0087](0087-exam-seating.md)).
+    - For exam sessions, authorized class editors and effective invigilators can open «چیدمان صندلی‌ها» from the details tab ([ADR 0087](0087-exam-seating.md), [ADR 0132](0132-invigilator-seat-layout-access.md)).
     - «حضور و غیاب» shows the attendance form for staff who may use it.
     - «مطالب و تکلیف» shows the content form or the session's topics, homework and signed material links for teaching sessions. Learners submit homework here when eligible. Exam sessions omit this tab.
     - «تکالیف دریافتی» follows for staff who may grade homework.

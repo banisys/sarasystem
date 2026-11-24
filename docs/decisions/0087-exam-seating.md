@@ -11,9 +11,9 @@ Class editors need to place attendees on specific seats before an exam and see t
 - Store seats and assignments in separate tables. This suits reusable physical rooms, but requires more setup and a room model the project does not have.
 
 ## Decision
-Store a nullable JSON plan on the tenant-owned session: rows, columns and a flat list of attendee IDs or empty slots. The first seat is at the front right. The editor uses the exam-day attendance roster, accepts manual placement and swapping, and can fill the current grid in roster order. It can also clear all assignments at once while keeping the grid dimensions. Leaving gaps is supported. The server checks the grid dimensions, rejects duplicate people and requires every assignment to belong to the current roster. Only class editors can save, and cancelled exams cannot be edited.
+Store a nullable JSON plan on the tenant-owned session: rows, columns and a flat list of attendee IDs or empty slots. The first seat is at the front right. The editor uses the exam-day attendance roster, accepts manual placement and swapping, and can fill the current grid in roster order. It can also clear all assignments at once while keeping the grid dimensions. Leaving gaps is supported. The server checks the grid dimensions, rejects duplicate people and requires every assignment to belong to the current roster. Admin-panel saves require classroom edit permission. Cancelled exams cannot be edited.
 
-The user-panel exam session details show «چیدمان صندلی‌ها» to class editors who can open the session. The editor uses the same seating plan, attendance roster and save checks as the admin panel. Guardian views do not offer editing.
+The user-panel exam session details show «چیدمان صندلی‌ها» to class editors and effective invigilators who can open the session ([ADR 0132](0132-invigilator-seat-layout-access.md)). The editor shares the seating plan, attendance roster and validation rules with the admin panel. Guardian views do not offer editing.
 
 ## Consequences
 The editor highlights the seat under the pointer with a soft red outline and fill while an attendee is dragged from the unassigned list or from another seat.

@@ -192,6 +192,34 @@ class ExamSeatingTest extends TestCase
         $this->assertNull($this->exam->fresh()->seat_layout);
     }
 
+    public function test_only_the_effective_invigilator_inherits_seating_access_from_the_exam_assignment(): void
+    {
+        [$invigilator, $substitute] = User::factory()->count(2)->create();
+        $this->grantRole($invigilator, $this->branch, 'teacher');
+        $this->grantRole($substitute, $this->branch, 'teacher');
+        $this->exam->teachers()->attach($invigilator->id, ['substitute_id' => $substitute->id]);
+        $student = $this->attendee('شرکت‌کننده');
+        $sessionUrl = route('my-classes.session', $this->exam);
+        $seatingUrl = route('my-classes.seating.update', $this->exam);
+        $layout = ['rows' => 1, 'columns' => 1, 'seats' => [$student->id]];
+
+        $this->actingAs($invigilator)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->branch->id]);
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('seating', null));
+        $this->patch($seatingUrl, ['layout' => $layout])->assertForbidden();
+
+        $this->actingAs($substitute);
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('seating.attendees.0.id', $student->id));
+        $this->patch($seatingUrl, ['layout' => $layout])->assertSessionHasNoErrors()->assertRedirect($sessionUrl);
+        $this->assertSame($layout, $this->exam->fresh()->seat_layout);
+
+        $this->exam->teachers()->updateExistingPivot($invigilator->id, ['substitute_id' => null]);
+        $this->actingAs($invigilator);
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('seating.layout', $layout));
+        $this->patch($seatingUrl, ['layout' => ['rows' => 1, 'columns' => 1, 'seats' => [null]]])
+            ->assertSessionHasNoErrors()->assertRedirect($sessionUrl);
+        $this->assertSame([null], $this->exam->fresh()->seat_layout['seats']);
+    }
+
     private function attendee(string $name): User
     {
         $student = User::factory()->create(['name' => $name]);

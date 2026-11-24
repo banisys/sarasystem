@@ -167,7 +167,7 @@ class MyClassController extends Controller
             ],
             'role' => $role,
             'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
-            'seating' => $isOwn && $seating->canEdit($user, $session) ? $seating->editor($session) : null,
+            'seating' => $isOwn && $seating->canEdit($user, $session, inUserPanel: true) ? $seating->editor($session) : null,
             'reminderTimeline' => $isOwn ? $reminders->timeline($user, $session) : null,
             'myAttendance' => $role['is_attendee'] && $mine ? [
                 'status' => $mine->status->getLabel(),
@@ -220,7 +220,7 @@ class MyClassController extends Controller
         $user = $request->user();
         abort_if($request->filled('for') || ! $myClasses->canSee($user, $session), 404);
 
-        $this->attempt(fn () => $seating->save($session, $user, $request->input('layout')));
+        $this->attempt(fn () => $seating->save($session, $user, $request->input('layout'), inUserPanel: true));
 
         return to_route('my-classes.session', $session)->with('status', 'چیدمان صندلی‌ها ذخیره شد.');
     }
