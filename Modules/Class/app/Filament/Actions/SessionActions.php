@@ -310,12 +310,15 @@ class SessionActions
     {
         return Action::make('seatLayout')
             ->label('چیدمان صندلی‌ها')
-            ->icon(Heroicon::OutlinedTableCells)
+            ->icon(fn (ClassSession $record): Heroicon => $record->seat_layout_user_panel_locked ? Heroicon::OutlinedLockClosed : Heroicon::OutlinedTableCells)
+            ->tooltip(fn (ClassSession $record): ?string => $record->seat_layout_user_panel_locked ? 'چیدمان در پنل کاربری قفل است' : null)
+            ->extraAttributes(fn (ClassSession $record): array => $record->seat_layout_user_panel_locked ? ['aria-label' => 'چیدمان صندلی‌ها، قفل‌شده در پنل کاربری'] : [])
             ->color('info')
             ->outlined()
             ->authorize(fn (ClassSession $record, ExamSeating $seating): bool => ($user = auth()->user()) instanceof User && $seating->canEdit($user, $record))
             ->modalWidth('7xl')
             ->modalSubmitActionLabel('ذخیرهٔ چیدمان')
+            ->extraModalFooterActions([self::seatLayoutLockAction(true), self::seatLayoutLockAction(false)])
             ->fillForm(fn (ClassSession $record, ExamSeating $seating): array => ['layout' => $seating->draft($record)])
             ->schema(fn (ClassSession $record, AttendanceRegister $attendance): array => [
                 ViewField::make('layout')
@@ -330,6 +333,22 @@ class SessionActions
                 fn () => $seating->save($record, auth()->user(), $data['layout'] ?? null),
                 'چیدمان صندلی‌ها ذخیره شد.',
             ));
+    }
+
+    private static function seatLayoutLockAction(bool $locked): Action
+    {
+        return Action::make($locked ? 'lockSeatLayout' : 'unlockSeatLayout')
+            ->label($locked ? 'قفل در پنل کاربری' : 'باز کردن قفل پنل کاربری')
+            ->icon($locked ? Heroicon::OutlinedLockClosed : Heroicon::OutlinedLockOpen)
+            ->color('gray')
+            ->outlined()
+            ->visible(fn (ClassSession $record): bool => (bool) $record->seat_layout_user_panel_locked !== $locked)
+            ->authorize(fn (ClassSession $record, ExamSeating $seating): bool => ($user = auth()->user()) instanceof User && $seating->canEdit($user, $record))
+            ->action(function (ClassSession $record, ExamSeating $seating, Action $action) use ($locked): void {
+                $seating->setUserPanelLock($record, auth()->user(), $locked);
+                $action->success();
+            })
+            ->successNotificationTitle($locked ? 'چیدمان در پنل کاربری قفل شد.' : 'قفل چیدمان در پنل کاربری باز شد.');
     }
 
     /** @return list<TextEntry> */

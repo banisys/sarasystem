@@ -16,6 +16,8 @@ An exam administrator needs to preserve a session exam while class staff continu
 
 Store an unlocked-by-default flag on the exam. Administrators with edit permission can lock or unlock an attached exam from its admin edit page. The user panel blocks settings, group, question and publication changes and deletion while locked. Server-side writes recheck the flag after locking the exam row, so a stale page cannot bypass the restriction.
 
+When the exam is locked, the «آزمون جلسه» button on the admin session page shows a lock icon. Its tooltip and accessible name indicate that the lock applies in the user panel.
+
 ## Consequences
 
 The admin panel can continue to edit a locked exam. Publication status, existing attempts, participant access, previews and grading retain their own rules. Unlocking restores the user-panel actions otherwise permitted for that exam.

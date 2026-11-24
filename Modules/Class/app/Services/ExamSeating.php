@@ -19,6 +19,17 @@ class ExamSeating
 
     public function canEdit(User $user, ClassSession $session, bool $inUserPanel = false): bool
     {
+        return (! $inUserPanel || ! $session->seat_layout_user_panel_locked)
+            && $this->canAccess($user, $session, $inUserPanel);
+    }
+
+    public function canViewInUserPanel(User $user, ClassSession $session): bool
+    {
+        return $this->canAccess($user, $session, inUserPanel: true);
+    }
+
+    private function canAccess(User $user, ClassSession $session, bool $inUserPanel): bool
+    {
         return $session->kind === SessionKind::Exam
             && $session->status !== SessionStatus::Cancelled
             && $session->classroom !== null
@@ -45,7 +56,7 @@ class ExamSeating
         return $layout;
     }
 
-    /** @return array{layout: array{rows: int, columns: int, seats: list<int|null>}, attendees: list<array{id: int, name: string}>, max_rows: int, max_columns: int} */
+    /** @return array{layout: array{rows: int, columns: int, seats: list<int|null>}, attendees: list<array{id: int, name: string}>, locked: bool, max_rows: int, max_columns: int} */
     public function editor(ClassSession $session): array
     {
         $attendees = $this->attendance->attendees($session);
@@ -53,9 +64,22 @@ class ExamSeating
         return [
             'layout' => $this->draft($session, $attendees->modelKeys()),
             'attendees' => $attendees->map(fn (User $user): array => ['id' => $user->id, 'name' => $user->name])->values()->all(),
+            'locked' => (bool) $session->seat_layout_user_panel_locked,
             'max_rows' => self::MAX_ROWS,
             'max_columns' => self::MAX_COLUMNS,
         ];
+    }
+
+    public function setUserPanelLock(ClassSession $session, User $by, bool $locked): void
+    {
+        DB::transaction(function () use ($session, $by, $locked): void {
+            $record = ClassSession::query()->lockForUpdate()->findOrFail($session->getKey());
+            abort_unless($this->canEdit($by, $record), 403);
+
+            $record->forceFill(['seat_layout_user_panel_locked' => $locked])->save();
+            $session->seat_layout_user_panel_locked = $locked;
+            $session->syncOriginalAttribute('seat_layout_user_panel_locked');
+        });
     }
 
     /**

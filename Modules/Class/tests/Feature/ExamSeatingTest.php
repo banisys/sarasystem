@@ -5,6 +5,7 @@ namespace Modules\Class\Tests\Feature;
 use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Livewire\Livewire;
@@ -218,6 +219,52 @@ class ExamSeatingTest extends TestCase
         $this->patch($seatingUrl, ['layout' => ['rows' => 1, 'columns' => 1, 'seats' => [null]]])
             ->assertSessionHasNoErrors()->assertRedirect($sessionUrl);
         $this->assertSame([null], $this->exam->fresh()->seat_layout['seats']);
+    }
+
+    public function test_an_admin_can_lock_seating_changes_from_the_user_panel_without_changing_the_plan(): void
+    {
+        $admin = auth()->user();
+        $invigilator = User::factory()->create();
+        $this->grantRole($invigilator, $this->branch, 'teacher');
+        $this->exam->teachers()->attach($invigilator->id);
+        $student = $this->attendee('شرکت‌کننده');
+        $layout = ['rows' => 1, 'columns' => 1, 'seats' => [$student->id]];
+        $emptyLayout = ['rows' => 1, 'columns' => 1, 'seats' => [null]];
+        $this->exam->forceFill(['seat_layout' => $layout])->save();
+        $page = ['record' => $this->exam->id];
+
+        Livewire::test(ViewExamSession::class, $page)
+            ->assertActionHasIcon('seatLayout', Heroicon::OutlinedTableCells)
+            ->callAction(['seatLayout', 'lockSeatLayout'])
+            ->assertNotified('چیدمان در پنل کاربری قفل شد.');
+        $this->assertTrue($this->exam->refresh()->seat_layout_user_panel_locked);
+        $this->assertSame($layout, $this->exam->seat_layout);
+
+        $sessionUrl = route('my-classes.session', $this->exam);
+        $seatingUrl = route('my-classes.seating.update', $this->exam);
+        $this->actingAs($invigilator)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->branch->id]);
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('seating.locked', true)
+            ->where('seating.layout', $layout));
+        $this->patch($seatingUrl, ['layout' => $emptyLayout, 'locked' => false])->assertForbidden();
+        $this->assertSame($layout, $this->exam->refresh()->seat_layout);
+
+        $this->actingInPanel($admin, $this->branch);
+        Livewire::test(ViewExamSession::class, $page)
+            ->assertActionHasIcon('seatLayout', Heroicon::OutlinedLockClosed)
+            ->callAction('seatLayout', data: ['layout' => $emptyLayout])
+            ->assertHasNoActionErrors();
+        $this->assertTrue($this->exam->refresh()->seat_layout_user_panel_locked);
+        $this->assertSame($emptyLayout, $this->exam->seat_layout);
+
+        Livewire::test(ViewExamSession::class, $page)
+            ->callAction(['seatLayout', 'unlockSeatLayout'])
+            ->assertNotified('قفل چیدمان در پنل کاربری باز شد.');
+        $this->assertFalse($this->exam->refresh()->seat_layout_user_panel_locked);
+
+        $this->actingAs($invigilator);
+        $this->patch($seatingUrl, ['layout' => $layout])->assertSessionHasNoErrors()->assertRedirect($sessionUrl);
+        $this->assertSame($layout, $this->exam->refresh()->seat_layout);
     }
 
     private function attendee(string $name): User

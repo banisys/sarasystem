@@ -332,6 +332,7 @@ class ClassSession extends Model implements HasMedia
             'mode' => ClassMode::class,
             'covered_topic_ids' => 'array',
             'seat_layout' => 'array',
+            'seat_layout_user_panel_locked' => 'boolean',
             'homework_due_on' => 'date',
             'homework_max_score' => 'integer',
             'content_recorded_at' => 'datetime',

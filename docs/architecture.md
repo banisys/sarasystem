@@ -191,7 +191,7 @@ The formal session details and exam pages in the user panel give session exam ma
 
 The admin exam edit page can lock changes to and deletion of a session exam from the user panel. Contextual exam write actions check the lock before saving ([ADR 0133](decisions/0133-session-exam-user-panel-lock.md)).
 
-The user-panel exam session details let class editors and effective invigilators update the seating plan shared with the admin panel and the 3D attendance view ([ADR 0087](decisions/0087-exam-seating.md), [ADR 0132](decisions/0132-invigilator-seat-layout-access.md)).
+The user-panel exam session details let class editors and effective invigilators update the seating plan shared with the admin panel and the 3D attendance view ([ADR 0087](decisions/0087-exam-seating.md), [ADR 0132](decisions/0132-invigilator-seat-layout-access.md)). The admin seating dialog can lock user-panel changes to the plan independently of the online exam ([ADR 0134](decisions/0134-exam-seating-user-panel-lock.md)).
 
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 

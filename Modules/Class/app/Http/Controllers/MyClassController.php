@@ -167,7 +167,7 @@ class MyClassController extends Controller
             ],
             'role' => $role,
             'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
-            'seating' => $isOwn && $seating->canEdit($user, $session, inUserPanel: true) ? $seating->editor($session) : null,
+            'seating' => $isOwn && $seating->canViewInUserPanel($user, $session) ? $seating->editor($session) : null,
             'reminderTimeline' => $isOwn ? $reminders->timeline($user, $session) : null,
             'myAttendance' => $role['is_attendee'] && $mine ? [
                 'status' => $mine->status->getLabel(),

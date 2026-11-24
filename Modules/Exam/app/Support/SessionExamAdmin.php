@@ -16,10 +16,13 @@ class SessionExamAdmin
     public function manageAction(string $type, int $id, Closure $canCreate): Action
     {
         $exam = app(ExamPaperPreview::class)->sessionExam($type, $id);
+        $locked = $exam?->user_panel_locked;
 
         return Action::make('sessionExam')
             ->label('آزمون جلسه')
-            ->icon(Heroicon::OutlinedDocumentText)
+            ->icon($locked ? Heroicon::OutlinedLockClosed : Heroicon::OutlinedDocumentText)
+            ->tooltip($locked ? 'آزمون در پنل کاربری قفل است' : null)
+            ->extraAttributes($locked ? ['aria-label' => 'آزمون جلسه، قفل‌شده در پنل کاربری'] : [])
             ->authorize(fn (): bool => $exam !== null ? ExamResource::canEdit($exam) : $canCreate() && ExamResource::canCreate())
             ->url(fn (): string => $exam !== null
                 ? ExamResource::getUrl('edit', ['record' => $exam])

@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Testing\TestAction;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Modules\Class\Enums\ClassMode;
@@ -532,8 +533,15 @@ class ClassSchedulesTest extends TestCase
         $this->get($url)->assertRedirect(ClassSessionResource::detailsUrl($session, $this->west));
         $editUrl = ExamResource::getUrl('edit', ['record' => $exam], tenant: $this->west);
         Livewire::test(ViewExamSession::class, ['record' => $session->id])
-            ->assertActionHasUrl('sessionExam', $editUrl);
+            ->assertActionHasUrl('sessionExam', $editUrl)
+            ->assertActionHasIcon('sessionExam', Heroicon::OutlinedDocumentText);
         $this->get($editUrl)->assertOk()->assertSee($exam->title);
+
+        $exam->forceFill(['user_panel_locked' => true])->save();
+        Livewire::test(ViewExamSession::class, ['record' => $session->id])
+            ->assertActionHasUrl('sessionExam', $editUrl)
+            ->assertActionHasIcon('sessionExam', Heroicon::OutlinedLockClosed)
+            ->assertSee('آزمون جلسه، قفل‌شده در پنل کاربری');
     }
 
     public function test_an_already_open_admin_form_cannot_create_a_second_exam(): void
