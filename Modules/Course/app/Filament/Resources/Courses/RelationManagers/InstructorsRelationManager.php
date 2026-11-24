@@ -7,6 +7,8 @@ use Filament\Actions\DeleteAction;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Modules\Course\Models\CourseTeacher;
 
 class InstructorsRelationManager extends CoursePeopleRelationManager
 {
@@ -19,6 +21,11 @@ class InstructorsRelationManager extends CoursePeopleRelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([$this->memberSelect('مدرس')]);
+    }
+
+    protected function eligibleMembers(Builder $query): Builder
+    {
+        return $query->whereNotIn('users.id', CourseTeacher::query()->where('is_active', false)->select('user_id'));
     }
 
     public function table(Table $table): Table

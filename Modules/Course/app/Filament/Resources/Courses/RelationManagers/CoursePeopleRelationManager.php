@@ -11,12 +11,17 @@ abstract class CoursePeopleRelationManager extends CourseRelationManager
 {
     protected function memberSelect(string $label): Select
     {
-        $inBranch = fn (Builder $query): Builder => $query->inTenant(Tenant::current());
+        $eligibleMembers = fn (Builder $query): Builder => $this->eligibleMembers($query->inTenant(Tenant::current()));
 
         return Select::make('user_id')->label($label)->required()
-            ->relationship('user', 'name', modifyQueryUsing: $inBranch)
+            ->relationship('user', 'name', modifyQueryUsing: $eligibleMembers)
             ->searchable()
-            ->scopedExists(User::class, 'id', $inBranch)
+            ->scopedExists(User::class, 'id', $eligibleMembers)
             ->scopedUnique(modifyQueryUsing: fn (Builder $query): Builder => $query->where('course_id', $this->course()->getKey()));
+    }
+
+    protected function eligibleMembers(Builder $query): Builder
+    {
+        return $query;
     }
 }

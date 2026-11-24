@@ -33,6 +33,7 @@ class CourseServiceProvider extends ModuleServiceProvider
             DefaultRoles::EDUCATION_OFFICER => [
                 ...DefaultRoles::manage('Course'),
                 ...DefaultRoles::manage('CourseCategory'),
+                ...DefaultRoles::manage('CourseTeacher'),
             ],
         ]);
 

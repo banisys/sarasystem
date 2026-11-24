@@ -24,4 +24,4 @@ When Exam is enabled, its context contract exposes lesson exams. Course editors 
 
 ## Consequences
 
-SaraSystem uses branches and user accounts for the organizational and instructor roles of the legacy Academy and Teacher records. Category trees were added in [ADR 0136](0136-course-category-trees.md). Paid and package enrollments, individual activity sales, related-course merchandising, gallery and site widgets, and inline video quizzes remain outside this port. Data import needs a separate mapping for branches, accounts and stored files.
+SaraSystem uses branches and user accounts for the organizational and instructor roles of the legacy Academy and Teacher records. Branch teacher profiles for those accounts were added in [ADR 0137](0137-course-teacher-profiles.md). Category trees were added in [ADR 0136](0136-course-category-trees.md). Paid and package enrollments, individual activity sales, related-course merchandising, gallery and site widgets, and inline video quizzes remain outside this port. Data import needs a separate mapping for branches, accounts and stored files.
