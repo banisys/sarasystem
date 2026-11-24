@@ -11,7 +11,7 @@
     </div>
 
     @if ($tree->childrenOf(null, $visibleIds) !== [])
-        @include('exam::filament.question-category-tree-list', ['parentId' => null])
+        @include('filament.category-tree-list', ['parentId' => null])
     @else
         <p class="text-sm text-gray-500 dark:text-gray-400">
             @if ($visibleIds !== null)

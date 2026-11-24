@@ -4,7 +4,7 @@
 >
     @foreach ($tree->childrenOf($parentId, $visibleIds) as $category)
         <li
-            wire:key="question-category-{{ $category->id }}"
+            wire:key="category-{{ $category->id }}"
             @class([
                 'fi-section min-w-0 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10' => $parentId === null,
                 'relative ps-7 sm:ps-10' => $parentId !== null,
@@ -26,6 +26,10 @@
                         <span class="min-w-0 wrap-anywhere leading-8 font-medium text-gray-950 dark:text-white">{{ $category->title }}</span>
                     @endcanany
 
+                    @if ($details = $nodeDetails($category))
+                        <span class="min-w-0 wrap-anywhere text-xs text-gray-500 dark:text-gray-400">{{ $details }}</span>
+                    @endif
+
                     @if ($canCreate)
                         <x-filament::icon-button
                             icon="heroicon-o-plus"
@@ -39,12 +43,12 @@
                     @endif
                 </div>
 
-                <span class="shrink-0 text-xs leading-8 whitespace-nowrap text-gray-500 dark:text-gray-400">{{ $category->questions_count }} سؤال</span>
+                <span class="shrink-0 text-xs leading-8 whitespace-nowrap text-gray-500 dark:text-gray-400">{{ $nodeCaption($category) }}</span>
             </div>
 
             @if ($tree->childrenOf($category->id, $visibleIds) !== [])
                 <div class="mt-6">
-                    @include('exam::filament.question-category-tree-list', ['parentId' => $category->id])
+                    @include('filament.category-tree-list', ['parentId' => $category->id])
                 </div>
             @endif
         </li>

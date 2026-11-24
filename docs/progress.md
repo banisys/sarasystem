@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-24 — Added course category trees and legacy category fields ([ADR 0136](decisions/0136-course-category-trees.md)). The Course and Exam admin trees share the same view and parent checks. The catalog filters by active branches. Applied the local migration and verified the subcategory form in the browser. All 853 tests, 22 checks with modules disabled, Pint and the Vite build passed.
 - 2026-11-24 — Rebuilt the legacy Course module for branch-owned self-paced learning ([ADR 0135](decisions/0135-self-paced-courses.md)). Added the public catalog, instructor and lesson management, private media, manual and free enrollment, per-learner completion and optional lesson exams. Applied the migration locally and checked the catalog in desktop and mobile Chrome. All 849 tests, 95 checks with modules disabled, Pint and the Vite build passed.
 - 2026-11-24 — Added an independent user-panel lock to the admin seating dialog. Authorized staff can view the plan while it is locked ([ADR 0134](decisions/0134-exam-seating-user-panel-lock.md)). Applied the migration locally and verified the control in the browser. All 841 tests, 20 checks with modules disabled, Pint and the Vite build passed.
 - 2026-11-24 — Used a lock icon and tooltip to indicate the user-panel lock on the exam button in admin session details.

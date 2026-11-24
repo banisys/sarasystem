@@ -4,12 +4,10 @@ namespace Modules\Exam\Filament\Resources\QuestionCategories;
 
 use App\Filament\Forms\Components\TreeSelect;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Validation\ValidationException;
 use Modules\Exam\Filament\Resources\QuestionCategories\Pages\ListQuestionCategories;
 use Modules\Exam\Models\QuestionCategory;
 use Modules\Exam\Support\QuestionCategoryTree;
@@ -45,22 +43,6 @@ class QuestionCategoryResource extends Resource
                 ->placeholder('بدون والد')
                 ->nodes(fn (?QuestionCategory $record): array => QuestionCategoryTree::current()->nodes($record?->id)),
         ]);
-    }
-
-    /** @param array{title: string, parent_id?: int|string|null} $data */
-    public static function saveCategory(Action $action, array $data, ?QuestionCategory $record = null): QuestionCategory
-    {
-        $record ??= new QuestionCategory;
-
-        try {
-            $record->fill($data)->save();
-        } catch (ValidationException $exception) {
-            throw ValidationException::withMessages([
-                "mountedActions.{$action->getNestingIndex()}.data.parent_id" => $exception->errors()['parent_id'],
-            ]);
-        }
-
-        return $record;
     }
 
     public static function getPages(): array

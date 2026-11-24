@@ -13,9 +13,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Course\Models\Course;
-use Modules\Course\Models\CourseCategory;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
+use Modules\Course\Support\CourseCategoryTree;
 
 class CourseCatalogController extends Controller
 {
@@ -59,8 +59,9 @@ class CourseCatalogController extends Controller
     {
         $category = max(0, $request->integer('category'));
         $search = mb_substr(trim((string) $request->string('search')), 0, 100);
+        $tree = CourseCategoryTree::current(catalog: true);
         $courses = Course::query()->published()
-            ->when($category, fn (Builder $query): Builder => $query->where('course_category_id', $category))
+            ->when($category, fn (Builder $query): Builder => $query->whereIn('course_category_id', $tree->branchIds($category)))
             ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('title', '%'.$search.'%'))
             ->with('category:id,title')
             ->withCount('lessons')
@@ -76,8 +77,7 @@ class CourseCatalogController extends Controller
         return Inertia::render('Course::Catalog', [
             ...$layout,
             'courses' => $courses,
-            'categories' => CourseCategory::query()->whereHas('courses', fn (Builder $courses): Builder => $courses->published())
-                ->orderBy('title')->get(['id', 'title']),
+            'categories' => $tree->catalogOptions(),
             'filters' => ['search' => $search, 'category' => $category ?: ''],
             'catalogUrl' => PublicSite::url($tenant, '/courses'),
         ]);
