@@ -4,13 +4,10 @@ namespace Modules\Course\Filament\Resources\CourseCategories;
 
 use App\Filament\Forms\Components\TreeSelect;
 use BackedEnum;
-use Filament\Forms\Components\CodeEditor;
-use Filament\Forms\Components\CodeEditor\Enums\Language;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -58,17 +55,6 @@ class CourseCategoryResource extends Resource
             Textarea::make('short_description')->label('توضیح کوتاه')->rows(4)->maxLength(10000)->columnSpanFull(),
             Toggle::make('is_active')->label('فعال')->default(true)
                 ->helperText('دستهٔ غیرفعال و زیرشاخه‌های آن در فیلتر فهرست عمومی دوره‌ها نمایش داده نمی‌شوند.'),
-            Section::make('اطلاعات تکمیلی')->columns(2)->columnSpanFull()->collapsible()->schema([
-                TextInput::make('locale')->label('کد زبان')->trim()->maxLength(35)->placeholder('fa'),
-                TextInput::make('translation_key')->label('کلید ترجمه')->trim()->maxLength(255),
-                CodeEditor::make('metadata')->label('ویژگی‌ها')->language(Language::Json)->columnSpanFull()
-                    ->helperText('اختیاری، به‌شکل شیء یا آرایهٔ JSON')
-                    ->rules(['json', 'max:30000', 'regex:/^\s*[\[{]/'])
-                    ->formatStateUsing(fn (mixed $state): ?string => $state === null
-                        ? null : json_encode($state, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR))
-                    ->dehydrateStateUsing(fn (?string $state): mixed => filled($state)
-                        ? json_decode($state, flags: JSON_THROW_ON_ERROR) : null),
-            ]),
         ]);
     }
 

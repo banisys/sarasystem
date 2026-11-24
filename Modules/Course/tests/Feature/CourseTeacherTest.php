@@ -52,7 +52,6 @@ class CourseTeacherTest extends TestCase
             'field_of_study' => 'مدیریت',
             'institution' => 'دانشگاه نمونه',
             'teaching_experience' => 8,
-            'short_description' => '<p>معرفی کوتاه</p>',
             'description' => '<p>سابقهٔ حرفه‌ای و زمینه‌های تدریس</p>',
         ];
         Livewire::test(ManageCourseTeachers::class)
@@ -62,9 +61,10 @@ class CourseTeacherTest extends TestCase
         $this->assertSame($this->tenant->id, $teacher->tenant_id);
         $this->assertTrue($teacher->is_active);
         $this->assertSame(TeacherEducation::Master, $teacher->education);
-        foreach (['user_id', 'field_of_study', 'institution', 'teaching_experience', 'short_description', 'description'] as $field) {
+        foreach (['user_id', 'field_of_study', 'institution', 'teaching_experience', 'description'] as $field) {
             $this->assertSame($data[$field], $teacher->{$field});
         }
+        $this->assertArrayNotHasKey('short_description', $teacher->getAttributes());
 
         Livewire::test(ManageCourseTeachers::class)
             ->searchTable($user->name)

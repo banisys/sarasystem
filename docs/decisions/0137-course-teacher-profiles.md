@@ -14,7 +14,7 @@ The LMS teacher directory records education, institution, teaching experience an
 
 ## Decision
 
-Course adds «مدرسان دوره» to the branch admin panel. Education officers can manage one profile per user in the branch. The profile includes education level, field of study, institution, numeric teaching experience, short and full biographies, and active status. The directory shows the count of existing course assignments in that branch. The profile's linked account is fixed after creation.
+Course adds «مدرسان دوره» to the branch admin panel. Education officers can manage one profile per user in the branch. The profile includes education level, field of study, institution, numeric teaching experience, a biography («توضیحات») and active status. The legacy short biography is not kept (its column was dropped on 2026-11-24). The directory shows the count of existing course assignments in that branch. The profile's linked account is fixed after creation.
 
 Assignments continue to use branch members' existing accounts. An inactive profile prevents new assignments in that branch. Existing assignments remain visible and deleting a profile leaves the user and assignments intact. Branch members can be assigned without a profile.
 

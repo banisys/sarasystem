@@ -58,7 +58,6 @@ class CourseTeacherResource extends Resource
                 ->minValue(0)->maxValue(2147483647)->default(0)->required(),
             Toggle::make('is_active')->label('فعال')->default(true)
                 ->helperText('مدرس غیرفعال برای انتساب تازه به دوره قابل انتخاب نیست.'),
-            RichEditor::make('short_description')->label('توضیح کوتاه')->toolbarButtons($toolbar)->maxLength(10000)->columnSpanFull(),
             RichEditor::make('description')->label('توضیحات')->toolbarButtons($toolbar)->maxLength(50000)->columnSpanFull(),
         ]);
     }

@@ -43,8 +43,6 @@ class CourseCategoryTest extends TestCase
             'short_description' => 'دوره‌های آغاز به کار',
             'position' => 7,
             'is_active' => false,
-            'locale' => 'fa',
-            'translation_key' => 'courses.onboarding',
         ];
 
         $this->get(CourseCategoryResource::getUrl(tenant: $this->tenant))->assertOk()->assertSee($root->title);
@@ -52,30 +50,37 @@ class CourseCategoryTest extends TestCase
         Livewire::test(ManageCourseCategories::class)
             ->mountAction('create', ['parent' => $root->id])
             ->assertActionDataSet(['parent_id' => $root->id, 'position' => 0, 'is_active' => true])
-            ->setActionData($data + ['metadata' => '{"badge":{"color":"blue"}}', 'parent_id' => $root->id])
+            ->setActionData($data + ['parent_id' => $root->id])
             ->callMountedAction()->assertHasNoActionErrors();
 
         $record = $root->children()->sole();
         foreach ($data as $field => $value) {
             $this->assertSame($value, $record->{$field});
         }
-        $this->assertSame('blue', $record->metadata->badge->color);
+        $record->update([
+            'locale' => 'fa',
+            'translation_key' => 'courses.onboarding',
+            'metadata' => ['badge' => ['color' => 'blue']],
+        ]);
 
         Livewire::test(ManageCourseCategories::class)
             ->set('search', $record->alias)
             ->assertSee($root->title)->assertSee($record->title)->assertSee('غیرفعال')
             ->mountAction('edit', ['category' => $record->id])
             ->assertActionDataSet($data)
-            ->setActionData(['parent_id' => null, 'metadata' => '{"badge":{}}', 'is_active' => true])
+            ->assertDontSee('اطلاعات تکمیلی')
+            ->setActionData(['parent_id' => null, 'is_active' => true])
             ->callMountedAction()->assertHasNoActionErrors();
 
         $record->refresh();
         $this->assertNull($record->parent_id);
         $this->assertTrue($record->is_active);
-        $this->assertSame([], (array) $record->metadata->badge);
+        $this->assertSame('fa', $record->locale);
+        $this->assertSame('courses.onboarding', $record->translation_key);
+        $this->assertSame('blue', $record->metadata->badge->color);
     }
 
-    public function test_forged_parents_duplicate_aliases_and_invalid_metadata_are_rejected(): void
+    public function test_forged_parents_and_duplicate_aliases_are_rejected(): void
     {
         $root = CourseCategory::factory()->create(['title' => 'دستهٔ اصلی شعبه', 'alias' => 'root']);
         $child = CourseCategory::factory()->for($root, 'parent')->create();
@@ -96,8 +101,8 @@ class CourseCategoryTest extends TestCase
             ->assertHasActionErrors(['parent_id']);
 
         Livewire::test(ManageCourseCategories::class)
-            ->callAction('create', data: ['title' => 'Duplicate alias', 'alias' => 'root', 'metadata' => 'not json'])
-            ->assertHasActionErrors(['alias', 'metadata']);
+            ->callAction('create', data: ['title' => 'Duplicate alias', 'alias' => 'root'])
+            ->assertHasActionErrors(['alias']);
 
         $this->assertNull($root->refresh()->parent_id);
         $this->assertSame(2, CourseCategory::query()->count());

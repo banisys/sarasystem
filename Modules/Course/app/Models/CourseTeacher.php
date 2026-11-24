@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Course\Database\Factories\CourseTeacherFactory;
 use Modules\Course\Enums\TeacherEducation;
 
-#[Fillable(['user_id', 'education', 'field_of_study', 'institution', 'teaching_experience', 'short_description', 'description', 'is_active'])]
+#[Fillable(['user_id', 'education', 'field_of_study', 'institution', 'teaching_experience', 'description', 'is_active'])]
 class CourseTeacher extends Model
 {
     /** @use HasFactory<CourseTeacherFactory> */

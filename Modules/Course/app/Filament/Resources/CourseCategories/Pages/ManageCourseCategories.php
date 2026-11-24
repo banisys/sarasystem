@@ -23,7 +23,7 @@ class ManageCourseCategories extends ListCategoryTree
 
     protected function nodeDetails(Model $record): ?string
     {
-        return collect([$record->alias, $record->is_active ? null : 'غیرفعال'])->filter()->implode(' · ');
+        return $record->is_active ? null : 'غیرفعال';
     }
 
     protected function linkedItemLabel(): string
