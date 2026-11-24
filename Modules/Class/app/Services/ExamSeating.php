@@ -44,10 +44,26 @@ class ExamSeating
         return $layout;
     }
 
-    /** @return array{rows: int, columns: int, seats: list<int|null>} */
-    public function draft(ClassSession $session): array
+    /** @return array{layout: array{rows: int, columns: int, seats: list<int|null>}, attendees: list<array{id: int, name: string}>, max_rows: int, max_columns: int} */
+    public function editor(ClassSession $session): array
     {
-        $ids = $this->attendance->attendees($session)->modelKeys();
+        $attendees = $this->attendance->attendees($session);
+
+        return [
+            'layout' => $this->draft($session, $attendees->modelKeys()),
+            'attendees' => $attendees->map(fn (User $user): array => ['id' => $user->id, 'name' => $user->name])->values()->all(),
+            'max_rows' => self::MAX_ROWS,
+            'max_columns' => self::MAX_COLUMNS,
+        ];
+    }
+
+    /**
+     * @param  list<int>|null  $ids
+     * @return array{rows: int, columns: int, seats: list<int|null>}
+     */
+    public function draft(ClassSession $session, ?array $ids = null): array
+    {
+        $ids ??= $this->attendance->attendees($session)->modelKeys();
         $columns = max(4, min(self::MAX_COLUMNS, (int) ceil(sqrt(count($ids)))));
         $rows = max(1, min(self::MAX_ROWS, (int) ceil(count($ids) / $columns)));
 

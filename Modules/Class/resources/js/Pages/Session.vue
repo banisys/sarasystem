@@ -18,6 +18,7 @@ import FilePicker from '@/Components/FilePicker.vue';
 import PanelJalaliDateInput from '@/Components/Ui/PanelJalaliDateInput.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ExamSeatingEditor from '../Components/ExamSeatingEditor.vue';
 import SessionReminderTimeline from '../Components/SessionReminderTimeline.vue';
 
 // One session in «تقویم آموزشی» (ADR 0026): details, what it covered,
@@ -28,6 +29,7 @@ const props = defineProps({
     role: { type: Object, required: true },
     // A guardian looking at a ward's session (ADR 0027).
     ward: { type: Object, default: null },
+    seating: { type: Object, default: null },
     reminderTimeline: { type: Object, default: null },
     myAttendance: { type: Object, default: null },
     statuses: { type: Array, required: true },
@@ -198,13 +200,14 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                 <ElTag v-if="session.kind_label !== 'عادی'" type="info" round>{{ session.kind_label }}</ElTag>
                                 <ElTag :type="statusBadge[session.status]" round>{{ session.status_label }}</ElTag>
                             </div>
-                            <div v-if="session.exams_url || session.exam_paper_url" class="flex flex-wrap items-center gap-2">
+                            <div v-if="session.exams_url || session.exam_paper_url || seating" class="flex flex-wrap items-center gap-2">
                                 <PanelButton v-if="session.exams_url" :href="session.exams_url" variant="outline-brand" class="border-2">
                                     <PanelIcon name="clipboard" class="size-5" />
                                     آزمون‌های جلسه
                                 </PanelButton>
                                 <PanelPrintPreview v-if="session.exam_paper_url" :url="session.exam_paper_url"
                                     title="برگهٔ آزمون جلسه" print-label="چاپ آزمون" />
+                                <ExamSeatingEditor v-if="seating" :seating="seating" :url="route('my-classes.seating.update', session.id)" />
                             </div>
                         </div>
 

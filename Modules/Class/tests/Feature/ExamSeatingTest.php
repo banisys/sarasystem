@@ -2,9 +2,11 @@
 
 namespace Modules\Class\Tests\Feature;
 
+use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Livewire\Livewire;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\SessionKind;
@@ -133,6 +135,61 @@ class ExamSeatingTest extends TestCase
         $this->exam->update(['status' => SessionStatus::Cancelled]);
 
         Livewire::test(ViewExamSession::class, ['record' => $this->exam->id])->assertDontSee('چیدمان صندلی‌ها');
+    }
+
+    public function test_a_class_editor_can_save_the_shared_seating_plan_from_the_user_panel(): void
+    {
+        $student = $this->attendee('شرکت‌کننده');
+        $outsider = User::factory()->create();
+        $this->exam->teachers()->attach(auth()->id());
+        $this->withSession([ResolveCurrentTenant::SESSION_KEY => $this->branch->id]);
+        $sessionUrl = route('my-classes.session', $this->exam);
+        $seatingUrl = route('my-classes.seating.update', $this->exam);
+        $layout = ['rows' => 1, 'columns' => 2, 'seats' => [null, $student->id]];
+
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('seating.attendees', [['id' => $student->id, 'name' => $student->name]])
+            ->where('seating.layout.seats', [null, null, null, null]));
+
+        $this->from($sessionUrl)->patch($seatingUrl, [
+            'layout' => ['rows' => 1, 'columns' => 2, 'seats' => [null, $outsider->id]],
+        ])->assertSessionHasErrors('form');
+        $this->assertNull($this->exam->fresh()->seat_layout);
+
+        $this->patch($seatingUrl, ['layout' => $layout])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'چیدمان صندلی‌ها ذخیره شد.')
+            ->assertRedirect($sessionUrl);
+        $this->assertSame($layout, $this->exam->fresh()->seat_layout);
+
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('seating.layout', $layout));
+        Livewire::test(ViewExamSession::class, ['record' => $this->exam->id])
+            ->mountAction('seatLayout')
+            ->assertSchemaStateSet(['layout' => $layout], 'mountedActionSchema0');
+    }
+
+    public function test_the_user_panel_checks_exam_edit_permissions_and_branch_scope(): void
+    {
+        $editor = auth()->user();
+        $this->exam->teachers()->attach($editor->id);
+        $student = $this->attendee('شرکت‌کننده');
+        $this->grantRole($student, $this->branch, 'student');
+        $sessionUrl = route('my-classes.session', $this->exam);
+        $seatingUrl = route('my-classes.seating.update', $this->exam);
+        $data = ['layout' => ['rows' => 1, 'columns' => 1, 'seats' => [$student->id]]];
+
+        $this->actingAs($student)->withSession([ResolveCurrentTenant::SESSION_KEY => $this->branch->id]);
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('seating', null));
+        $this->patch($seatingUrl, $data)->assertForbidden();
+
+        $this->actingAs($editor)->withSession([ResolveCurrentTenant::SESSION_KEY => Tenant::primary()->id]);
+        $this->patch($seatingUrl, $data)->assertNotFound();
+
+        $this->withSession([ResolveCurrentTenant::SESSION_KEY => $this->branch->id]);
+        $this->exam->update(['status' => SessionStatus::Cancelled]);
+        $this->get($sessionUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('seating', null));
+        $this->patch($seatingUrl, $data)->assertForbidden();
+        $this->assertNull($this->exam->fresh()->seat_layout);
     }
 
     private function attendee(string $name): User

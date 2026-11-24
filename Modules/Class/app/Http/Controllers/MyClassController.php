@@ -24,6 +24,7 @@ use Modules\Class\Models\HomeworkSubmission;
 use Modules\Class\Models\PlanTopic;
 use Modules\Class\Services\AttendanceRegister;
 use Modules\Class\Services\ClassException;
+use Modules\Class\Services\ExamSeating;
 use Modules\Class\Services\HomeworkBook;
 use Modules\Class\Services\MyClasses;
 use Modules\Class\Services\Online\OnlineEntry;
@@ -131,7 +132,7 @@ class MyClassController extends Controller
         ]);
     }
 
-    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry, SessionReminders $reminders): Response
+    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry, SessionReminders $reminders, ExamSeating $seating): Response
     {
         $user = $this->person($request);
         abort_unless($myClasses->canSee($user, $session), 404);
@@ -166,6 +167,7 @@ class MyClassController extends Controller
             ],
             'role' => $role,
             'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
+            'seating' => $isOwn && $seating->canEdit($user, $session) ? $seating->editor($session) : null,
             'reminderTimeline' => $isOwn ? $reminders->timeline($user, $session) : null,
             'myAttendance' => $role['is_attendee'] && $mine ? [
                 'status' => $mine->status->getLabel(),
@@ -210,6 +212,17 @@ class MyClassController extends Controller
                 })->values()
                 : null,
         ]);
+    }
+
+    public function updateSeating(Request $request, ClassSession $session, MyClasses $myClasses, ExamSeating $seating): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_if($request->filled('for') || ! $myClasses->canSee($user, $session), 404);
+
+        $this->attempt(fn () => $seating->save($session, $user, $request->input('layout')));
+
+        return to_route('my-classes.session', $session)->with('status', 'چیدمان صندلی‌ها ذخیره شد.');
     }
 
     public function addReminder(Request $request, ClassSession $session, ClassSession $target, SessionReminders $reminders): RedirectResponse

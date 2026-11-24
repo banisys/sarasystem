@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-24 — Added «چیدمان صندلی‌ها» to exam session details in the user panel, sharing the roster, permissions and saved plan with the admin editor ([ADR 0087](decisions/0087-exam-seating.md)). All 40 affected tests, 18 checks with modules disabled, Pint and the Vite build passed.
 - 2026-11-24 — Added the shared printable «برگهٔ آزمون جلسه» to the formal session details and exam pages for session exam managers in the user panel. All 835 tests, 46 checks with modules disabled, Pint and the Vite build passed.
 - 2026-11-24 — Renamed the session exam page heading, browser title and list tab to «آزمون ساخته‌شده».
 - 2026-11-24 — Limited formal exam sessions to a single new graded exam with the session closing time, and hid practice and late-start controls for that session kind ([ADR 0107](decisions/0107-single-exam-and-staff-paper.md)). All 833 tests, 46 checks with modules disabled, Pint and the Vite build passed.
