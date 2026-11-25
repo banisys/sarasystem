@@ -9,7 +9,6 @@ use Filament\Actions\ActionGroup;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,6 +37,21 @@ trait PinsTableRows
         $this->registerRowPinAction();
 
         return parent::getFlatActions();
+    }
+
+    /**
+     * @param  Model|array<string, mixed>  $record
+     * @return array<string|int, bool|string>
+     */
+    public function getRecordClasses(Model|array $record): array
+    {
+        $classes = parent::getRecordClasses($record);
+
+        if ($this->isRowPinned($record)) {
+            $classes[] = 'table-row-pinned';
+        }
+
+        return $classes;
     }
 
     public function getDefaultSort(Builder $query, string $direction): string|Builder|null
@@ -86,8 +100,8 @@ trait PinsTableRows
         }
 
         $action = Action::make(self::PIN_ACTION)
-            ->label(fn (Model|array $record): string => $this->isRowPinned($record) ? 'برداشتن سنجاق' : 'سنجاق کردن به بالای جدول')
-            ->icon(fn (Model|array $record): Heroicon => $this->isRowPinned($record) ? Heroicon::OutlinedBookmarkSlash : Heroicon::OutlinedBookmark)
+            ->label(fn (Model|array $record): string => $this->isRowPinned($record) ? 'برداشتن سنجاق' : 'سنجاق کردن')
+            ->icon('sara-pushpin')
             ->color(fn (Model|array $record): string => $this->isRowPinned($record) ? 'primary' : 'gray')
             ->authorize(fn (Model|array|null $record): bool => $record !== null && $this->canPinRows())
             ->action(function (Model|array $record): void {
@@ -110,16 +124,19 @@ trait PinsTableRows
                 $this->getLivewire()->resetPage();
             });
 
-        foreach ($this->recordActions as $group) {
-            if ($group instanceof ActionGroup && ! $group->isButtonGroup()) {
-                $group->actions([$action, ...$group->getActions()]);
-                $this->cacheAction($action->table($this));
+        $group = collect($this->recordActions)->first(fn (Action|ActionGroup $item): bool => $item instanceof ActionGroup && ! $item->isButtonGroup());
 
-                return;
-            }
+        if ($group instanceof ActionGroup) {
+            $group->actions([$action, ...$group->getActions()]);
+            $this->cacheAction($action->table($this));
+        } else {
+            $group = ActionGroup::make([$action]);
+            $this->pushRecordActions([$group]);
         }
 
-        $this->pushRecordActions([$action]);
+        if (! $group->hasIcon()) {
+            $group->icon(fn (Model|array|null $record): ?string => $record !== null && $this->isRowPinned($record) ? 'sara-pushpin' : null);
+        }
     }
 
     private function canPinRows(): bool

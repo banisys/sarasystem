@@ -14,9 +14,9 @@ Staff need to keep a few records at the top of the admin lists they work in.
 
 ## Decision
 
-The shared [PanelTable](../../app/Filament/Support/PanelTable.php) adds «سنجاق کردن به بالای جدول» and «برداشتن سنجاق» to the row actions menu. Pins are saved per user, branch and table, including the owner of a relation table. Each action uses a row resolved by Filament through the current table's query.
+The shared [PanelTable](../../app/Filament/Support/PanelTable.php) adds «سنجاق کردن» and «برداشتن سنجاق» to the row actions menu. Pins are saved per user, branch and table, including the owner of a relation table. Each action uses a row resolved by Filament through the current table's query.
 
-Pinned rows come first among records matching the filters. Database tables apply this order before pagination, and the table's usual sort orders rows within each section. The modules list uses the same pin action on its string record keys.
+Pinned rows show a pushpin in place of the row actions ellipsis and a tinted background in both panel themes. They come first among records matching the filters. Database tables apply this order before pagination, and the table's usual sort orders rows within each section. The modules list uses the same pin action on its string record keys.
 
 ## Consequences
 

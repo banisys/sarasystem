@@ -134,7 +134,7 @@ class PanelTableTest extends TestCase
             ->assertCanNotSeeTableRecords([$older])
             ->call('setPage', 2)
             ->assertCanSeeTableRecords([$older])
-            ->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول')
+            ->assertActionHasLabel($pin, 'سنجاق کردن')
             ->callAction($pin)
             ->assertCanSeeTableRecords([$older, $newer->last()], inOrder: true)
             ->assertActionHasLabel($pin, 'برداشتن سنجاق');
@@ -149,7 +149,7 @@ class PanelTableTest extends TestCase
             ->assertCanSeeTableRecords([$newer->last()])
             ->assertCanNotSeeTableRecords([$older])
             ->call('setPage', 2)
-            ->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول');
+            ->assertActionHasLabel($pin, 'سنجاق کردن');
 
         $this->assertDatabaseCount('table_row_pins', 0);
     }
@@ -184,10 +184,10 @@ class PanelTableTest extends TestCase
         $this->assertDatabaseCount('table_row_pins', 1);
 
         $this->actingInPanel($secondViewer, $tenant);
-        Livewire::test(ListUsers::class)->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول');
+        Livewire::test(ListUsers::class)->assertActionHasLabel($pin, 'سنجاق کردن');
 
         $this->actingInPanel($firstViewer, $otherBranch);
-        Livewire::test(ListUsers::class)->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول');
+        Livewire::test(ListUsers::class)->assertActionHasLabel($pin, 'سنجاق کردن');
     }
 
     public function test_array_backed_rows_can_be_pinned_by_their_string_keys(): void

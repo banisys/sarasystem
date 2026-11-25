@@ -27,6 +27,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-11-25 — Added the «شرکت‌کنندگان» row action for course enrollments and access management ([ADR 0144](decisions/0144-course-participants-page.md)). Verified the page in the browser, all 26 Course tests, five system map tests with Course disabled, and Pint.
 - 2026-11-25 — Added the session gallery for private images and videos with uploads by class staff ([ADR 0143](decisions/0143-session-gallery.md)). All 872 tests, Pint, and the Vite build passed.
 - 2026-11-25 — Added buttons to load earlier and later sessions in the staff reminder timeline, with three upcoming sessions shown initially. All 26 academic calendar tests, Pint, and the Vite build passed.
+- 2026-11-25 — Shortened the admin row pin action label to «سنجاق کردن».
+- 2026-11-25 — Used the pushpin as the row actions button for pinned records. Verified the menu still opens and ordinary rows retain the ellipsis. The 13 table tests, Pint and the Vite build passed.
+- 2026-11-25 — Marked pinned admin rows with a pushpin beside the row actions and a tinted background. Verified both panel themes in the browser. The 13 table tests, Pint and the Vite build passed.
 - 2026-11-25 — Added personal row pins to admin tables ([ADR 0142](decisions/0142-admin-table-row-pins.md)). Applied the local migration and verified pinning, reloading and unpinning in the class list in the browser. All 868 tests and Pint passed.
 - 2026-11-25 — Shortened the class calendar’s «افزودن» menu labels and gave each option its own icon. All 30 class scheduling tests and Pint passed.
 - 2026-11-25 — Replaced the additional-session options with «جلسه‌ی غیر درسی» and removed the subject and kind inputs from its creation form ([ADR 0141](decisions/0141-non-instructional-class-sessions.md)). Migrated seven local sessions and cleared six subject links. All 865 tests, two checks with Tutorial disabled, and Pint passed.

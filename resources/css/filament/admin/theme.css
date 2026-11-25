@@ -285,3 +285,11 @@ html:not(.dark) .fi-modal > .fi-modal-close-overlay {
 html.dark .fi-ta-row[data-clicked-row] {
     outline-color: var(--gray-500);
 }
+
+.fi-ta-ctn .table-row-pinned {
+    background-color: var(--primary-50);
+}
+
+html.dark .fi-ta-ctn .table-row-pinned {
+    background-color: color-mix(in oklab, var(--primary-500) 21%, var(--gray-900));
+}
