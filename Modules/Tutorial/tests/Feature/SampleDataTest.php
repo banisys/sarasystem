@@ -101,7 +101,7 @@ class SampleDataTest extends TestCase
         $this->assertSame($past->count() * 10, $batch->made(Attendance::class)->count());
         $this->assertTrue($sessions->contains(fn (ClassSession $session): bool => $session->starts_at->isFuture() && $session->status === SessionStatus::Scheduled));
         $this->assertSame(1, $sessions->where('status', SessionStatus::Cancelled)->count());
-        $this->assertSame(1, $sessions->where('kind', SessionKind::MakeUp)->count());
+        $this->assertSame(1, $sessions->where('kind', SessionKind::NonInstructional)->count());
 
         // Homework every past session: hand-ins, all graded.
         $this->assertGreaterThan(0, $batch->made(HomeworkSubmission::class)->count());

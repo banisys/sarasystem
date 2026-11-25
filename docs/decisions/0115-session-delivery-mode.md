@@ -10,11 +10,11 @@ A class can have in-person teaching and online exams in the same calendar. A cla
 ## Options considered
 
 - Keep an editable mode on the class and let schedules and sessions override it.
-- Set the mode when planning teaching, exams and make-up or extra sessions. Use the class's location and online platform as shared settings.
+- Set the mode when planning teaching, exams and non-instructional sessions. Use the class's location and online platform as shared settings.
 
 ## Decision
 
-The admin chooses «حضوری» or «آنلاین» in each teaching schedule, each exam row and each make-up or extra session. Teaching schedules copy their mode into the sessions they generate. Editing a teaching schedule changes the mode of untouched future sessions. A staff member can change an individual session in its details.
+The admin chooses «حضوری» or «آنلاین» in each teaching schedule, each exam row and each non-instructional session. Teaching schedules copy their mode into the sessions they generate. Editing a teaching schedule changes the mode of untouched future sessions. A staff member can change an individual session in its details.
 
 Existing schedules and sessions receive their class's former mode in the migration. The former class value also supplies the initial selection for existing classes and supports older data producers that omit the mode. New classes start with «حضوری» selected when scheduling.
 

@@ -28,7 +28,7 @@ class ClassSessionFactory extends Factory
             'tenant_id' => fn (array $attributes): int => Classroom::withoutTenantScope()->findOrFail($attributes['classroom_id'])->tenant_id,
             'starts_at' => $start,
             'ends_at' => $start->copy()->addMinutes(90),
-            'kind' => SessionKind::Extra,
+            'kind' => SessionKind::Regular,
             'status' => SessionStatus::Scheduled,
         ];
     }

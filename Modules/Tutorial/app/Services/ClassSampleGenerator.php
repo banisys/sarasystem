@@ -16,7 +16,6 @@ use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
 use Modules\Class\Enums\Frequency;
 use Modules\Class\Enums\OnlinePlatform;
-use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Models\Attendance;
 use Modules\Class\Models\ClassRole;
@@ -47,11 +46,11 @@ use Nwidart\Modules\Facades\Module;
  * modules are on), the classes and their sub-classes, members, subjects,
  * teaching plans, weekly timetables, past sessions with attendance,
  * content, homework, hand-ins and grades, and a cancelled session with its
- * make-up. Several classes share the subjects and plans, and may share
+ * non-instructional session. Several classes share the subjects and plans, and may share
  * their staff (one teacher in every class); each class then meets at its
  * own time of the day, so a shared teacher has no clash.
  *
- * Members, schedules, cancellations and make-ups go through the class
+ * Members, schedules, cancellations and manual sessions go through the class
  * services, so the class rules hold. The history of past sessions is
  * written directly on the planner’s sessions: taking attendance through
  * the services would send absence SMS. Accounts have no mobile, so
@@ -200,7 +199,7 @@ class ClassSampleGenerator
                 $this->addHistory($schedule, $options, $people['attendees'], $owner);
             }
 
-            $this->cancelWithMakeUp($classroom, (int) $options['cancelled_sessions']);
+            $this->cancelWithNonInstructionalSession($classroom, (int) $options['cancelled_sessions']);
         }
     }
 
@@ -586,10 +585,10 @@ class ClassSampleGenerator
     }
 
     /**
-     * The next sessions are cancelled, each with a make-up on one of the
+     * The next sessions are cancelled, each with a non-instructional session on one of the
      * following days at the same time.
      */
-    private function cancelWithMakeUp(Classroom $classroom, int $count): void
+    private function cancelWithNonInstructionalSession(Classroom $classroom, int $count): void
     {
         $sessions = ClassSession::withoutTenantScope()->where('classroom_id', $classroom->getKey())->upcoming()
             ->where('status', SessionStatus::Scheduled)->orderBy('starts_at')->limit(max(0, $count))->get();
@@ -603,10 +602,8 @@ class ClassSampleGenerator
                         'date' => $session->starts_at->copy()->addDays($day)->toDateString(),
                         'start_time' => $session->starts_at->format('H:i'),
                         'end_time' => $session->ends_at->format('H:i'),
-                        'kind' => SessionKind::MakeUp,
-                        'subject_id' => $session->subject_id,
                         'teacher_ids' => $session->teachers()->pluck('users.id')->all(),
-                        'note' => 'جبرانی جلسه‌ی لغوشده',
+                        'note' => 'جلسه‌ی غیر درسی پس از لغو جلسه',
                     ]);
 
                     break;

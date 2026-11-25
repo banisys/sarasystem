@@ -20,7 +20,7 @@ The user chose the first option of each question (2026-11-08).
 - The old columns are dropped. The migration moves their data: a substitute on a session that had no teacher becomes its teacher.
 - The rows have no model and no `tenant_id`: they belong to their schedule / session, which is tenant-owned, and the cross-tenant teacher clash check needs to read them anyway.
 - **Schedule:** «مدرس‌ها» is a multi-select of the class's non-attendee members. Saving gives them to every untouched future session.
-- **Session:** a make-up / extra session takes several teachers. On an existing session, «مدرس‌ها و جایگزین» (`substitute` action, `SessionPlanner::setTeachers()`) lists its teachers, each with a «جایگزین» select (anyone in the tenant), and can add or remove teachers.
+- **Session:** a non-instructional session takes several teachers. On an existing session, «مدرس‌ها و جایگزین» (`substitute` action, `SessionPlanner::setTeachers()`) lists its teachers, each with a «جایگزین» select (anyone in the tenant), and can add or remove teachers.
   - Changing the list sets `is_modified`, so rebuilding the schedule leaves the session alone.
   - A substitute does the same through `isUntouched()`.
   - One person may appear only once among those who teach a session.

@@ -16,7 +16,7 @@ Taking attendance and recording content opened 15 minutes before a session and c
 - Unchanged: whoever may edit the class works from a few minutes before the start, with no end. An **attendee** whose role has a flag (e.g. a class monitor) keeps the window. The class-role form now shows the two flags only for attendee roles.
 - Still refused: a **cancelled** session, until it is restored, since recording would mark it held; and a member who has **left** the class.
 - Content recorded before a session starts no longer marks it held, so homework and files can be prepared ahead. Recording again after it starts, or taking attendance, marks it held as before.
-- Moving, cancelling, substitutes and make-up sessions stay in the admin panel for whoever may edit the class. «تغییرات» here means what the session page offers.
+- Moving, cancelling, substitutes and non-instructional sessions stay in the admin panel for whoever may edit the class. «تغییرات» here means what the session page offers.
 
 ## Consequences
 - A supporter, supervisor or any other staff role can now change a session's attendance years later. Guardians get an absence SMS whenever someone first records an «غایب», even late.

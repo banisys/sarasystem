@@ -24,7 +24,7 @@ A schedule adds every planned day that has no session, so a deleted session woul
 - The «حذف» action needs `Update:Classroom` on the class, like the other changes to a session.
 
 ## Consequences
-- A deleted session stays gone when the schedule is edited, including when its time changes. There is no way to bring it back through the schedule, or to see or clear the skipped days; the way back is a make-up or extra session by hand.
+- A deleted session stays gone when the schedule is edited, including when its time changes. The schedule does not expose its skipped days. Staff can add a separate dated teaching schedule or a non-instructional session from the calendar.
 - A skipped date is only a date: if the schedule is later edited so that the day counts for another reason, it stays skipped.
 - Deleting a session of a schedule with a teaching plan moves the plan's forecast along by itself, as nothing about the forecast is stored.
 - There is no undo and no record of who deleted a session.

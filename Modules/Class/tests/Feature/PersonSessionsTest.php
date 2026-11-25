@@ -93,7 +93,7 @@ class PersonSessionsTest extends TestCase
             ->assertSee('آبان 1405')
             ->assertSee('برو به تاریخ')
             ->assertSee('ساعت برگزارشده')
-            ->assertDontSee('جلسه‌ی جبرانی / فوق‌العاده')
+            ->assertDontSee('جلسه‌ی غیر درسی')
             ->assertSeeHtml(ClassSessionResource::getUrl('view', ['record' => $mine]))
             ->assertDontSeeHtml(ClassSessionResource::getUrl('view', ['record' => $notMine]));
     }

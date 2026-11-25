@@ -60,7 +60,7 @@ use Nwidart\Modules\Facades\Module;
  * docs/tutorial-scenarios.md): programs offered in some branches, a class
  * with a capacity and a sub-class, weekly and monthly timetables, a branch
  * holiday, and the everyday changes: a substitute who takes attendance, a
- * moved session, a cancelled one with a make-up, a learner who leaves.
+ * moved session, a cancelled one followed by a non-instructional session, a learner who leaves.
  */
 class BranchOperations extends Scenario
 {
@@ -96,7 +96,7 @@ class BranchOperations extends Scenario
     {
         $tenant = config('sarasystem.tenant_label');
 
-        return "برنامه‌ی آموزشی در بعضی از {$tenant}‌ها، کلاس با ظرفیت و زیرکلاس، برنامه‌ی هفتگی و ماهانه و تداخل زمانی، تعطیلی یک {$tenant}، و تغییرهای روزمره: مدرس جایگزین، جابه‌جایی جلسه، لغو و جلسه‌ی جبرانی، و رفتن یک ".config('sarasystem.learner_label').'.';
+        return "برنامه‌ی آموزشی در بعضی از {$tenant}‌ها، کلاس با ظرفیت و زیرکلاس، برنامه‌ی هفتگی و ماهانه و تداخل زمانی، تعطیلی یک {$tenant}، و تغییرهای روزمره: مدرس جایگزین، جابه‌جایی جلسه، لغو و ثبت جلسه‌ی غیر درسی، و رفتن یک ".config('sarasystem.learner_label').'.';
     }
 
     public function requiredModules(): array
@@ -440,11 +440,11 @@ class BranchOperations extends Scenario
                         app(SessionPlanner::class)->move($session, today()->addDays(5)->toDateString(), $session->starts_at->format('H:i'), $session->ends_at->format('H:i'), 'اتاق ۳');
                     }))
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(ClassSession::class)->whereNotNull('original_starts_at')->exists()),
-                Mission::make('cancel', 'لغو و جلسه‌ی جبرانی')
+                Mission::make('cancel', 'لغو و ثبت جلسه‌ی غیر درسی')
                     ->actor($officer, $asOfficer)
                     ->steps([
                         'جلسه‌ی سوم را در تقویم باز کنید، «سایر ← لغو جلسه» را بزنید و دلیل «بیماری مدرس» را بنویسید؛ در تقویم قرمز می‌شود.',
-                        'با «جلسه‌ی جبرانی / فوق‌العاده» بالای تقویم یک جلسه‌ی جبرانی سه روز بعد، همان ساعت، با «بهاره امینی» بسازید.',
+                        'در منوی «افزودن»، «جلسه‌ی غیر درسی» را بزنید و برای سه روز بعد، همان ساعت، با «بهاره امینی» یک جلسه بسازید.',
                         'اگر جلسه‌ای که هنوز برگزار نشده نباید در تقویم بماند، به جای لغو از «سایر ← حذف» استفاده می‌شود؛ این‌جا لازم نیست آن را بزنید.',
                     ])
                     ->url(fn (TutorialRun $run): ?string => self::classUrl($run))
@@ -457,11 +457,10 @@ class BranchOperations extends Scenario
                             'start_time' => $session->starts_at->format('H:i'),
                             'end_time' => $session->ends_at->format('H:i'),
                             'teacher_ids' => [self::teacher($run, 1)->getKey()],
-                            'kind' => SessionKind::MakeUp,
                         ]);
                     }))
                     ->doneWhen(fn (TutorialRun $run): bool => $run->made(ClassSession::class)->where('status', SessionStatus::Cancelled)->exists()
-                        && $run->made(ClassSession::class)->where('kind', SessionKind::MakeUp)->exists()),
+                        && $run->made(ClassSession::class)->where('kind', SessionKind::NonInstructional)->exists()),
                 Mission::make('leave', "رفتن یک {$learner}")
                     ->actor($officer, $asOfficer)
                     ->steps([

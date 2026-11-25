@@ -127,7 +127,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Schedule | برنامه‌ی کلاس | When a class meets: once, daily, weekly or monthly (Jalali months), every N, between two dates, at a time, optionally with a subject, a teacher and a place (`ClassSchedule`). Replaces LMS's classroom plan + weekly schedule. |
 | Session | جلسه | One meeting of a class (`ClassSession`), built from a schedule or added by hand; scheduled, held or cancelled. Replaces LMS's activity session. |
 | Delivery mode | روش برگزاری | Whether a session meets in person or online. A teaching schedule supplies the mode to its generated sessions ([ADR 0115](decisions/0115-session-delivery-mode.md)). |
-| Make-up / extra session | جلسه‌ی جبرانی / فوق‌العاده | A session added by hand: to make up a cancelled one, or in addition to the schedule. |
+| Non-instructional session | جلسه‌ی غیر درسی | A session added by hand to a class calendar without a subject. |
 | Exam session | جلسهٔ امتحانی | A dated sitting on the class calendar. It can host an online session exam when the Exam module is enabled ([ADR 0084](decisions/0084-class-exam-schedules.md)). |
 | Exam invigilator | مراقب امتحان | An employee assigned to supervise an exam session. The employee may come from any branch ([ADR 0085](decisions/0085-exam-invigilators.md)). |
 | Exam seating plan | چیدمان صندلی‌های امتحان | A saved grid of attendee assignments and empty seats for one exam session ([ADR 0087](decisions/0087-exam-seating.md)). |

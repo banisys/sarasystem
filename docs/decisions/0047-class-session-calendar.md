@@ -22,7 +22,7 @@ The class page's «جلسه‌ها» tab was a table. A class has dozens to hund
 - **Filtering:** Both filters sit at the left end of the RTL toolbar. «همهٔ درس‌ها» lists the subjects used by the class's sessions, including inactive subjects used in past sessions. «همهٔ روش‌های برگزاری» offers «حضوری» and «آنلاین». The filters work together in all four views, including session totals, the small month and links to previous or next sessions. Clearing the subject filter also includes sessions without a subject within the selected delivery mode.
 - The class page (`ViewClassroom`) is full width, so the week and month views have room.
 - No list view in the tab (removed on request): the tenant-wide «کلاس‌ها → جلسه‌ها» is the list. The tab's table definition stays, unshown, because the row actions and their tests live on it. The view and date are in the URL (`?sessions=week&on=2026-11-03`), so a reload or a shared link keeps them; an unknown view (e.g. the old `list`) shows the month.
-- Under the header with the navigation: the view tabs on the start side and «جلسه‌ی جبرانی / فوق‌العاده» (small) on the end side. The colours' legend with each tone's count is below the calendar.
+- The calendar header offers «جلسه‌ی غیر درسی» in the «افزودن» menu ([ADR 0141](0141-non-instructional-class-sessions.md)). The colours' legend with each tone's count is below the calendar.
 - The «لغو جلسه» action was renamed from `cancel` to `cancelSession`: inside a modal, `cancel` is the name of the modal's own close button.
 
 ## Consequences

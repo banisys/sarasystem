@@ -38,7 +38,7 @@ In the user panel, «تم تیره» in the sidebar or the sun/moon button in th
 | Contracts: types, merge tags, issue, e-signature, paper, amendment, renewal | ◐ | | | ● | | | |
 | Terms, class roles, classes, members, capacity, sub-classes | ◐ | | ● | | ● | ● | |
 | Subjects, schedules (once / weekly / monthly), exam sittings, holidays, clashes | ◐ | | ● | | ◐ | ● | |
-| Sessions: move, substitute, cancel, make-up | | | | | | ● | |
+| Sessions: move, substitute, cancel, add non-instructional session | | | | | | ● | |
 | Attendance, absence SMS | ◐ | | ● | | ● | ● | |
 | Teaching plans, session content, homework, grading | | | ● | | ◐ | | |
 | School structure: stages, grades, majors, curriculum | | | ● | | | | |
@@ -260,7 +260,7 @@ Implemented in [HumanResources](../Modules/Tutorial/app/Scenarios/HumanResources
 Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperations.php).
 
 **Who it is for:** institutes and schools with several branches, after scenario 1 or 3.
-**Goal:** the everyday work of a branch: programs offered in some branches, a class with a capacity and a sub-class, weekly and monthly timetables and clashes, a branch holiday, a substitute who takes attendance, a moved session, a cancellation with a make-up, a learner who leaves.
+**Goal:** the everyday work of a branch: programs offered in some branches, a class with a capacity and a sub-class, weekly and monthly timetables and clashes, a branch holiday, a substitute who takes attendance, a moved session, a cancellation followed by a non-instructional session, a learner who leaves.
 **Modules:** requires Class, Employee, Student; Exam adds the session-exam mission.
 **Actors:** خودتان, «کارشناس آموزش شعبه پونک» (مینا جعفری, does the branch's class work), «کارشناس آموزش شعبه تجریش» (کامران صدری), «مدرس جایگزین» (رضا توکلی), applicant.
 
@@ -291,14 +291,14 @@ Implemented in [BranchOperations](../Modules/Tutorial/app/Scenarios/BranchOperat
 | 16 | The substitute takes attendance (one late 10 minutes) | substitute | attendance recorded by him |
 | 16a (Exam on) | Create a personal «تمرین مکالمه» bank in the user panel, add a written question and generate and publish an exam for today’s session; optional learner entry and teacher grading | officer 1 | a published exam made in the run points to the substituted session |
 | 17 | «جابه‌جایی» of the second session to five days from today, «اتاق ۳» | officer 1 | a moved session |
-| 18 | «لغو جلسه» of the third with a reason, and a make-up in three days | officer 1 | cancelled + make-up session |
+| 18 | «لغو جلسه» of the third with a reason, and a non-instructional session in three days | officer 1 | cancelled + non-instructional session |
 | 19 | A learner leaves («تاریخ خروج» today) | officer 1 | member with a leave date |
 | 20 | Deactivate «مکالمه‌ی پیشرفته» | you | inactive program |
 
 **Differences from the first design:** the admission step is yours (not each branch's officer), so one workflow serves both branches; the two classes are in different branches so the teacher clash crosses branches; the substitute takes today's session, the only one whose attendance is open.
 
 **Notes:**
-- The days are chosen apart (B2 on today, +2, +4; IELTS on +1; make-up on +3; moved session on +5) so the same teacher never clashes, whatever the weekday.
+- The days are chosen apart (B2 on today, +2, +4; IELTS on +1; non-instructional session on +3; moved session on +5) so the same teacher never clashes, whatever the weekday.
 - Mission 13's refused clash and mission 10's refused capacity are taught in the steps; the checks see the saved result.
 
 ---

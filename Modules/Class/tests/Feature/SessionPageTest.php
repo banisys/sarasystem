@@ -294,7 +294,7 @@ class SessionPageTest extends TestCase
 
     public function test_deleting_the_session_goes_back_to_its_class(): void
     {
-        $session = $this->classSession(['schedule_id' => null, 'kind' => SessionKind::Extra, 'starts_at' => '2026-10-30 10:00', 'ends_at' => '2026-10-30 11:00']);
+        $session = $this->classSession(['schedule_id' => null, 'kind' => SessionKind::NonInstructional, 'starts_at' => '2026-10-30 10:00', 'ends_at' => '2026-10-30 11:00']);
 
         $this->actingInPanel($this->admin(), $this->west);
         Livewire::test(ViewClassSession::class, ['record' => $session->id])

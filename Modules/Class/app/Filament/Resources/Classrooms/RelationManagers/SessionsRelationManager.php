@@ -10,7 +10,6 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
@@ -21,7 +20,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Class\Enums\ClassMode;
-use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\ExamScheduleActions;
 use Modules\Class\Filament\Actions\SessionActions;
 use Modules\Class\Filament\Actions\TeachingScheduleActions;
@@ -34,7 +32,7 @@ use Modules\Class\Services\SessionPlanner;
 
 /**
  * The «جلسه‌ها» tab of a class (ADR 0023): its sessions on a day, week,
- * month or year calendar (ADR 0047), with make-up and extra sessions added
+ * month or year calendar (ADR 0047), with non-instructional sessions added
  * by hand. A session opens its page (ADR 0050). The table below is not
  * shown; the tenant's list is «کلاس‌ها → جلسه‌ها».
  */
@@ -98,28 +96,19 @@ class SessionsRelationManager extends RelationManager
     public function addSessionAction(): Action
     {
         return Action::make('addSession')
-            ->label('جلسه‌ی جبرانی / فوق‌العاده')
+            ->label('جلسه‌ی غیر درسی')
             ->icon(Heroicon::OutlinedPlus)
             ->size(Size::Small)
             ->visible(fn (): bool => auth()->user()?->can('update', $this->classroom()) ?? false)
             ->modalWidth('2xl')
             ->fillForm(fn (array $arguments): array => [
-                'kind' => SessionKind::MakeUp->value,
                 'mode' => $this->classroom()->mode->value,
                 'date' => $this->parseDate($arguments['date'] ?? null)?->toDateString(),
             ])
             ->schema([
-                ToggleButtons::make('kind')
-                    ->label('نوع')
-                    ->options([SessionKind::MakeUp->value => SessionKind::MakeUp->getLabel(), SessionKind::Extra->value => SessionKind::Extra->getLabel()])
-                    ->default(SessionKind::MakeUp->value)
-                    ->inline()
-                    ->required()
-                    ->columnSpanFull(),
                 DatePicker::make('date')->label('تاریخ')->jalali()->required(),
                 TimePicker::make('start_time')->label('از ساعت')->seconds(false)->required(),
                 TimePicker::make('end_time')->label('تا ساعت')->seconds(false)->after('start_time')->required(),
-                Select::make('subject_id')->label('درس')->options(fn (): array => Subject::options())->searchable(),
                 Select::make('teacher_ids')->label('مدرس‌ها')->multiple()->options(fn (SessionPlanner $planner): array => $planner->teacherOptions($this->classroom())),
                 SessionActions::modeField($this->classroom()->mode),
                 SessionActions::locationField(),

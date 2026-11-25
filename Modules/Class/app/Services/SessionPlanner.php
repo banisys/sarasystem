@@ -202,7 +202,7 @@ class SessionPlanner
 
             foreach ($sessions as $session) {
                 $this->checkExamSubject($session['subject_id'] ?? null);
-                $this->addSession($classroom, [...$session, 'kind' => SessionKind::Exam]);
+                $this->createManualSession($classroom, SessionKind::Exam, $session);
             }
         });
     }
@@ -279,7 +279,7 @@ class SessionPlanner
     }
 
     /**
-     * A make-up, extra or exam session added by hand.
+     * A non-instructional session added by hand.
      *
      * @param  array<string, mixed>  $data
      *
@@ -287,9 +287,15 @@ class SessionPlanner
      */
     public function addSession(Classroom $classroom, array $data): ClassSession
     {
+        return $this->createManualSession($classroom, SessionKind::NonInstructional, $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function createManualSession(Classroom $classroom, SessionKind $kind, array $data): ClassSession
+    {
         [$start, $end] = self::interval($data['date'], $data['start_time'], $data['end_time']);
         $teacherIds = self::ids($data['teacher_ids'] ?? []);
-        if (in_array($data['kind'], [SessionKind::Exam, SessionKind::Exam->value], true)) {
+        if ($kind === SessionKind::Exam) {
             $this->checkInvigilators($teacherIds);
         } else {
             $this->checkTeachers($classroom, $teacherIds);
@@ -299,16 +305,16 @@ class SessionPlanner
 
         $this->checkClashes(collect([['start' => $start, 'end' => $end]]), $classroom, $teacherIds, $location);
 
-        return DB::transaction(function () use ($classroom, $data, $teacherIds, $start, $end, $mode, $location): ClassSession {
+        return DB::transaction(function () use ($classroom, $kind, $data, $teacherIds, $start, $end, $mode, $location): ClassSession {
             $session = ClassSession::query()->create([
                 'tenant_id' => $classroom->tenant_id,
                 'classroom_id' => $classroom->getKey(),
-                'subject_id' => $data['subject_id'] ?? null,
+                'subject_id' => $kind === SessionKind::Exam ? ($data['subject_id'] ?? null) : null,
                 'starts_at' => $start,
                 'ends_at' => $end,
                 'mode' => $mode,
                 'location' => $location,
-                'kind' => $data['kind'],
+                'kind' => $kind,
                 'status' => SessionStatus::Scheduled,
                 'note' => $data['note'] ?? null,
             ]);
@@ -323,7 +329,7 @@ class SessionPlanner
     {
         $mode = self::mode($data['mode'] ?? $session->deliveryMode());
         $session->fill([
-            'subject_id' => $data['subject_id'] ?? null,
+            'subject_id' => $session->kind === SessionKind::NonInstructional ? null : ($data['subject_id'] ?? null),
             'mode' => $mode,
             'location' => $mode->meetsInPerson() && filled($data['location'] ?? null) ? trim($data['location']) : null,
             'note' => $data['note'] ?? null,

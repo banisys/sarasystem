@@ -42,6 +42,7 @@ use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Modules\Class\Enums\AttendanceStatus;
 use Modules\Class\Enums\ClassMode;
+use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 use Modules\Class\Filament\Resources\ClassSessions\ClassSessionResource;
@@ -759,6 +760,7 @@ class SessionActions
             ->schema([
                 TextInput::make('title')->label('عنوان جلسه')->maxLength(255),
                 Select::make('subject_id')->label('درس')
+                    ->visible(fn (ClassSession $record): bool => $record->kind !== SessionKind::NonInstructional)
                     ->options(fn (ClassSession $record): array => Subject::options($record->subject_id))
                     ->searchable(),
                 self::modeField(),

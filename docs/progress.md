@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-25 — Replaced the additional-session options with «جلسه‌ی غیر درسی» and removed the subject and kind inputs from its creation form ([ADR 0141](decisions/0141-non-instructional-class-sessions.md)). Migrated seven local sessions and cleared six subject links. All 865 tests, two checks with Tutorial disabled, and Pint passed.
 - 2026-11-25 — Added file, video and exam types to the course activity form and table ([ADR 0140](decisions/0140-course-activity-types.md)). Applied the local migration and verified the badges on the sample activities page. All 23 Course tests, six admin tests with Exam disabled, and Pint passed.
 - 2026-11-25 — Added the «فعالیت‌ها» row action to the course list. It opens the selected course’s lesson editor. Verified all five local menu labels and a sample activities page. All 22 Course tests, 12 checks with Course disabled, and Pint passed.
 - 2026-11-25 — Added the LMS-style «سرفصل‌ها» action to the course list with a visible label in the row menu. It opens a dedicated page with the existing sections table. Verified the local row link and page with a sample course. All 21 Course tests, 12 checks with Course disabled, and Pint passed.

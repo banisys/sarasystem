@@ -14,7 +14,7 @@ A one-off schedule for 12:40 saved at 12:41 silently created no session because 
 ## Decision
 - `SessionPlanner::planned()` includes every occurrence within the schedule dates, regardless of the current time. Holidays, manually skipped dates, clash checks and the 1000-session limit still apply.
 - Synchronization considers all existing sessions. An existing session whose start has passed (including exactly now) keeps its identity, times, teachers, status and recorded content; its original date is consumed so it is not created again. Future sessions retain the existing synchronization rules from ADR 0023.
-- The make-up / extra session form also accepts past dates and keeps a past date selected in the calendar.
+- The non-instructional session form also accepts past dates and keeps a past date selected in the calendar.
 - The sample-data generator records history on completed planner-created sessions instead of creating another set of past sessions.
 - Existing schedules are repaired on save or synchronization; there is no automatic installation-wide backfill.
 - Moving an existing session and deleting a schedule retain their existing rules; this decision changes session creation.

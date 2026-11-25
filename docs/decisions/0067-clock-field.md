@@ -4,7 +4,7 @@
 - **Status:** accepted
 
 ## Context
-Times are entered in several admin forms: a class's schedule, a session's move and its make-up / extra sessions, and the sample-data form. Since 2026-11-07 every `TimePicker` used Filament's non-native panel, so that clocks are 24-hour whatever the operating system. That panel is slow to use. The field is read-only, so you can't type in it. A click opens a small box with two number inputs that you change one step at a time or type into. There is no quick choice of common times.
+Times are entered in several admin forms: a class's schedule, a session's move and its non-instructional sessions, and the sample-data form. Since 2026-11-07 every `TimePicker` used Filament's non-native panel, so that clocks are 24-hour whatever the operating system. That panel is slow to use. The field is read-only, so you can't type in it. A click opens a small box with two number inputs that you change one step at a time or type into. There is no quick choice of common times.
 
 ## Options considered
 - **Browser's native time input:** fast to type, but it shows AM / PM when the operating system does. This is why we dropped it on 2026-11-07.

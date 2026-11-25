@@ -296,7 +296,9 @@ class ClassSchedulesTest extends TestCase
         $owner = ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class];
 
         $this->actingInPanel($viewer, $this->west);
-        Livewire::test(SessionsRelationManager::class, $owner)->assertActionHidden('addSchedule');
+        Livewire::test(SessionsRelationManager::class, $owner)
+            ->assertActionHidden('addSchedule')
+            ->assertActionHidden('addSession');
 
         $this->actingInPanel($editor, $this->west);
         Livewire::test(SessionsRelationManager::class, $owner)
@@ -315,16 +317,26 @@ class ClassSchedulesTest extends TestCase
         Livewire::test(SessionsRelationManager::class, $owner)
             ->callAction(TestAction::make('cancelSession')->table($first), data: ['reason' => 'جلسه‌ی اولیا'])
             ->assertHasNoActionErrors()
-            ->callAction(TestAction::make('addSession')->table(), data: [
-                'kind' => SessionKind::MakeUp->value, 'mode' => ClassMode::InPerson->value, 'date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00',
+            ->assertActionHasLabel('addSession', 'جلسه‌ی غیر درسی')
+            ->mountAction('addSession')
+            ->assertFormFieldDoesNotExist('kind', 'mountedActionSchema0')
+            ->assertFormFieldDoesNotExist('subject_id', 'mountedActionSchema0')
+            ->fillForm([
+                'mode' => ClassMode::InPerson->value, 'date' => '2026-11-05', 'start_time' => '10:00', 'end_time' => '11:00',
             ])
+            ->callMountedAction()
             ->assertHasNoActionErrors();
 
         $this->assertSame(SessionStatus::Cancelled, $first->fresh()->status);
-        $makeUp = ClassSession::query()->whereDate('starts_at', '2026-11-05')->sole();
-        $this->assertSame(SessionKind::MakeUp, $makeUp->kind);
-        $this->assertSame(ClassMode::InPerson, $makeUp->mode);
-        $this->assertSame('کلاس ۱۰۱', $makeUp->location);
+        $session = $this->classroom->sessions()->whereDate('starts_at', '2026-11-05')->sole();
+        $this->assertSame(SessionKind::NonInstructional, $session->kind);
+        $this->assertNull($session->subject_id);
+        $this->assertSame(ClassMode::InPerson, $session->mode);
+        $this->assertSame('کلاس ۱۰۱', $session->location);
+
+        Livewire::test(ViewClassSession::class, ['record' => $session->id])
+            ->mountAction('editSession')
+            ->assertFormFieldIsHidden('subject_id', 'mountedActionSchema0');
     }
 
     public function test_a_teaching_session_can_edit_its_details_without_changing_its_schedule_or_time(): void
@@ -714,11 +726,12 @@ class ClassSchedulesTest extends TestCase
         $invigilator = Employee::factory()->for($this->primary)->create();
         $subject = Subject::factory()->for($this->primary)->create();
         $this->actingInPanel($editor, $this->west);
-        $exam = $this->planner->addSession($this->classroom, [
-            'kind' => SessionKind::Exam, 'date' => '2026-11-06', 'start_time' => '10:00', 'end_time' => '11:00',
+        $this->planner->addExamSessions($this->classroom, [
+            ['date' => '2026-11-06', 'start_time' => '10:00', 'end_time' => '11:00'],
         ]);
+        $exam = $this->classroom->sessions()->where('kind', SessionKind::Exam)->sole();
         $this->planner->addSession($this->classroom, [
-            'kind' => SessionKind::Extra, 'date' => '2026-11-07', 'start_time' => '10:00', 'end_time' => '11:00',
+            'date' => '2026-11-07', 'start_time' => '10:00', 'end_time' => '11:00',
         ]);
         $action = 'editExamSchedule';
         $changes = [
@@ -756,9 +769,10 @@ class ClassSchedulesTest extends TestCase
     public function test_editing_a_past_exam_can_correct_details_without_moving_the_session(): void
     {
         $this->actingInPanel(User::factory()->superAdmin()->create(), $this->west);
-        $exam = $this->planner->addSession($this->classroom, [
-            'kind' => SessionKind::Exam, 'date' => '2026-10-28', 'start_time' => '10:00', 'end_time' => '11:00',
+        $this->planner->addExamSessions($this->classroom, [
+            ['date' => '2026-10-28', 'start_time' => '10:00', 'end_time' => '11:00'],
         ]);
+        $exam = $this->classroom->sessions()->where('kind', SessionKind::Exam)->sole();
 
         Livewire::test(ViewExamSession::class, ['record' => $exam->id])
             ->callAction('editExamSchedule', data: [

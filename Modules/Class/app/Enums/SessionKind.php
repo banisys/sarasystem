@@ -11,9 +11,7 @@ enum SessionKind: string implements HasLabel
 {
     case Regular = 'regular';
 
-    case MakeUp = 'make_up';
-
-    case Extra = 'extra';
+    case NonInstructional = 'non_instructional';
 
     case Exam = 'exam';
 
@@ -21,8 +19,7 @@ enum SessionKind: string implements HasLabel
     {
         return match ($this) {
             self::Regular => 'عادی',
-            self::MakeUp => 'جبرانی',
-            self::Extra => 'فوق‌العاده',
+            self::NonInstructional => 'جلسه‌ی غیر درسی',
             self::Exam => 'امتحانی',
         };
     }

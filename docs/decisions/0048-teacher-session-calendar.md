@@ -22,7 +22,7 @@ The user asked for an action on «کارکنان → کارمندان» that ope
 - A teacher's sessions are those the person **actually teaches** in the current tenant (`ClassSession::taughtBy()`): as substitute, or as teacher when there is no substitute. A session handed to a substitute counts for the substitute, not for the original teacher.
 - A learner's sessions (`ClassSession::attendedBy()`) follow the attendance list (`AttendanceRegister::attendees()`): the sessions of classes where their class role is an attendee role, between their join and leave dates, plus any session where their attendance was taken. The user-panel academic calendar follows [ADR 0117](0117-academic-calendar-session-membership.md).
 - Each session shows its class and its class's mode. A teacher's calendar leaves out the teacher (the page's person). A learner's calendar keeps the teacher and adds the learner's own attendance on each session. Its legend counts their attendance for the period by status.
-- These pages have no «جلسه‌ی جبرانی / فوق‌العاده» button: sessions are added in a class.
+- These pages have no «جلسه‌ی غیر درسی» button: sessions are added in a class.
 - Figures:
   - The page's subheading has the number of sessions in the tenant.
   - Every calendar's legend shows «ساعت برگزارشده» of the period against the planned hours (all but the cancelled).

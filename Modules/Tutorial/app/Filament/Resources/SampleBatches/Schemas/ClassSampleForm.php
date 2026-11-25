@@ -172,7 +172,7 @@ class ClassSampleForm
                         ->placeholder('8')
                         ->visible(fn (Get $get): bool => (bool) $get('teaching_plan')),
                     TextInput::make('cancelled_sessions')
-                        ->label('جلسه‌ی لغوشده با جبرانی')
+                        ->label('جلسه‌ی لغوشده همراه با یک جلسه‌ی غیر درسی')
                         ->integer()
                         ->minValue(0)
                         ->maxValue(5)
