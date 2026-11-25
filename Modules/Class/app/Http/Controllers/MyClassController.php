@@ -168,7 +168,12 @@ class MyClassController extends Controller
             'role' => $role,
             'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
             'seating' => $isOwn && $seating->canViewInUserPanel($user, $session) ? $seating->editor($session) : null,
-            'reminderTimeline' => $isOwn ? $reminders->timeline($user, $session) : null,
+            'reminderTimeline' => fn () => $isOwn ? $reminders->timeline(
+                $user,
+                $session,
+                $request->integer('previous_reminders'),
+                $request->integer('upcoming_reminders', SessionReminders::PAGE_SIZE),
+            ) : null,
             'myAttendance' => $role['is_attendee'] && $mine ? [
                 'status' => $mine->status->getLabel(),
                 'late_minutes' => $mine->late_minutes,
@@ -237,7 +242,10 @@ class MyClassController extends Controller
 
         $reminders->add($user, $session, $target, $data['body']);
 
-        return to_route('my-classes.session', $session)->with('status', 'یادآوری ثبت شد.');
+        return to_route('my-classes.session', [
+            'session' => $session,
+            ...$request->only(['previous_reminders', 'upcoming_reminders']),
+        ])->with('status', 'یادآوری ثبت شد.');
     }
 
     public function submitHomework(Request $request, ClassSession $session, MyClasses $myClasses, HomeworkBook $homework): RedirectResponse

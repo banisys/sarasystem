@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-25 — Added buttons to load earlier and later sessions in the staff reminder timeline, with three upcoming sessions shown initially. All 26 academic calendar tests, Pint, and the Vite build passed.
 - 2026-11-25 — Added personal row pins to admin tables ([ADR 0142](decisions/0142-admin-table-row-pins.md)). Applied the local migration and verified pinning, reloading and unpinning in the class list in the browser. All 868 tests and Pint passed.
 - 2026-11-25 — Replaced the additional-session options with «جلسه‌ی غیر درسی» and removed the subject and kind inputs from its creation form ([ADR 0141](decisions/0141-non-instructional-class-sessions.md)). Migrated seven local sessions and cleared six subject links. All 865 tests, two checks with Tutorial disabled, and Pint passed.
 - 2026-11-25 — Added file, video and exam types to the course activity form and table ([ADR 0140](decisions/0140-course-activity-types.md)). Applied the local migration and verified the badges on the sample activities page. All 23 Course tests, six admin tests with Exam disabled, and Pint passed.

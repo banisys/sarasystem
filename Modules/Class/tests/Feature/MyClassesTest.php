@@ -453,8 +453,8 @@ class MyClassesTest extends TestCase
         $url = route('my-classes.reminders.store', ['session' => $source, 'target' => $target]);
 
         $this->as($supporter, $url, 'post', ['body' => '  '])->assertSessionHasErrors('body');
-        $this->as($supporter, $url, 'post', ['body' => 'تمرین فصل دوم مرور شود.'])
-            ->assertRedirect(route('my-classes.session', $source))
+        $this->as($supporter, $url.'?upcoming_reminders=6', 'post', ['body' => 'تمرین فصل دوم مرور شود.'])
+            ->assertRedirect(route('my-classes.session', ['session' => $source, 'upcoming_reminders' => 6]))
             ->assertSessionHasNoErrors();
         $this->assertDatabaseHas('class_session_reminders', [
             'tenant_id' => $this->west->id,
@@ -508,6 +508,45 @@ class MyClassesTest extends TestCase
         $this->as($this->student, $url, 'post', ['body' => 'یادآوری فراگیر'])->assertNotFound();
         $this->as($this->teacher, $url.'?for='.$this->student->id, 'post', ['body' => 'یادآوری در نمای سرپرست'])->assertNotFound();
         $this->assertDatabaseCount('class_session_reminders', 0);
+    }
+
+    public function test_the_reminder_timeline_loads_previous_and_upcoming_sessions_in_groups_of_three(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-14 08:15'));
+        $source = $this->sessionOn('2026-11-14');
+        $previous = $this->sessionOn('2026-11-02');
+        $firstUpcoming = $this->sessionOn('2026-11-16');
+        $thirdUpcoming = $this->sessionOn('2026-11-23');
+        $lastUpcoming = $this->sessionOn('2026-11-30');
+        $previous->reminders()->create(['author_id' => $this->teacher->id, 'body' => 'یادآوری جلسهٔ قبلی']);
+        $url = route('my-classes.session', $source);
+
+        $initial = $this->as($this->teacher, $url)->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('reminderTimeline.sessions', 4)
+            ->where('reminderTimeline.sessions.0.id', $source->id)
+            ->where('reminderTimeline.sessions.1.id', $firstUpcoming->id)
+            ->where('reminderTimeline.sessions.3.id', $thirdUpcoming->id)
+            ->where('reminderTimeline.more_previous', 3)
+            ->where('reminderTimeline.more_upcoming', 6));
+
+        $this->withHeaders([
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $initial->viewData('page')['version'],
+            'X-Inertia-Partial-Component' => 'Class::Session',
+            'X-Inertia-Partial-Data' => 'reminderTimeline',
+        ]);
+        $this->as($this->teacher, $url.'?previous_reminders=3&upcoming_reminders=6')
+            ->assertOk()
+            ->assertJsonCount(9, 'props.reminderTimeline.sessions')
+            ->assertJsonPath('props.reminderTimeline.sessions.0.id', $previous->id)
+            ->assertJsonPath('props.reminderTimeline.sessions.0.can_add', false)
+            ->assertJsonPath('props.reminderTimeline.sessions.0.reminders.0.body', 'یادآوری جلسهٔ قبلی')
+            ->assertJsonPath('props.reminderTimeline.sessions.3.id', $source->id)
+            ->assertJsonPath('props.reminderTimeline.sessions.8.id', $lastUpcoming->id)
+            ->assertJsonPath('props.reminderTimeline.sessions.8.can_add', true)
+            ->assertJsonPath('props.reminderTimeline.more_previous', 6)
+            ->assertJsonPath('props.reminderTimeline.more_upcoming', null)
+            ->assertJsonMissingPath('props.session');
     }
 
     public function test_the_menu_link_is_shown_to_class_members_only(): void

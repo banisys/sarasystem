@@ -1,5 +1,5 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import { ElCollapse, ElCollapseItem, ElForm, ElInput } from 'element-plus';
 import 'element-plus/es/components/collapse/style/css';
 import 'element-plus/es/components/collapse-item/style/css';
@@ -16,7 +16,31 @@ const props = defineProps({
 });
 
 const openSession = ref('');
+const loadingDirection = ref(null);
+const loadError = ref(false);
 const form = useForm({ body: '' });
+
+function loadSessions(direction, count) {
+    const showLoadError = () => {
+        loadError.value = true;
+        return false;
+    };
+
+    loadingDirection.value = direction;
+    loadError.value = false;
+    router.get(route('my-classes.session', props.sourceId), {
+        ...props.timeline.counts,
+        [direction]: count,
+    }, {
+        only: ['reminderTimeline'],
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+        onHttpException: showLoadError,
+        onNetworkError: showLoadError,
+        onFinish: () => { loadingDirection.value = null; },
+    });
+}
 
 function resetForm() {
     form.reset();
@@ -29,7 +53,11 @@ function closeEditor() {
 }
 
 function save(targetId) {
-    form.post(route('my-classes.reminders.store', { session: props.sourceId, target: targetId }), {
+    form.post(route('my-classes.reminders.store', {
+        session: props.sourceId,
+        target: targetId,
+        ...props.timeline.counts,
+    }), {
         preserveScroll: true,
         onSuccess: resetForm,
     });
@@ -39,6 +67,17 @@ function save(targetId) {
 <template>
     <section aria-label="یادآوری‌های جلسه" class="space-y-4 p-4 sm:p-5">
         <p v-if="timeline.term" class="text-sm text-ui-muted">{{ timeline.term }}</p>
+
+        <PanelButton
+            v-if="timeline.more_previous"
+            variant="outline-brand"
+            size="small"
+            :loading="loadingDirection === 'previous_reminders'"
+            :disabled="form.processing || loadingDirection !== null"
+            @click="loadSessions('previous_reminders', timeline.more_previous)"
+        >
+            نمایش جلسه‌های قبلی
+        </PanelButton>
 
         <ElCollapse v-model="openSession" accordion class="reminder-accordion overflow-hidden rounded-lg border border-ui-line" @change="resetForm">
             <ElCollapseItem v-for="entry in timeline.sessions" :key="entry.id" :name="entry.id" :disabled="form.processing">
@@ -68,9 +107,9 @@ function save(targetId) {
                             </div>
                         </li>
                     </ul>
-                    <p v-else-if="entry.is_current" class="py-3 text-sm text-ui-muted">برای این جلسه یادآوری ثبت نشده است.</p>
+                    <p v-else-if="!entry.can_add" class="py-3 text-sm text-ui-muted">برای این جلسه یادآوری ثبت نشده است.</p>
 
-                    <ElForm v-if="openSession === entry.id && !entry.is_current" class="grid gap-4 py-4" :class="{ 'border-t border-ui-line': entry.reminders.length }" @submit.prevent="save(entry.id)">
+                    <ElForm v-if="openSession === entry.id && entry.can_add" class="grid gap-4 py-4" :class="{ 'border-t border-ui-line': entry.reminders.length }" @submit.prevent="save(entry.id)">
                         <PanelFormField label="متن یادآوری" :error="form.errors.body">
                             <ElInput
                                 v-model="form.body"
@@ -82,14 +121,25 @@ function save(targetId) {
                             />
                         </PanelFormField>
                         <div class="flex flex-wrap gap-2">
-                            <PanelButton type="submit" size="small" :loading="form.processing" :disabled="!form.body.trim()">ذخیره</PanelButton>
+                            <PanelButton type="submit" size="small" :loading="form.processing" :disabled="!form.body.trim() || loadingDirection !== null">ذخیره</PanelButton>
                             <PanelButton variant="ghost" size="small" :disabled="form.processing" @click="closeEditor">انصراف</PanelButton>
                         </div>
                     </ElForm>
                 </div>
             </ElCollapseItem>
         </ElCollapse>
-        <p v-if="timeline.sessions.length === 1" class="text-sm text-ui-muted">جلسهٔ آینده‌ای برای ثبت یادآوری وجود ندارد.</p>
+        <PanelButton
+            v-if="timeline.more_upcoming"
+            variant="outline-brand"
+            size="small"
+            :loading="loadingDirection === 'upcoming_reminders'"
+            :disabled="form.processing || loadingDirection !== null"
+            @click="loadSessions('upcoming_reminders', timeline.more_upcoming)"
+        >
+            نمایش جلسه‌های بعدی بیشتر
+        </PanelButton>
+        <p v-if="!timeline.has_upcoming" class="text-sm text-ui-muted">جلسهٔ آینده‌ای برای ثبت یادآوری وجود ندارد.</p>
+        <p v-if="loadError" role="alert" class="text-sm text-ui-muted">بارگیری جلسه‌ها انجام نشد. دوباره تلاش کنید.</p>
     </section>
 </template>
 
