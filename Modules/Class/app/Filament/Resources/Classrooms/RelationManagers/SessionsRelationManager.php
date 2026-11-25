@@ -97,7 +97,7 @@ class SessionsRelationManager extends RelationManager
     {
         return Action::make('addSession')
             ->label('جلسه‌ی غیر درسی')
-            ->icon(Heroicon::OutlinedPlus)
+            ->icon(Heroicon::OutlinedUsers)
             ->size(Size::Small)
             ->visible(fn (): bool => auth()->user()?->can('update', $this->classroom()) ?? false)
             ->modalWidth('2xl')

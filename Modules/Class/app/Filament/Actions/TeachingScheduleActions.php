@@ -28,10 +28,11 @@ class TeachingScheduleActions
     public static function add(Classroom $classroom): Action
     {
         return Action::make('addSchedule')
-            ->label('افزودن برنامه درسی')
-            ->icon(Heroicon::OutlinedPlus)
+            ->label('برنامه درسی')
+            ->icon(Heroicon::OutlinedCalendarDays)
             ->size(Size::Small)
             ->authorize(fn (): bool => self::canManage($classroom))
+            ->modalHeading('افزودن برنامه درسی')
             ->modalWidth('3xl')
             ->fillForm(fn (): array => [
                 'frequency' => Frequency::Weekly->value,

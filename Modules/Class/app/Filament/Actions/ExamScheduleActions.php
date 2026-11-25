@@ -27,11 +27,12 @@ class ExamScheduleActions
     public static function add(Classroom $classroom): Action
     {
         return Action::make('addExamSchedule')
-            ->label('افزودن برنامه امتحانی')
-            ->icon(Heroicon::OutlinedClipboardDocumentList)
+            ->label('برنامه امتحانی')
+            ->icon(Heroicon::OutlinedClipboardDocumentCheck)
             ->color('gray')
             ->size(Size::Small)
             ->authorize(fn (): bool => self::canEdit($classroom))
+            ->modalHeading('افزودن برنامه امتحانی')
             ->modalWidth('3xl')
             ->modalDescription('برای هر امتحان یک جلسه اضافه کنید. جلسه‌های ثبت‌شده در تقویم همین کلاس دیده می‌شوند.')
             ->modalSubmitActionLabel('ثبت جلسه‌های امتحانی')

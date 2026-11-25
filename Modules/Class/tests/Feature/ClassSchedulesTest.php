@@ -410,7 +410,7 @@ class ClassSchedulesTest extends TestCase
             ->assertSee($this->classroom->title);
 
         $calendar = Livewire::test(SessionsRelationManager::class, ['ownerRecord' => $this->classroom, 'pageClass' => ClassSessions::class])
-            ->assertSee('افزودن برنامه امتحانی')
+            ->assertActionHasLabel($action, 'برنامه امتحانی')
             ->mountAction($action)
             ->assertActionMounted($action)
             ->fillForm(['sessions' => [
