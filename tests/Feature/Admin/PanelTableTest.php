@@ -9,6 +9,7 @@ use App\Filament\Support\PanelTable;
 use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Enums\RecordActionsPosition;
@@ -34,6 +35,7 @@ class PanelTableTest extends TestCase
             $this->assertCount(1, $table->getRecordActions());
             $this->assertInstanceOf(ActionGroup::class, $table->getRecordActions()[0]);
             $this->assertArrayHasKey('edit', $table->getFlatRecordActions());
+            $this->assertArrayHasKey('toggleTableRowPin', $table->getFlatRecordActions());
         }
     }
 
@@ -116,6 +118,90 @@ class PanelTableTest extends TestCase
 
         $this->assertFalse($table->getColumn('created_at')->isVisible());
         $this->assertFalse($table->getColumn('updated_at')->isVisible());
+    }
+
+    public function test_pins_move_records_from_later_pages_to_the_top_and_respect_sorting_and_filters(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+        $older = User::factory()->create(['name' => 'Pinned row']);
+        $newer = User::factory()->count(10)->create(['name' => 'Other row']);
+        $newer->prepend($older)->each(fn (User $user) => $this->makeStaff($user, $tenant));
+        $pin = TestAction::make('toggleTableRowPin')->table($older);
+
+        Livewire::test(ListUsers::class)
+            ->set('tableRecordsPerPage', 10)
+            ->assertCanNotSeeTableRecords([$older])
+            ->call('setPage', 2)
+            ->assertCanSeeTableRecords([$older])
+            ->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول')
+            ->callAction($pin)
+            ->assertCanSeeTableRecords([$older, $newer->last()], inOrder: true)
+            ->assertActionHasLabel($pin, 'برداشتن سنجاق');
+
+        Livewire::test(ListUsers::class)
+            ->sortTable('name', 'asc')
+            ->assertCanSeeTableRecords([$older, $newer->last()], inOrder: true)
+            ->filterTable('name', ['value' => 'Other row'])
+            ->assertCanNotSeeTableRecords([$older])
+            ->resetTableFilters()
+            ->callAction($pin)
+            ->assertCanSeeTableRecords([$newer->last()])
+            ->assertCanNotSeeTableRecords([$older])
+            ->call('setPage', 2)
+            ->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول');
+
+        $this->assertDatabaseCount('table_row_pins', 0);
+    }
+
+    public function test_pins_are_private_to_the_user_and_branch_and_require_an_accessible_row(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $otherBranch = Tenant::factory()->create();
+        $firstViewer = User::factory()->create();
+        $secondViewer = User::factory()->create();
+        $shared = User::factory()->create();
+        $foreign = User::factory()->create();
+        $this->roleWithPermissions('user_reader', ['ViewAny:User', 'View:User']);
+
+        foreach ([$tenant, $otherBranch] as $branch) {
+            $this->makeStaff($shared, $branch);
+            $this->makeStaff($firstViewer, $branch);
+            $this->grantRole($firstViewer, $branch, 'user_reader');
+        }
+
+        $this->makeStaff($secondViewer, $tenant);
+        $this->grantRole($secondViewer, $tenant, 'user_reader');
+        $this->makeStaff($foreign, $otherBranch);
+        $pin = TestAction::make('toggleTableRowPin')->table($shared);
+
+        $this->actingInPanel($firstViewer, $tenant);
+        Livewire::test(ListUsers::class)
+            ->callAction($pin)
+            ->assertActionHasLabel($pin, 'برداشتن سنجاق')
+            ->call('mountAction', 'toggleTableRowPin', [], ['table' => true, 'recordKey' => (string) $foreign->getKey()])
+            ->assertSet('mountedActions', []);
+        $this->assertDatabaseCount('table_row_pins', 1);
+
+        $this->actingInPanel($secondViewer, $tenant);
+        Livewire::test(ListUsers::class)->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول');
+
+        $this->actingInPanel($firstViewer, $otherBranch);
+        Livewire::test(ListUsers::class)->assertActionHasLabel($pin, 'سنجاق کردن به بالای جدول');
+    }
+
+    public function test_array_backed_rows_can_be_pinned_by_their_string_keys(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInPanel(User::factory()->superAdmin()->create(), $tenant);
+        $page = Livewire::test(ManageModules::class);
+        $key = $page->instance()->getTable()->getRecords()->keys()->last();
+        $pin = TestAction::make('toggleTableRowPin')->table($key);
+
+        $page->callAction($pin)->assertActionHasLabel($pin, 'برداشتن سنجاق');
+
+        $records = Livewire::test(ManageModules::class)->instance()->getTable()->getRecords();
+        $this->assertSame($key, $records->keys()->first());
     }
 
     public function test_clicking_a_row_does_nothing(): void

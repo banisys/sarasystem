@@ -26,9 +26,12 @@ use Illuminate\Support\Carbon;
  * - The first data column is the row's number («ردیف»), continuing across
  *   pages. Tables built on a columns layout (stacks, splits) don't get it.
  * - Creation and update timestamps are visible, sortable Jalali date-times.
+ * - Users can pin rows to the top of each table.
  */
 class PanelTable extends Table
 {
+    use PinsTableRows;
+
     /**
      * @param  array<Column | ColumnLayoutComponent | ColumnGroup>  $components
      */
