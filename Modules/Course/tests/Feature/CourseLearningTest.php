@@ -25,17 +25,24 @@ class CourseLearningTest extends TestCase
     {
         $primary = Tenant::factory()->create(['is_primary' => true]);
         $branch = Tenant::factory()->create();
-        [$course, $lesson] = $branch->execute(function (): array {
+        [$course, $lesson, $additionalCategory] = $branch->execute(function () use ($branch): array {
             $category = CourseCategory::factory()->create();
             $course = Course::factory()->for($category, 'category')->create(['title' => 'Introduction to training', 'is_published' => true]);
             $otherCategory = CourseCategory::factory()->create();
             Course::factory()->for($otherCategory, 'category')->create(['title' => 'More training', 'is_published' => true]);
             Course::factory()->for($category, 'category')->create(['title' => 'Training draft']);
+            $additionalCategory = CourseCategory::factory()->create();
+            $course->additionalCategories()->attach($additionalCategory, ['tenant_id' => $branch->id]);
 
-            return [$course, CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')->create()];
+            return [$course, CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')->create(), $additionalCategory];
         });
 
         $this->get(route('courses.catalog.branch', ['branch' => $branch->slug, 'category' => $course->course_category_id, 'search' => 'training']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Course::Catalog', false)
+                ->has('courses.data', 1)->where('courses.data.0.id', $course->id));
+
+        $this->get(route('courses.catalog.branch', ['branch' => $branch->slug, 'category' => $additionalCategory->id]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('Course::Catalog', false)
                 ->has('courses.data', 1)->where('courses.data.0.id', $course->id));

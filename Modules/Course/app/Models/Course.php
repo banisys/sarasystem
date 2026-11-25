@@ -8,10 +8,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Course\Database\Factories\CourseFactory;
 
-#[Fillable(['course_category_id', 'title', 'description', 'is_published', 'allows_self_enrollment'])]
+#[Fillable([
+    'course_category_id', 'title', 'description', 'is_published', 'allows_self_enrollment',
+    'code', 'type', 'capacity', 'description_html', 'cover_image', 'video_cover', 'intro_video',
+    'gallery_images', 'starts_on', 'ends_on', 'prepayment_amount',
+])]
 class Course extends Model
 {
     /** @use HasFactory<CourseFactory> */
@@ -26,6 +31,12 @@ class Course extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(CourseCategory::class, 'course_category_id');
+    }
+
+    /** @return BelongsToMany<CourseCategory, $this> */
+    public function additionalCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(CourseCategory::class, 'course_category_course');
     }
 
     /** @return HasMany<CourseSection, $this> */
@@ -59,6 +70,10 @@ class Course extends Model
 
     protected function casts(): array
     {
-        return ['is_published' => 'boolean', 'allows_self_enrollment' => 'boolean'];
+        return [
+            'is_published' => 'boolean',
+            'allows_self_enrollment' => 'boolean',
+            'gallery_images' => 'array',
+        ];
     }
 }

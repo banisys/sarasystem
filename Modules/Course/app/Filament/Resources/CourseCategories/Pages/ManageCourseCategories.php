@@ -18,7 +18,7 @@ class ManageCourseCategories extends ListCategoryTree
 
     protected function nodeCaption(Model $record): string
     {
-        return $record->courses_count.' دوره';
+        return ($record->courses_count + $record->additional_courses_count).' دوره';
     }
 
     protected function nodeDetails(Model $record): ?string

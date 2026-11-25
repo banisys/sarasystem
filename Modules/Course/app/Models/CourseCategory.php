@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Course\Database\Factories\CourseCategoryFactory;
 
@@ -43,5 +44,11 @@ class CourseCategory extends Model
     public function courses(): HasMany
     {
         return $this->hasMany(Course::class);
+    }
+
+    /** @return BelongsToMany<Course, $this> */
+    public function additionalCourses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'course_category_course');
     }
 }

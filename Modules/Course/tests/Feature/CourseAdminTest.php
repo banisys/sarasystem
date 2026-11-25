@@ -7,6 +7,8 @@ use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
@@ -19,6 +21,7 @@ use Modules\Course\Filament\Resources\Courses\RelationManagers\SectionsRelationM
 use Modules\Course\Models\Course;
 use Modules\Course\Models\CourseCategory;
 use Modules\Course\Models\CourseSection;
+use Modules\Course\Models\CourseTeacher;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -35,19 +38,59 @@ class CourseAdminTest extends TestCase
         ]);
         $this->actAsEducationOfficer($tenant);
         $category = CourseCategory::factory()->create();
+        $additionalCategory = CourseCategory::factory()->create();
+        $instructor = User::factory()->create();
+        $inactiveInstructor = User::factory()->create();
+        $outsider = User::factory()->create();
+        $this->grantRole($instructor, $tenant, DefaultRoles::INSTRUCTOR);
+        $this->grantRole($inactiveInstructor, $tenant, DefaultRoles::INSTRUCTOR);
+        CourseTeacher::factory()->for($inactiveInstructor)->create(['is_active' => false]);
+        $this->grantRole($outsider, $branch, DefaultRoles::INSTRUCTOR);
 
         $component = Livewire::test(CreateCourse::class)->fillForm([
             'title' => 'آشنایی با آموزش سازمانی',
-            'course_category_id' => $foreignCategory->id,
+            'category_ids' => [$foreignCategory->id],
+            'instructor_ids' => [$outsider->id, $inactiveInstructor->id],
         ]);
-        $component->call('create')->assertHasFormErrors(['course_category_id']);
-        $component->fillForm(['course_category_id' => $category->id])->call('create')->assertHasNoFormErrors();
+        $component->call('create')->assertHasFormErrors(['category_ids.0', 'instructor_ids.0', 'instructor_ids.1']);
+        $this->assertFalse(Course::query()->exists());
+        $component->fillForm([
+            'category_ids' => [$category->id, $additionalCategory->id],
+            'instructor_ids' => [$instructor->id],
+            'type' => 'package',
+            'capacity' => 25,
+            'description_html' => '<p>مقدمهٔ <strong>دوره</strong></p>',
+            'starts_on' => '2026-12-01',
+            'ends_on' => '2026-12-31',
+            'has_prepayment' => true,
+            'prepayment_amount' => 50000,
+        ])->call('create')->assertHasNoFormErrors();
 
         $course = Course::query()->sole();
         $this->assertSame($tenant->id, $course->tenant_id);
+        $this->assertSame($category->id, $course->course_category_id);
+        $this->assertSame($additionalCategory->id, $course->additionalCategories()->sole()->id);
+        $this->assertSame($instructor->id, $course->instructors()->sole()->user_id);
+        $this->assertStringStartsWith('CRS-', $course->code);
+        $this->assertSame('package', $course->type);
+        $this->assertSame(25, $course->capacity);
+        $this->assertSame('مقدمهٔ دوره', $course->description);
+        $this->assertSame('<p>مقدمهٔ <strong>دوره</strong></p>', $course->description_html);
+        $this->assertSame('2026-12-01', $course->starts_on);
+        $this->assertSame('2026-12-31', $course->ends_on);
+        $this->assertSame(50000, $course->prepayment_amount);
         Livewire::test(ListCourses::class)->assertCanSeeTableRecords([$course])->assertCanNotSeeTableRecords([$foreignCourse]);
         $this->get(CourseResource::getUrl('edit', ['record' => $foreignCourse], tenant: $tenant))->assertNotFound();
         $this->get(CourseResource::getUrl('edit', ['record' => $course], tenant: $tenant))->assertOk()->assertSee(['بخش‌ها', 'درس‌ها', 'ثبت‌نام‌ها']);
+
+        Livewire::test(EditCourse::class, ['record' => $course->id])
+            ->assertFormSet(['category_ids' => [(string) $category->id, (string) $additionalCategory->id], 'has_prepayment' => true])
+            ->fillForm(['category_ids' => [$additionalCategory->id, $category->id], 'has_prepayment' => false])
+            ->call('save')->assertHasNoFormErrors();
+        $this->assertSame($additionalCategory->id, $course->refresh()->course_category_id);
+        $this->assertSame($category->id, $course->additionalCategories()->sole()->id);
+        $this->assertNull($course->prepayment_amount);
+        $this->assertSame($instructor->id, $course->instructors()->sole()->user_id);
 
         $owner = ['ownerRecord' => $course, 'pageClass' => EditCourse::class];
         Livewire::test(SectionsRelationManager::class, $owner)
@@ -111,6 +154,45 @@ class CourseAdminTest extends TestCase
             ->assertHasNoActionErrors();
 
         $this->assertTrue($enrollment->refresh()->is_revoked);
+    }
+
+    public function test_course_form_validates_schedule_and_prepayment_and_stores_media_privately(): void
+    {
+        Storage::fake('local');
+        $tenant = Tenant::factory()->create();
+        $this->actAsEducationOfficer($tenant);
+        $existingCourse = Course::factory()->create(['code' => 'CRS-EXISTING']);
+
+        $this->get(CourseResource::getUrl('create', tenant: $tenant))
+            ->assertOk()->assertSee(['اطلاعات کلی', 'رسانه', 'زمان‌بندی', 'قیمت‌گذاری', 'مدرسان', 'گالری تصاویر'])
+            ->assertDontSee('جنسیت مخاطب')->assertDontSee('توضیح کوتاه');
+
+        $form = Livewire::test(CreateCourse::class)->fillForm([
+            'title' => 'دوره با رسانه',
+            'code' => $existingCourse->code,
+            'starts_on' => '2026-12-31',
+            'ends_on' => '2026-12-01',
+            'has_prepayment' => true,
+        ]);
+
+        $form->call('create')->assertHasFormErrors(['code', 'ends_on' => 'after_or_equal', 'prepayment_amount' => 'required']);
+        $this->assertSame(1, Course::query()->count());
+
+        $form->fillForm([
+            'code' => 'CRS-MEDIA',
+            'starts_on' => '2026-12-01',
+            'ends_on' => '2026-12-31',
+            'has_prepayment' => false,
+            'cover_image' => UploadedFile::fake()->image('cover.png'),
+            'gallery_images' => [UploadedFile::fake()->image('first.png'), UploadedFile::fake()->image('second.png')],
+        ])->call('create')->assertHasNoFormErrors();
+
+        $course = Course::query()->where('code', 'CRS-MEDIA')->sole();
+        $this->assertCount(2, $course->gallery_images);
+        Storage::disk('local')->assertExists([$course->cover_image, ...$course->gallery_images]);
+
+        Livewire::test(EditCourse::class, ['record' => $course->id])->call('save')->assertHasNoFormErrors();
+        $this->assertSame($course->gallery_images, $course->refresh()->gallery_images);
     }
 
     private function actAsEducationOfficer(Tenant $tenant): void

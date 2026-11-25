@@ -16,7 +16,7 @@ The legacy Course module combines a public course catalog with lessons, teaching
 
 A branch owns its course categories, courses, sections, lessons, instructor assignments, enrollments and progress. An instructor is a branch member selected from the existing users. Branch-owned foreign keys include the tenant and, for lesson sections, the course. An education officer can manage courses in their current branch.
 
-Each course has one optional catalog category. Publishing makes its introduction and syllabus visible on the branch's site. Members can sign in to preview designated lessons. Active enrollment is required for other lessons and for recording completion. Officers enroll members manually or allow free self-enrollment. A saved enrollment can have a start, an expiration or a revocation, and a self-enrollment request preserves those restrictions. The enrollment view shows the number of completed lessons. Completion belongs to the learner and lesson and is recorded explicitly.
+Each course can have an optional primary catalog category and additional categories ([ADR 0139](0139-course-admin-form.md)). Publishing makes its introduction and syllabus visible on the branch's site. Members can sign in to preview designated lessons. Active enrollment is required for other lessons and for recording completion. Officers enroll members manually or allow free self-enrollment. A saved enrollment can have a start, an expiration or a revocation, and a self-enrollment request preserves those restrictions. The enrollment view shows the number of completed lessons. Completion belongs to the learner and lesson and is recorded explicitly.
 
 Lessons can contain text, a private MP4 or WebM video, and downloadable attachments. The application's file action checks lesson access for every download and video request. Uploads use the current 12 MiB Livewire limit per file. Published courses have public URLs under `/courses` and `/{branch}/courses`. Opening a course in the user panel selects its branch only for a user authorized to enter it.
 
@@ -26,6 +26,6 @@ When Exam is enabled, its context contract exposes lesson exams. Course editors 
 
 In the admin panel, «دوره‌های خودآموز» identifies on-demand learning and «ترم‌های آموزشی» identifies the calendar periods used by scheduled classes ([ADR 0022](0022-classes.md)).
 
-Branch administrators control the availability and display names of supported enrollment methods through [ADR 0138](0138-course-enrollment-methods.md).
+Branch administrators control the availability and display names of supported enrollment methods through [ADR 0138](0138-course-enrollment-methods.md). The course form and its administrative details are described in [ADR 0139](0139-course-admin-form.md).
 
 SaraSystem uses branches and user accounts for the organizational and instructor roles of the legacy Academy and Teacher records. Branch teacher profiles for those accounts were added in [ADR 0137](0137-course-teacher-profiles.md). Category trees were added in [ADR 0136](0136-course-category-trees.md). Paid and package enrollments, individual activity sales, related-course merchandising, gallery and site widgets, and inline video quizzes remain outside this port. Data import needs a separate mapping for branches, accounts and stored files.

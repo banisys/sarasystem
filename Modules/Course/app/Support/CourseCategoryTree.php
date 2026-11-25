@@ -18,9 +18,10 @@ class CourseCategoryTree extends CategoryTree
         if ($catalog) {
             $query->where('is_active', true)->withCount([
                 'courses' => fn (Builder $courses): Builder => $courses->published(),
+                'additionalCourses' => fn (Builder $courses): Builder => $courses->published(),
             ]);
         } elseif ($withCourseCounts) {
-            $query->withCount('courses');
+            $query->withCount(['courses', 'additionalCourses']);
         }
 
         return new self($query->get());
@@ -39,7 +40,7 @@ class CourseCategoryTree extends CategoryTree
         foreach ($this->childrenOf($parentId) as $category) {
             $children = $this->catalogOptions($category->id);
 
-            if ($category->courses_count || $children !== []) {
+            if ($category->courses_count || $category->additional_courses_count || $children !== []) {
                 $options[] = ['id' => $category->id, 'title' => implode(' / ', $this->path($category->id))];
                 $options = [...$options, ...$children];
             }

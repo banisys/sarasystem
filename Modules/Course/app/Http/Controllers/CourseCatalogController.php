@@ -63,7 +63,12 @@ class CourseCatalogController extends Controller
         $tree = CourseCategoryTree::current(catalog: true);
         $freeEnrollmentEnabled = CourseEnrollmentSettings::current()->free_enabled;
         $courses = Course::query()->published()
-            ->when($category, fn (Builder $query): Builder => $query->whereIn('course_category_id', $tree->branchIds($category)))
+            ->when($category, function (Builder $query) use ($tree, $category): void {
+                $categoryIds = $tree->branchIds($category);
+
+                $query->where(fn (Builder $courses): Builder => $courses->whereIn('course_category_id', $categoryIds)
+                    ->orWhereHas('additionalCategories', fn (Builder $categories): Builder => $categories->whereKey($categoryIds)));
+            })
             ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('title', '%'.$search.'%'))
             ->with('category:id,title')
             ->withCount('lessons')

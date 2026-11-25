@@ -2,12 +2,8 @@
 
 namespace Modules\Course\Filament\Resources\Courses;
 
-use App\Filament\Forms\Components\TreeSelect;
 use BackedEnum;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -22,10 +18,8 @@ use Modules\Course\Filament\Resources\Courses\RelationManagers\EnrollmentsRelati
 use Modules\Course\Filament\Resources\Courses\RelationManagers\InstructorsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\SectionsRelationManager;
+use Modules\Course\Filament\Resources\Courses\Schemas\CourseForm;
 use Modules\Course\Models\Course;
-use Modules\Course\Models\CourseCategory;
-use Modules\Course\Models\CourseEnrollmentSettings;
-use Modules\Course\Support\CourseCategoryTree;
 use UnitEnum;
 
 class CourseResource extends Resource
@@ -50,19 +44,7 @@ class CourseResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            TextInput::make('title')->label('عنوان')->trim()->required()->maxLength(255),
-            TreeSelect::make('course_category_id')->label('دسته‌بندی')
-                ->nodes(fn (): array => CourseCategoryTree::current()->nodes())
-                ->scopedExists(CourseCategory::class, 'id'),
-            Textarea::make('description')->label('معرفی دوره')->maxLength(10000)->columnSpanFull(),
-            Toggle::make('is_published')->label('منتشرشده'),
-            Toggle::make('allows_self_enrollment')
-                ->label(fn (): string => CourseEnrollmentSettings::current()->free_name)
-                ->helperText(fn (): string => CourseEnrollmentSettings::current()->free_enabled
-                    ? 'با فعال کردن این گزینه، اعضای واردشده می‌توانند در دورهٔ منتشرشده ثبت‌نام کنند.'
-                    : 'روش ثبت‌نام رایگان برای این شعبه غیرفعال است.'),
-        ]);
+        return CourseForm::configure($schema);
     }
 
     public static function table(Table $table): Table

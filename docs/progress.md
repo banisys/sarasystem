@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-25 — Rebuilt the admin course form with the LMS sections for general information, media, scheduling and pricing ([ADR 0139](decisions/0139-course-admin-form.md)). Added multiple branch categories and instructor assignment on creation. Applied the local migration. All 20 Course tests and 12 checks with Course disabled passed.
 - 2026-11-24 — Added ten labeled sample course categories to the local head-office branch and verified the three-level tree in the admin panel.
 - 2026-11-24 — Ported the enrollment methods admin page for manual and free course registration ([ADR 0138](decisions/0138-course-enrollment-methods.md)). Applied the local migration and checked the page and system-map link in the browser. All 24 targeted tests, five checks with Course disabled and Pint passed.
 - 2026-11-24 — Added three labeled sample course teacher profiles in the local head-office branch and verified all three in the admin directory.

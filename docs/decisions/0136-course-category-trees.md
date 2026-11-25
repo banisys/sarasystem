@@ -18,7 +18,7 @@ Use the same tree view for Course and Exam. Course supports alias search. Tree r
 
 The course category form stores title, alias, parent, short description, display position, and active status. Existing locale, translation key, and JSON attributes are retained in storage. The URL-selected branch supplies the legacy instance. The root is derived from the parent chain. Alias is unique within the branch and is suggested from the title when blank. Existing categories retain their assignments and become active roots. An existing category with an empty alias gets a title-based suggestion when opened for editing.
 
-Course editors use the tree to assign one category per course. The catalog's category filter includes active descendants and omits inactive branches from its options. Unfiltered published courses remain visible.
+Course editors use the tree to assign a primary category and further categories ([ADR 0139](0139-course-admin-form.md)). The catalog's category filter includes active descendants and omits inactive branches from its options. Unfiltered published courses remain visible.
 
 ## Consequences
 
