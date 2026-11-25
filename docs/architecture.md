@@ -195,6 +195,8 @@ The admin exam edit page can lock changes to and deletion of a session exam from
 
 The user-panel exam session details let class editors and effective invigilators update the seating plan shared with the admin panel and the 3D attendance view ([ADR 0087](decisions/0087-exam-seating.md), [ADR 0132](decisions/0132-invigilator-seat-layout-access.md)). The admin seating dialog can lock user-panel changes to the plan independently of the online exam ([ADR 0134](decisions/0134-exam-seating-user-panel-lock.md)).
 
+The «شرکت‌کنندگان» action in the self-paced course list opens the shared enrollment editor for the selected course. Both admin entry points honor the branch's manual enrollment setting and keep revoked enrollments on record ([ADR 0144](decisions/0144-course-participants-page.md)).
+
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy

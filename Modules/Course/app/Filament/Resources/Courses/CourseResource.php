@@ -16,6 +16,7 @@ use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\EditCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\ListCourses;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseActivities;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseParticipants;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseSections;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\EnrollmentsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\InstructorsRelationManager;
@@ -75,6 +76,12 @@ class CourseResource extends Resource
                     ->color('warning')
                     ->authorize(fn (Course $record): bool => ManageCourseActivities::canAccess(['record' => $record]))
                     ->url(fn (Course $record): string => static::getUrl('activities', ['record' => $record])),
+                Action::make('participants')
+                    ->label('شرکت‌کنندگان')
+                    ->icon(Heroicon::OutlinedUsers)
+                    ->color('info')
+                    ->authorize(fn (Course $record): bool => ManageCourseParticipants::canAccess(['record' => $record]))
+                    ->url(fn (Course $record): string => static::getUrl('participants', ['record' => $record])),
                 EditAction::make(),
             ]);
     }
@@ -97,6 +104,7 @@ class CourseResource extends Resource
             'edit' => EditCourse::route('/{record}/edit'),
             'sections' => ManageCourseSections::route('/{record}/sections'),
             'activities' => ManageCourseActivities::route('/{record}/activities'),
+            'participants' => ManageCourseParticipants::route('/{record}/participants'),
         ];
     }
 }

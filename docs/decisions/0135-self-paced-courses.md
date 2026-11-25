@@ -28,6 +28,8 @@ In the admin panel, «دوره‌های خودآموز» identifies on-demand le
 
 The «سرفصل‌ها» and «فعالیت‌ها» actions on each course row open dedicated admin pages. They reuse the section and lesson editors from the course edit page and require permission to update that course in the current branch.
 
+The «شرکت‌کنندگان» row action opens the course's enrollment editor for branch members, with access dates and revocation ([ADR 0144](0144-course-participants-page.md)).
+
 Branch administrators control the availability and display names of supported enrollment methods through [ADR 0138](0138-course-enrollment-methods.md). The course form and its administrative details are described in [ADR 0139](0139-course-admin-form.md).
 
 SaraSystem uses branches and user accounts for the organizational and instructor roles of the legacy Academy and Teacher records. Branch teacher profiles for those accounts were added in [ADR 0137](0137-course-teacher-profiles.md). Category trees were added in [ADR 0136](0136-course-category-trees.md). Paid and package enrollments, individual activity sales, related-course merchandising, gallery and site widgets, and inline video quizzes remain outside this port. Data import needs a separate mapping for branches, accounts and stored files.

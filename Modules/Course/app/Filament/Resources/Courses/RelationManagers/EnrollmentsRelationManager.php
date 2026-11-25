@@ -48,6 +48,7 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
             TextColumn::make('completions_count')->label('درس‌های تکمیل‌شده')->sortable(),
             IconColumn::make('is_revoked')->label('لغوشده')->boolean(),
         ])
+            ->pluralModelLabel('ثبت‌نام‌ها')
             ->headerActions([
                 CreateAction::make()
                     ->label(fn (): string => CourseEnrollmentSettings::current()->manual_name)
