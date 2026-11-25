@@ -6,6 +6,7 @@ use App\Authorization\DefaultRoles;
 use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
+use Filament\Schemas\Components\Callout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -204,6 +205,51 @@ class CourseAdminTest extends TestCase
                 ->callAction(TestAction::make('edit')->table($savedExam), data: ['title' => 'آزمون ذخیره‌شده'])
                 ->assertHasNoActionErrors();
             $this->assertSame(CourseLessonType::Exam, $savedExam->refresh()->type);
+        }
+    }
+
+    public function test_activity_form_reacts_to_type_changes_without_discarding_saved_media(): void
+    {
+        Storage::fake('local');
+        $tenant = Tenant::factory()->create();
+        $this->actAsEducationOfficer($tenant);
+        $section = CourseSection::factory()->create();
+        $lesson = CourseLesson::factory()->for($section, 'section')->create(['type' => CourseLessonType::File]);
+        $attachment = $lesson->addMediaFromString('Sample activity file')->usingFileName('guide.txt')->toMediaCollection('attachments');
+        $owner = ['ownerRecord' => $section->course, 'pageClass' => ManageCourseActivities::class];
+
+        Livewire::test(LessonsRelationManager::class, $owner)
+            ->mountAction(TestAction::make('edit')->table($lesson))
+            ->assertSchemaComponentVisible('attachments')
+            ->assertSchemaComponentHidden('video')
+            ->assertSchemaComponentHidden('examSettings')
+            ->set('mountedActions.0.data.type', CourseLessonType::Video->value)
+            ->assertSchemaComponentVisible('video')
+            ->assertSchemaComponentHidden('attachments')
+            ->assertSchemaComponentHidden('examSettings')
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(CourseLessonType::Video, $lesson->refresh()->type);
+        $this->assertModelExists($attachment);
+        Storage::disk('local')->assertExists($attachment->getPathRelativeToRoot());
+
+        if (Module::isEnabled('Exam')) {
+            Livewire::test(LessonsRelationManager::class, $owner)
+                ->mountAction(TestAction::make('create')->table())
+                ->set('mountedActions.0.data.type', CourseLessonType::Exam->value)
+                ->assertSchemaComponentVisible('examSettings')
+                ->assertSchemaComponentHidden('attachments')
+                ->assertSchemaComponentHidden('video')
+                ->assertSchemaComponentExists('examSettings', checkComponentUsing: fn (Callout $callout): bool => filled($callout->getDescription())
+                    && $callout->getFooterActions()[0]->isHidden());
+
+            Livewire::test(LessonsRelationManager::class, $owner)
+                ->mountAction(TestAction::make('edit')->table($lesson))
+                ->set('mountedActions.0.data.type', CourseLessonType::Exam->value)
+                ->assertSchemaComponentVisible('examSettings')
+                ->assertSchemaComponentExists('examSettings', checkComponentUsing: fn (Callout $callout): bool => $callout->getFooterActions()[0]->isVisible()
+                    && filled($callout->getFooterActions()[0]->getUrl()));
         }
     }
 
