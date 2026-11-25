@@ -3,6 +3,7 @@
 namespace Modules\Course\Filament\Resources\CourseCategories;
 
 use App\Filament\Forms\Components\TreeSelect;
+use App\Filament\Support\IndependentOfTenant;
 use BackedEnum;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -18,7 +19,7 @@ use Modules\Course\Models\CourseCategory;
 use Modules\Course\Support\CourseCategoryTree;
 use UnitEnum;
 
-class CourseCategoryResource extends Resource
+class CourseCategoryResource extends Resource implements IndependentOfTenant
 {
     protected static ?string $model = CourseCategory::class;
 

@@ -8,29 +8,32 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Models\CourseLesson;
-use Modules\Exam\Interfaces\ExamContextSource;
-use Modules\Exam\Services\ContextExams;
+use Modules\Exam\Interfaces\SharedExamContextSource;
+use Modules\Exam\Models\Exam;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
 
-class CourseExamSource implements ExamContextSource
+class CourseExamSource implements SharedExamContextSource
 {
     public const string TYPE = 'course-lesson';
 
     public function tenantForVisit(int $id, User $user): ?Tenant
     {
-        $tenants = $user->isSuperAdmin() ? Tenant::query() : $user->tenants();
+        $lesson = CourseLesson::query()->with('course')->find($id);
+        if ($lesson === null || ! ($this->participantIds($user)->whereKey($id)->exists()
+            || Gate::forUser($user)->allows('update', $lesson->course))) {
+            return null;
+        }
 
-        return $tenants->active()
-            ->whereIn('tenants.id', CourseLesson::withoutTenantScope()->whereKey($id)->select('tenant_id'))
-            ->first();
+        return $this->storageTenant($id);
     }
 
     public function resolve(int $id, User $user): ?ExamContext
     {
         $lesson = CourseLesson::query()->with('course')->find($id);
 
-        if ($lesson?->course === null) {
+        $tenant = $this->storageTenant($id);
+        if ($lesson?->course === null || $tenant === null || ! $tenant->isCurrent()) {
             return null;
         }
 
@@ -42,12 +45,12 @@ class CourseExamSource implements ExamContextSource
         }
 
         return new ExamContext(
-            self::TYPE, $id, $lesson->tenant_id,
+            self::TYPE, $id, $tenant->getKey(),
             $lesson->course->title.' · '.$lesson->title,
             null, null,
             $canParticipate
                 ? route('courses.lesson', [$lesson->course, $lesson])
-                : CourseResource::getUrl('edit', ['record' => $lesson->course], tenant: Tenant::current()),
+                : CourseResource::getUrl('edit', ['record' => $lesson->course], tenant: Tenant::primary() ?? $tenant),
             $canManage, $canParticipate,
             hostLabel: 'درس',
         );
@@ -74,11 +77,22 @@ class CourseExamSource implements ExamContextSource
 
     public function publishedUrl(CourseLesson $lesson, User $user): ?string
     {
-        $context = $this->resolve($lesson->getKey(), $user);
+        $id = $lesson->getKey();
+        $tenant = $this->storageTenant($id);
 
-        return $context !== null && $context->canParticipate && app(ContextExams::class)->query($context)->published()->exists()
-            ? app(ExamContexts::class)->url(self::TYPE, $lesson->getKey())
+        return $tenant !== null && Exam::withoutTenantScope()
+            ->where('tenant_id', $tenant->getKey())->where('context_type', self::TYPE)->where('context_id', $id)
+            ->published()->forParticipant($user)->exists()
+            ? app(ExamContexts::class)->url(self::TYPE, $id)
             : null;
+    }
+
+    private function storageTenant(int $lesson): ?Tenant
+    {
+        $existing = Exam::withoutTenantScope()->where('context_type', self::TYPE)
+            ->where('context_id', $lesson)->oldest('id')->value('tenant_id');
+
+        return $existing === null ? Tenant::primary() : Tenant::find($existing);
     }
 
     public static function managementUrl(CourseLesson $lesson): string

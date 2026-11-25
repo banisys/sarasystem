@@ -12,12 +12,12 @@ interface ExamContextSource
 {
     public function resolve(int $id, User $user): ?ExamContext;
 
-    /** Locate the active tenant for a direct page visit, limited to branches the user may enter. */
+    /** Locate the storage tenant for a direct visit by a user authorized by this host. */
     public function tenantForVisit(int $id, User $user): ?Tenant;
 
     public function hasTeachingStaff(User $user): bool;
 
-    /** A tenant-scoped, single-column query of contexts this user may participate in. */
+    /** A single-column query of contexts this user may participate in under the host’s access rules. */
     public function participantIds(User $user): Builder;
 
     /**

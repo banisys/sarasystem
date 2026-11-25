@@ -1,7 +1,7 @@
 # 0135 — Self-paced learning in the Course module
 
 - **Date:** 2026-11-24
-- **Status:** accepted
+- **Status:** accepted. [ADR 0145](0145-global-course-module.md) supersedes the original course ownership and branch-dependent access.
 
 ## Context
 

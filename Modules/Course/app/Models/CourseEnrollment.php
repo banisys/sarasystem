@@ -2,7 +2,6 @@
 
 namespace Modules\Course\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +15,7 @@ use Modules\Course\Database\Factories\CourseEnrollmentFactory;
 class CourseEnrollment extends Model
 {
     /** @use HasFactory<CourseEnrollmentFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
 
     protected static function newFactory(): CourseEnrollmentFactory
     {

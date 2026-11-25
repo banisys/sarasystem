@@ -2,7 +2,6 @@
 
 namespace Modules\Course\Filament\Resources\Courses\RelationManagers;
 
-use App\Models\Tenant;
 use Filament\Resources\RelationManagers\RelationManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -17,7 +16,6 @@ abstract class CourseRelationManager extends RelationManager
 
     public function booted(): void
     {
-        abort_unless($this->course()->tenant_id === Tenant::current()?->getKey(), 404);
         Gate::authorize('update', $this->course());
     }
 

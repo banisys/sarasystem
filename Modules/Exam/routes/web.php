@@ -5,12 +5,13 @@ use Modules\Exam\Http\Controllers\AttemptController;
 use Modules\Exam\Http\Controllers\ContextExamController;
 use Modules\Exam\Http\Controllers\ExamController;
 use Modules\Exam\Http\Controllers\QuestionLibraryController;
+use Modules\Exam\Http\Middleware\ResolveSharedExamTenant;
 
 // User-panel routes work inside the current tenant (docs/decisions/0002-tenancy-model.md).
 Route::get('profile/performance', [ExamController::class, 'performance'])
     ->middleware(['auth', 'auth.session', 'tenant'])->name('exams.performance');
 
-Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/exams')->name('exams.')->group(function () {
+Route::middleware(['auth', 'auth.session', ResolveSharedExamTenant::class, 'tenant'])->prefix('profile/exams')->name('exams.')->group(function () {
     Route::get('/', [ExamController::class, 'index'])->name('index');
     Route::prefix('library')->name('library')->controller(QuestionLibraryController::class)->group(function () {
         Route::get('/', 'index');

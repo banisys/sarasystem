@@ -22,9 +22,9 @@ class CourseEnrollmentMethodsTest extends TestCase
 {
     use InteractsWithTenants, RefreshDatabase;
 
-    public function test_officers_can_configure_enrollment_methods_only_in_their_branch(): void
+    public function test_head_office_officers_share_enrollment_methods_across_branches(): void
     {
-        $tenant = Tenant::factory()->create();
+        $tenant = Tenant::factory()->create(['is_primary' => true]);
         $otherBranch = Tenant::factory()->create();
         $officer = User::factory()->create();
         app(DefaultRoles::class)->install();
@@ -34,8 +34,8 @@ class CourseEnrollmentMethodsTest extends TestCase
         $this->actingInPanel($officer, $tenant);
 
         $this->get(CourseEnrollmentMethods::getUrl(tenant: $tenant))->assertOk()->assertSee('روش‌های ثبت‌نام');
-        $this->get(CourseEnrollmentMethods::getUrl(tenant: $otherBranch))->assertForbidden();
-        $this->actingInPanel($officer, $tenant);
+        $this->get(CourseEnrollmentMethods::getUrl(tenant: $otherBranch))->assertOk();
+        $this->actingInPanel($officer, $otherBranch);
 
         $page = Livewire::test(CourseEnrollmentMethods::class)
             ->assertFormSet(['manual_name' => 'ثبت‌نام دستی', 'manual_enabled' => true, 'free_enabled' => true])
@@ -50,13 +50,13 @@ class CourseEnrollmentMethodsTest extends TestCase
 
         $this->assertDatabaseCount(CourseEnrollmentSettings::class, 1);
         $this->assertDatabaseHas(CourseEnrollmentSettings::class, [
-            'tenant_id' => $tenant->id,
             'manual_name' => 'ثبت‌نام توسط کارشناس',
             'manual_enabled' => true,
             'free_name' => 'ثبت‌نام مستقیم',
             'free_enabled' => false,
         ]);
-        $this->assertTrue($otherBranch->execute(fn (): bool => CourseEnrollmentSettings::current()->free_enabled));
+        $this->actingInPanel($officer, $tenant);
+        Livewire::test(CourseEnrollmentMethods::class)->assertFormSet(['free_name' => 'ثبت‌نام مستقیم', 'free_enabled' => false]);
     }
 
     public function test_disabling_free_enrollment_hides_the_offer_and_blocks_new_enrollment(): void
@@ -90,7 +90,7 @@ class CourseEnrollmentMethodsTest extends TestCase
 
     public function test_disabling_manual_enrollment_blocks_creation_and_keeps_existing_enrollments_editable(): void
     {
-        $tenant = Tenant::factory()->create();
+        $tenant = Tenant::factory()->create(['is_primary' => true]);
         $officer = User::factory()->create();
         $learner = User::factory()->create();
         app(DefaultRoles::class)->install();

@@ -6,6 +6,9 @@ use App\Authorization\DefaultRoles;
 use App\Models\Tenant;
 use App\Models\User;
 use App\UserPanel\UserPanel;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Modules\Exam\Http\Middleware\ResolveSharedExamTenant;
 use Modules\Exam\Models\Exam;
 use Modules\Exam\Services\ExamPerformance;
 use Modules\Exam\Support\ExamContexts;
@@ -43,6 +46,10 @@ class ExamServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        $this->app->make(Kernel::class)->addToMiddlewarePriorityBefore(
+            SubstituteBindings::class, ResolveSharedExamTenant::class,
+        );
 
         // The screens' permissions for the default roles (ADR 0039).
         app(DefaultRoles::class)->grant([

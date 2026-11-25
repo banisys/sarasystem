@@ -29,7 +29,7 @@ class CourseTeacherTest extends TestCase
     {
         parent::setUp();
 
-        $this->tenant = Tenant::factory()->create();
+        $this->tenant = Tenant::factory()->create(['is_primary' => true]);
         $officer = User::factory()->create();
         app(DefaultRoles::class)->install();
         $this->makeStaff($officer, $this->tenant);
@@ -58,7 +58,7 @@ class CourseTeacherTest extends TestCase
             ->callAction('create', data: $data)->assertHasNoActionErrors();
 
         $teacher = CourseTeacher::query()->sole();
-        $this->assertSame($this->tenant->id, $teacher->tenant_id);
+        $this->assertSame($user->id, $teacher->user_id);
         $this->assertTrue($teacher->is_active);
         $this->assertSame(TeacherEducation::Master, $teacher->education);
         foreach (['user_id', 'field_of_study', 'institution', 'teaching_experience', 'description'] as $field) {
@@ -83,31 +83,23 @@ class CourseTeacherTest extends TestCase
         $this->assertSame($user->id, $assignment->refresh()->user_id);
     }
 
-    public function test_teacher_profiles_and_user_selection_are_limited_to_the_current_branch(): void
+    public function test_teacher_profiles_can_use_accounts_from_another_branch_and_are_unique_per_user(): void
     {
         $branch = Tenant::factory()->create();
-        $foreignUser = User::factory()->create();
-        $sharedUser = User::factory()->create();
-        $this->grantRole($foreignUser, $branch, DefaultRoles::STAFF);
-        $this->grantRole($sharedUser, $branch, DefaultRoles::STAFF);
-        $this->grantRole($sharedUser, $this->tenant, DefaultRoles::STAFF);
-        $foreign = $branch->execute(fn () => CourseTeacher::factory()->for($sharedUser)->create());
+        $user = User::factory()->create();
+        $this->grantRole($user, $branch, DefaultRoles::STAFF);
         $data = ['education' => TeacherEducation::Bachelor->value, 'field_of_study' => 'زبان', 'institution' => 'دانشگاه نمونه'];
 
         Livewire::test(ManageCourseTeachers::class)
-            ->assertCanNotSeeTableRecords([$foreign])
-            ->callAction('create', data: $data + ['user_id' => $foreignUser->id])
-            ->assertHasActionErrors(['user_id']);
-
-        Livewire::test(ManageCourseTeachers::class)
-            ->callAction('create', data: $data + ['user_id' => $sharedUser->id])
+            ->callAction('create', data: $data + ['user_id' => $user->id])
             ->assertHasNoActionErrors();
 
         Livewire::test(ManageCourseTeachers::class)
-            ->callAction('create', data: $data + ['user_id' => $sharedUser->id])
+            ->assertCanSeeTableRecords([CourseTeacher::query()->sole()])
+            ->callAction('create', data: $data + ['user_id' => $user->id])
             ->assertHasActionErrors(['user_id']);
 
-        $this->assertSame($sharedUser->id, CourseTeacher::query()->sole()->user_id);
+        $this->assertSame($user->id, CourseTeacher::query()->sole()->user_id);
     }
 
     public function test_inactive_teachers_cannot_be_newly_assigned_to_a_course(): void

@@ -7,7 +7,7 @@ use Modules\Course\Http\Controllers\CourseController;
 Route::get('profile/courses/open/{branch:slug}/{catalogCourse}', [CourseCatalogController::class, 'open'])
     ->middleware(['auth', 'auth.session'])->whereNumber('catalogCourse')->name('courses.catalog.open');
 
-Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/courses')->name('courses.')->scopeBindings()->group(function (): void {
+Route::middleware(['auth', 'auth.session'])->prefix('profile/courses')->name('courses.')->scopeBindings()->group(function (): void {
     Route::get('/', [CourseController::class, 'index'])->name('index');
     Route::get('/{course}', [CourseController::class, 'show'])->name('show');
     Route::post('/{course}/enroll', [CourseController::class, 'enroll'])->name('enroll');

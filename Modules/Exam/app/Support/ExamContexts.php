@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Exam\Interfaces\ExamContextSource;
+use Modules\Exam\Interfaces\SharedExamContextSource;
 
 /** Optional hosts register here; missing/disabled hosts fail closed. */
 class ExamContexts
@@ -26,6 +27,19 @@ class ExamContexts
     public function tenantForVisit(string $type, int $id, User $user): ?Tenant
     {
         return ($this->sources[$type] ?? null)?->tenantForVisit($id, $user);
+    }
+
+    /** @return list<string> */
+    public function sharedTypes(): array
+    {
+        return array_keys(array_filter($this->sources, fn (ExamContextSource $source): bool => $source instanceof SharedExamContextSource));
+    }
+
+    public function sharedTenantForVisit(string $type, int $id, User $user): ?Tenant
+    {
+        $source = $this->sources[$type] ?? null;
+
+        return $source instanceof SharedExamContextSource ? $source->tenantForVisit($id, $user) : null;
     }
 
     public function forParticipant(Builder $query, User $user): void

@@ -4,31 +4,32 @@ namespace Modules\Course\Policies;
 
 use App\Models\User;
 use Modules\Course\Models\Course;
+use Modules\Course\Support\CoursePermissions;
 
 class CoursePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('ViewAny:Course');
+        return CoursePermissions::allows($user, 'ViewAny:Course');
     }
 
     public function view(User $user, Course $record): bool
     {
-        return $user->can('View:Course');
+        return CoursePermissions::allows($user, 'View:Course');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('Create:Course');
+        return CoursePermissions::allows($user, 'Create:Course');
     }
 
     public function update(User $user, Course $record): bool
     {
-        return $user->can('Update:Course');
+        return CoursePermissions::allows($user, 'Update:Course');
     }
 
     public function delete(User $user, Course $record): bool
     {
-        return $user->can('Delete:Course');
+        return CoursePermissions::allows($user, 'Delete:Course');
     }
 }

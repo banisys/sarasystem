@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-25 — Made Course installation-wide, with primary-branch management permissions, a shared catalog and enrollment settings, and lesson exams that preserve the learner’s selected branch ([ADR 0145](decisions/0145-global-course-module.md)). Migrated the local data, checked duplicate handling on a populated copy, verified the browser views, and passed 875 tests, Pint and the Course/Exam disabled-module checks.
 - 2026-11-25 — Added the «شرکت‌کنندگان» row action for course enrollments and access management ([ADR 0144](decisions/0144-course-participants-page.md)). Verified the page in the browser, all 26 Course tests, five system map tests with Course disabled, and Pint.
 - 2026-11-25 — Added the session gallery for private images and videos with uploads by class staff ([ADR 0143](decisions/0143-session-gallery.md)). All 872 tests, Pint, and the Vite build passed.
 - 2026-11-25 — Added buttons to load earlier and later sessions in the staff reminder timeline, with three upcoming sessions shown initially. All 26 academic calendar tests, Pint, and the Vite build passed.

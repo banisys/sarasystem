@@ -2,7 +2,6 @@
 
 namespace Modules\Course\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\HasCategoryParent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +15,7 @@ use Modules\Course\Database\Factories\CourseCategoryFactory;
 class CourseCategory extends Model
 {
     /** @use HasFactory<CourseCategoryFactory> */
-    use BelongsToTenant, HasCategoryParent, HasFactory;
+    use HasCategoryParent, HasFactory;
 
     protected static function newFactory(): CourseCategoryFactory
     {
@@ -33,6 +32,11 @@ class CourseCategory extends Model
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
+    }
+
+    protected function categoryTreeIsTenantScoped(): bool
+    {
+        return false;
     }
 
     protected function casts(): array

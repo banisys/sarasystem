@@ -31,7 +31,7 @@ The lists above are for a school deployment. A company deployment has trainees, 
 ## Core features
 | Feature | Domain | Source | Status | Notes |
 |---|---|---|---|---|
-| Self-paced courses | LMS | Redesigned from LMS | Implemented | Branch catalog, private lessons, enrollment, progress and optional online exams ([ADR 0135](decisions/0135-self-paced-courses.md)). |
+| Self-paced courses | LMS | Redesigned from LMS | Implemented | Installation-wide catalog, private lessons, enrollment, progress and optional online exams ([ADR 0145](decisions/0145-global-course-module.md)). |
 
 ## Constraints
 - Persian-first UI (RTL, Jalali dates); English also supported in LMS

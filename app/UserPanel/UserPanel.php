@@ -14,7 +14,7 @@ use Closure;
 class UserPanel
 {
     /**
-     * @var array<string, Closure(User, Tenant): list<array{title: string, url: string, icon?: string}>>
+     * @var array<string, array{callback: Closure, requiresTenant: bool}>
      */
     protected static array $navigationProviders = [];
 
@@ -53,11 +53,13 @@ class UserPanel
      * Registering a name again replaces it (the app boots once per test).
      * `icon` names one of the menu's icons (AppLayout.vue), e.g. `calendar`.
      *
-     * @param  Closure(User, Tenant): list<array{title: string, url: string, icon?: string}>  $callback
+     * Providers registered without a tenant requirement also receive visits without a selected branch.
+     *
+     * @param  Closure  $callback  Receives the user and the selected tenant, if available.
      */
-    public static function navigationUsing(string $name, Closure $callback): void
+    public static function navigationUsing(string $name, Closure $callback, bool $requiresTenant = true): void
     {
-        static::$navigationProviders[$name] = $callback;
+        static::$navigationProviders[$name] = compact('callback', 'requiresTenant');
     }
 
     /**
@@ -65,11 +67,14 @@ class UserPanel
      */
     public static function navigation(?User $user, ?Tenant $tenant): array
     {
-        if ($user === null || $tenant === null) {
+        if ($user === null) {
             return [];
         }
 
-        return collect(static::$navigationProviders)->flatMap(fn (Closure $callback): array => $callback($user, $tenant))->values()->all();
+        return collect(static::$navigationProviders)
+            ->reject(fn (array $provider): bool => $tenant === null && $provider['requiresTenant'])
+            ->flatMap(fn (array $provider): array => $provider['callback']($user, $tenant))
+            ->values()->all();
     }
 
     /**

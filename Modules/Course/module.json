@@ -1,7 +1,7 @@
 {
     "name": "Course",
     "alias": "course",
-    "description": "دوره‌های خودآموز، درس‌ها، ثبت‌نام و پیشرفت فراگیران",
+    "description": "دوره‌های خودآموز سراسری، درس‌ها، ثبت‌نام و پیشرفت فراگیران",
     "keywords": [],
     "priority": 0,
     "providers": [

@@ -1,7 +1,7 @@
 # 0139 — Self-paced course administration form
 
 - **Date:** 2026-11-25
-- **Status:** accepted
+- **Status:** accepted. [ADR 0145](0145-global-course-module.md) supersedes the original code uniqueness, categories and instructor selection.
 
 ## Context
 

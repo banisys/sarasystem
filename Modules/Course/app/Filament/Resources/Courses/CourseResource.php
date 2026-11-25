@@ -2,6 +2,7 @@
 
 namespace Modules\Course\Filament\Resources\Courses;
 
+use App\Filament\Support\IndependentOfTenant;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -26,7 +27,7 @@ use Modules\Course\Filament\Resources\Courses\Schemas\CourseForm;
 use Modules\Course\Models\Course;
 use UnitEnum;
 
-class CourseResource extends Resource
+class CourseResource extends Resource implements IndependentOfTenant
 {
     protected static ?string $model = Course::class;
 

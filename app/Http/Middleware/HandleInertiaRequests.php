@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Auth\Impersonation;
 use App\Models\Tenant;
 use App\UserPanel\UserPanel;
+use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,6 +13,8 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    public const string PANEL_TENANT = 'panelTenant';
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -57,21 +60,43 @@ class HandleInertiaRequests extends Middleware
                 'canAccessAdmin' => fn (): bool => (bool) $request->user()?->canAccessPanel(Filament::getPanel('admin')),
             ],
             'tenant' => [
-                'current' => fn () => Tenant::current()?->only('id', 'name', 'slug'),
+                'current' => fn () => $this->panelTenant($request)?->only('id', 'name', 'slug'),
                 'available' => fn () => $this->availableTenants($request),
                 'label' => config('sarasystem.tenant_label'),
             ],
             // Module links for the user-panel side menu (UserPanel::navigationUsing()),
             // and the page the panel opens on when a module offers one (ADR 0069).
-            'navigation' => fn (): array => UserPanel::navigation($request->user(), Tenant::current()),
-            'panelHome' => fn (): ?string => UserPanel::home($request->user(), Tenant::current()),
+            'navigation' => fn (): array => $this->withinPanelTenant($request, fn (?Tenant $tenant): array => UserPanel::navigation($request->user(), $tenant)),
+            'panelHome' => fn (): ?string => $this->withinPanelTenant($request, fn (?Tenant $tenant): ?string => UserPanel::home($request->user(), $tenant)),
             ...($isUserPanel ? [
-                'navigationSubtitle' => fn (): ?string => UserPanel::navigationSubtitle($request->user(), Tenant::current()),
+                'navigationSubtitle' => fn (): ?string => $this->withinPanelTenant($request, fn (?Tenant $tenant): ?string => UserPanel::navigationSubtitle($request->user(), $tenant)),
             ] : []),
             ...($isUserPanel ? [] : [
                 'flash' => ['status' => fn () => $request->session()->get('status')],
             ]),
         ];
+    }
+
+    private function panelTenant(Request $request): ?Tenant
+    {
+        return $request->attributes->get(self::PANEL_TENANT, Tenant::current());
+    }
+
+    private function withinPanelTenant(Request $request, Closure $callback): mixed
+    {
+        $tenant = $this->panelTenant($request);
+        if ($tenant === null || $tenant->isCurrent()) {
+            return $callback($tenant);
+        }
+
+        $user = $request->user();
+        $user?->unsetRelation('roles')->unsetRelation('permissions');
+
+        try {
+            return $tenant->execute(fn () => $callback($tenant));
+        } finally {
+            $user?->unsetRelation('roles')->unsetRelation('permissions');
+        }
     }
 
     /**

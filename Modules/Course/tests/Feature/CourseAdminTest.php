@@ -33,31 +33,27 @@ class CourseAdminTest extends TestCase
 {
     use InteractsWithTenants, RefreshDatabase;
 
-    public function test_officers_create_courses_and_manage_their_content_inside_their_branch(): void
+    public function test_head_office_officers_create_global_courses_and_manage_their_content(): void
     {
         $tenant = Tenant::factory()->create();
         $branch = Tenant::factory()->create();
-        [$foreignCategory, $foreignCourse] = $branch->execute(fn (): array => [
-            CourseCategory::factory()->create(), Course::factory()->create(),
-        ]);
+        $existingCourse = $branch->execute(fn (): Course => Course::factory()->create());
         $this->actAsEducationOfficer($tenant);
         $category = CourseCategory::factory()->create();
         $additionalCategory = CourseCategory::factory()->create();
         $instructor = User::factory()->create();
         $inactiveInstructor = User::factory()->create();
-        $outsider = User::factory()->create();
-        $this->grantRole($instructor, $tenant, DefaultRoles::INSTRUCTOR);
+        $this->grantRole($instructor, $branch, DefaultRoles::INSTRUCTOR);
         $this->grantRole($inactiveInstructor, $tenant, DefaultRoles::INSTRUCTOR);
         CourseTeacher::factory()->for($inactiveInstructor)->create(['is_active' => false]);
-        $this->grantRole($outsider, $branch, DefaultRoles::INSTRUCTOR);
 
         $component = Livewire::test(CreateCourse::class)->fillForm([
             'title' => 'آشنایی با آموزش سازمانی',
-            'category_ids' => [$foreignCategory->id],
-            'instructor_ids' => [$outsider->id, $inactiveInstructor->id],
+            'category_ids' => [999999],
+            'instructor_ids' => [$inactiveInstructor->id],
         ]);
-        $component->call('create')->assertHasFormErrors(['category_ids.0', 'instructor_ids.0', 'instructor_ids.1']);
-        $this->assertFalse(Course::query()->exists());
+        $component->call('create')->assertHasFormErrors(['category_ids.0', 'instructor_ids.0']);
+        $this->assertDatabaseCount(Course::class, 1);
         $component->fillForm([
             'category_ids' => [$category->id, $additionalCategory->id],
             'instructor_ids' => [$instructor->id],
@@ -70,8 +66,7 @@ class CourseAdminTest extends TestCase
             'prepayment_amount' => 50000,
         ])->call('create')->assertHasNoFormErrors();
 
-        $course = Course::query()->sole();
-        $this->assertSame($tenant->id, $course->tenant_id);
+        $course = Course::query()->whereKeyNot($existingCourse->id)->sole();
         $this->assertSame($category->id, $course->course_category_id);
         $this->assertSame($additionalCategory->id, $course->additionalCategories()->sole()->id);
         $this->assertSame($instructor->id, $course->instructors()->sole()->user_id);
@@ -83,8 +78,8 @@ class CourseAdminTest extends TestCase
         $this->assertSame('2026-12-01', $course->starts_on);
         $this->assertSame('2026-12-31', $course->ends_on);
         $this->assertSame(50000, $course->prepayment_amount);
-        Livewire::test(ListCourses::class)->assertCanSeeTableRecords([$course])->assertCanNotSeeTableRecords([$foreignCourse]);
-        $this->get(CourseResource::getUrl('edit', ['record' => $foreignCourse], tenant: $tenant))->assertNotFound();
+        Livewire::test(ListCourses::class)->assertCanSeeTableRecords([$course, $existingCourse]);
+        $this->get(CourseResource::getUrl('edit', ['record' => $existingCourse], tenant: $tenant))->assertOk();
         $this->get(CourseResource::getUrl('edit', ['record' => $course], tenant: $tenant))->assertOk()->assertSee(['بخش‌ها', 'درس‌ها', 'ثبت‌نام‌ها']);
 
         Livewire::test(EditCourse::class, ['record' => $course->id])
@@ -121,8 +116,7 @@ class CourseAdminTest extends TestCase
     public function test_course_list_links_to_manage_sections_for_the_selected_course(): void
     {
         $tenant = Tenant::factory()->create();
-        $branch = Tenant::factory()->create();
-        $foreignCourse = $branch->execute(fn (): Course => Course::factory()->create());
+        $anotherCourse = Course::factory()->create();
         $this->actAsEducationOfficer($tenant);
         $course = Course::factory()->create(['title' => 'دورهٔ آموزش سازمانی']);
         $section = CourseSection::factory()->for($course)->create(['title' => 'آشنایی با فرایندها']);
@@ -133,7 +127,7 @@ class CourseAdminTest extends TestCase
             ->assertActionHasUrl(TestAction::make('sections')->table($course), $url);
         Livewire::withoutLazyLoading();
         $this->get($url)->assertOk()->assertSee(['سرفصل‌ها', $course->title, $section->title])->assertDontSee('سرفصل دورهٔ دیگر');
-        $this->get(CourseResource::getUrl('sections', ['record' => $foreignCourse], tenant: $tenant))->assertNotFound();
+        $this->get(CourseResource::getUrl('sections', ['record' => $anotherCourse], tenant: $tenant))->assertOk();
 
         Livewire::test(SectionsRelationManager::class, ['ownerRecord' => $course, 'pageClass' => ManageCourseSections::class])
             ->callAction(TestAction::make('edit')->table($section), data: ['title' => 'شناخت فرایندها', 'position' => 2])
@@ -151,8 +145,7 @@ class CourseAdminTest extends TestCase
     public function test_course_activities_link_opens_only_the_selected_courses_lessons(): void
     {
         $tenant = Tenant::factory()->create();
-        $branch = Tenant::factory()->create();
-        $foreignCourse = $branch->execute(fn (): Course => Course::factory()->create());
+        $anotherCourse = Course::factory()->create();
         $this->actAsEducationOfficer($tenant);
         $course = Course::factory()->create();
         $lesson = CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')
@@ -165,7 +158,7 @@ class CourseAdminTest extends TestCase
         Livewire::withoutLazyLoading();
         $this->get($url)->assertOk()->assertSee(['فعالیت‌ها', $course->title, $lesson->title])
             ->assertDontSee($otherLesson->title);
-        $this->get(CourseResource::getUrl('activities', ['record' => $foreignCourse], tenant: $tenant))->assertNotFound();
+        $this->get(CourseResource::getUrl('activities', ['record' => $anotherCourse], tenant: $tenant))->assertOk();
 
         $viewer = User::factory()->create();
         $this->makeStaff($viewer, $tenant);
@@ -214,16 +207,14 @@ class CourseAdminTest extends TestCase
         }
     }
 
-    public function test_officers_may_assign_branch_members_but_cannot_assign_users_from_another_branch(): void
+    public function test_head_office_officers_can_assign_users_from_different_branches(): void
     {
         $tenant = Tenant::factory()->create();
         $branch = Tenant::factory()->create();
         $instructor = User::factory()->create();
         $learner = User::factory()->create();
-        $outsider = User::factory()->create();
         $this->grantRole($instructor, $tenant, DefaultRoles::INSTRUCTOR);
-        $this->grantRole($learner, $tenant, DefaultRoles::LEARNER);
-        $this->grantRole($outsider, $branch, DefaultRoles::LEARNER);
+        $this->grantRole($learner, $branch, DefaultRoles::LEARNER);
         $this->actAsEducationOfficer($tenant);
 
         $course = Course::factory()->create();
@@ -234,7 +225,7 @@ class CourseAdminTest extends TestCase
         $this->assertSame($instructor->id, $course->instructors()->sole()->user_id);
 
         Livewire::test(EnrollmentsRelationManager::class, $owner)
-            ->callAction(TestAction::make('create')->table(), data: ['user_id' => $outsider->id])
+            ->callAction(TestAction::make('create')->table(), data: ['user_id' => 999999])
             ->assertHasActionErrors(['user_id']);
 
         Livewire::test(EnrollmentsRelationManager::class, $owner)
@@ -297,6 +288,7 @@ class CourseAdminTest extends TestCase
 
     private function actAsEducationOfficer(Tenant $tenant): void
     {
+        $tenant->makePrimary();
         $officer = User::factory()->create();
         app(DefaultRoles::class)->install();
         $this->makeStaff($officer, $tenant);

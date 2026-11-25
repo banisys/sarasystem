@@ -3,7 +3,6 @@
 namespace Modules\Course\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\PublicSite\HiddenRecords;
 use App\PublicSite\PublicSite;
@@ -25,38 +24,32 @@ class CourseCatalogController extends Controller
         $branch = $request->route('branch');
         $id = $request->route('catalogCourse');
         $tenants = app(HiddenRecords::class)->exclude(Tenant::query()->active());
-        $tenant = $branch === null
-            ? $tenants->where('is_primary', true)->first()
-            : $tenants->where('slug', $branch)->first();
 
-        abort_if($tenant === null, 404);
+        if ($branch !== null) {
+            abort_unless($tenants->where('slug', $branch)->exists(), 404);
 
-        if ($branch !== null && $tenant->is_primary) {
-            return redirect()->route('courses.catalog', array_filter([
+            return to_route('courses.catalog', array_filter([
                 ...$request->query(),
                 'catalogCourse' => $id,
             ], fn (mixed $value): bool => $value !== null));
         }
 
-        $layout = PublicSite::layoutProps($tenant);
+        $layout = PublicSite::layoutProps($tenants->where('is_primary', true)->first());
 
-        return $tenant->execute(fn (): Response => $id === null
-            ? $this->index($request, $tenant, $layout)
-            : $this->show($request, $tenant, $layout, (int) $id));
+        return $id === null
+            ? $this->index($request, $layout)
+            : $this->show($layout, (int) $id);
     }
 
-    public function open(Request $request, Tenant $branch, int $catalogCourse): RedirectResponse
+    public function open(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->belongsToTenant($branch), 403);
+        $course = Course::query()->published()->findOrFail($request->route('catalogCourse'));
 
-        $course = $branch->execute(fn (): Course => Course::query()->published()->findOrFail($catalogCourse));
-        $request->session()->put(ResolveCurrentTenant::SESSION_KEY, $branch->getKey());
-
-        return redirect()->route('courses.show', $course);
+        return to_route('courses.show', $course);
     }
 
     /** @param array<string, mixed> $layout */
-    private function index(Request $request, Tenant $tenant, array $layout): Response
+    private function index(Request $request, array $layout): Response
     {
         $category = max(0, $request->integer('category'));
         $search = mb_substr(trim((string) $request->string('search')), 0, 100);
@@ -79,7 +72,7 @@ class CourseCatalogController extends Controller
                 ...$course->only('id', 'title', 'lessons_count'),
                 'allows_self_enrollment' => $freeEnrollmentEnabled && $course->allows_self_enrollment,
                 'category' => $course->category?->title,
-                'url' => PublicSite::url($tenant, '/courses/'.$course->getKey()),
+                'url' => route('courses.catalog', $course),
             ]);
 
         return Inertia::render('Course::Catalog', [
@@ -87,12 +80,12 @@ class CourseCatalogController extends Controller
             'courses' => $courses,
             'categories' => $tree->catalogOptions(),
             'filters' => ['search' => $search, 'category' => $category ?: ''],
-            'catalogUrl' => PublicSite::url($tenant, '/courses'),
+            'catalogUrl' => route('courses.catalog'),
         ]);
     }
 
     /** @param array<string, mixed> $layout */
-    private function show(Request $request, Tenant $tenant, array $layout, int $id): Response
+    private function show(array $layout, int $id): Response
     {
         $course = Course::query()->published()->with([
             'category:id,title',
@@ -112,9 +105,8 @@ class CourseCatalogController extends Controller
                 ...$section->only('id', 'title'),
                 'lessons' => $section->lessons->map(fn (CourseLesson $lesson): array => $lesson->only('id', 'title', 'duration_minutes', 'is_preview')),
             ]),
-            'catalogUrl' => PublicSite::url($tenant, '/courses'),
-            'studyUrl' => $request->user() === null || $request->user()->belongsToTenant($tenant)
-                ? route('courses.catalog.open', [$tenant->slug, $course]) : null,
+            'catalogUrl' => route('courses.catalog'),
+            'studyUrl' => route('courses.show', $course),
         ]);
     }
 }

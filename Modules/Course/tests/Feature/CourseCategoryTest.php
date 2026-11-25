@@ -84,16 +84,8 @@ class CourseCategoryTest extends TestCase
     {
         $root = CourseCategory::factory()->create(['title' => 'دستهٔ اصلی شعبه', 'alias' => 'root']);
         $child = CourseCategory::factory()->for($root, 'parent')->create();
-        $otherTenant = Tenant::factory()->create();
-        $foreign = $otherTenant->execute(fn () => CourseCategory::factory()->create(
-            ['title' => 'دستهٔ اختصاصی شعبهٔ دیگر', 'alias' => 'root'],
-        ));
-
-        Livewire::test(ManageCourseCategories::class)->assertDontSee($foreign->title)
-            ->mountAction('edit', ['category' => $foreign->id])->assertNotFound();
-
         Livewire::test(ManageCourseCategories::class)
-            ->callAction('create', data: ['title' => 'New', 'alias' => 'new', 'parent_id' => $foreign->id])
+            ->callAction('create', data: ['title' => 'New', 'alias' => 'new', 'parent_id' => 999999])
             ->assertHasActionErrors(['parent_id']);
 
         Livewire::test(ManageCourseCategories::class)

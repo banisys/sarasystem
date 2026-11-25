@@ -42,8 +42,8 @@ class CourseForm
                 Toggle::make('allows_self_enrollment')
                     ->label(fn (): string => CourseEnrollmentSettings::current()->free_name)
                     ->helperText(fn (): string => CourseEnrollmentSettings::current()->free_enabled
-                        ? 'با فعال کردن این گزینه، اعضای واردشده می‌توانند در دورهٔ منتشرشده ثبت‌نام کنند.'
-                        : 'روش ثبت‌نام رایگان برای این شعبه غیرفعال است.'),
+                        ? 'با فعال کردن این گزینه، کاربران واردشده می‌توانند در دورهٔ منتشرشده ثبت‌نام کنند.'
+                        : 'روش ثبت‌نام رایگان در تنظیمات دوره‌ها غیرفعال است.'),
                 RichEditor::make('description_html')->label('توضیحات')->maxLength(50000)
                     ->disableToolbarButtons(['attachFiles'])->columnSpanFull(),
             ]),
@@ -85,7 +85,7 @@ class CourseForm
         }
 
         $course->fill($data)->save();
-        $course->additionalCategories()->syncWithPivotValues($categories, ['tenant_id' => $course->tenant_id]);
+        $course->additionalCategories()->sync($categories);
 
         if ($course->wasRecentlyCreated) {
             $course->instructors()->createMany(

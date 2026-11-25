@@ -2,19 +2,21 @@
 
 namespace Modules\Course\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Course\Database\Factories\CourseEnrollmentSettingsFactory;
 
-#[Fillable(['manual_name', 'manual_enabled', 'free_name', 'free_enabled'])]
+#[Fillable(['id', 'manual_name', 'manual_enabled', 'free_name', 'free_enabled'])]
 class CourseEnrollmentSettings extends Model
 {
     /** @use HasFactory<CourseEnrollmentSettingsFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    public const int SINGLETON_ID = 1;
 
     protected $attributes = [
+        'id' => self::SINGLETON_ID,
         'manual_name' => 'ثبت‌نام دستی',
         'manual_enabled' => true,
         'free_name' => 'ثبت‌نام رایگان',
@@ -23,7 +25,7 @@ class CourseEnrollmentSettings extends Model
 
     public static function current(): self
     {
-        return self::query()->firstOrNew();
+        return self::query()->firstOrNew(['id' => self::SINGLETON_ID]);
     }
 
     protected static function newFactory(): CourseEnrollmentSettingsFactory

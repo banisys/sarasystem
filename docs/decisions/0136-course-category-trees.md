@@ -1,7 +1,7 @@
 # 0136 — Branch course category trees
 
 - **Date:** 2026-11-24
-- **Status:** accepted
+- **Status:** accepted. [ADR 0145](0145-global-course-module.md) supersedes the original category ownership and alias scope.
 
 ## Context
 

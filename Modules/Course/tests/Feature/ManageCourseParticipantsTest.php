@@ -23,9 +23,8 @@ class ManageCourseParticipantsTest extends TestCase
 
     public function test_the_course_row_opens_only_its_own_participants_for_course_editors(): void
     {
-        $tenant = Tenant::factory()->create();
+        $tenant = Tenant::factory()->create(['is_primary' => true]);
         $otherBranch = Tenant::factory()->create();
-        $foreignCourse = $otherBranch->execute(fn (): Course => Course::factory()->create());
         $this->actAsEducationOfficer($tenant);
         $course = Course::factory()->create();
         $participant = CourseEnrollment::factory()->for($course)->create();
@@ -38,7 +37,14 @@ class ManageCourseParticipantsTest extends TestCase
         $this->get($url)->assertOk()
             ->assertSee(['شرکت‌کنندگان', $course->title, $participant->user->name])
             ->assertDontSee($otherParticipant->user->name);
-        $this->get(CourseResource::getUrl('participants', ['record' => $foreignCourse], tenant: $tenant))->assertNotFound();
+        $this->get($url)->assertSee('مستقل از شعبه');
+
+        $branchOfficer = User::factory()->create();
+        $this->makeStaff($branchOfficer, $otherBranch);
+        $this->grantRole($branchOfficer, $otherBranch, DefaultRoles::EDUCATION_OFFICER);
+        $this->actingInPanel($branchOfficer, $otherBranch);
+
+        $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $otherBranch))->assertForbidden();
 
         $viewer = User::factory()->create();
         $this->makeStaff($viewer, $tenant);
@@ -49,14 +55,12 @@ class ManageCourseParticipantsTest extends TestCase
         $this->get($url)->assertForbidden();
     }
 
-    public function test_course_editors_can_enroll_branch_members_and_revoke_access_from_the_participants_page(): void
+    public function test_course_editors_can_enroll_users_from_other_branches_and_revoke_access(): void
     {
-        $tenant = Tenant::factory()->create();
+        $tenant = Tenant::factory()->create(['is_primary' => true]);
         $otherBranch = Tenant::factory()->create();
         $member = User::factory()->create();
-        $outsider = User::factory()->create();
-        $this->grantRole($member, $tenant, DefaultRoles::LEARNER);
-        $this->grantRole($outsider, $otherBranch, DefaultRoles::LEARNER);
+        $this->grantRole($member, $otherBranch, DefaultRoles::LEARNER);
         $this->actAsEducationOfficer($tenant);
         $course = Course::factory()->create();
         $owner = [
@@ -65,7 +69,7 @@ class ManageCourseParticipantsTest extends TestCase
         ];
 
         Livewire::test(EnrollmentsRelationManager::class, $owner)
-            ->callAction(TestAction::make('create')->table(), data: ['user_id' => $outsider->id])
+            ->callAction(TestAction::make('create')->table(), data: ['user_id' => 999999])
             ->assertHasActionErrors(['user_id']);
         $component = Livewire::test(EnrollmentsRelationManager::class, $owner)
             ->callAction(TestAction::make('create')->table(), data: ['user_id' => $member->id])

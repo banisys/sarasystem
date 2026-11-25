@@ -23,75 +23,65 @@ class CourseLearningTest extends TestCase
 
     public function test_public_catalog_filters_published_courses_and_shows_only_the_syllabus(): void
     {
-        $primary = Tenant::factory()->create(['is_primary' => true]);
         $branch = Tenant::factory()->create();
-        [$course, $lesson, $additionalCategory] = $branch->execute(function () use ($branch): array {
-            $category = CourseCategory::factory()->create();
-            $course = Course::factory()->for($category, 'category')->create(['title' => 'Introduction to training', 'is_published' => true]);
-            $otherCategory = CourseCategory::factory()->create();
-            Course::factory()->for($otherCategory, 'category')->create(['title' => 'More training', 'is_published' => true]);
-            Course::factory()->for($category, 'category')->create(['title' => 'Training draft']);
-            $additionalCategory = CourseCategory::factory()->create();
-            $course->additionalCategories()->attach($additionalCategory, ['tenant_id' => $branch->id]);
+        $category = CourseCategory::factory()->create();
+        $course = Course::factory()->for($category, 'category')->create(['title' => 'Introduction to training', 'is_published' => true]);
+        Course::factory()->create(['title' => 'More training', 'is_published' => true]);
+        Course::factory()->for($category, 'category')->create(['title' => 'Training draft']);
+        $additionalCategory = CourseCategory::factory()->create();
+        $course->additionalCategories()->attach($additionalCategory);
+        $lesson = CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')->create();
 
-            return [$course, CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')->create(), $additionalCategory];
-        });
-
-        $this->get(route('courses.catalog.branch', ['branch' => $branch->slug, 'category' => $course->course_category_id, 'search' => 'training']))
+        $filters = ['category' => $category->id, 'search' => 'training'];
+        $this->get(route('courses.catalog.branch', ['branch' => $branch->slug, ...$filters]))
+            ->assertRedirect(route('courses.catalog', $filters));
+        $this->get(route('courses.catalog', $filters))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('Course::Catalog', false)
                 ->has('courses.data', 1)->where('courses.data.0.id', $course->id));
 
-        $this->get(route('courses.catalog.branch', ['branch' => $branch->slug, 'category' => $additionalCategory->id]))
+        $this->get(route('courses.catalog', ['category' => $additionalCategory->id]))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Course::Catalog', false)
-                ->has('courses.data', 1)->where('courses.data.0.id', $course->id));
+            ->assertInertia(fn (Assert $page) => $page->has('courses.data', 1)->where('courses.data.0.id', $course->id));
 
         $this->get(route('courses.catalog.branch', [$branch->slug, $course]))
+            ->assertRedirect(route('courses.catalog', $course));
+        $this->get(route('courses.catalog', $course))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('Course::CatalogCourse', false)
                 ->where('sections.0.lessons.0.title', $lesson->title)->missing('sections.0.lessons.0.body'));
 
-        $this->get(route('courses.catalog', $course))->assertNotFound();
-        $this->get(route('courses.catalog.branch', $primary->slug))->assertRedirect(route('courses.catalog'));
         $this->get(route('courses.lesson', [$course, $lesson]))->assertRedirect(route('login'));
     }
 
-    public function test_opening_a_public_course_selects_its_branch_only_for_members(): void
+    public function test_a_global_course_opens_without_a_branch_or_changing_the_selected_branch(): void
     {
-        $primary = Tenant::factory()->create(['is_primary' => true]);
         $branch = Tenant::factory()->create();
-        $course = $branch->execute(fn () => Course::factory()->create(['is_published' => true]));
+        $otherBranch = Tenant::factory()->create();
+        $course = Course::factory()->create(['is_published' => true]);
         $user = User::factory()->create();
-        $this->grantRole($user, $primary, 'learner');
+        $showUrl = route('courses.show', $course);
         $openUrl = route('courses.catalog.open', [$branch->slug, $course]);
 
         $this->get($openUrl)->assertRedirect(route('login'));
-        $this->actingAs($user)->withSession([ResolveCurrentTenant::SESSION_KEY => $primary->id])
-            ->get($openUrl)->assertForbidden()->assertSessionHas(ResolveCurrentTenant::SESSION_KEY, $primary->id);
+        $this->actingAs($user)->get($showUrl)->assertOk()->assertSessionMissing(ResolveCurrentTenant::SESSION_KEY)
+            ->assertInertia(fn (Assert $page) => $page->where('tenant.current', null)
+                ->where('navigation.0.url', route('courses.index')));
 
-        $this->grantRole($user, $branch, 'learner');
-        $this->get($openUrl)->assertRedirect(route('courses.show', $course))
-            ->assertSessionHas(ResolveCurrentTenant::SESSION_KEY, $branch->id);
-        $this->get(route('courses.show', $course))->assertOk();
+        $this->grantRole($user, $otherBranch, 'learner');
+        $this->withSession([ResolveCurrentTenant::SESSION_KEY => $otherBranch->id])
+            ->get($openUrl)->assertRedirect($showUrl)
+            ->assertSessionHas(ResolveCurrentTenant::SESSION_KEY, $otherBranch->id);
     }
 
     public function test_enrollment_unlocks_content_and_completion_is_idempotent_and_individual(): void
     {
-        $tenant = Tenant::factory()->create();
         $learner = User::factory()->create();
         $other = User::factory()->create();
-        $this->grantRole($learner, $tenant, 'learner');
-        $this->grantRole($other, $tenant, 'learner');
-
-        [$course, $preview, $lesson] = $tenant->execute(function (): array {
-            $course = Course::factory()->create(['is_published' => true, 'allows_self_enrollment' => true]);
-            $section = CourseSection::factory()->for($course)->create();
-            $lesson = CourseLesson::factory()->for($section, 'section')->create(['position' => 3]);
-            $preview = CourseLesson::factory()->for($section, 'section')->create(['is_preview' => true, 'position' => 1]);
-
-            return [$course, $preview, $lesson];
-        });
+        $course = Course::factory()->create(['is_published' => true, 'allows_self_enrollment' => true]);
+        $section = CourseSection::factory()->for($course)->create();
+        $lesson = CourseLesson::factory()->for($section, 'section')->create(['position' => 3]);
+        $preview = CourseLesson::factory()->for($section, 'section')->create(['is_preview' => true, 'position' => 1]);
 
         $previewUrl = route('courses.lesson', [$course, $preview]);
         $lessonUrl = route('courses.lesson', [$course, $lesson]);
@@ -157,7 +147,7 @@ class CourseLearningTest extends TestCase
         $this->assertTrue($enrollment->refresh()->is_revoked);
     }
 
-    public function test_direct_course_lesson_and_completion_requests_cannot_cross_boundaries(): void
+    public function test_drafts_and_lessons_from_another_course_are_hidden_on_direct_urls(): void
     {
         $tenant = Tenant::factory()->create();
         $branch = Tenant::factory()->create();

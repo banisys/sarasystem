@@ -2,7 +2,6 @@
 
 namespace Modules\Course\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +16,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class CourseLesson extends Model implements HasMedia
 {
     /** @use HasFactory<CourseLessonFactory> */
-    use BelongsToTenant, HasFactory, InteractsWithMedia;
+    use HasFactory, InteractsWithMedia;
 
     public const array VIDEO_TYPES = ['video/mp4', 'video/webm'];
 

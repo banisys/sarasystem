@@ -76,16 +76,16 @@ class PublicSite
      *
      * @return array{site: array{tenant: array{name: string, url: string, color: array{primary: string, contrast: string}|null}, navigation: list<array<string, mixed>>, otherTenants: list<array{name: string, url: string}>}}
      */
-    public static function layoutProps(Tenant $tenant): array
+    public static function layoutProps(?Tenant $tenant): array
     {
         return ['site' => [
             'tenant' => [
-                'name' => $tenant->name,
-                'url' => self::url($tenant),
-                'color' => $tenant->primary_color === null ? null : ['primary' => $tenant->primary_color, 'contrast' => $tenant->primaryColorContrast()],
+                'name' => $tenant?->name ?? config('app.name'),
+                'url' => $tenant === null ? url('/') : self::url($tenant),
+                'color' => $tenant?->primary_color === null ? null : ['primary' => $tenant->primary_color, 'contrast' => $tenant->primaryColorContrast()],
             ],
-            'navigation' => collect(static::$navigationProviders)->flatMap(fn (Closure $callback): array => $callback($tenant))->values()->all(),
-            'otherTenants' => app(HiddenRecords::class)->exclude(Tenant::query()->active()->whereKeyNot($tenant->getKey()))->orderByDesc('is_primary')->orderBy('name')->get()
+            'navigation' => $tenant === null ? [] : collect(static::$navigationProviders)->flatMap(fn (Closure $callback): array => $callback($tenant))->values()->all(),
+            'otherTenants' => app(HiddenRecords::class)->exclude(Tenant::query()->active()->when($tenant, fn ($query) => $query->whereKeyNot($tenant->getKey())))->orderByDesc('is_primary')->orderBy('name')->get()
                 ->map(fn (Tenant $other): array => ['name' => $other->name, 'url' => self::url($other)])
                 ->all(),
         ]];

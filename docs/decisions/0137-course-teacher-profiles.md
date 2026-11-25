@@ -1,7 +1,7 @@
 # 0137 — Course teacher profiles per branch
 
 - **Date:** 2026-11-24
-- **Status:** accepted
+- **Status:** accepted. [ADR 0145](0145-global-course-module.md) supersedes the original teacher-profile ownership.
 
 ## Context
 

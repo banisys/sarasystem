@@ -2,8 +2,6 @@
 
 namespace Modules\Course\Models;
 
-use App\Models\Concerns\BelongsToTenant;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +14,7 @@ use Modules\Course\Database\Factories\CourseInstructorFactory;
 class CourseInstructor extends Model
 {
     /** @use HasFactory<CourseInstructorFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
 
     protected static function newFactory(): CourseInstructorFactory
     {
@@ -26,7 +24,7 @@ class CourseInstructor extends Model
     /** @return Builder<User> */
     public static function eligibleUsers(): Builder
     {
-        return self::withoutInactiveProfiles(User::query()->inTenant(Tenant::current()));
+        return self::withoutInactiveProfiles(User::query());
     }
 
     /**

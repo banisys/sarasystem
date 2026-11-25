@@ -2,7 +2,6 @@
 
 namespace Modules\Course\Filament\Resources\Courses\Pages;
 
-use App\Models\Tenant;
 use Filament\Resources\Pages\Concerns\HasRelationManagers;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
@@ -31,7 +30,6 @@ abstract class ManageCourseContent extends Page
         $course = $parameters['record'] ?? null;
 
         return $course instanceof Course
-            && $course->tenant_id === Tenant::current()?->getKey()
             && CourseResource::canEdit($course);
     }
 

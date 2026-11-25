@@ -20,10 +20,10 @@ class InstructorsRelationManager extends CoursePeopleRelationManager
 
     public function form(Schema $schema): Schema
     {
-        return $schema->components([$this->memberSelect('مدرس')]);
+        return $schema->components([$this->userSelect('مدرس')]);
     }
 
-    protected function eligibleMembers(Builder $query): Builder
+    protected function eligibleUsers(Builder $query): Builder
     {
         return CourseInstructor::withoutInactiveProfiles($query);
     }

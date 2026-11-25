@@ -1,7 +1,7 @@
 # 0138 — Course enrollment methods by branch
 
 - **Date:** 2026-11-24
-- **Status:** accepted
+- **Status:** accepted. [ADR 0145](0145-global-course-module.md) supersedes the original enrollment-settings ownership.
 
 ## Context
 

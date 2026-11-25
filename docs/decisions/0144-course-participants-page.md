@@ -1,7 +1,7 @@
 # 0144 — Course participants page
 
 - **Date:** 2026-11-25
-- **Status:** accepted
+- **Status:** accepted. [ADR 0145](0145-global-course-module.md) supersedes the original participant selection and permissions.
 
 ## Context
 

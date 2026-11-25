@@ -2,7 +2,6 @@
 
 namespace Modules\Course\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +13,7 @@ use Modules\Course\Database\Factories\CourseSectionFactory;
 class CourseSection extends Model
 {
     /** @use HasFactory<CourseSectionFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
 
     protected static function newFactory(): CourseSectionFactory
     {

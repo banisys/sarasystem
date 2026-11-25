@@ -2,7 +2,8 @@
 
 namespace Modules\Course\Filament\Pages;
 
-use App\Models\Tenant;
+use App\Filament\Support\IndependentOfTenant;
+use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -14,12 +15,12 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\Gate;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Models\CourseEnrollmentSettings;
+use Modules\Course\Support\CoursePermissions;
 use UnitEnum;
 
-class CourseEnrollmentMethods extends Page
+class CourseEnrollmentMethods extends Page implements IndependentOfTenant
 {
     protected static ?string $slug = 'course/enrollment';
 
@@ -39,7 +40,9 @@ class CourseEnrollmentMethods extends Page
 
     public static function canAccess(): bool
     {
-        return Tenant::current() !== null && Gate::allows('Update:Course');
+        $user = auth()->user();
+
+        return $user instanceof User && CoursePermissions::allows($user, 'Update:Course');
     }
 
     public function mount(): void
@@ -82,7 +85,7 @@ class CourseEnrollmentMethods extends Page
         abort_unless(static::canAccess(), 403);
 
         CourseEnrollmentSettings::query()->updateOrCreate(
-            ['tenant_id' => Tenant::current()->getKey()],
+            ['id' => CourseEnrollmentSettings::SINGLETON_ID],
             $this->form->getState(),
         );
 

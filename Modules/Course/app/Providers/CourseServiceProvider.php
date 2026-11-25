@@ -3,8 +3,6 @@
 namespace Modules\Course\Providers;
 
 use App\Authorization\DefaultRoles;
-use App\Models\Tenant;
-use App\Models\User;
 use App\PublicSite\PublicSite;
 use App\UserPanel\UserPanel;
 use Modules\Course\Integrations\CourseExamSource;
@@ -37,14 +35,12 @@ class CourseServiceProvider extends ModuleServiceProvider
             ],
         ]);
 
-        PublicSite::navigationUsing('courses', fn (Tenant $tenant): array => $tenant->execute(
-            fn (): array => Course::query()->published()->exists()
-                ? [['title' => 'دوره‌های آموزشی', 'url' => PublicSite::url($tenant, '/courses'), 'new_tab' => false, 'children' => []]]
-                : [],
-        ));
-
-        UserPanel::navigationUsing('courses', fn (User $user, Tenant $tenant): array => Course::query()->published()->exists()
-            ? [['title' => 'دوره‌های آموزشی', 'url' => route('courses.index'), 'icon' => 'academic']]
+        PublicSite::navigationUsing('courses', fn (): array => Course::query()->published()->exists()
+            ? [['title' => 'دوره‌های آموزشی', 'url' => route('courses.catalog'), 'new_tab' => false, 'children' => []]]
             : []);
+
+        UserPanel::navigationUsing('courses', fn (): array => Course::query()->published()->exists()
+            ? [['title' => 'دوره‌های آموزشی', 'url' => route('courses.index'), 'icon' => 'academic']]
+            : [], requiresTenant: false);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Modules\Course\Filament\Resources\CourseTeachers;
 
-use App\Models\Tenant;
+use App\Filament\Support\IndependentOfTenant;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
@@ -24,7 +24,7 @@ use Modules\Course\Filament\Resources\CourseTeachers\Pages\ManageCourseTeachers;
 use Modules\Course\Models\CourseTeacher;
 use UnitEnum;
 
-class CourseTeacherResource extends Resource
+class CourseTeacherResource extends Resource implements IndependentOfTenant
 {
     protected static ?string $model = CourseTeacher::class;
 
@@ -42,13 +42,12 @@ class CourseTeacherResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        $inBranch = fn (Builder $query): Builder => $query->inTenant(Tenant::current());
         $toolbar = [['bold', 'italic', 'underline'], ['bulletList', 'orderedList'], ['undo', 'redo']];
 
         return $schema->components([
             Select::make('user_id')->label('کاربر')->required()->searchable()
-                ->relationship('user', 'name', modifyQueryUsing: $inBranch)
-                ->scopedExists(User::class, 'id', $inBranch)
+                ->relationship('user', 'name')
+                ->scopedExists(User::class, 'id')
                 ->scopedUnique()
                 ->disabledOn('edit'),
             Select::make('education')->label('مدرک تحصیلی')->options(TeacherEducation::class)->required(),

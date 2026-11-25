@@ -295,6 +295,8 @@ class ContextExamController extends Controller
             return $context;
         }
 
+        abort_if(in_array($type, $contexts->sharedTypes(), true), 404);
+
         $tenant = $contexts->tenantForVisit($type, $id, $actor);
         abort_if($tenant === null || $tenant->isCurrent(), 404);
 

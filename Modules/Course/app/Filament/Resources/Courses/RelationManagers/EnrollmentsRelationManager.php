@@ -25,7 +25,7 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            $this->memberSelect(config('sarasystem.learner_label'))->hiddenOn('edit'),
+            $this->userSelect(config('sarasystem.learner_label'))->hiddenOn('edit'),
             DateTimePicker::make('starts_at')->label('شروع دسترسی')->jalali()->seconds(false)
                 ->helperText('خالی: از همین حالا'),
             DateTimePicker::make('expires_at')->label('پایان دسترسی')->jalali()->seconds(false)
