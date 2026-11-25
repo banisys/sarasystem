@@ -9,6 +9,7 @@ use App\Filament\Support\PersonRecordActions;
 use App\Guardians\Guardians;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ClassRoster;
 use App\UserPanel\UserPanel;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
@@ -17,6 +18,7 @@ use Modules\Class\Filament\Resources\ClassSessions\Pages\LearnerSessions;
 use Modules\Class\Filament\Resources\ClassSessions\Pages\TeacherSessions;
 use Modules\Class\Models\Term;
 use Modules\Class\Services\ClassroomRooms;
+use Modules\Class\Services\ClassroomRoster;
 use Modules\Class\Services\DefaultClassRoles;
 use Modules\Class\Services\MyClasses;
 use Modules\Class\Services\PlanForecast;
@@ -53,6 +55,7 @@ class ClassServiceProvider extends ModuleServiceProvider
 
         // Remembers the forecasts it worked out during a request (ADR 0025).
         $this->app->scoped(PlanForecast::class);
+        $this->app->bind(ClassRoster::class, ClassroomRoster::class);
     }
 
     public function boot(): void

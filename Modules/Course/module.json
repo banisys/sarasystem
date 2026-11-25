@@ -12,6 +12,9 @@
         "label": "دوره‌های خودآموز",
         "group": "education",
         "surfaces": ["admin", "user", "public"],
-        "connections": [{ "target": "Exam", "label": "آزمون‌های درس" }]
+        "connections": [
+            { "target": "Exam", "label": "آزمون‌های درس" },
+            { "target": "Class", "label": "ثبت‌نام از کلاس" }
+        ]
     }
 }

@@ -2,16 +2,24 @@
 
 namespace Modules\Course\Filament\Resources\Courses\RelationManagers;
 
+use App\Models\Tenant;
+use App\Models\User;
+use App\Support\ClassRoster;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Modules\Course\Models\CourseEnrollmentSettings;
 
 class EnrollmentsRelationManager extends CoursePeopleRelationManager
@@ -54,7 +62,53 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
                     ->label(fn (): string => CourseEnrollmentSettings::current()->manual_name)
                     ->visible(fn (): bool => CourseEnrollmentSettings::current()->manual_enabled)
                     ->before(fn () => abort_unless(CourseEnrollmentSettings::current()->manual_enabled, 403)),
+                ...(app()->bound(ClassRoster::class) ? [$this->enrollFromClassAction(app(ClassRoster::class))] : []),
             ])
             ->recordActions([EditAction::make()]);
+    }
+
+    private function enrollFromClassAction(ClassRoster $rosters): Action
+    {
+        $canEnroll = fn (): bool => auth()->user() instanceof User
+            && $rosters->canBrowse(auth()->user())
+            && CourseEnrollmentSettings::current()->manual_enabled;
+
+        return Action::make('enrollFromClass')
+            ->label('ثبت‌نام از کلاس')
+            ->icon(Heroicon::OutlinedUserGroup)
+            ->authorize($canEnroll)
+            ->modalDescription(fn (): string => 'فراگیران فعلی کلاس در '.Tenant::current()?->name.' به دوره اضافه می‌شوند. ثبت‌نام‌های قبلی حفظ می‌شوند.')
+            ->modalSubmitActionLabel('ثبت‌نام فراگیران')
+            ->schema([
+                Select::make('class_id')
+                    ->label('کلاس')->required()->searchable()->rule('integer')
+                    ->options(fn (): array => $rosters->options(auth()->user()))
+                    ->getSearchResultsUsing(fn (string $search): array => $rosters->options(auth()->user(), $search))
+                    ->getOptionLabelUsing(function (mixed $value) use ($rosters): ?string {
+                        $classId = filter_var($value, FILTER_VALIDATE_INT);
+
+                        return $classId === false ? null : $rosters->title(auth()->user(), $classId);
+                    }),
+            ])
+            ->action(function (array $data) use ($rosters, $canEnroll): void {
+                abort_unless($canEnroll(), 403);
+                $userIds = $rosters->attendeeIds(auth()->user(), (int) $data['class_id']);
+                abort_if($userIds === null, 404);
+
+                $added = DB::transaction(function () use ($userIds): int {
+                    $enrollments = $this->course()->enrollments();
+                    $added = 0;
+
+                    foreach ($userIds as $userId) {
+                        $added += (int) $enrollments->firstOrCreate(['user_id' => $userId])->wasRecentlyCreated;
+                    }
+
+                    return $added;
+                });
+
+                Notification::make()->success()->title('ثبت‌نام از کلاس انجام شد.')
+                    ->body($added.' ثبت‌نام تازه، '.(count($userIds) - $added).' ثبت‌نام قبلی.')
+                    ->send();
+            });
     }
 }
