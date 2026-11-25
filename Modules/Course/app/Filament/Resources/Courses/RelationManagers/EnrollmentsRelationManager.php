@@ -13,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -20,7 +21,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\LazyCollection;
 use Modules\Course\Models\CourseEnrollmentSettings;
+use Modules\Course\Support\CourseRoleRoster;
 
 class EnrollmentsRelationManager extends CoursePeopleRelationManager
 {
@@ -62,6 +65,7 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
                     ->label(fn (): string => CourseEnrollmentSettings::current()->manual_name)
                     ->visible(fn (): bool => CourseEnrollmentSettings::current()->manual_enabled)
                     ->before(fn () => abort_unless(CourseEnrollmentSettings::current()->manual_enabled, 403)),
+                $this->enrollFromRoleAction(app(CourseRoleRoster::class)),
                 ...(app()->bound(ClassRoster::class) ? [$this->enrollFromClassAction(app(ClassRoster::class))] : []),
             ])
             ->recordActions([EditAction::make()]);
@@ -95,20 +99,62 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
                 $userIds = $rosters->attendeeIds(auth()->user(), (int) $data['class_id']);
                 abort_if($userIds === null, 404);
 
-                $added = DB::transaction(function () use ($userIds): int {
-                    $enrollments = $this->course()->enrollments();
-                    $added = 0;
-
-                    foreach ($userIds as $userId) {
-                        $added += (int) $enrollments->firstOrCreate(['user_id' => $userId])->wasRecentlyCreated;
-                    }
-
-                    return $added;
-                });
-
-                Notification::make()->success()->title('ثبت‌نام از کلاس انجام شد.')
-                    ->body($added.' ثبت‌نام تازه، '.(count($userIds) - $added).' ثبت‌نام قبلی.')
-                    ->send();
+                $this->enrollUsers($userIds, 'ثبت‌نام از کلاس انجام شد.');
             });
+    }
+
+    private function enrollFromRoleAction(CourseRoleRoster $rosters): Action
+    {
+        $canEnroll = fn (): bool => auth()->user() instanceof User
+            && CourseEnrollmentSettings::current()->manual_enabled
+            && $rosters->tenantOptions(auth()->user()) !== [];
+
+        return Action::make('enrollFromRole')
+            ->label('ثبت‌نام بر اساس نقش')
+            ->icon(Heroicon::OutlinedIdentification)
+            ->authorize($canEnroll)
+            ->modalDescription('کاربرانی که نقش انتخابی را در محدودهٔ انتخاب‌شده دارند به دوره اضافه می‌شوند. ثبت‌نام‌های قبلی حفظ می‌شوند.')
+            ->modalSubmitActionLabel('ثبت‌نام کاربران')
+            ->schema([
+                Select::make('scope')
+                    ->label(config('sarasystem.tenant_label'))->required()->searchable()->live()
+                    ->options(fn (): array => $rosters->tenantOptions(auth()->user()))
+                    ->afterStateUpdated(fn (Set $set) => $set('role_id', null)),
+                Select::make('role_id')
+                    ->label('نقش')->required()->searchable()->rule('integer')
+                    ->disabled(fn (Get $get): bool => blank($get('scope')))
+                    ->options(fn (Get $get): array => $rosters->roleOptions(auth()->user(), $get('scope'))),
+            ])
+            ->action(function (array $data) use ($rosters, $canEnroll): void {
+                abort_unless($canEnroll(), 403);
+                $users = $rosters->users(auth()->user(), $data['scope'], (int) $data['role_id']);
+                abort_if($users === null, 404);
+
+                $this->enrollUsers($users->select('id')->orderBy('id')->toBase()->cursor()->pluck('id'), 'ثبت‌نام بر اساس نقش انجام شد.');
+            });
+    }
+
+    /** @param iterable<int> $userIds */
+    private function enrollUsers(iterable $userIds, string $title): void
+    {
+        [$added, $total] = DB::transaction(function () use ($userIds): array {
+            $enrollments = $this->course()->enrollments();
+            $added = 0;
+            $total = 0;
+
+            foreach (LazyCollection::make($userIds)->chunk(500) as $ids) {
+                $total += $ids->count();
+                $existing = $this->course()->enrollments()->whereIntegerInRaw('user_id', $ids->all())->pluck('user_id');
+                foreach ($ids->diff($existing) as $userId) {
+                    $added += (int) $enrollments->createOrFirst(['user_id' => $userId])->wasRecentlyCreated;
+                }
+            }
+
+            return [$added, $total];
+        });
+
+        Notification::make()->success()->title($title)
+            ->body($added.' ثبت‌نام تازه، '.($total - $added).' ثبت‌نام قبلی.')
+            ->send();
     }
 }

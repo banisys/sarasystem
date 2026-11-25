@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-25 — Added group course enrollment by role in an authorized branch or across all branches ([ADR 0147](decisions/0147-course-enrollment-by-role.md)). Verified the branch and role selectors in the browser, all 33 Course tests, Pint, and five checks with Course disabled.
 - 2026-11-25 — Added bulk course enrollment from the selected branch's current class attendees ([ADR 0146](decisions/0146-course-enrollment-from-a-class.md)). Verified the North branch picker in the browser, all 877 tests, Pint, and checks with Course and Class disabled separately.
 - 2026-11-25 — Made Course installation-wide, with primary-branch management permissions, a shared catalog and enrollment settings, and lesson exams that preserve the learner’s selected branch ([ADR 0145](decisions/0145-global-course-module.md)). Migrated the local data, checked duplicate handling on a populated copy, verified the browser views, and passed 875 tests, Pint and the Course/Exam disabled-module checks.
 - 2026-11-25 — Added the «شرکت‌کنندگان» row action for course enrollments and access management ([ADR 0144](decisions/0144-course-participants-page.md)). Verified the page in the browser, all 26 Course tests, five system map tests with Course disabled, and Pint.
