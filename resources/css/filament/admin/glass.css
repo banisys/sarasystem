@@ -98,6 +98,13 @@ html.dark .fi-section:not(.fi-section-not-contained) > .fi-section-header {
     border-bottom: 1px solid var(--glass-line);
 }
 
+/* Glass panes create stacking contexts. Raise the containing panes while
+   a date picker is open so its calendar clears later sections and actions. */
+html.dark :is(.fi-section, .fi-section-content-ctn, .fi-sc-tabs.fi-contained, .fi-sc-wizard.fi-contained):has(.fi-fo-date-time-picker-trigger[aria-expanded='true']) {
+    position: relative;
+    z-index: 21;
+}
+
 /* Top bar and sidebar: darker glass. */
 html.dark .fi-topbar,
 html.dark body.fi-body .fi-sidebar {
