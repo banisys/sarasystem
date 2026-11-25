@@ -108,7 +108,7 @@ Domain terms used in this project. Include the Persian term when the UI or users
 | Course | دورهٔ خودآموز | A branch-owned program of on-demand lessons. Learners enroll and progress independently of scheduled class sessions. |
 | Course category | دسته‌بندی دوره | A node in the branch catalog tree, used to classify courses and filter the catalog by branch of the tree. |
 | Course section | بخش دوره | An ordered group of lessons within a course. |
-| Lesson | درس دوره | A unit of learning that can contain text, video, attachments and exams. |
+| Lesson / course activity | درس دوره / فعالیت دوره | A unit of learning that can contain text, video, attachments and exams. Its primary type is file, video, or exam ([ADR 0140](decisions/0140-course-activity-types.md)). |
 | Course teacher profile | پروفایل مدرس دوره | A branch member’s qualifications, teaching experience and biography in the Course directory. |
 | Course enrollment | ثبت‌نام دوره | A branch member’s access to a course’s lessons and progress, with optional access dates and revocation. |
 

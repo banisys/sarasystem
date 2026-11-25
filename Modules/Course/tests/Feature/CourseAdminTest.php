@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Modules\Course\Enums\CourseLessonType;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\EditCourse;
@@ -24,6 +25,7 @@ use Modules\Course\Models\CourseCategory;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
 use Modules\Course\Models\CourseTeacher;
+use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -171,6 +173,45 @@ class CourseAdminTest extends TestCase
         $this->actingInPanel($viewer, $tenant);
         Livewire::test(ListCourses::class)->assertActionHidden(TestAction::make('activities')->table($course));
         $this->get($url)->assertForbidden();
+    }
+
+    public function test_activity_type_is_saved_and_exam_selection_uses_module_availability(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actAsEducationOfficer($tenant);
+        $section = CourseSection::factory()->create();
+        $owner = ['ownerRecord' => $section->course, 'pageClass' => ManageCourseActivities::class];
+        $create = TestAction::make('create')->table();
+
+        Livewire::test(LessonsRelationManager::class, $owner)
+            ->callAction($create, data: ['title' => 'آشنایی با دوره', 'course_section_id' => $section->id])
+            ->assertHasNoActionErrors();
+
+        $lesson = $section->lessons()->sole();
+        $this->assertSame(CourseLessonType::File, $lesson->type);
+
+        Livewire::test(LessonsRelationManager::class, $owner)
+            ->callAction(TestAction::make('edit')->table($lesson), data: ['type' => CourseLessonType::Video->value])
+            ->assertHasNoActionErrors()
+            ->assertSee('ویدیو');
+        $this->assertSame(CourseLessonType::Video, $lesson->refresh()->type);
+
+        $examData = ['title' => 'آزمون پایانی', 'course_section_id' => $section->id, 'type' => CourseLessonType::Exam->value];
+        $component = Livewire::test(LessonsRelationManager::class, $owner)->callAction($create, data: $examData);
+
+        if (Module::isEnabled('Exam')) {
+            $component->assertHasNoActionErrors();
+            $this->assertSame(CourseLessonType::Exam, $section->lessons()->where('title', 'آزمون پایانی')->sole()->type);
+        } else {
+            $component->assertHasActionErrors(['type']);
+            $this->assertCount(1, $section->lessons()->get());
+
+            $savedExam = CourseLesson::factory()->for($section, 'section')->create(['type' => CourseLessonType::Exam]);
+            Livewire::test(LessonsRelationManager::class, $owner)
+                ->callAction(TestAction::make('edit')->table($savedExam), data: ['title' => 'آزمون ذخیره‌شده'])
+                ->assertHasNoActionErrors();
+            $this->assertSame(CourseLessonType::Exam, $savedExam->refresh()->type);
+        }
     }
 
     public function test_officers_may_assign_branch_members_but_cannot_assign_users_from_another_branch(): void

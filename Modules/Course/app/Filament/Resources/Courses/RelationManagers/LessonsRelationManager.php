@@ -16,6 +16,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Course\Enums\CourseLessonType;
 use Modules\Course\Integrations\CourseExamSource;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
@@ -35,6 +36,11 @@ class LessonsRelationManager extends CourseRelationManager
 
         return $schema->components([
             TextInput::make('title')->label('عنوان')->trim()->required()->maxLength(255),
+            Select::make('type')->label('نوع')->options(CourseLessonType::class)
+                ->default(CourseLessonType::File)->required()
+                ->disableOptionWhen(fn (string $value, ?CourseLesson $record): bool => $value === CourseLessonType::Exam->value
+                    && $record?->type !== CourseLessonType::Exam
+                    && ! Module::isEnabled('Exam')),
             Select::make('course_section_id')->label('بخش')->required()
                 ->relationship('section', 'title', modifyQueryUsing: $inCourse)
                 ->scopedExists(CourseSection::class, 'id', $inCourse),
@@ -54,6 +60,7 @@ class LessonsRelationManager extends CourseRelationManager
         return $table->recordTitleAttribute('title')->defaultSort('position')
             ->columns([
                 TextColumn::make('title')->label('عنوان')->searchable(),
+                TextColumn::make('type')->label('نوع')->badge(),
                 TextColumn::make('section.title')->label('بخش'),
                 TextColumn::make('position')->label('ترتیب')->sortable(),
                 IconColumn::make('is_preview')->label('پیش‌نمایش')->boolean(),
