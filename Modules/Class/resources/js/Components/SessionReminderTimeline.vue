@@ -1,5 +1,5 @@
 <script setup>
-import { router, useForm } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import { ElCollapse, ElCollapseItem, ElForm, ElInput } from 'element-plus';
 import 'element-plus/es/components/collapse/style/css';
 import 'element-plus/es/components/collapse-item/style/css';
@@ -16,6 +16,7 @@ const props = defineProps({
 });
 
 const openSession = ref('');
+const page = usePage();
 const loadingDirection = ref(null);
 const loadError = ref(false);
 const form = useForm({ body: '' });
@@ -28,7 +29,7 @@ function loadSessions(direction, count) {
 
     loadingDirection.value = direction;
     loadError.value = false;
-    router.get(route('my-classes.session', props.sourceId), {
+    router.get(page.url, {
         ...props.timeline.counts,
         [direction]: count,
     }, {
@@ -59,6 +60,7 @@ function save(targetId) {
         ...props.timeline.counts,
     }), {
         preserveScroll: true,
+        preserveUrl: true,
         onSuccess: resetForm,
     });
 }

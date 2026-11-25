@@ -25,6 +25,14 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 ## Done
 - 2026-11-25 — Made Course installation-wide, with primary-branch management permissions, a shared catalog and enrollment settings, and lesson exams that preserve the learner’s selected branch ([ADR 0145](decisions/0145-global-course-module.md)). Migrated the local data, checked duplicate handling on a populated copy, verified the browser views, and passed 875 tests, Pint and the Course/Exam disabled-module checks.
 - 2026-11-25 — Added the «شرکت‌کنندگان» row action for course enrollments and access management ([ADR 0144](decisions/0144-course-participants-page.md)). Verified the page in the browser, all 26 Course tests, five system map tests with Course disabled, and Pint.
+- 2026-11-25 — Replaced the session exam button with a final tab that opens the exam context.
+- 2026-11-25 — Adjusted the exam button to an intermediate height in the session tab row.
+- 2026-11-25 — Moved the exam button to the left end of the session tab row. The Vite build passed.
+- 2026-11-25 — Shortened the session details exam button to «آزمون‌ها».
+- 2026-11-25 — Shortened the session tab labels to «جزئیات» and «یادآوری‌ها».
+- 2026-11-25 — Moved the session gallery upload button and progress indicator inside the file drop area. The Vite build passed.
+- 2026-11-25 — Reduced the session gallery upload button size and increased the spacing between the upload form and uploaded media. The Vite build passed.
+- 2026-11-25 — Stored the selected session tab in the URL so reloads and shared links restore it. Verified URL handling, all 37 targeted tests, and the Vite build.
 - 2026-11-25 — Added the session gallery for private images and videos with uploads by class staff ([ADR 0143](decisions/0143-session-gallery.md)). All 872 tests, Pint, and the Vite build passed.
 - 2026-11-25 — Added buttons to load earlier and later sessions in the staff reminder timeline, with three upcoming sessions shown initially. All 26 academic calendar tests, Pint, and the Vite build passed.
 - 2026-11-25 — Shortened the admin row pin action label to «سنجاق کردن».

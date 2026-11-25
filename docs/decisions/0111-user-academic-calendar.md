@@ -26,6 +26,7 @@ In the month grid, a session opens its details directly. The day number opens th
 
 The session page has a separate staff tab for reading and leaving reminders ([ADR 0119](0119-session-reminders.md)).
 The session tabs sit below the page header with extra spacing and align to the right in Persian. The tabs have a responsive horizontal gap. When the row overflows, it scrolls and keeps the active tab in view when its viewport changes.
+Choosing a session tab updates the `tab` query parameter on the current URL and preserves its other parameters. Reloading or opening the link restores the selected tab when it is available to the viewer. The details tab is the fallback.
 
 The toolbar uses the panel surface, white in light mode, and highlights the active view with white text on green. Previous and next use chevrons with accessible labels, and «امروز» keeps its visible label.
 

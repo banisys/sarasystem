@@ -42,6 +42,9 @@ function size(bytes) {
             </span>
             <p class="mt-1 text-sm text-ui-muted">یا رها کردن آن در اینجا</p>
             <p v-if="hint" class="mt-1 text-xs text-ui-muted">{{ hint }}</p>
+            <div v-if="$slots.actions" class="mt-3 flex flex-wrap items-center justify-center gap-3" @click.stop @keydown.stop>
+                <slot name="actions" />
+            </div>
             <template #file="{ file }">
                 <div class="flex w-full items-center justify-between gap-2 px-2 py-1">
                     <span class="min-w-0 truncate text-ui-ink" dir="auto">{{ file.name }}</span>

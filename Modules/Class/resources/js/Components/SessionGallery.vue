@@ -32,22 +32,23 @@ function upload() {
                 :disabled="form.processing"
                 :error="form.errors.file"
                 @update:model-value="form.clearErrors('file')"
-            />
-            <div class="flex flex-wrap items-center gap-3">
-                <PanelButton type="submit" :loading="form.processing" :disabled="!form.files.length">
-                    بارگذاری
-                </PanelButton>
-                <progress
-                    v-if="form.progress"
-                    :value="form.progress.percentage"
-                    max="100"
-                    aria-label="پیشرفت بارگذاری"
-                    class="w-32 accent-brand-600"
-                />
-            </div>
+            >
+                <template #actions>
+                    <PanelButton type="submit" size="small" :loading="form.processing" :disabled="!form.files.length">
+                        بارگذاری
+                    </PanelButton>
+                    <progress
+                        v-if="form.progress"
+                        :value="form.progress.percentage"
+                        max="100"
+                        aria-label="پیشرفت بارگذاری"
+                        class="w-32 accent-brand-600"
+                    />
+                </template>
+            </FilePicker>
         </form>
 
-        <ul v-if="gallery.files.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul v-if="gallery.files.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" :class="{ 'pt-4': gallery.can_upload }">
             <li v-for="file in gallery.files" :key="file.id" class="overflow-hidden rounded-lg border border-ui-line">
                 <video
                     v-if="file.is_video"

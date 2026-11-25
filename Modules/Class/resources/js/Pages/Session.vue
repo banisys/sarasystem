@@ -12,7 +12,7 @@ import 'element-plus/es/components/link/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import PanelPrintPreview from '@/Components/Ui/PanelPrintPreview.vue';
 import UiPageHeader from '@/Components/Ui/UiPageHeader.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, useTemplateRef, watch } from 'vue';
 import FilePicker from '@/Components/FilePicker.vue';
 import PanelJalaliDateInput from '@/Components/Ui/PanelJalaliDateInput.vue';
@@ -56,15 +56,42 @@ const statusBadge = {
 
 // ── Tabs
 const tabs = computed(() => [
-    { key: 'details', label: 'جزئیات جلسه', icon: 'document', badge: null },
-    ...(props.reminderTimeline ? [{ key: 'reminders', label: 'یادآوری‌های جلسه', icon: 'clipboard', badge: null }] : []),
+    { key: 'details', label: 'جزئیات', icon: 'document', badge: null },
+    ...(props.reminderTimeline ? [{ key: 'reminders', label: 'یادآوری‌ها', icon: 'clipboard', badge: null }] : []),
     { key: 'gallery', label: 'گالری', icon: 'video', badge: null },
     ...(props.attendance ? [{ key: 'attendance', label: 'حضور و غیاب', icon: 'users', badge: props.attendance.length }] : []),
     ...(!props.session.is_exam ? [{ key: 'content', label: 'مطالب و تکلیف', icon: 'book', badge: null }] : []),
     ...(props.submissions ? [{ key: 'submissions', label: 'تکالیف دریافتی', icon: 'clipboard', badge: `${handedIn.value}/${props.submissions.length}` }] : []),
 ]);
-const tab = ref('details');
+const page = usePage();
+const sessionUrl = computed(() => new URL(page.url, 'http://localhost'));
+const tab = computed({
+    get() {
+        const selected = sessionUrl.value.searchParams.get('tab');
+        return tabs.value.some(({ key }) => key === selected) ? selected : 'details';
+    },
+    set(selected) {
+        const url = new URL(sessionUrl.value);
+        if (url.searchParams.get('tab') === selected) return;
+
+        url.searchParams.set('tab', selected);
+        router.replace({
+            url: url.pathname + url.search + url.hash,
+            preserveState: true,
+            preserveScroll: true,
+        });
+    },
+});
 const sessionTabs = useTemplateRef('session-tabs');
+
+function beforeTabChange(nextTab) {
+    if (nextTab === 'exams' && props.session.exams_url) {
+        router.visit(props.session.exams_url);
+        return false;
+    }
+
+    return true;
+}
 
 watch(sessionTabs, (tabs, previousTabs, onCleanup) => {
     const nav = tabs?.tabNavRef;
@@ -190,7 +217,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                 :back-label="ward ? `تقویم آموزشی ${ward.name}` : 'تقویم آموزشی'"
             />
 
-            <ElTabs ref="session-tabs" v-model="tab" class="session-tabs pt-4" aria-label="بخش‌های جلسه">
+            <ElTabs ref="session-tabs" v-model="tab" :before-leave="beforeTabChange" class="session-tabs pt-4" aria-label="بخش‌های جلسه">
                 <ElTabPane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label" lazy>
                     <template #label>
                         <PanelIcon :name="item.icon" class="size-4 shrink-0" />
@@ -203,11 +230,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                 <ElTag v-if="session.kind_label !== 'عادی'" type="info" round>{{ session.kind_label }}</ElTag>
                                 <ElTag :type="statusBadge[session.status]" round>{{ session.status_label }}</ElTag>
                             </div>
-                            <div v-if="session.exams_url || session.exam_paper_url || seating" class="flex flex-wrap items-center gap-2">
-                                <PanelButton v-if="session.exams_url" :href="session.exams_url" variant="outline-brand" class="border-2">
-                                    <PanelIcon name="clipboard" class="size-5" />
-                                    آزمون‌های جلسه
-                                </PanelButton>
+                            <div v-if="session.exam_paper_url || seating" class="flex flex-wrap items-center gap-2">
                                 <PanelPrintPreview v-if="session.exam_paper_url" :url="session.exam_paper_url"
                                     title="برگهٔ آزمون جلسه" print-label="چاپ آزمون" />
                                 <ExamSeatingEditor v-if="seating" :seating="seating" :url="route('my-classes.seating.update', session.id)" />
@@ -562,6 +585,12 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                             </PanelButton>
                         </div>
                     </ElForm>
+                </ElTabPane>
+                <ElTabPane v-if="session.exams_url" name="exams" label="آزمون‌ها" lazy>
+                    <template #label>
+                        <PanelIcon name="clipboard" class="size-4 shrink-0" />
+                        آزمون‌ها
+                    </template>
                 </ElTabPane>
             </ElTabs>
         </div>

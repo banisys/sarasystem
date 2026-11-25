@@ -33,7 +33,7 @@ function show() {
 function save() {
     if (props.seating.locked) return;
 
-    form.patch(props.url, { preserveScroll: true, onSuccess: () => { open.value = false; } });
+    form.patch(props.url, { preserveScroll: true, preserveUrl: true, onSuccess: () => { open.value = false; } });
 }
 
 function resize(dimension, value) {
