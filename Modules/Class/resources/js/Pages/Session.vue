@@ -20,6 +20,7 @@ import PanelIcon from '@/Components/PanelIcon.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ExamSeatingEditor from '../Components/ExamSeatingEditor.vue';
 import SessionReminderTimeline from '../Components/SessionReminderTimeline.vue';
+import SessionGallery from '../Components/SessionGallery.vue';
 
 // One session in «تقویم آموزشی» (ADR 0026): details, what it covered,
 // homework and materials, one's own attendance, and — for who may — the
@@ -31,6 +32,7 @@ const props = defineProps({
     ward: { type: Object, default: null },
     seating: { type: Object, default: null },
     reminderTimeline: { type: Object, default: null },
+    gallery: { type: Object, required: true },
     myAttendance: { type: Object, default: null },
     statuses: { type: Array, required: true },
     attendance: { type: Array, default: null },
@@ -56,6 +58,7 @@ const statusBadge = {
 const tabs = computed(() => [
     { key: 'details', label: 'جزئیات جلسه', icon: 'document', badge: null },
     ...(props.reminderTimeline ? [{ key: 'reminders', label: 'یادآوری‌های جلسه', icon: 'clipboard', badge: null }] : []),
+    { key: 'gallery', label: 'گالری', icon: 'video', badge: null },
     ...(props.attendance ? [{ key: 'attendance', label: 'حضور و غیاب', icon: 'users', badge: props.attendance.length }] : []),
     ...(!props.session.is_exam ? [{ key: 'content', label: 'مطالب و تکلیف', icon: 'book', badge: null }] : []),
     ...(props.submissions ? [{ key: 'submissions', label: 'تکالیف دریافتی', icon: 'clipboard', badge: `${handedIn.value}/${props.submissions.length}` }] : []),
@@ -272,6 +275,8 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                     <PanelCard v-if="item.key === 'reminders' && reminderTimeline">
                         <SessionReminderTimeline :source-id="session.id" :timeline="reminderTimeline" />
                     </PanelCard>
+
+                    <SessionGallery v-if="item.key === 'gallery'" :session-id="session.id" :gallery="gallery" />
 
                     <!-- Attendance -->
                     <ElForm v-if="item.key === 'attendance'" class="ui-surface" @submit.prevent="saveAttendance">

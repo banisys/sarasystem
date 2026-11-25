@@ -21,6 +21,9 @@ Route::middleware(['auth', 'auth.session'])->get('/online-classes/sessions/{sess
 Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/academic-calendar')->name('my-classes.')->group(function () {
     Route::get('/', [MyClassController::class, 'index'])->name('index');
     Route::get('/sessions/{session}', [MyClassController::class, 'show'])->name('session');
+    Route::post('/sessions/{session}/gallery', [MyClassController::class, 'uploadGalleryFile'])->name('gallery.store');
+    Route::get('/sessions/{session}/gallery/{media}', [MyClassController::class, 'showGalleryFile'])
+        ->whereNumber('media')->name('gallery.show');
     Route::patch('/sessions/{session}/seating', [MyClassController::class, 'updateSeating'])->name('seating.update');
     Route::post('/sessions/{session}/reminders/{target}', [MyClassController::class, 'addReminder'])->name('reminders.store');
     Route::post('/sessions/{session}/attendance', [MyClassController::class, 'attendance'])->name('attendance');

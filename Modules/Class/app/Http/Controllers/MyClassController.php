@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,6 +37,8 @@ use Modules\Class\Services\SessionExamSource;
 use Modules\Class\Services\SessionReminders;
 use Modules\Exam\Services\ExamPerformance;
 use Nwidart\Modules\Facades\Module;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * «تقویم آموزشی» in the user panel (ADR 0026): the person's calendar of
@@ -167,6 +171,21 @@ class MyClassController extends Controller
             ],
             'role' => $role,
             'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
+            'gallery' => fn (): array => [
+                'can_upload' => $isOwn && $this->canUploadGallery($user, $session),
+                'accept' => implode(',', ClassSession::GALLERY_MIME_TYPES),
+                'max_mb' => config('media-library.max_file_size') / (1024 * 1024),
+                'files' => $session->getMedia(ClassSession::GALLERY_COLLECTION)->map(fn (Media $media): array => [
+                    'id' => $media->getKey(),
+                    'name' => $media->file_name,
+                    'is_video' => str_starts_with($media->mime_type, 'video/'),
+                    'url' => route('my-classes.gallery.show', [
+                        'session' => $session,
+                        'media' => $media,
+                        'for' => $isOwn ? null : $user->getKey(),
+                    ]),
+                ])->values(),
+            ],
             'seating' => $isOwn && $seating->canViewInUserPanel($user, $session) ? $seating->editor($session) : null,
             'reminderTimeline' => fn () => $isOwn ? $reminders->timeline(
                 $user,
@@ -217,6 +236,48 @@ class MyClassController extends Controller
                 })->values()
                 : null,
         ]);
+    }
+
+    public function uploadGalleryFile(Request $request, ClassSession $session, MyClasses $myClasses): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if($request->filled('for') || ! $myClasses->canSee($user, $session), 404);
+        abort_unless($this->canUploadGallery($user, $session), 403);
+
+        $data = $request->validate([
+            'file' => ['required', File::types(ClassSession::GALLERY_MIME_TYPES)->max((int) (config('media-library.max_file_size') / 1024))],
+        ], attributes: ['file' => 'فایل گالری']);
+
+        DB::transaction(function () use ($session, $data): void {
+            $session = ClassSession::query()->lockForUpdate()->findOrFail($session->getKey());
+            // Keep the documented session when its schedule is rebuilt.
+            $session->update(['is_modified' => true]);
+            $session->addMedia($data['file'])->toMediaCollection(ClassSession::GALLERY_COLLECTION);
+        });
+
+        return back()->with('status', 'فایل به گالری اضافه شد.');
+    }
+
+    public function showGalleryFile(Request $request, ClassSession $session, int $media, MyClasses $myClasses): BinaryFileResponse
+    {
+        abort_unless($myClasses->canSee($this->person($request), $session), 404);
+
+        $file = $session->media()->where('collection_name', ClassSession::GALLERY_COLLECTION)->findOrFail($media);
+        $path = $file->getPath();
+        abort_unless(is_file($path) && in_array($file->mime_type, ClassSession::GALLERY_MIME_TYPES, true), 404);
+
+        return response()->file($path, [
+            'Content-Type' => $file->mime_type,
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    private function canUploadGallery(User $user, ClassSession $session): bool
+    {
+        return in_array($user->getKey(), $session->actualTeacherIds(), true)
+            || ClassMember::query()->where('classroom_id', $session->classroom_id)->whereBelongsTo($user)->activeToday()
+                ->whereHas('classRole', fn (Builder $role) => $role->where('is_attendee', false))->exists();
     }
 
     public function updateSeating(Request $request, ClassSession $session, MyClasses $myClasses, ExamSeating $seating): RedirectResponse

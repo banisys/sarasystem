@@ -47,13 +47,14 @@ class ClassSession extends Model implements HasMedia
     /** Files handed out in the session or with its homework (ADR 0025). */
     public const MATERIALS_COLLECTION = 'materials';
 
-    /**
-     * Only the private disk, downloaded through signed links
-     * (SessionMaterialController).
-     */
+    public const GALLERY_COLLECTION = 'gallery';
+
+    public const GALLERY_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(self::MATERIALS_COLLECTION)->useDisk('local');
+        $this->addMediaCollection(self::GALLERY_COLLECTION)->useDisk('local')->acceptsMimeTypes(self::GALLERY_MIME_TYPES);
     }
 
     protected static function newFactory(): ClassSessionFactory

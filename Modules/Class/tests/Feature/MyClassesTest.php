@@ -440,6 +440,74 @@ class MyClassesTest extends TestCase
         $this->as($this->teacher, route('my-classes.session', $elsewhere))->assertNotFound();
     }
 
+    public function test_teachers_and_non_attendee_members_can_add_photos_and_videos_to_the_session_gallery(): void
+    {
+        $disk = Storage::fake('local');
+        $session = $this->sessionOn('2026-10-31');
+        $supporter = $this->person();
+        app(ClassMembers::class)->add($this->classroom, ClassRole::factory()->for($this->primary)->create(['title' => 'پشتیبان']), [$supporter->id]);
+        $page = route('my-classes.session', $session);
+        $upload = route('my-classes.gallery.store', $session);
+        $mp4Header = pack('Na4a4Na4a4', 24, 'ftyp', 'mp42', 0, 'mp42', 'isom');
+        $clip = UploadedFile::fake()->createWithContent('activity.mp4', $mp4Header)->mimeType('video/mp4');
+
+        $this->from($page)->as($this->teacher, $upload, 'post', ['file' => UploadedFile::fake()->image('board.jpg')])
+            ->assertRedirect($page)->assertSessionHasNoErrors();
+        $this->from($page)->as($supporter, $upload, 'post', ['file' => $clip])
+            ->assertRedirect($page)->assertSessionHasNoErrors();
+
+        [$photo, $video] = $session->getMedia(ClassSession::GALLERY_COLLECTION)->all();
+        $disk->assertExists([$photo->getPathRelativeToRoot(), $video->getPathRelativeToRoot()]);
+        $this->assertTrue($session->refresh()->is_modified);
+        $videoUrl = route('my-classes.gallery.show', ['session' => $session, 'media' => $video]);
+        $this->as($this->student, $page)->assertInertia(fn (AssertableInertia $props) => $props
+            ->where('gallery.can_upload', false)
+            ->has('gallery.files', 2)
+            ->where('gallery.files.0.name', 'board.jpg')
+            ->where('gallery.files.0.is_video', false)
+            ->where('gallery.files.1.name', 'activity.mp4')
+            ->where('gallery.files.1.is_video', true)
+            ->where('gallery.files.1.url', $videoUrl));
+        $this->as($this->student, $videoUrl)->assertOk()
+            ->assertHeader('Content-Type', 'video/mp4')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    public function test_gallery_rejects_unsupported_and_oversized_uploads(): void
+    {
+        Storage::fake('local');
+        $session = $this->sessionOn('2026-10-31');
+        $upload = route('my-classes.gallery.store', $session);
+
+        $this->as($this->teacher, $upload, 'post', ['file' => UploadedFile::fake()->create('document.pdf', 20, 'application/pdf')])
+            ->assertSessionHasErrors('file');
+        $this->as($this->teacher, $upload, 'post', ['file' => UploadedFile::fake()->create('long.mp4', 10241, 'video/mp4')])
+            ->assertSessionHasErrors('file');
+        $this->assertDatabaseCount('media', 0);
+    }
+
+    public function test_gallery_routes_enforce_upload_permissions_and_session_ownership(): void
+    {
+        Storage::fake('local');
+        $session = $this->sessionOn('2026-10-31');
+        $otherSession = $this->sessionOn('2026-11-02');
+        $media = $session->addMedia(UploadedFile::fake()->image('board.jpg'))->toMediaCollection(ClassSession::GALLERY_COLLECTION);
+        $outside = $this->primary->execute(fn () => ClassSession::factory()->for(Classroom::factory()->for($this->primary))->create());
+        $upload = route('my-classes.gallery.store', $session);
+        $fileUrl = fn (ClassSession $record): string => route('my-classes.gallery.show', ['session' => $record, 'media' => $media]);
+        $guardian = $this->person();
+        Guardianship::query()->create(['guardian_id' => $guardian->id, 'ward_id' => $this->student->id, 'relationship' => 'father']);
+
+        $this->as($this->student, $upload, 'post')->assertForbidden();
+        $this->as($guardian, $upload.'?for='.$this->student->id, 'post')->assertNotFound();
+        $this->as($guardian, $fileUrl($session).'?for='.$this->student->id)->assertOk();
+        $this->as($this->person(), $fileUrl($session))->assertNotFound();
+        $this->as($this->teacher, $fileUrl($otherSession))->assertNotFound();
+        $this->as($this->teacher, $fileUrl($outside))->assertNotFound();
+        $this->as($this->teacher, route('my-classes.gallery.store', $outside), 'post')->assertNotFound();
+        $this->assertDatabaseCount('media', 1);
+    }
+
     public function test_staff_can_leave_a_reminder_for_a_later_session_and_read_it_there(): void
     {
         $source = $this->sessionOn('2026-10-31');

@@ -9,6 +9,8 @@ import PanelIcon from '@/Components/PanelIcon.vue';
 const model = defineModel({ type: Array, default: () => [] });
 const props = defineProps({
     multiple: { type: Boolean, default: true },
+    accept: { type: String, default: '' },
+    disabled: Boolean,
     hint: { type: String, default: '' },
     error: { type: String, default: '' },
 });
@@ -33,7 +35,7 @@ function size(bytes) {
 
 <template>
     <div>
-        <ElUpload v-model:file-list="fileList" drag :auto-upload="false" :multiple="multiple">
+        <ElUpload v-model:file-list="fileList" drag :auto-upload="false" :multiple="multiple" :accept="accept" :disabled="disabled">
             <span class="inline-flex items-center justify-center gap-2 font-semibold text-brand-700">
                 <PanelIcon name="paperclip" class="size-5" />
                 انتخاب فایل
@@ -45,7 +47,7 @@ function size(bytes) {
                     <span class="min-w-0 truncate text-ui-ink" dir="auto">{{ file.name }}</span>
                     <span class="flex shrink-0 items-center gap-2 text-xs text-ui-muted">
                         {{ size(file.size) }}
-                        <PanelButton variant="danger-link" size="small" :aria-label="`برداشتن فایل ${file.name}`" @click="remove(file.uid)">
+                        <PanelButton variant="danger-link" size="small" :disabled="disabled" :aria-label="`برداشتن فایل ${file.name}`" @click="remove(file.uid)">
                             <PanelIcon name="close" class="size-4" />
                         </PanelButton>
                     </span>
