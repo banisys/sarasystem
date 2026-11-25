@@ -3,6 +3,7 @@
 namespace Modules\Course\Filament\Resources\Courses;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -14,6 +15,8 @@ use Filament\Tables\Table;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\EditCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\ListCourses;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseActivities;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseSections;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\EnrollmentsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\InstructorsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationManager;
@@ -59,7 +62,21 @@ class CourseResource extends Resource
             ->filters([
                 TernaryFilter::make('is_published')->label('انتشار'),
             ])
-            ->recordActions([EditAction::make()]);
+            ->recordActions([
+                Action::make('sections')
+                    ->label('سرفصل‌ها')
+                    ->icon(Heroicon::OutlinedListBullet)
+                    ->color('gray')
+                    ->authorize(fn (Course $record): bool => ManageCourseSections::canAccess(['record' => $record]))
+                    ->url(fn (Course $record): string => static::getUrl('sections', ['record' => $record])),
+                Action::make('activities')
+                    ->label('فعالیت‌ها')
+                    ->icon(Heroicon::OutlinedPlay)
+                    ->color('warning')
+                    ->authorize(fn (Course $record): bool => ManageCourseActivities::canAccess(['record' => $record]))
+                    ->url(fn (Course $record): string => static::getUrl('activities', ['record' => $record])),
+                EditAction::make(),
+            ]);
     }
 
     public static function getRelations(): array
@@ -78,6 +95,8 @@ class CourseResource extends Resource
             'index' => ListCourses::route('/'),
             'create' => CreateCourse::route('/create'),
             'edit' => EditCourse::route('/{record}/edit'),
+            'sections' => ManageCourseSections::route('/{record}/sections'),
+            'activities' => ManageCourseActivities::route('/{record}/activities'),
         ];
     }
 }

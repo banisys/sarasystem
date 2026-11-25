@@ -14,12 +14,14 @@ use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\EditCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\ListCourses;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseSections;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\EnrollmentsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\InstructorsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\SectionsRelationManager;
 use Modules\Course\Models\Course;
 use Modules\Course\Models\CourseCategory;
+use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
 use Modules\Course\Models\CourseTeacher;
 use Tests\Concerns\InteractsWithTenants;
@@ -112,6 +114,63 @@ class CourseAdminTest extends TestCase
             ])->assertHasNoActionErrors();
 
         $this->assertSame('متن درس', $section->lessons()->sole()->body);
+    }
+
+    public function test_course_list_links_to_manage_sections_for_the_selected_course(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $branch = Tenant::factory()->create();
+        $foreignCourse = $branch->execute(fn (): Course => Course::factory()->create());
+        $this->actAsEducationOfficer($tenant);
+        $course = Course::factory()->create(['title' => 'دورهٔ آموزش سازمانی']);
+        $section = CourseSection::factory()->for($course)->create(['title' => 'آشنایی با فرایندها']);
+        CourseSection::factory()->create(['title' => 'سرفصل دورهٔ دیگر']);
+        $url = CourseResource::getUrl('sections', ['record' => $course], tenant: $tenant);
+
+        Livewire::test(ListCourses::class)
+            ->assertActionHasUrl(TestAction::make('sections')->table($course), $url);
+        Livewire::withoutLazyLoading();
+        $this->get($url)->assertOk()->assertSee(['سرفصل‌ها', $course->title, $section->title])->assertDontSee('سرفصل دورهٔ دیگر');
+        $this->get(CourseResource::getUrl('sections', ['record' => $foreignCourse], tenant: $tenant))->assertNotFound();
+
+        Livewire::test(SectionsRelationManager::class, ['ownerRecord' => $course, 'pageClass' => ManageCourseSections::class])
+            ->callAction(TestAction::make('edit')->table($section), data: ['title' => 'شناخت فرایندها', 'position' => 2])
+            ->assertHasNoActionErrors();
+        $this->assertSame('شناخت فرایندها', $section->refresh()->title);
+
+        $viewer = User::factory()->create();
+        $this->makeStaff($viewer, $tenant);
+        $this->grantRole($viewer, $tenant, $this->roleWithPermissions('course-viewer', ['ViewAny:Course', 'View:Course'])->name);
+        $this->actingInPanel($viewer, $tenant);
+        Livewire::test(ListCourses::class)->assertActionHidden(TestAction::make('sections')->table($course));
+        $this->get($url)->assertForbidden();
+    }
+
+    public function test_course_activities_link_opens_only_the_selected_courses_lessons(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $branch = Tenant::factory()->create();
+        $foreignCourse = $branch->execute(fn (): Course => Course::factory()->create());
+        $this->actAsEducationOfficer($tenant);
+        $course = Course::factory()->create();
+        $lesson = CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')
+            ->create(['title' => 'فعالیت آموزشی این دوره']);
+        $otherLesson = CourseLesson::factory()->create(['title' => 'فعالیت آموزشی دورهٔ دیگر']);
+        $url = CourseResource::getUrl('activities', ['record' => $course], tenant: $tenant);
+
+        Livewire::test(ListCourses::class)
+            ->assertActionHasUrl(TestAction::make('activities')->table($course), $url);
+        Livewire::withoutLazyLoading();
+        $this->get($url)->assertOk()->assertSee(['فعالیت‌ها', $course->title, $lesson->title])
+            ->assertDontSee($otherLesson->title);
+        $this->get(CourseResource::getUrl('activities', ['record' => $foreignCourse], tenant: $tenant))->assertNotFound();
+
+        $viewer = User::factory()->create();
+        $this->makeStaff($viewer, $tenant);
+        $this->grantRole($viewer, $tenant, $this->roleWithPermissions('course-viewer', ['ViewAny:Course', 'View:Course'])->name);
+        $this->actingInPanel($viewer, $tenant);
+        Livewire::test(ListCourses::class)->assertActionHidden(TestAction::make('activities')->table($course));
+        $this->get($url)->assertForbidden();
     }
 
     public function test_officers_may_assign_branch_members_but_cannot_assign_users_from_another_branch(): void
