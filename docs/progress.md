@@ -23,12 +23,13 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-26 — Removed the lesson exam action from the admin lessons list.
+- 2026-11-26 — Linked course lessons to the original exam by code ([ADR 0160](decisions/0160-link-original-lesson-exam.md)). All 883 tests and Pint passed. Course and Exam passed with the other module disabled.
+- 2026-11-26 — Opened lesson editing on a dedicated page with the shared lesson form ([ADR 0159](decisions/0159-course-lesson-edit-page.md)).
 - 2026-11-26 — Removed the Results button from the admin exam edit header.
 - 2026-11-26 — Matched the admin exam edit page to the shared creation layout, including the scheduling card and responsive question bank rows.
 - 2026-11-26 — Shortened the random suffix of newly generated exam codes to eight characters.
-- 2026-11-26 — Opened lesson editing on a dedicated page with the shared lesson form ([ADR 0159](decisions/0159-course-lesson-edit-page.md)).
-- 2026-11-26 — Removed the lesson exam action from the admin lessons list.
-- 2026-11-26 — Linked course lessons to the original exam by code ([ADR 0160](decisions/0160-link-original-lesson-exam.md)). All 883 tests and Pint passed. Course and Exam passed with the other module disabled.
+- 2026-11-26 — Made admin resource lists fill the available width while capping column content at 20rem and wrapping long text ([ADR 0158](decisions/0158-admin-list-column-width.md)).
 - 2026-11-26 — Displayed «کد آزمون» beside the title in the admin exam list.
 - 2026-11-26 — Added private lesson audio with inline playback and automatic duration in seconds ([ADR 0157](decisions/0157-course-lesson-audio.md)). All 34 Course tests, Pint and the frontend build passed.
 - 2026-11-26 — Removed manual lesson duration entry and calculated duration from uploaded videos ([ADR 0156](decisions/0156-course-lesson-video-duration.md)). All 34 Course tests and Pint passed.
