@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-26 — Displayed «کد آزمون» beside the title in the admin exam list.
 - 2026-11-26 — Raised the course introduction video upload limit to 100 MiB. Verified a real 100 MiB multipart request, private storage and oversize rejection. All 883 tests and Pint passed.
 - 2026-11-26 — Added a full-screen rich editor toggle that fills the admin content area. Verified the content bounds in both themes, sidebar collapse, and draft preservation. All 881 tests, Pint, and the Vite build passed.
 - 2026-11-26 — Replaced the rich editor direction arrows with pilcrow icons and directional arrows.

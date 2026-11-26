@@ -32,6 +32,8 @@ class ExamsTable
                     ->label('عنوان')
                     ->description(fn (Exam $record): ?string => $record->is_practice ? 'آزمون تمرینی' : null)
                     ->sortable(),
+                TextColumn::make('code')
+                    ->label('کد آزمون'),
                 TextColumn::make('examGroup.title')
                     ->label('گروه آزمون')
                     ->placeholder('بدون گروه'),
