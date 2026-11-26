@@ -28,7 +28,7 @@ class AdminRichEditorPlugin implements HasToolbarButtons, RichContentPlugin
 
     public function getEnabledToolbarButtons(): array
     {
-        return [['textDirectionRtl', 'textDirectionLtr', 'htmlSource']];
+        return [['textDirectionRtl', 'textDirectionLtr', 'htmlSource'], ['fullscreen']];
     }
 
     public function getDisabledToolbarButtons(): array
@@ -39,12 +39,28 @@ class AdminRichEditorPlugin implements HasToolbarButtons, RichContentPlugin
     public function getEditorTools(): array
     {
         return [
-            $this->directionTool('textDirectionRtl', 'راست‌به‌چپ', 'rtl', Heroicon::OutlinedArrowLeft),
-            $this->directionTool('textDirectionLtr', 'چپ‌به‌راست', 'ltr', Heroicon::OutlinedArrowRight),
+            $this->directionTool('textDirectionRtl', 'راست‌به‌چپ', 'rtl', 'sara-text-direction-rtl'),
+            $this->directionTool('textDirectionLtr', 'چپ‌به‌راست', 'ltr', 'sara-text-direction-ltr'),
             RichEditorTool::make('htmlSource')
                 ->label('ویرایش منبع HTML')
                 ->icon(Heroicon::OutlinedCodeBracket)
                 ->action(arguments: '{ html: $getEditor().getHTML() }'),
+            RichEditorTool::make('fullscreen')
+                ->label('تمام‌صفحه')
+                ->icon(Heroicon::OutlinedArrowsPointingOut)
+                ->activeStyling(false)
+                ->extraAttributes([
+                    'x-data' => '{ expanded: false }',
+                    'x-bind:aria-pressed' => "expanded ? 'true' : 'false'",
+                    'x-on:keydown.escape.window.capture' => <<<'JS'
+                        if (expanded && $el.closest('[data-rich-editor-key]').contains($event.target)) {
+                            $event.stopImmediatePropagation()
+                            expanded = false
+                            $el.focus({ preventScroll: true })
+                        }
+                        JS,
+                ])
+                ->jsHandler('expanded = !expanded'),
         ];
     }
 
@@ -75,7 +91,7 @@ class AdminRichEditorPlugin implements HasToolbarButtons, RichContentPlugin
         ];
     }
 
-    private function directionTool(string $name, string $label, string $direction, Heroicon $icon): RichEditorTool
+    private function directionTool(string $name, string $label, string $direction, string $icon): RichEditorTool
     {
         return RichEditorTool::make($name)
             ->label($label)

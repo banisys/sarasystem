@@ -3,6 +3,7 @@
 @import './glass.css';
 @import './system-map.css';
 @import './clock-picker.css';
+@import './rich-editor.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';

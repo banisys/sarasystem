@@ -23,6 +23,8 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-26 — Added a full-screen rich editor toggle that fills the admin content area. Verified the content bounds in both themes, sidebar collapse, and draft preservation. All 881 tests, Pint, and the Vite build passed.
+- 2026-11-26 — Replaced the rich editor direction arrows with pilcrow icons and directional arrows.
 - 2026-11-26 — Ported the LMS HTML source editor and text direction tools to the admin rich text toolbar ([ADR 0149](decisions/0149-admin-rich-editor-tools.md)). Verified the controls in the course form, direction persistence and contract rendering. All 881 tests, Pint, and the Vite build passed.
 - 2026-11-26 — Made the desktop admin sidebar collapse completely and release its space to the page.
 - 2026-11-26 — Made the sidebar Apply button full width and kept the filter panel open after applying filters.

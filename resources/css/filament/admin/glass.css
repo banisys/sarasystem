@@ -189,10 +189,9 @@ html.dark .fi-modal .fi-modal-window .fi-modal-footer {
     background-color: rgb(17 25 44 / 0.35);
 }
 
-/* A pane with backdrop-filter would hold a modal opened inside it (a relation
-   manager's or a tab's) within its own box, full-screen ones too. The pane is
-   behind the modal's overlay then, so nothing shows the missing blur. */
-html.dark .fi-main :is(.fi-section, .fi-section-content-ctn, .fi-ta-ctn, .fi-tabs, .fi-sc-tabs, .fi-sc-wizard, .fi-sc-wizard-header, .fi-callout, .fi-empty-state):has(.fi-modal.fi-modal-open) {
+/* Let fixed modals and expanded editors extend beyond the pane that contains them. */
+html.dark .fi-main :is(.fi-section, .fi-section-content-ctn, .fi-ta-ctn, .fi-tabs, .fi-sc-tabs, .fi-sc-wizard, .fi-sc-wizard-header, .fi-callout, .fi-empty-state):has(.fi-modal.fi-modal-open, [data-rich-editor-tool="fullscreen"][aria-pressed="true"]),
+html.dark .fi-modal .fi-modal-window:has([data-rich-editor-tool="fullscreen"][aria-pressed="true"]) {
     backdrop-filter: none;
 }
 
