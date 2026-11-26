@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Alignment;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -34,28 +35,70 @@ use Modules\Exam\Models\QuestionBank;
 
 class ExamForm
 {
-    public static function configure(Schema $schema, bool $forSession = false, bool $formalSession = false): Schema
-    {
+    public static function configure(
+        Schema $schema,
+        bool $forSession = false,
+        bool $formalSession = false,
+        bool $forStandaloneCreation = false,
+    ): Schema {
         $graded = fn (Get $get, ?Exam $record): bool => $formalSession || ! ($record?->is_practice ?? $get('is_practice'));
+
+        $practice = Toggle::make('is_practice')
+            ->label('آزمون تمرینی')
+            ->hidden($formalSession)
+            ->helperText('شرکت مکرر بدون ثبت نمره، با امکان مشاهدهٔ پاسخ درست')
+            ->default(false)
+            ->disabledOn('edit')
+            ->live()
+            ->columnSpan($forStandaloneCreation ? 1 : 'full');
+
+        $availability = [
+            DateTimePicker::make('starts_at')
+                ->label($forStandaloneCreation ? 'شروع دسترسی' : 'از')
+                ->hidden($forSession)
+                ->helperText($forStandaloneCreation ? 'خالی بگذارید تا پس از انتشار در دسترس باشد.' : 'خالی: از همین حالا')
+                ->jalali()
+                ->seconds(false),
+            DateTimePicker::make('ends_at')
+                ->label($forStandaloneCreation ? 'پایان دسترسی' : 'تا')
+                ->hidden($forSession)
+                ->helperText(fn (?Exam $record): string => $record?->allow_late_start
+                    ? 'امکان شروع پس از پایان جلسه فعال است. این تاریخ فقط پس از غیرفعال کردن آن گزینه اعمال می‌شود.'
+                    : 'خالی: بدون پایان. آزمونی که در جریان است در این زمان بسته می‌شود.')
+                ->jalali()
+                ->seconds(false)
+                ->after('starts_at'),
+            Toggle::make('is_published')
+                ->label($forStandaloneCreation ? 'انتشار آزمون' : 'منتشر شده')
+                ->helperText('فقط آزمون منتشرشده به شرکت‌کنندگان نشان داده می‌شود.')
+                ->columnSpan($forStandaloneCreation ? 'full' : 1),
+        ];
+
+        if ($forStandaloneCreation) {
+            $schema->columns(['lg' => 1, 'xl' => 12]);
+        }
 
         return $schema
             ->components([
-                Section::make('مشخصات')
-                    ->columns(2)
+                Section::make($forStandaloneCreation ? 'مشخصات آزمون' : 'مشخصات')
+                    ->icon($forStandaloneCreation ? Heroicon::OutlinedClipboardDocumentList : null)
+                    ->compact($forStandaloneCreation)
+                    ->columnSpan($forStandaloneCreation ? ['default' => 'full', 'xl' => 7] : 1)
+                    ->columns($forStandaloneCreation ? ['sm' => 2] : 2)
                     ->schema([
                         TextInput::make('title')
                             ->label('عنوان')
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
-                        Toggle::make('is_practice')
-                            ->label('آزمون تمرینی')
-                            ->hidden($formalSession)
-                            ->helperText('شرکت مکرر بدون ثبت نمره، با امکان مشاهدهٔ پاسخ درست')
-                            ->default(false)
-                            ->disabledOn('edit')
-                            ->live()
-                            ->columnSpanFull(),
+                        TextInput::make('code')
+                            ->label($forStandaloneCreation ? 'کد آزمون' : 'کد')
+                            ->trim()
+                            ->maxLength(64)
+                            ->unique(table: Exam::class, ignoreRecord: true)
+                            ->helperText($forStandaloneCreation ? 'خالی بماند، خودکار ساخته می‌شود.' : 'در صورت خالی بودن، به‌صورت خودکار ساخته می‌شود.')
+                            ->extraInputAttributes(['dir' => 'ltr']),
+                        ...($forStandaloneCreation ? [] : [$practice]),
                         Select::make('exam_group_id')
                             ->label('گروه آزمون')
                             ->relationship('examGroup', 'title')
@@ -67,30 +110,26 @@ class ExamForm
                         Textarea::make('description')
                             ->label('توضیحات')
                             ->helperText('پیش از شروع آزمون به شرکت‌کننده نشان داده می‌شود.')
-                            ->rows(3)
-                            ->columnSpanFull(),
-                        DateTimePicker::make('starts_at')
-                            ->label('از')
-                            ->hidden($forSession)
-                            ->helperText('خالی: از همین حالا')
-                            ->jalali()
-                            ->seconds(false),
-                        DateTimePicker::make('ends_at')
-                            ->label('تا')
-                            ->hidden($forSession)
-                            ->helperText(fn (?Exam $record): string => $record?->allow_late_start
-                                ? 'امکان شروع پس از پایان جلسه فعال است. این تاریخ فقط پس از غیرفعال کردن آن گزینه اعمال می‌شود.'
-                                : 'خالی: بدون پایان. آزمونی که در جریان است در این زمان بسته می‌شود.')
-                            ->jalali()
-                            ->seconds(false)
-                            ->after('starts_at'),
-                        Toggle::make('is_published')
-                            ->label('منتشر شده')
-                            ->helperText('فقط آزمون منتشرشده به شرکت‌کنندگان نشان داده می‌شود.'),
+                            ->rows($forStandaloneCreation ? 2 : 3)
+                            ->columnSpan($forStandaloneCreation ? 1 : 'full'),
+                        ...($forStandaloneCreation ? [$practice] : $availability),
                     ]),
+                ...($forStandaloneCreation ? [
+                    Section::make('زمان‌بندی و انتشار')
+                        ->icon(Heroicon::OutlinedCalendarDays)
+                        ->compact()
+                        ->columnSpan(['default' => 'full', 'xl' => 5])
+                        ->columns(['sm' => 2, 'xl' => 1])
+                        ->schema($availability),
+                ] : []),
                 Section::make('سؤال‌ها')
+                    ->icon($forStandaloneCreation ? Heroicon::OutlinedQueueList : null)
+                    ->compact($forStandaloneCreation)
+                    ->columnSpan($forStandaloneCreation ? 'full' : 1)
                     ->hidden(fn (?Exam $record): bool => $record?->question_snapshot !== null)
-                    ->description('برای گلچین کردن سؤال‌های هر بانک، «انتخاب سؤال‌ها» را بزنید. در ردیف‌های بدون انتخاب دستی، سؤال‌ها هنگام شروع آزمون از بانک برداشته می‌شوند.')
+                    ->description($forStandaloneCreation
+                        ? 'سؤال‌ها هنگام شروع از بانک برداشته می‌شوند. برای گلچین دستی، «انتخاب سؤال‌ها» را بزنید.'
+                        : 'برای گلچین کردن سؤال‌های هر بانک، «انتخاب سؤال‌ها» را بزنید. در ردیف‌های بدون انتخاب دستی، سؤال‌ها هنگام شروع آزمون از بانک برداشته می‌شوند.')
                     ->schema([
                         Repeater::make('sections')
                             ->hiddenLabel()
@@ -108,7 +147,7 @@ class ExamForm
                                     ->live()
                                     ->afterStateUpdated(fn (Set $set) => $set('question_ids', null))
                                     ->required()
-                                    ->columnSpan(2),
+                                    ->columnSpan($forStandaloneCreation ? ['sm' => 3] : 2),
                                 TextInput::make('question_count')
                                     ->label('تعداد سؤال')
                                     ->integer()
@@ -121,12 +160,16 @@ class ExamForm
                                     ->required(),
                                 Hidden::make('question_ids'),
                             ])
-                            ->columns(3)
+                            ->columns($forStandaloneCreation ? ['sm' => 4] : 3)
                             ->defaultItems(1)
-                            ->addActionLabel('افزودن بانک'),
+                            ->addActionLabel('افزودن بانک')
+                            ->addActionAlignment($forStandaloneCreation ? Alignment::Start : null),
                     ]),
-                Section::make('قوانین')
-                    ->columns(3)
+                Section::make($forStandaloneCreation ? 'تنظیمات آزمون' : 'قوانین')
+                    ->icon($forStandaloneCreation ? Heroicon::OutlinedAdjustmentsHorizontal : null)
+                    ->compact($forStandaloneCreation)
+                    ->columnSpan($forStandaloneCreation ? 'full' : 1)
+                    ->columns($forStandaloneCreation ? ['sm' => 2, 'lg' => 3] : 3)
                     ->schema([
                         TextInput::make('duration_minutes')
                             ->label('مدت آزمون (دقیقه)')
@@ -188,6 +231,9 @@ class ExamForm
                             ->label('ترتیب گزینه‌ها تصادفی باشد'),
                     ]),
                 Section::make('شرکت‌کنندگان')
+                    ->icon($forStandaloneCreation ? Heroicon::OutlinedUsers : null)
+                    ->compact($forStandaloneCreation)
+                    ->columnSpan($forStandaloneCreation ? 'full' : 1)
                     ->hidden($forSession)
                     ->description(fn (?Exam $record): string => $record?->context_type !== null ? 'شرکت‌کنندگان این آزمون از عضویت در جلسه تعیین می‌شوند؛ انتخاب کاربر یا نقش این‌جا کاربرد ندارد.' : 'آزمون را این کاربران و دارندگان این نقش‌ها (در همین '.config('sarasystem.tenant_label').') می‌بینند.')
                     ->columns(2)

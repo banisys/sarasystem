@@ -2,7 +2,6 @@
 
 namespace Modules\Course\Filament\Resources\Courses\Pages;
 
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
@@ -15,11 +14,9 @@ class EditCourse extends EditRecord
 
     protected ?bool $hasDatabaseTransactions = true;
 
-    protected function getHeaderActions(): array
+    public function getRelationManagers(): array
     {
-        return [
-            DeleteAction::make()->visible(fn (): bool => ! $this->getRecord()->lessons()->exists()),
-        ];
+        return [];
     }
 
     protected function mutateFormDataBeforeFill(array $data): array

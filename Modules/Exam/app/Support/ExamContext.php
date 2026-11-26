@@ -21,6 +21,7 @@ readonly class ExamContext
         public ?string $singleExamSessionUrl = null,
         public ?string $classTitle = null,
         public string $hostLabel = 'جلسه',
+        public bool $allowsDirectCreation = true,
     ) {}
 
     public function isFormalSession(): bool

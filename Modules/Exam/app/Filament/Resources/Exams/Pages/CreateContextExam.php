@@ -130,7 +130,7 @@ class CreateContextExam extends CreateExam
 
         $context = app(ExamContexts::class)->resolve($this->contextType, $this->contextId, $actor);
         abort_unless($context !== null && $context->tenantId === Tenant::current()?->getKey(), 404);
-        abort_unless($context->canManage && $context->adminCreateReturnUrl !== null, 403);
+        abort_unless($context->canManage && $context->allowsDirectCreation && $context->adminCreateReturnUrl !== null, 403);
 
         return $this->context = $context;
     }

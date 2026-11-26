@@ -18,15 +18,15 @@ A branch owns its course categories, courses, sections, lessons, instructor assi
 
 Each course can have an optional primary catalog category and additional categories ([ADR 0139](0139-course-admin-form.md)). Publishing makes its introduction and syllabus visible on the branch's site. Members can sign in to preview designated lessons. Active enrollment is required for other lessons and for recording completion. Officers enroll members manually or allow free self-enrollment. A saved enrollment can have a start, an expiration or a revocation, and a self-enrollment request preserves those restrictions. The enrollment view shows the number of completed lessons. Completion belongs to the learner and lesson and is recorded explicitly.
 
-Lessons can contain text, a private MP4 or WebM video, and downloadable attachments. Staff classify the primary content as file, video, or exam ([ADR 0140](0140-course-activity-types.md)). The application's file action checks lesson access for every download and video request. Lesson video and attachment fields limit uploads to 12 MiB per file. Published courses have public URLs under `/courses` and `/{branch}/courses`. Opening a course in the user panel selects its branch only for a user authorized to enter it.
+Lessons can contain text, one private MP4 or WebM video, [one private audio file](0157-course-lesson-audio.md), and up to five downloadable attachments ([ADR 0155](0155-course-lesson-content-and-exam-code.md)). The application's file action checks lesson access for every download and video request. Lesson video and attachment fields limit uploads to 12 MiB per file. Published courses have public URLs under `/courses` and `/{branch}/courses`. Opening a course in the user panel selects its branch only for a user authorized to enter it.
 
-When Exam is enabled, its context contract exposes lesson exams. Course editors open the exam tools from the lesson's admin row. Active enrollees can take published lesson exams through the existing Exam flow, including practice, grading and results. Lesson exams are available on demand and retain the exam's per-attempt duration. The course and lesson remain usable with Exam disabled.
+When Exam is enabled, its context contract exposes lesson exams. Course editors add one exam by entering its code in the lesson form. The lesson row opens the exam management tools. Active enrollees can take published lesson exams through the existing Exam flow, including practice, grading and results. Lesson exams retain the source exam's availability settings and per-attempt duration. The course and lesson remain usable with Exam disabled.
 
 ## Consequences
 
 In the admin panel, «دوره‌های خودآموز» identifies on-demand learning and «ترم‌های آموزشی» identifies the calendar periods used by scheduled classes ([ADR 0022](0022-classes.md)).
 
-The «سرفصل‌ها» and «فعالیت‌ها» actions on each course row open dedicated admin pages. They reuse the section and lesson editors from the course edit page and require permission to update that course in the current branch.
+The «سرفصل‌ها» and «درس‌ها» actions on each course row open dedicated admin pages. They use dedicated section and lesson editors and require permission to update that course in the current branch. The lessons route is `/{record}/lessons` under the course resource ([ADR 0151](0151-course-lessons-route.md)).
 
 The «شرکت‌کنندگان» row action opens the course's enrollment editor for branch members, with access dates and revocation ([ADR 0144](0144-course-participants-page.md)).
 

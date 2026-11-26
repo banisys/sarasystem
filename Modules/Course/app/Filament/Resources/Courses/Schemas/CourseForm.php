@@ -48,7 +48,7 @@ class CourseForm
                     ->disableToolbarButtons(['attachFiles'])->columnSpanFull(),
             ]),
             Section::make('رسانه')->columns(2)->columnSpanFull()->schema([
-                self::imageUpload('cover_image', 'تصویر کاور'),
+                self::imageUpload('cover_image', 'تصویر اصلی دوره'),
                 self::imageUpload('video_cover', 'کاور ویدیو'),
                 FileUpload::make('intro_video')->label('ویدیوی معرفی')->helperText('حداکثر حجم ویدیو ۱۰۰ مگابایت است.')
                     ->acceptedFileTypes(['video/mp4', 'video/webm'])

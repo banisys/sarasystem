@@ -24,10 +24,31 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 
 ## Done
 - 2026-11-26 — Displayed «کد آزمون» beside the title in the admin exam list.
+- 2026-11-26 — Added private lesson audio with inline playback and automatic duration in seconds ([ADR 0157](decisions/0157-course-lesson-audio.md)). All 34 Course tests, Pint and the frontend build passed.
+- 2026-11-26 — Removed manual lesson duration entry and calculated duration from uploaded videos ([ADR 0156](decisions/0156-course-lesson-video-duration.md)). All 34 Course tests and Pint passed.
+- 2026-11-26 — Refined the standalone admin exam creation form with a separate scheduling and publication card, wider question bank rows, and a stacked mobile layout. Checked practice mode and the manual question picker in the browser. All 60 targeted tests and Pint passed.
+- 2026-11-26 — Renamed the lesson section field and list column to «سرفصل».
+- 2026-11-26 — Removed lesson types and made text, one video, five attachments and one exam by code available in the same lesson ([ADR 0155](decisions/0155-course-lesson-content-and-exam-code.md)). All 882 tests and Pint passed. Course and Exam tests passed independently with the other module disabled.
+- 2026-11-26 — Added unique exam codes with automatic generation and backfilled existing exams ([ADR 0154](decisions/0154-exam-codes.md)). All 883 tests and Pint passed.
+- 2026-11-26 — Put the lesson creation form in a card and added rich text for lesson bodies with plain-text compatibility ([ADR 0153](decisions/0153-rich-course-lesson-text.md)).
+- 2026-11-26 — Opened «ایجاد درس» on a dedicated page with a return to the same course’s lessons list ([ADR 0152](decisions/0152-course-lesson-creation-page.md)). Verified access, section validation and attachment persistence. All 35 Course tests and Pint passed.
+- 2026-11-26 — Removed the «ایجاد درس» tooltip from the course lessons page.
+- 2026-11-26 — Renamed the course admin activities route to lessons and redirected existing links ([ADR 0151](decisions/0151-course-lessons-route.md)).
+- 2026-11-26 — Moved «ایجاد درس» to the left side of the course lessons page header.
+- 2026-11-26 — Renamed the course activities page and row action to «درس‌ها» and aligned the exam form copy.
+- 2026-11-26 — Moved «ایجاد سرفصل» to the left side of the course sections page header.
+- 2026-11-26 — Standardized the course sections page on «سرفصل» and «سرفصل‌ها».
+- 2026-11-26 — Renamed the main course image field to «تصویر اصلی دوره».
 - 2026-11-26 — Raised the course introduction video upload limit to 100 MiB. Verified a real 100 MiB multipart request, private storage and oversize rejection. All 883 tests and Pint passed.
+- 2026-11-26 — Reduced the corner radius of standard admin input fields from 8px to 6px.
+- 2026-11-26 — Removed the related tables and tabs from the course edit page. All 34 Course tests and Pint passed.
+- 2026-11-26 — Moved course deletion from the edit page to the row actions on the course list. All 34 Course tests and Pint passed.
+- 2026-11-26 — Matched the expanded rich editor background to the regular glass input surface.
 - 2026-11-26 — Added a full-screen rich editor toggle that fills the admin content area. Verified the content bounds in both themes, sidebar collapse, and draft preservation. All 881 tests, Pint, and the Vite build passed.
 - 2026-11-26 — Replaced the rich editor direction arrows with pilcrow icons and directional arrows.
 - 2026-11-26 — Ported the LMS HTML source editor and text direction tools to the admin rich text toolbar ([ADR 0149](decisions/0149-admin-rich-editor-tools.md)). Verified the controls in the course form, direction persistence and contract rendering. All 881 tests, Pint, and the Vite build passed.
+- 2026-11-26 — Reduced the checkbox size in the shared admin Tree Select from 16px to 12px.
+- 2026-11-26 — Collapsed branches by default in the shared admin Tree Select. Verified expansion and search in the course creation form. All 881 tests passed.
 - 2026-11-26 — Made the desktop admin sidebar collapse completely and release its space to the page.
 - 2026-11-26 — Made the sidebar Apply button full width and kept the filter panel open after applying filters.
 - 2026-11-26 — Moved admin table filters into the navigation sidebar, with automatic expansion and a fixed Apply button ([ADR 0148](decisions/0148-admin-sidebar-table-filters.md)). Verified filtering, reset, sidebar expansion, and the fixed footer on a short mobile viewport. All 881 tests, Pint, and the Vite build passed.

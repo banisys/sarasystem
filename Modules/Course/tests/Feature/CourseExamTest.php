@@ -6,8 +6,13 @@ use App\Authorization\DefaultRoles;
 use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Livewire\Livewire;
+use Modules\Course\Filament\Resources\Courses\Pages\CreateCourseLesson;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseLessons;
+use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationManager;
 use Modules\Course\Integrations\CourseExamSource;
 use Modules\Course\Models\Course;
 use Modules\Course\Models\CourseEnrollment;
@@ -32,41 +37,56 @@ class CourseExamTest extends TestCase
 
         $tenant = Tenant::factory()->create(['is_primary' => true]);
         $branch = Tenant::factory()->create();
+        $examBranch = Tenant::factory()->create();
         $officer = User::factory()->create();
         $learner = User::factory()->create();
         $outsider = User::factory()->create();
         app(DefaultRoles::class)->install();
         $this->grantRole($officer, $tenant, DefaultRoles::EDUCATION_OFFICER);
+        $this->grantRole($officer, $examBranch, DefaultRoles::EDUCATION_OFFICER);
         $this->grantRole($learner, $branch, DefaultRoles::LEARNER);
         $this->grantRole($outsider, $branch, DefaultRoles::LEARNER);
 
-        [$course, $lesson, $bank] = $tenant->execute(function () use ($tenant, $officer): array {
+        [$course, $section, $sourceExam] = $examBranch->execute(function () use ($examBranch, $officer): array {
             $course = Course::factory()->create(['is_published' => true, 'allows_self_enrollment' => true]);
-            $lesson = CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')
-                ->create(['is_preview' => true]);
-            $bank = QuestionBank::factory()->for($tenant)->create(['owner_id' => $officer->id]);
-            Question::factory()->for($tenant)->descriptive()
+            $section = CourseSection::factory()->for($course)->create();
+            $bank = QuestionBank::factory()->for($examBranch)->create(['owner_id' => $officer->id]);
+            Question::factory()->for($examBranch)->descriptive()
                 ->create(['owner_id' => $officer->id])->banks()->attach($bank);
 
-            return [$course, $lesson, $bank];
+            $sourceExam = Exam::factory()->for($examBranch)->create(['is_published' => false, 'starts_at' => null, 'ends_at' => null]);
+            $sourceExam->sections()->create(['question_bank_id' => $bank->id, 'question_count' => 1, 'sort' => 0]);
+
+            return [$course, $section, $sourceExam];
         });
 
+        $otherExam = Exam::factory()->for(Tenant::factory())->create();
+        $this->actingInPanel($officer, $examBranch);
+        Livewire::test(CreateCourseLesson::class, ['course' => $course->id])
+            ->fillForm(['title' => 'درس آموزشی', 'course_section_id' => $section->id, 'is_preview' => true, 'exam_code' => $otherExam->code])
+            ->call('create')->assertHasFormErrors(['exam_code'])
+            ->fillForm(['exam_code' => $sourceExam->code])
+            ->call('create')->assertHasNoFormErrors();
+
+        $lesson = $section->lessons()->sole();
         $context = [CourseExamSource::TYPE, $lesson->id];
         $contextUrl = route('exams.context', $context);
         $lessonUrl = route('courses.lesson', [$course, $lesson]);
 
-        $this->actingAs($officer)->get($contextUrl)->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->where('context.host_label', 'درس')->where('context.uses_host_window', false)->where('context.can_manage', true));
-        $this->post(route('exams.context.store', $context), [
-            'title' => 'آزمون درس',
-            'duration_minutes' => 10,
-            'total_score' => 20,
-            'passing_score' => 12,
-            'banks' => [['bank_id' => $bank->id, 'question_count' => 1]],
-        ])->assertSessionHasNoErrors()->assertRedirect($contextUrl);
+        $secondExam = Exam::factory()->for($tenant)->create();
+        Livewire::test(LessonsRelationManager::class, ['ownerRecord' => $course, 'pageClass' => ManageCourseLessons::class])
+            ->callAction(TestAction::make('edit')->table($lesson), data: ['exam_code' => $secondExam->code])
+            ->assertHasActionErrors(['exam_code']);
+        $this->get($contextUrl)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('context.host_label', 'درس')->where('context.can_create', false)->where('context.can_manage', true));
+        $this->post(route('exams.context.store', $context))->assertForbidden();
 
         $exam = Exam::withoutTenantScope()->where('context_type', CourseExamSource::TYPE)->sole();
-        $this->assertSame($tenant->id, $exam->tenant_id);
+        $this->assertSame($examBranch->id, $exam->tenant_id);
+        $this->assertSame($sourceExam->code, $exam->source_exam_code);
+        $this->assertNotSame($sourceExam->code, $exam->code);
+        $this->assertNull($sourceExam->fresh()->context_type);
+        $this->assertSame($sourceExam->sections()->sole()->question_bank_id, $exam->sections()->sole()->question_bank_id);
         $this->assertNull($exam->starts_at);
         $this->assertNull($exam->ends_at);
         $this->assertFalse($exam->is_published);

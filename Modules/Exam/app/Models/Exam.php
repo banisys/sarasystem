@@ -25,7 +25,7 @@ use Modules\Exam\Support\ExamContexts;
  * take it: the users chosen for it, and holders of its roles in its tenant.
  */
 #[Fillable([
-    'tenant_id', 'exam_group_id', 'title', 'description', 'is_published', 'is_practice', 'starts_at', 'ends_at',
+    'tenant_id', 'exam_group_id', 'title', 'code', 'description', 'is_published', 'is_practice', 'starts_at', 'ends_at',
     'duration_minutes', 'allow_late_start', 'grace_minutes', 'total_score', 'passing_score',
     'max_attempts', 'retake_policy', 'questions_per_page', 'shuffle_questions',
     'shuffle_options', 'negative_marking', 'result_visibility',
@@ -38,6 +38,15 @@ class Exam extends Model
     protected $attributes = ['is_practice' => false, 'user_panel_locked' => false];
 
     protected $hidden = ['question_snapshot'];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Exam $exam): void {
+            if (blank($exam->code)) {
+                $exam->code = $exam->getOriginal('code') ?? 'EXM-'.str()->upper(str()->random(16));
+            }
+        });
+    }
 
     protected static function newFactory(): ExamFactory
     {

@@ -44,6 +44,10 @@ See [ADR 0078](0078-exam-attempt-consistency.md) for transactional save/submit/f
 ## Class sessions
 [ADR 0079](0079-exams-in-class-sessions.md) adds independent copies for class sessions through an optional host contract. Their participants come from session-date membership; standalone exams keep named/role participants. Session staff can review and grade that session's answers through the user panel without global `Update:ExamAttempt` permission.
 
+## Standalone creation form
+
+The admin creation form puts scheduling and publication beside the exam details on wide screens. On narrow screens the cards stack. Question bank rows have their own full-width section so bank titles and counts are easier to scan.
+
 ## Fill-in-the-blank questions
 
 [ADR 0083](0083-fill-in-the-blank-questions.md) adds a single inline blank with automatic grading against accepted answers copied into the attempt.

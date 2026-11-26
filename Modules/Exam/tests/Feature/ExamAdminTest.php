@@ -252,6 +252,8 @@ class ExamAdminTest extends TestCase
         $bank = QuestionBank::factory()->for($this->tenant)->create();
         $this->actingInPanel($this->manager, $this->tenant);
 
+        $otherExam = Exam::factory()->for(Tenant::factory())->create(['code' => 'PRACTICE-01']);
+
         Livewire::test(CreateExam::class)
             ->assertFormFieldVisible('total_score')
             ->set('data.is_practice', true)
@@ -272,9 +274,13 @@ class ExamAdminTest extends TestCase
                 'total_score' => null,
                 'passing_score' => null,
             ])
+            ->set('data.code', $otherExam->code)
+            ->call('create')->assertHasFormErrors(['code' => 'unique'])
+            ->set('data.code', null)
             ->call('create')->assertHasNoFormErrors();
 
         $exam = Exam::query()->sole();
+        $this->assertStringStartsWith('EXM-', $exam->code);
         $this->assertTrue($exam->is_practice);
         $practice = ExamAttempt::factory()->for($exam)->create();
         $graded = ExamAttempt::factory()->for(Exam::factory()->for($this->tenant))->create();

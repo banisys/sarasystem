@@ -61,7 +61,7 @@ class ContextExamController extends Controller
         return Inertia::render('Exam::Context', [
             'context' => ['type' => $type, 'id' => $context, 'title' => $host->title, 'back_url' => $host->backUrl, 'can_manage' => $host->canManage,
                 'paper_url' => $host->paperUrl(), 'host_label' => $host->hostLabel, 'uses_host_window' => $host->startsAt !== null || $host->endsAt !== null,
-                'can_create' => $host->canManage && (! $host->isFormalSession() || $records->isEmpty())],
+                'can_create' => $host->canManage && $host->allowsDirectCreation && (! $host->isFormalSession() || $records->isEmpty())],
             'settings_form' => $host->canManage ? [
                 'formal_session' => $host->isFormalSession(),
                 'defaults' => SessionExamSettings::DEFAULTS,
@@ -123,6 +123,8 @@ class ContextExamController extends Controller
     public function store(Request $request, string $type, int $context, ExamContexts $contexts, ContextExams $exams, QuestionLibrary $library): RedirectResponse
     {
         $host = $this->context($request, $type, $context, $contexts, manage: true);
+        abort_unless($host->allowsDirectCreation, 403);
+
         $formal = $host->isFormalSession();
         $data = $request->validate(SessionExamSettings::rules(practice: ! $formal && $request->boolean('is_practice'), formal: $formal) + [
             'is_practice' => [Rule::excludeIf($formal), 'sometimes', 'boolean'],

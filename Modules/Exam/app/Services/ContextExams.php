@@ -24,6 +24,8 @@ class ContextExams
     /** Both creation paths call this inside their save transaction. */
     public function ensureCanCreate(ExamContext $context, string $errorField): void
     {
+        abort_unless($context->allowsDirectCreation, 403);
+
         if (! $context->isFormalSession()) {
             return;
         }

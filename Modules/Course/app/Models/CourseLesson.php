@@ -8,17 +8,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Course\Database\Factories\CourseLessonFactory;
-use Modules\Course\Enums\CourseLessonType;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-#[Fillable(['course_id', 'course_section_id', 'title', 'type', 'position', 'body', 'is_preview', 'duration_minutes'])]
+#[Fillable(['course_id', 'course_section_id', 'title', 'position', 'body', 'body_html', 'is_preview', 'duration_minutes', 'audio_duration_seconds'])]
 class CourseLesson extends Model implements HasMedia
 {
     /** @use HasFactory<CourseLessonFactory> */
     use HasFactory, InteractsWithMedia;
 
     public const array VIDEO_TYPES = ['video/mp4', 'video/webm'];
+
+    public const array AUDIO_TYPES = [
+        'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/ogg', 'application/ogg', 'audio/wav', 'audio/x-wav', 'audio/wave',
+    ];
 
     protected static function newFactory(): CourseLessonFactory
     {
@@ -46,11 +49,12 @@ class CourseLesson extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('video')->useDisk('local')->acceptsMimeTypes(self::VIDEO_TYPES)->singleFile();
+        $this->addMediaCollection('audio')->useDisk('local')->acceptsMimeTypes(self::AUDIO_TYPES)->singleFile();
         $this->addMediaCollection('attachments')->useDisk('local');
     }
 
     protected function casts(): array
     {
-        return ['is_preview' => 'boolean', 'type' => CourseLessonType::class];
+        return ['is_preview' => 'boolean'];
     }
 }

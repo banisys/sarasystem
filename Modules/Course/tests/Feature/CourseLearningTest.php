@@ -6,6 +6,7 @@ use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Course\Models\Course;
@@ -80,7 +81,10 @@ class CourseLearningTest extends TestCase
         $other = User::factory()->create();
         $course = Course::factory()->create(['is_published' => true, 'allows_self_enrollment' => true]);
         $section = CourseSection::factory()->for($course)->create();
-        $lesson = CourseLesson::factory()->for($section, 'section')->create(['position' => 3]);
+        $lesson = CourseLesson::factory()->for($section, 'section')->create([
+            'position' => 3,
+            'body_html' => '<p onclick="alert(1)"><strong>متن قالب‌بندی‌شده</strong></p>',
+        ]);
         $preview = CourseLesson::factory()->for($section, 'section')->create(['is_preview' => true, 'position' => 1]);
 
         $previewUrl = route('courses.lesson', [$course, $preview]);
@@ -107,7 +111,8 @@ class CourseLearningTest extends TestCase
         $this->get(route('courses.index', ['mine' => 1]))->assertInertia(fn (Assert $page) => $page
             ->where('courses.data.0.url', $showUrl)->where('courses.data.0.enrolled', true));
         $this->get($showUrl)->assertInertia(fn (Assert $page) => $page->where('sections.0.lessons.1.completed', true));
-        $this->get($lessonUrl)->assertInertia(fn (Assert $page) => $page->where('previous', $previewUrl));
+        $this->get($lessonUrl)->assertInertia(fn (Assert $page) => $page->where('previous', $previewUrl)
+            ->where('lesson.bodyHtml', '<p><strong>متن قالب‌بندی‌شده</strong></p>'));
 
         $this->actingAs($other)->post(route('courses.enroll', $course))->assertRedirect($showUrl);
         $this->get($lessonUrl)->assertInertia(fn (Assert $page) => $page->where('completed', false));
@@ -130,10 +135,19 @@ class CourseLearningTest extends TestCase
         });
         $file = $lesson->addMediaFromString('private file')->usingFileName('attachment.txt')->toMediaCollection('attachments');
         $fileUrl = route('courses.lesson.file', [$course, $lesson, $file->id]);
+        $audio = Process::run([
+            'ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=8000:cl=mono', '-t', '1', '-f', 'wav', 'pipe:1',
+        ])->throw()->output();
+        $voice = $lesson->addMediaFromString($audio)->usingFileName('voice.wav')->toMediaCollection('audio');
+        $audioUrl = route('courses.lesson.file', [$course, $lesson, $voice->id]);
         $this->actingAs($user)->get($fileUrl)->assertForbidden();
+        $this->get($audioUrl)->assertForbidden();
         $this->post(route('courses.enroll', $course))->assertForbidden();
 
         $enrollment->update(['starts_at' => now()->subHour()]);
+        $this->get(route('courses.lesson', [$course, $lesson]))->assertInertia(fn (Assert $page) => $page->where('audio', $audioUrl));
+        $this->get($audioUrl)->assertOk()->assertHeader('Content-Type', $voice->mime_type)
+            ->assertHeader('Cache-Control', 'no-store, private');
         $this->get($fileUrl)->assertDownload('attachment.txt')->assertHeader('X-Content-Type-Options', 'nosniff');
         $this->get(route('courses.lesson.file', [$course, $otherLesson, $file->id]))->assertNotFound();
 

@@ -6,17 +6,18 @@ use App\Authorization\DefaultRoles;
 use App\Models\Tenant;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
-use Filament\Schemas\Components\Callout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
-use Modules\Course\Enums\CourseLessonType;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
+use Modules\Course\Filament\Resources\Courses\Pages\CreateCourseLesson;
 use Modules\Course\Filament\Resources\Courses\Pages\EditCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\ListCourses;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseLessons;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseSections;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\EnrollmentsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\InstructorsRelationManager;
@@ -27,7 +28,6 @@ use Modules\Course\Models\CourseCategory;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
 use Modules\Course\Models\CourseTeacher;
-use Nwidart\Modules\Facades\Module;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
@@ -37,6 +37,7 @@ class CourseAdminTest extends TestCase
 
     public function test_head_office_officers_create_global_courses_and_manage_their_content(): void
     {
+        Storage::fake('local');
         $tenant = Tenant::factory()->create();
         $branch = Tenant::factory()->create();
         $existingCourse = $branch->execute(fn (): Course => Course::factory()->create());
@@ -82,7 +83,8 @@ class CourseAdminTest extends TestCase
         $this->assertSame(50000, $course->prepayment_amount);
         Livewire::test(ListCourses::class)->assertCanSeeTableRecords([$course, $existingCourse]);
         $this->get(CourseResource::getUrl('edit', ['record' => $existingCourse], tenant: $tenant))->assertOk();
-        $this->get(CourseResource::getUrl('edit', ['record' => $course], tenant: $tenant))->assertOk()->assertSee(['بخش‌ها', 'درس‌ها', 'ثبت‌نام‌ها']);
+        $this->get(CourseResource::getUrl('edit', ['record' => $course], tenant: $tenant))
+            ->assertOk()->assertSee('اطلاعات کلی')->assertDontSee('relationManagerTabs');
 
         Livewire::test(EditCourse::class, ['record' => $course->id])
             ->assertFormSet(['category_ids' => [(string) $category->id, (string) $additionalCategory->id], 'has_prepayment' => true])
@@ -93,26 +95,31 @@ class CourseAdminTest extends TestCase
         $this->assertNull($course->prepayment_amount);
         $this->assertSame($instructor->id, $course->instructors()->sole()->user_id);
 
-        $owner = ['ownerRecord' => $course, 'pageClass' => EditCourse::class];
-        Livewire::test(SectionsRelationManager::class, $owner)
+        Livewire::test(SectionsRelationManager::class, ['ownerRecord' => $course, 'pageClass' => ManageCourseSections::class])
             ->callAction(TestAction::make('create')->table(), data: ['title' => 'شروع', 'position' => 1])
             ->assertHasNoActionErrors();
 
         $section = $course->sections()->sole();
         $unrelated = CourseSection::factory()->create();
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->callAction(TestAction::make('create')->table(), data: ['title' => 'درس اول', 'course_section_id' => $unrelated->id])
-            ->assertHasActionErrors(['course_section_id']);
+        $createLesson = Livewire::test(CreateCourseLesson::class, ['course' => $course->id]);
+        $createLesson->fillForm(['title' => 'درس اول', 'course_section_id' => $unrelated->id])
+            ->call('create')
+            ->assertHasFormErrors(['course_section_id']);
 
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->callAction(TestAction::make('create')->table(), data: [
-                'title' => 'درس اول',
-                'course_section_id' => $section->id,
-                'body' => 'متن درس',
-                'position' => 1,
-            ])->assertHasNoActionErrors();
+        $createLesson->fillForm([
+            'course_section_id' => $section->id,
+            'body_html' => '<p><strong>متن درس</strong></p>',
+            'position' => 1,
+            'attachments' => [UploadedFile::fake()->create('guide.txt', 1, 'text/plain')],
+        ])->call('create')
+            ->assertHasNoFormErrors()
+            ->assertRedirect(CourseResource::getUrl('lessons', ['record' => $course], tenant: $tenant));
 
-        $this->assertSame('متن درس', $section->lessons()->sole()->body);
+        $lesson = $section->lessons()->sole();
+        $this->assertSame('<p><strong>متن درس</strong></p>', $lesson->body_html);
+        $attachment = $lesson->getMedia('attachments')->sole();
+        $this->assertSame('guide.txt', $attachment->file_name);
+        Storage::disk('local')->assertExists($attachment->getPathRelativeToRoot());
     }
 
     public function test_course_list_links_to_manage_sections_for_the_selected_course(): void
@@ -144,114 +151,123 @@ class CourseAdminTest extends TestCase
         $this->get($url)->assertForbidden();
     }
 
-    public function test_course_activities_link_opens_only_the_selected_courses_lessons(): void
+    public function test_course_lessons_link_opens_only_the_selected_courses_lessons(): void
     {
         $tenant = Tenant::factory()->create();
         $anotherCourse = Course::factory()->create();
         $this->actAsEducationOfficer($tenant);
         $course = Course::factory()->create();
         $lesson = CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')
-            ->create(['title' => 'فعالیت آموزشی این دوره']);
-        $otherLesson = CourseLesson::factory()->create(['title' => 'فعالیت آموزشی دورهٔ دیگر']);
-        $url = CourseResource::getUrl('activities', ['record' => $course], tenant: $tenant);
+            ->create(['title' => 'درس آموزشی این دوره']);
+        $otherLesson = CourseLesson::factory()->create(['title' => 'درس آموزشی دورهٔ دیگر']);
+        $url = CourseResource::getUrl('lessons', ['record' => $course], tenant: $tenant);
+        $createUrl = CourseResource::getUrl('create-lesson', ['course' => $course], tenant: $tenant);
+        $legacyUrl = url("/cpadmin/{$tenant->slug}/courses/{$course->getRouteKey()}/activities");
 
         Livewire::test(ListCourses::class)
-            ->assertActionHasUrl(TestAction::make('activities')->table($course), $url);
+            ->assertActionHasUrl(TestAction::make('lessons')->table($course), $url);
         Livewire::withoutLazyLoading();
-        $this->get($url)->assertOk()->assertSee(['فعالیت‌ها', $course->title, $lesson->title])
-            ->assertDontSee($otherLesson->title);
-        $this->get(CourseResource::getUrl('activities', ['record' => $anotherCourse], tenant: $tenant))->assertOk();
+        $this->get($legacyUrl)->assertRedirect($url);
+        $this->get($url)->assertOk()->assertSee(['درس‌ها', $course->title, $lesson->title])
+            ->assertDontSee($otherLesson->title)
+            ->assertSee($createUrl);
+        $this->get($createUrl)->assertOk()->assertSee(['ایجاد درس', $course->title, 'متن درس']);
+        Livewire::test(LessonsRelationManager::class, ['ownerRecord' => $anotherCourse, 'pageClass' => ManageCourseLessons::class])
+            ->assertActionDisabled(TestAction::make('create')->table());
+        $this->get(CourseResource::getUrl('lessons', ['record' => $anotherCourse], tenant: $tenant))->assertOk();
 
         $viewer = User::factory()->create();
         $this->makeStaff($viewer, $tenant);
         $this->grantRole($viewer, $tenant, $this->roleWithPermissions('course-viewer', ['ViewAny:Course', 'View:Course'])->name);
         $this->actingInPanel($viewer, $tenant);
-        Livewire::test(ListCourses::class)->assertActionHidden(TestAction::make('activities')->table($course));
+        Livewire::test(ListCourses::class)->assertActionHidden(TestAction::make('lessons')->table($course));
         $this->get($url)->assertForbidden();
+        $this->get($createUrl)->assertForbidden();
     }
 
-    public function test_activity_type_is_saved_and_exam_selection_uses_module_availability(): void
-    {
-        $tenant = Tenant::factory()->create();
-        $this->actAsEducationOfficer($tenant);
-        $section = CourseSection::factory()->create();
-        $owner = ['ownerRecord' => $section->course, 'pageClass' => ManageCourseActivities::class];
-        $create = TestAction::make('create')->table();
-
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->callAction($create, data: ['title' => 'آشنایی با دوره', 'course_section_id' => $section->id])
-            ->assertHasNoActionErrors();
-
-        $lesson = $section->lessons()->sole();
-        $this->assertSame(CourseLessonType::File, $lesson->type);
-
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->callAction(TestAction::make('edit')->table($lesson), data: ['type' => CourseLessonType::Video->value])
-            ->assertHasNoActionErrors()
-            ->assertSee('ویدیو');
-        $this->assertSame(CourseLessonType::Video, $lesson->refresh()->type);
-
-        $examData = ['title' => 'آزمون پایانی', 'course_section_id' => $section->id, 'type' => CourseLessonType::Exam->value];
-        $component = Livewire::test(LessonsRelationManager::class, $owner)->callAction($create, data: $examData);
-
-        if (Module::isEnabled('Exam')) {
-            $component->assertHasNoActionErrors();
-            $this->assertSame(CourseLessonType::Exam, $section->lessons()->where('title', 'آزمون پایانی')->sole()->type);
-        } else {
-            $component->assertHasActionErrors(['type']);
-            $this->assertCount(1, $section->lessons()->get());
-
-            $savedExam = CourseLesson::factory()->for($section, 'section')->create(['type' => CourseLessonType::Exam]);
-            Livewire::test(LessonsRelationManager::class, $owner)
-                ->callAction(TestAction::make('edit')->table($savedExam), data: ['title' => 'آزمون ذخیره‌شده'])
-                ->assertHasNoActionErrors();
-            $this->assertSame(CourseLessonType::Exam, $savedExam->refresh()->type);
-        }
-    }
-
-    public function test_activity_form_reacts_to_type_changes_without_discarding_saved_media(): void
+    public function test_lesson_can_contain_video_and_attachments_but_rejects_more_than_five_files(): void
     {
         Storage::fake('local');
         $tenant = Tenant::factory()->create();
         $this->actAsEducationOfficer($tenant);
         $section = CourseSection::factory()->create();
-        $lesson = CourseLesson::factory()->for($section, 'section')->create(['type' => CourseLessonType::File]);
-        $attachment = $lesson->addMediaFromString('Sample activity file')->usingFileName('guide.txt')->toMediaCollection('attachments');
-        $owner = ['ownerRecord' => $section->course, 'pageClass' => ManageCourseActivities::class];
+        $files = array_map(fn (int $number): UploadedFile => UploadedFile::fake()->create("guide-{$number}.txt", 1, 'text/plain'), range(1, 6));
+
+        $video = fn (int $seconds): string => Process::run([
+            'ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=s=16x16:r=1', '-t', (string) $seconds,
+            '-c:v', 'mpeg4', '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1',
+        ])->throw()->output();
+
+        $audio = fn (int $seconds): string => Process::run([
+            'ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=8000:cl=mono', '-t', (string) $seconds,
+            '-c:a', 'pcm_s16le', '-f', 'wav', 'pipe:1',
+        ])->throw()->output();
+
+        $form = Livewire::test(CreateCourseLesson::class, ['course' => $section->course_id])
+            ->assertFormFieldDoesNotExist('duration_minutes')
+            ->assertFormFieldVisible('video')
+            ->assertFormFieldVisible('attachments')
+            ->fillForm([
+                'title' => 'درس نمونه',
+                'course_section_id' => $section->id,
+                'video' => UploadedFile::fake()->createWithContent('lesson.mp4', $video(61))->mimeType('video/mp4'),
+                'audio' => UploadedFile::fake()->createWithContent('voice.wav', $audio(3))->mimeType('audio/wav'),
+                'attachments' => $files,
+            ])
+            ->call('create')->assertHasFormErrors(['attachments' => 'max']);
+        $this->assertDatabaseCount(CourseLesson::class, 0);
+
+        $form->fillForm(['attachments' => array_slice($files, 0, 5)])
+            ->call('create')->assertHasNoFormErrors();
+
+        $lesson = $section->lessons()->sole();
+        $this->assertTrue($lesson->hasMedia('video'));
+        $this->assertSame(2, $lesson->duration_minutes);
+        $this->assertTrue($lesson->hasMedia('audio'));
+        $this->assertSame(3, $lesson->audio_duration_seconds);
+        $this->assertCount(5, $lesson->getMedia('attachments'));
+
+        $owner = ['ownerRecord' => $section->course, 'pageClass' => ManageCourseLessons::class];
+        $edit = TestAction::make('edit')->table($lesson);
+        Livewire::test(LessonsRelationManager::class, $owner)
+            ->mountAction($edit)
+            ->set('mountedActions.0.data.video', [])
+            ->fillForm(['video' => UploadedFile::fake()->create('invalid.mp4', 1, 'video/mp4')])
+            ->callMountedAction()
+            ->assertHasActionErrors(['video']);
+        $this->assertTrue($lesson->refresh()->hasMedia('video'));
+        $this->assertSame(2, $lesson->duration_minutes);
 
         Livewire::test(LessonsRelationManager::class, $owner)
-            ->mountAction(TestAction::make('edit')->table($lesson))
-            ->assertSchemaComponentVisible('attachments')
-            ->assertSchemaComponentHidden('video')
-            ->assertSchemaComponentHidden('examSettings')
-            ->set('mountedActions.0.data.type', CourseLessonType::Video->value)
-            ->assertSchemaComponentVisible('video')
-            ->assertSchemaComponentHidden('attachments')
-            ->assertSchemaComponentHidden('examSettings')
+            ->mountAction($edit)
+            ->set('mountedActions.0.data.video', [])
+            ->fillForm(['video' => UploadedFile::fake()->createWithContent('replacement.mp4', $video(30))->mimeType('video/mp4')])
             ->callMountedAction()
             ->assertHasNoActionErrors();
+        $this->assertCount(1, $lesson->refresh()->getMedia('video'));
+        $this->assertSame(1, $lesson->duration_minutes);
 
-        $this->assertSame(CourseLessonType::Video, $lesson->refresh()->type);
-        $this->assertModelExists($attachment);
-        Storage::disk('local')->assertExists($attachment->getPathRelativeToRoot());
+        Livewire::test(LessonsRelationManager::class, $owner)
+            ->callAction($edit, data: ['video' => null])
+            ->assertHasNoActionErrors();
+        $this->assertFalse($lesson->refresh()->hasMedia('video'));
+        $this->assertNull($lesson->duration_minutes);
+        $this->assertSame(3, $lesson->audio_duration_seconds);
 
-        if (Module::isEnabled('Exam')) {
-            Livewire::test(LessonsRelationManager::class, $owner)
-                ->mountAction(TestAction::make('create')->table())
-                ->set('mountedActions.0.data.type', CourseLessonType::Exam->value)
-                ->assertSchemaComponentVisible('examSettings')
-                ->assertSchemaComponentHidden('attachments')
-                ->assertSchemaComponentHidden('video')
-                ->assertSchemaComponentExists('examSettings', checkComponentUsing: fn (Callout $callout): bool => filled($callout->getDescription())
-                    && $callout->getFooterActions()[0]->isHidden());
+        Livewire::test(LessonsRelationManager::class, $owner)
+            ->mountAction($edit)
+            ->set('mountedActions.0.data.audio', [])
+            ->fillForm(['audio' => UploadedFile::fake()->createWithContent('replacement.wav', $audio(7))->mimeType('audio/wav')])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+        $this->assertCount(1, $lesson->refresh()->getMedia('audio'));
+        $this->assertSame(7, $lesson->audio_duration_seconds);
 
-            Livewire::test(LessonsRelationManager::class, $owner)
-                ->mountAction(TestAction::make('edit')->table($lesson))
-                ->set('mountedActions.0.data.type', CourseLessonType::Exam->value)
-                ->assertSchemaComponentVisible('examSettings')
-                ->assertSchemaComponentExists('examSettings', checkComponentUsing: fn (Callout $callout): bool => $callout->getFooterActions()[0]->isVisible()
-                    && filled($callout->getFooterActions()[0]->getUrl()));
-        }
+        Livewire::test(LessonsRelationManager::class, $owner)
+            ->callAction($edit, data: ['audio' => null])
+            ->assertHasNoActionErrors();
+        $this->assertFalse($lesson->refresh()->hasMedia('audio'));
+        $this->assertNull($lesson->audio_duration_seconds);
     }
 
     public function test_head_office_officers_can_assign_users_from_different_branches(): void
@@ -331,6 +347,34 @@ class CourseAdminTest extends TestCase
 
         Livewire::test(EditCourse::class, ['record' => $course->id])->call('save')->assertHasNoFormErrors();
         $this->assertSame($course->gallery_images, $course->refresh()->gallery_images);
+    }
+
+    public function test_course_deletion_is_available_from_the_list_for_courses_without_lessons(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actAsEducationOfficer($tenant);
+        $course = Course::factory()->create();
+        $courseWithLessons = Course::factory()->create();
+        $lesson = CourseLesson::factory()->for(CourseSection::factory()->for($courseWithLessons), 'section')->create();
+
+        Livewire::test(EditCourse::class, ['record' => $course->id])->assertActionDoesNotExist('delete');
+
+        $list = Livewire::test(ListCourses::class);
+        $blockedAction = TestAction::make('delete')->table($courseWithLessons);
+        $list->assertActionHidden($blockedAction)->mountAction($blockedAction)->assertSet('mountedActions', []);
+        $this->assertModelExists($courseWithLessons);
+        $this->assertModelExists($lesson);
+
+        $delete = TestAction::make('delete')->table($course);
+        $list->assertActionVisible($delete)->callAction($delete)->assertHasNoActionErrors();
+        $this->assertModelMissing($course);
+
+        $viewer = User::factory()->create();
+        $this->makeStaff($viewer, $tenant);
+        $this->grantRole($viewer, $tenant, $this->roleWithPermissions('course-viewer', ['ViewAny:Course', 'View:Course'])->name);
+        $this->actingInPanel($viewer, $tenant);
+        $viewableCourse = Course::factory()->create();
+        Livewire::test(ListCourses::class)->assertActionHidden(TestAction::make('delete')->table($viewableCourse));
     }
 
     public function test_course_introduction_accepts_a_100_megabyte_video(): void

@@ -9,16 +9,20 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseSections;
 use Modules\Course\Models\CourseSection;
 
 class SectionsRelationManager extends CourseRelationManager
 {
     protected static string $relationship = 'sections';
 
-    protected static ?string $title = 'بخش‌ها';
+    protected static ?string $title = 'سرفصل‌ها';
 
-    protected static ?string $modelLabel = 'بخش';
+    protected static ?string $modelLabel = 'سرفصل';
+
+    protected static ?string $pluralModelLabel = 'سرفصل‌ها';
 
     public function form(Schema $schema): Schema
     {
@@ -38,6 +42,9 @@ class SectionsRelationManager extends CourseRelationManager
                 TextColumn::make('lessons_count')->label('تعداد درس‌ها'),
             ])
             ->headerActions([CreateAction::make()])
+            ->header($this->getPageClass() === ManageCourseSections::class
+                ? fn (): View => view('filament.admin.course-page-actions', ['actions' => $table->getHeaderActions()])
+                : null)
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make()->visible(fn (CourseSection $record): bool => $record->lessons_count === 0),

@@ -77,7 +77,7 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
                 ->icon(Heroicon::OutlinedUserPlus)
                 ->button())
             ->header($this->getPageClass() === ManageCourseParticipants::class
-                ? fn (): View => view('filament.admin.course-participant-actions', ['actions' => $table->getHeaderActions()])
+                ? fn (): View => view('filament.admin.course-page-actions', ['actions' => $table->getHeaderActions()])
                 : null)
             ->recordActions([EditAction::make()]);
     }

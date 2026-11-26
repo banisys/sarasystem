@@ -96,14 +96,20 @@ class CourseController extends Controller
         $enrolled = $this->authorizeLesson($course, $lesson, $request->user());
         $lesson->load('media');
         $video = $lesson->getFirstMedia('video');
+        $audio = $lesson->getFirstMedia('audio');
         $neighbours = $course->sections()->with('lessons:id,course_section_id,is_preview')->get()
             ->flatMap->lessons->filter(fn (CourseLesson $item): bool => $enrolled || $item->is_preview)->values();
         $position = $neighbours->search(fn (CourseLesson $item): bool => $item->is($lesson));
 
         return Inertia::render('Course::Lesson', [
             'course' => $course->only('id', 'title'),
-            'lesson' => $lesson->only('id', 'title', 'body', 'duration_minutes'),
+            'lesson' => [
+                ...$lesson->only('id', 'title', 'duration_minutes'),
+                'body' => $lesson->body_html === null ? $lesson->body : null,
+                'bodyHtml' => str($lesson->body_html ?? '')->sanitizeHtml()->toString(),
+            ],
             'video' => $video ? route('courses.lesson.file', [$course, $lesson, $video->getKey()]) : null,
+            'audio' => $audio ? route('courses.lesson.file', [$course, $lesson, $audio->getKey()]) : null,
             'attachments' => $lesson->getMedia('attachments')->map(fn (Media $file): array => [
                 'name' => $file->file_name,
                 'url' => route('courses.lesson.file', [$course, $lesson, $file->getKey()]),
@@ -131,15 +137,23 @@ class CourseController extends Controller
     {
         $this->authorizeLesson($course, $lesson, $request->user());
 
-        $media = $lesson->media()->whereIn('collection_name', ['video', 'attachments'])->findOrFail($file);
+        $media = $lesson->media()->whereIn('collection_name', ['video', 'audio', 'attachments'])->findOrFail($file);
         $path = $media->getPath();
         abort_unless(File::isFile($path), 404);
 
         $headers = ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff'];
 
-        return $media->collection_name === 'video' && in_array($media->mime_type, CourseLesson::VIDEO_TYPES, true)
+        $playableTypes = match ($media->collection_name) {
+            'video' => CourseLesson::VIDEO_TYPES,
+            'audio' => CourseLesson::AUDIO_TYPES,
+            default => [],
+        };
+
+        $response = in_array($media->mime_type, $playableTypes, true)
             ? response()->file($path, [...$headers, 'Content-Type' => $media->mime_type])
             : response()->download($path, null, [...$headers, 'Content-Type' => 'application/octet-stream']);
+
+        return $response->setPrivate();
     }
 
     private function authorizeLesson(Course $course, CourseLesson $lesson, User $user): bool

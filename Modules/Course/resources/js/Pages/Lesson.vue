@@ -10,6 +10,7 @@ const props = defineProps({
     lesson: { type: Object, required: true },
     attachments: { type: Array, required: true },
     video: { type: String, default: null },
+    audio: { type: String, default: null },
     previous: { type: String, default: null },
     next: { type: String, default: null },
     examUrl: { type: String, default: null },
@@ -30,10 +31,12 @@ function markComplete() {
         <div class="grid gap-4">
             <UiPageHeader :title="lesson.title" icon="book" :back-href="route('courses.show', course.id)" :back-label="course.title" />
 
-            <PanelCard v-if="video || lesson.body || attachments.length">
+            <PanelCard v-if="video || audio || lesson.bodyHtml || lesson.body || attachments.length">
                 <div class="grid gap-5">
                     <video v-if="video" :key="video" :src="video" controls playsinline preload="metadata" class="aspect-video w-full rounded-ui bg-black" />
-                    <p v-if="lesson.body" class="wrap-break-word whitespace-pre-wrap text-sm/8">{{ lesson.body }}</p>
+                    <audio v-if="audio" :key="audio" :src="audio" controls preload="metadata" aria-label="فایل صوتی درس" class="w-full" />
+                    <div v-if="lesson.bodyHtml" class="wrap-break-word text-sm/8 [&_a]:underline [&_h2]:text-lg [&_h2]:font-bold [&_h3]:font-bold [&_ol]:list-decimal [&_ol]:ps-6 [&_p+p]:mt-3 [&_ul]:list-disc [&_ul]:ps-6" v-html="lesson.bodyHtml" />
+                    <p v-else-if="lesson.body" class="wrap-break-word whitespace-pre-wrap text-sm/8">{{ lesson.body }}</p>
                     <div v-if="attachments.length">
                         <h2 class="font-semibold">پیوست‌ها</h2>
                         <ul class="mt-2 grid gap-2">

@@ -18,6 +18,8 @@ Courses, sections, lessons, categories, instructor assignments, participants, co
 
 Super admins and staff granted Course permissions in the primary branch can manage these records. Branch assignments outside the primary branch confer no Course permissions. The central permissions apply regardless of the branch displayed in the Filament URL, subject to normal panel access to that URL. The tenant selector labels the Course pages «مستقل از شعبه». The selected branch supplies the eligible class roster for [enrollment from a class](0146-course-enrollment-from-a-class.md).
 
+Staff with course deletion permission can delete a course without lessons through its row menu in the admin course list. The action requires confirmation.
+
 Lesson exams use Course enrollment to authorize entry from the lesson. The Exam module stores new contexts and their banks in the primary branch. The hosting tenant applies to an authorized exam request and does not change the selected branch. Existing exams retain their original Exam storage and attempts. A lesson with existing exams continues using that storage for the context. Standalone exams, session exams, the question library and the general Exam index retain their branch rules.
 
 ## Consequences
