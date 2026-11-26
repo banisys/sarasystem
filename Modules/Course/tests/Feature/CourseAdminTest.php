@@ -60,7 +60,7 @@ class CourseAdminTest extends TestCase
             'instructor_ids' => [$instructor->id],
             'type' => 'package',
             'capacity' => 25,
-            'description_html' => '<p>مقدمهٔ <strong>دوره</strong></p>',
+            'description_html' => '<p dir="rtl">مقدمهٔ <strong>دوره</strong></p>',
             'starts_on' => '2026-12-01',
             'ends_on' => '2026-12-31',
             'has_prepayment' => true,
@@ -75,7 +75,7 @@ class CourseAdminTest extends TestCase
         $this->assertSame('package', $course->type);
         $this->assertSame(25, $course->capacity);
         $this->assertSame('مقدمهٔ دوره', $course->description);
-        $this->assertSame('<p>مقدمهٔ <strong>دوره</strong></p>', $course->description_html);
+        $this->assertSame('<p dir="rtl">مقدمهٔ <strong>دوره</strong></p>', $course->description_html);
         $this->assertSame('2026-12-01', $course->starts_on);
         $this->assertSame('2026-12-31', $course->ends_on);
         $this->assertSame(50000, $course->prepayment_amount);

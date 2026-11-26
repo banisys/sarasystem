@@ -85,6 +85,8 @@ These tables or roles come from cafeerent or other abandoned features and are em
 - Legacy views `vw_payments*` (broken)
 
 ## Porting status
+
+The Filament rich editor’s HTML source dialog and text direction tools are available across SaraSystem’s admin editors ([ADR 0149](decisions/0149-admin-rich-editor-tools.md)).
 Code is never copied directly; see [conventions.md → Porting from LMS](conventions.md#porting-from-lms).
 
 | LMS part | Status | Lives in SaraSystem at |

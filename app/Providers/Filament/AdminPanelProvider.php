@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Forms\ClockPicker;
+use App\Filament\Forms\RichEditor\AdminRichEditorPlugin;
 use App\Filament\Support\InitialsAvatarProvider;
 use App\Filament\Support\PanelTable;
 use App\Http\Controllers\SwitchPanelTenantController;
@@ -16,6 +17,7 @@ use Filament\FontProviders\LocalFontProvider;
 use Filament\Forms\Components\Builder as FormBuilder;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
@@ -194,6 +196,7 @@ class AdminPanelProvider extends PanelProvider
         // Collapsed repeater / builder items are only known to the browser;
         // without this, adding, deleting or moving an item (which re-renders
         // the list) opens every collapsed item again.
+        RichEditor::configureUsing(fn (RichEditor $editor) => $editor->plugins([new AdminRichEditorPlugin]));
         Repeater::configureUsing(fn (Repeater $repeater) => $repeater->persistCollapsed());
         FormBuilder::configureUsing(fn (FormBuilder $builder) => $builder->persistCollapsed());
 

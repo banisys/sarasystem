@@ -3,6 +3,7 @@
 namespace Modules\Contract\Services;
 
 use App\CustomFields\CustomField;
+use App\Filament\Forms\RichEditor\AdminRichEditorPlugin;
 use App\Support\PersianNumberWords;
 use App\Support\PersianPdf;
 use Ariaieboy\Jalali\CalendarUtils;
@@ -50,6 +51,7 @@ class ContractRenderer
         }
 
         return RichContentRenderer::make($contract->contractType->body ?? '')
+            ->plugins([new AdminRichEditorPlugin])
             ->mergeTags($this->values($contract))
             ->toHtml();
     }

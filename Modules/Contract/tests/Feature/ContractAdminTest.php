@@ -128,7 +128,7 @@ class ContractAdminTest extends TestCase
     {
         $type = $this->contractType($this->primary, ['number_prefix' => 'K-']);
         $this->addField($type, 'fwage', 'حقوق ماهانه');
-        $type->update(['body' => '<p><span data-type="mergeTag" data-id="person_name"></span> — <span data-type="mergeTag" data-id="tenant_name"></span> — <span data-type="mergeTag" data-id="amount_words"></span> — <span data-type="mergeTag" data-id="fwage"></span> — <span data-type="mergeTag" data-id="father_name"></span></p>']);
+        $type->update(['body' => '<p dir="rtl"><span data-type="mergeTag" data-id="person_name"></span> — <span data-type="mergeTag" data-id="tenant_name"></span> — <span data-type="mergeTag" data-id="amount_words"></span> — <span data-type="mergeTag" data-id="fwage"></span> — <span data-type="mergeTag" data-id="father_name"></span></p>']);
         $employee = $this->employeeIn($this->branch, User::factory()->create(['name' => 'سارا محمدی', 'mobile' => '09121234567']));
         $contract = $this->draftFor($employee, $type->refresh(), ['starts_on' => '2026-11-01', 'amount' => 1250000, 'custom' => ['fwage' => '۲۰۰ میلیون']]);
 
@@ -141,6 +141,7 @@ class ContractAdminTest extends TestCase
         $this->assertSame(ContractStatus::Issued, $contract->status);
         $this->assertSame('K-1', $contract->number);
         $this->assertStringContainsString('سارا محمدی — شعبه شمال — یک میلیون و دویست و پنجاه هزار ریال — ۲۰۰ میلیون — '.ContractRenderer::BLANK, strip_tags($contract->body));
+        $this->assertStringContainsString('<p dir="rtl">', $contract->body);
         $this->assertSame(hash('sha256', $contract->body), $contract->body_hash);
         $this->assertSame($this->admin->id, $contract->issued_by_id);
         $this->assertSame('09121234567', $this->sms->sent[0]['mobile']);
