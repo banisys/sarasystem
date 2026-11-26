@@ -6,13 +6,11 @@ use App\Authorization\DefaultRoles;
 use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
-use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourseLesson;
-use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseLessons;
-use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationManager;
+use Modules\Course\Filament\Resources\Courses\Pages\EditCourseLesson;
 use Modules\Course\Integrations\CourseExamSource;
 use Modules\Course\Models\Course;
 use Modules\Course\Models\CourseEnrollment;
@@ -75,9 +73,12 @@ class CourseExamTest extends TestCase
         $lessonUrl = route('courses.lesson', [$course, $lesson]);
 
         $secondExam = Exam::factory()->for($tenant)->create();
-        Livewire::test(LessonsRelationManager::class, ['ownerRecord' => $course, 'pageClass' => ManageCourseLessons::class])
-            ->callAction(TestAction::make('edit')->table($lesson), data: ['exam_code' => $secondExam->code])
-            ->assertHasActionErrors(['exam_code']);
+        Livewire::test(EditCourseLesson::class, ['course' => $course->id, 'record' => $lesson->id])
+            ->assertFormSet(['exam_code' => $sourceExam->code])
+            ->call('save')->assertHasNoFormErrors();
+        Livewire::test(EditCourseLesson::class, ['course' => $course->id, 'record' => $lesson->id])
+            ->fillForm(['exam_code' => $secondExam->code])
+            ->call('save')->assertHasFormErrors(['exam_code']);
         Livewire::test(CreateCourseLesson::class, ['course' => $course->id])
             ->fillForm(['title' => 'درس دوم', 'course_section_id' => $section->id, 'exam_code' => $sourceExam->code])
             ->call('create')->assertHasFormErrors(['exam_code']);

@@ -16,6 +16,7 @@ use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourseLesson;
 use Modules\Course\Filament\Resources\Courses\Pages\EditCourse;
+use Modules\Course\Filament\Resources\Courses\Pages\EditCourseLesson;
 use Modules\Course\Filament\Resources\Courses\Pages\ListCourses;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseLessons;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseSections;
@@ -116,6 +117,16 @@ class CourseAdminTest extends TestCase
             ->assertRedirect(CourseResource::getUrl('lessons', ['record' => $course], tenant: $tenant));
 
         $lesson = $section->lessons()->sole();
+        $editUrl = CourseResource::getUrl('edit-lesson', ['course' => $course, 'record' => $lesson], tenant: $tenant);
+        $this->get($editUrl)->assertOk()->assertSee('اطلاعات درس');
+        Livewire::test(EditCourseLesson::class, ['course' => $course->id, 'record' => $lesson->id])
+            ->fillForm(['title' => 'درس ویرایش‌شده'])
+            ->call('save')->assertHasNoFormErrors()
+            ->assertRedirect(CourseResource::getUrl('lessons', ['record' => $course], tenant: $tenant));
+        $this->assertSame('درس ویرایش‌شده', $lesson->refresh()->title);
+        $this->get(CourseResource::getUrl('edit-lesson', ['course' => $unrelated->course, 'record' => $lesson], tenant: $tenant))
+            ->assertNotFound();
+
         $this->assertSame('<p><strong>متن درس</strong></p>', $lesson->body_html);
         $attachment = $lesson->getMedia('attachments')->sole();
         $this->assertSame('guide.txt', $attachment->file_name);
@@ -227,45 +238,41 @@ class CourseAdminTest extends TestCase
         $this->assertSame(3, $lesson->audio_duration_seconds);
         $this->assertCount(5, $lesson->getMedia('attachments'));
 
-        $owner = ['ownerRecord' => $section->course, 'pageClass' => ManageCourseLessons::class];
-        $edit = TestAction::make('edit')->table($lesson);
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->mountAction($edit)
-            ->set('mountedActions.0.data.video', [])
+        $edit = ['course' => $section->course_id, 'record' => $lesson->id];
+        Livewire::test(EditCourseLesson::class, $edit)
+            ->set('data.video', [])
             ->fillForm(['video' => UploadedFile::fake()->create('invalid.mp4', 1, 'video/mp4')])
-            ->callMountedAction()
-            ->assertHasActionErrors(['video']);
+            ->call('save')
+            ->assertHasFormErrors(['video']);
         $this->assertTrue($lesson->refresh()->hasMedia('video'));
         $this->assertSame(2, $lesson->duration_minutes);
 
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->mountAction($edit)
-            ->set('mountedActions.0.data.video', [])
+        Livewire::test(EditCourseLesson::class, $edit)
+            ->set('data.video', [])
             ->fillForm(['video' => UploadedFile::fake()->createWithContent('replacement.mp4', $video(30))->mimeType('video/mp4')])
-            ->callMountedAction()
-            ->assertHasNoActionErrors();
+            ->call('save')
+            ->assertHasNoFormErrors();
         $this->assertCount(1, $lesson->refresh()->getMedia('video'));
         $this->assertSame(1, $lesson->duration_minutes);
 
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->callAction($edit, data: ['video' => null])
-            ->assertHasNoActionErrors();
+        Livewire::test(EditCourseLesson::class, $edit)
+            ->fillForm(['video' => null])->call('save')
+            ->assertHasNoFormErrors();
         $this->assertFalse($lesson->refresh()->hasMedia('video'));
         $this->assertNull($lesson->duration_minutes);
         $this->assertSame(3, $lesson->audio_duration_seconds);
 
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->mountAction($edit)
-            ->set('mountedActions.0.data.audio', [])
+        Livewire::test(EditCourseLesson::class, $edit)
+            ->set('data.audio', [])
             ->fillForm(['audio' => UploadedFile::fake()->createWithContent('replacement.wav', $audio(7))->mimeType('audio/wav')])
-            ->callMountedAction()
-            ->assertHasNoActionErrors();
+            ->call('save')
+            ->assertHasNoFormErrors();
         $this->assertCount(1, $lesson->refresh()->getMedia('audio'));
         $this->assertSame(7, $lesson->audio_duration_seconds);
 
-        Livewire::test(LessonsRelationManager::class, $owner)
-            ->callAction($edit, data: ['audio' => null])
-            ->assertHasNoActionErrors();
+        Livewire::test(EditCourseLesson::class, $edit)
+            ->fillForm(['audio' => null])->call('save')
+            ->assertHasNoFormErrors();
         $this->assertFalse($lesson->refresh()->hasMedia('audio'));
         $this->assertNull($lesson->audio_duration_seconds);
     }

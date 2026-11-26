@@ -4,7 +4,6 @@ namespace Modules\Course\Filament\Resources\Courses\Pages;
 
 use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Locked;
@@ -53,9 +52,7 @@ class CreateCourseLesson extends CreateRecord
 
     public function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('اطلاعات درس')->columns(2)->columnSpanFull()->schema(CourseLessonForm::fields($this->ownerCourse)),
-        ]);
+        return CourseLessonForm::configure($schema, $this->ownerCourse);
     }
 
     protected function handleRecordCreation(array $data): CourseLesson

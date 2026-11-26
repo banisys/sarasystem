@@ -8,7 +8,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
@@ -22,8 +23,14 @@ use Nwidart\Modules\Facades\Module;
 
 class CourseLessonForm
 {
-    /** @return list<Component> */
-    public static function fields(Course $course): array
+    public static function configure(Schema $schema, Course $course): Schema
+    {
+        return $schema->components([
+            Section::make('اطلاعات درس')->columns(2)->columnSpanFull()->schema(self::fields($course)),
+        ]);
+    }
+
+    private static function fields(Course $course): array
     {
         $inCourse = fn (Builder $query): Builder => $query->where('course_id', $course->getKey());
 

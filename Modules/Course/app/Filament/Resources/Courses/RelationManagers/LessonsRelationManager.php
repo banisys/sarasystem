@@ -5,14 +5,13 @@ namespace Modules\Course\Filament\Resources\Courses\RelationManagers;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseLessons;
-use Modules\Course\Filament\Resources\Courses\Schemas\CourseLessonForm;
+use Modules\Course\Models\CourseLesson;
 
 class LessonsRelationManager extends CourseRelationManager
 {
@@ -21,11 +20,6 @@ class LessonsRelationManager extends CourseRelationManager
     protected static ?string $title = 'درس‌ها';
 
     protected static ?string $modelLabel = 'درس';
-
-    public function form(Schema $schema): Schema
-    {
-        return $schema->components(CourseLessonForm::fields($this->course()));
-    }
 
     public function table(Table $table): Table
     {
@@ -46,7 +40,11 @@ class LessonsRelationManager extends CourseRelationManager
                 ? fn (): View => view('filament.admin.course-page-actions', ['actions' => $table->getHeaderActions()])
                 : null)
             ->recordActions([
-                EditAction::make()->databaseTransaction(),
+                EditAction::make()
+                    ->url(fn (CourseLesson $record): string => CourseResource::getUrl('edit-lesson', [
+                        'course' => $this->course(),
+                        'record' => $record,
+                    ])),
                 DeleteAction::make(),
             ]);
     }

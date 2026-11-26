@@ -18,4 +18,4 @@ Staff open «ایجاد درس» from a course's lessons list. The lesson form i
 
 ## Consequences
 
-The page uses the course update permission and validates that the selected section belongs to the course. Creation and editing share the lesson form. The create page wraps the fields in a card and «متن درس» uses the [shared rich editor](0153-rich-course-lesson-text.md).
+The page uses the course update permission and validates that the selected section belongs to the course. Creation and [editing](0159-course-lesson-edit-page.md) share the same form card and «متن درس» uses the [shared rich editor](0153-rich-course-lesson-text.md).

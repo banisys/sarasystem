@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\URL;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourse;
 use Modules\Course\Filament\Resources\Courses\Pages\CreateCourseLesson;
 use Modules\Course\Filament\Resources\Courses\Pages\EditCourse;
+use Modules\Course\Filament\Resources\Courses\Pages\EditCourseLesson;
 use Modules\Course\Filament\Resources\Courses\Pages\ListCourses;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseLessons;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseParticipants;
@@ -118,6 +119,7 @@ class CourseResource extends Resource implements IndependentOfTenant
             'sections' => ManageCourseSections::route('/{record}/sections'),
             'lessons' => ManageCourseLessons::route('/{record}/lessons'),
             'create-lesson' => CreateCourseLesson::route('/{course}/lessons/create'),
+            'edit-lesson' => EditCourseLesson::route('/{course}/lessons/{record}/edit'),
             'legacy-activities' => new PageRegistration(
                 page: ManageCourseLessons::class,
                 route: fn (Panel $panel): RoutingRoute => Route::get(
