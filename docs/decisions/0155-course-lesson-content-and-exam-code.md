@@ -16,7 +16,7 @@ A self-paced lesson may combine text, a video, handouts and an exam. Previously,
 
 The exam-copying part of this decision was superseded by [ADR 0160](0160-link-original-lesson-exam.md).
 
-Remove the type. Each lesson supports rich text, one private video, up to five private files and one exam attachment by code. An authorized editor can enter the code of an independent exam from the selected branch or primary branch where they have permission to view exams. The form copies its settings, questions or bank selections to the lesson's existing exam context. The copy receives its own code and attempts. The lesson row still opens exam management. The exam field is available when Exam is enabled.
+Remove the type. Each lesson supports rich text, one private video, up to five private files and one exam attachment by code. An authorized editor can enter the code of an independent exam from the selected branch or primary branch where they have permission to view exams. The form copies its settings, questions or bank selections to the lesson's existing exam context. The copy receives its own code and attempts. The exam field is available when Exam is enabled.
 
 ## Consequences
 

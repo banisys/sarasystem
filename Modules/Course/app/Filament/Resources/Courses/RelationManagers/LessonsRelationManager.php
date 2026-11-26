@@ -13,8 +13,6 @@ use Illuminate\Contracts\View\View;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseLessons;
 use Modules\Course\Filament\Resources\Courses\Schemas\CourseLessonForm;
-use Modules\Course\Integrations\CourseExamSource;
-use Nwidart\Modules\Facades\Module;
 
 class LessonsRelationManager extends CourseRelationManager
 {
@@ -48,9 +46,6 @@ class LessonsRelationManager extends CourseRelationManager
                 ? fn (): View => view('filament.admin.course-page-actions', ['actions' => $table->getHeaderActions()])
                 : null)
             ->recordActions([
-                ...(Module::isEnabled('Exam') ? [
-                    Action::make('exams')->label('آزمون درس')->url(CourseExamSource::managementUrl(...)),
-                ] : []),
                 EditAction::make()->databaseTransaction(),
                 DeleteAction::make(),
             ]);

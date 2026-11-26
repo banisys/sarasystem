@@ -20,7 +20,7 @@ Each course can have an optional primary catalog category and additional categor
 
 Lessons can contain text, one private MP4 or WebM video, [one private audio file](0157-course-lesson-audio.md), and up to five downloadable attachments ([ADR 0155](0155-course-lesson-content-and-exam-code.md)). The application's file action checks lesson access for every download and video request. Lesson video and attachment fields limit uploads to 12 MiB per file. Published courses have public URLs under `/courses` and `/{branch}/courses`. Opening a course in the user panel selects its branch only for a user authorized to enter it.
 
-When Exam is enabled, its context contract exposes lesson exams. Authorized course editors [link an existing exam by code](0160-link-original-lesson-exam.md). The lesson row opens the exam management tools. Active enrollees can take published lesson exams through the existing Exam flow, including practice, grading and results. The exam keeps its availability settings and per-attempt duration. The course and lesson remain usable with Exam disabled.
+When Exam is enabled, its context contract exposes lesson exams. Authorized course editors [link an existing exam by code](0160-link-original-lesson-exam.md). Active enrollees can take published lesson exams through the existing Exam flow, including practice, grading and results. The exam keeps its availability settings and per-attempt duration. The course and lesson remain usable with Exam disabled.
 
 ## Consequences
 

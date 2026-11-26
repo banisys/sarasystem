@@ -179,9 +179,4 @@ class CourseExamSource implements SharedExamContextSource
 
         return $existing === null ? Tenant::primary() : Tenant::find($existing);
     }
-
-    public static function managementUrl(CourseLesson $lesson): string
-    {
-        return app(ExamContexts::class)->url(self::TYPE, $lesson->getKey());
-    }
 }
