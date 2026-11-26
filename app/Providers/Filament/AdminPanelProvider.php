@@ -32,7 +32,6 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Support\Colors\Color;
-use Filament\Support\Enums\Width;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
@@ -52,6 +51,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 use Nwidart\Modules\Facades\Module;
@@ -96,6 +96,7 @@ class AdminPanelProvider extends PanelProvider
             // The bell: e.g. a case reaching someone's cartable (ADR 0016).
             ->databaseNotifications()
             ->sidebarCollapsibleOnDesktop()
+            ->renderHook(PanelsRenderHook::SIDEBAR_START, fn (): HtmlString => new HtmlString('<div id="sara-sidebar-filter-panels"></div>'))
             // Search box (with history and collapse-all) at the top of the sidebar menu.
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_START, fn (): View => view('filament.admin.sidebar-nav-search'))
             // "Back to my account" bar while impersonating a user (ADR 0008).
@@ -211,15 +212,25 @@ class AdminPanelProvider extends PanelProvider
         $this->app->bind(Table::class, PanelTable::class);
 
         // No search box (text lookups are filters, see TextFilter; a table
-        // can opt back in with ->searchable()). Filters in a dropdown beside
-        // the column manager (any AboveContent* layout puts the trigger on its
-        // own row), 25 rows per page, and highest record ID first for model-backed tables.
+        // can opt back in with ->searchable()). Filters open over the sidebar.
+        // Use 25 rows per page and highest record ID first for model-backed tables.
         Table::configureUsing(fn (Table $table) => $table
             ->searchable(false)
-            ->filtersLayout(FiltersLayout::Dropdown)
-            ->filtersFormColumns(['sm' => 2, 'lg' => 3, 'xl' => 4])
-            ->filtersFormWidth(Width::SixExtraLarge)
-            ->filtersFormMaxHeight('32rem')
+            ->filtersLayout(FiltersLayout::BeforeContentCollapsible)
+            ->filtersTriggerAction(fn (Action $action): Action => $action->extraAttributes(fn (): array => $action->getTable()?->getFiltersLayout() === FiltersLayout::BeforeContentCollapsible ? [
+                'x-bind:aria-expanded' => 'areFiltersOpen',
+                'aria-controls' => 'sara-sidebar-filter-panels',
+                'x-on:click.stop' => <<<'JS'
+                    if (areFiltersOpen) {
+                        areFiltersOpen = false
+                        if ($store.sidebar.isOpenMobile) $store.sidebar.close()
+                    } else {
+                        $dispatch('sara-close-table-filters')
+                        $store.sidebar.open($el)
+                        areFiltersOpen = true
+                    }
+                    JS,
+            ] : [], merge: true))
             ->defaultPaginationPageOption(25)
             ->paginationPageOptions([10, 25, 50, 100])
             ->defaultSort(fn (Builder $query): Builder => $query->orderByDesc($query->getModel()->getQualifiedKeyName()), 'desc'));

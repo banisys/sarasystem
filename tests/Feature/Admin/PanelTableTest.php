@@ -223,7 +223,7 @@ class PanelTableTest extends TestCase
 
         $table = Livewire::test(ListUsers::class)->instance()->getTable();
 
-        $this->assertSame(FiltersLayout::Dropdown, $table->getFiltersLayout());
+        $this->assertSame(FiltersLayout::BeforeContentCollapsible, $table->getFiltersLayout());
         $this->assertSame(25, $table->getDefaultPaginationPageOption());
     }
 

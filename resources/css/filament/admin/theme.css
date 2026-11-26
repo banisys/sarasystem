@@ -106,6 +106,44 @@ html:not(.dark) .fi-sidebar {
     column-gap: 2rem;
 }
 
+/* The active filter form occupies the sidebar while its fields scroll independently. */
+.fi-ta-filters-before-content-ctn:has(> template[x-teleport="#sara-sidebar-filter-panels"]) {
+    display: none;
+}
+
+.fi-main-sidebar:has(.sara-sidebar-filters[data-open="true"]) > :not(#sara-sidebar-filter-panels) {
+    visibility: hidden;
+}
+
+.sara-sidebar-filters {
+    @apply absolute inset-0 z-10 bg-white dark:bg-gray-900;
+
+    & .sara-sidebar-filter-form {
+        @apply grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto];
+
+        & .fi-ta-filters-header,
+        & .fi-ta-filters-actions-ctn {
+            @apply flex items-center gap-3 border-gray-950/10 px-4 py-3 dark:border-white/10;
+        }
+
+        & .fi-ta-filters-header {
+            @apply justify-between border-b;
+        }
+
+        & .fi-ta-filters-heading {
+            @apply text-base font-semibold;
+        }
+
+        & .sara-sidebar-filter-fields {
+            @apply min-h-0 overflow-y-auto overscroll-contain px-4 py-4;
+        }
+
+        & .fi-ta-filters-actions-ctn {
+            @apply border-t;
+        }
+    }
+}
+
 /* Collapsible table filters open below their trigger, so opening and closing
    is one click on the same spot (Filament renders the form before the button). */
 .fi-ta-filters-above-content-ctn .fi-ta-filters-trigger-action-ctn {

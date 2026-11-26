@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-26 — Moved admin table filters into the navigation sidebar, with automatic expansion and a fixed Apply button ([ADR 0148](decisions/0148-admin-sidebar-table-filters.md)). Verified filtering, reset, sidebar expansion, and the fixed footer on a short mobile viewport. All 881 tests, Pint, and the Vite build passed.
 - 2026-11-26 — Added plus icons to list heading create buttons and reduced the gap below list headers.
 - 2026-11-26 — Moved the enrollment menu beside the course participants page title.
 - 2026-11-26 — Styled admin page and table header buttons with neutral glass backgrounds in both themes.
