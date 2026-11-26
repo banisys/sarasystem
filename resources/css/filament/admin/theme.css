@@ -17,6 +17,11 @@ html[dir='ltr'] .fi-hierarchy-path-separator {
     rotate: 180deg;
 }
 
+.fi-input-wrp,
+.fi-fo-file-upload .filepond--root:not([data-style-panel-layout='compact circle']) {
+    @apply rounded-md;
+}
+
 /* Lists and other pages with content tables use all space beside the sidebar. */
 .fi-main:has(.fi-page-content .fi-ta) {
     max-width: none;

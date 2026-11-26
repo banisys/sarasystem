@@ -12,7 +12,7 @@
             state: $wire.{{ $applyStateBindingModifiers('$entangle('.\Illuminate\Support\Js::from($statePath).')') }},
             paths: @js((object) $paths),
             multiple: @js($isMultiple()),
-            collapsed: Object.create(null),
+            expanded: Object.create(null),
             visible: null,
             get selected() {
                 const values = this.multiple ? this.state : [this.state]

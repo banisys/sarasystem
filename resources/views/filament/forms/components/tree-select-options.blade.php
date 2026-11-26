@@ -7,12 +7,12 @@
                     <button
                         type="button"
                         aria-label="باز یا بسته کردن زیرشاخه‌های {{ $node['label'] }}"
-                        x-bind:aria-expanded="(visible !== null || !collapsed[@js($value)]).toString()"
+                        x-bind:aria-expanded="(visible !== null || Boolean(expanded[@js($value)])).toString()"
                         x-bind:disabled="visible !== null"
-                        x-on:click="collapsed[@js($value)] = !collapsed[@js($value)]"
+                        x-on:click="expanded[@js($value)] = !expanded[@js($value)]"
                         class="mt-0.5 grid size-7 shrink-0 place-items-center rounded text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-primary-500 dark:text-gray-400 dark:hover:bg-white/10"
                     >
-                        <span x-bind:class="{ '-rotate-90 rtl:rotate-90': visible === null && collapsed[@js($value)] }">
+                        <span x-bind:class="{ '-rotate-90 rtl:rotate-90': visible === null && !expanded[@js($value)] }">
                             <x-filament::icon icon="heroicon-o-chevron-down" class="size-4" />
                         </span>
                     </button>
@@ -27,14 +27,14 @@
                         value="{{ $value }}"
                         x-bind:checked="selected.includes($el.value)"
                         x-on:change="select($event.target.value, $event.target.checked)"
-                        class="mt-0.5 size-4 shrink-0 accent-primary-600 focus:ring-primary-500"
+                        class="mt-0.5 shrink-0 accent-primary-600 focus:ring-primary-500 {{ $multiple ? 'size-3' : 'size-4' }}"
                     />
                     <span class="min-w-0 wrap-anywhere">{{ $node['label'] }}</span>
                 </label>
             </div>
 
             @if (! empty($node['children']))
-                <div x-show="visible !== null || !collapsed[@js($value)]" class="ms-4 border-s border-gray-200 ps-1 dark:border-white/10">
+                <div x-show="visible !== null || expanded[@js($value)]" class="ms-4 border-s border-gray-200 ps-1 dark:border-white/10">
                     @include('filament.forms.components.tree-select-options', ['nodes' => $node['children'], 'fieldId' => $fieldId, 'multiple' => $multiple])
                 </div>
             @endif

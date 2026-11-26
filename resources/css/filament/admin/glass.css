@@ -40,6 +40,7 @@ html.dark {
     --gray-900: oklch(20.8% 0.042 265.755);
     --gray-950: oklch(12.9% 0.042 264.695);
 
+    --glass-backdrop-color: #1b2536;
     --glass-pane: rgb(15 23 42 / 0.42);
     --glass-bar: rgb(10 16 30 / 0.55);
     --glass-float: rgb(17 25 44 / 0.88);
@@ -57,8 +58,18 @@ html.dark {
 
 /* The backdrop: soft color fields like Glazzed's blurred photo, fixed. */
 html.dark body.fi-body {
-    background-color: #1b2536;
+    background-color: var(--glass-backdrop-color);
     background-image: var(--glass-backdrop);
+    background-attachment: fixed;
+}
+
+/* Recreate the input tint over a glass pane without showing the form below. */
+html.dark .fi-fo-rich-editor [data-rich-editor-key]:has(> .fi-fo-rich-editor-toolbar [data-rich-editor-tool='fullscreen'][aria-pressed='true']) {
+    background-color: var(--glass-backdrop-color);
+    background-image:
+        linear-gradient(rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.05)),
+        linear-gradient(var(--glass-pane), var(--glass-pane)),
+        var(--glass-backdrop);
     background-attachment: fixed;
 }
 
