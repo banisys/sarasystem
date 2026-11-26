@@ -258,6 +258,8 @@ _(TODO: e.g. online classes (legacy: Adobe Connect), SMS, payment gateway.)_
 | `pgsql` | `postgres:18-alpine` | `FORWARD_DB_PORT` 5432 | DB `sarasystem`, user `sail` by default; data in volume `sail-pgsql`; `max_locks_per_transaction=256` for parallel tests ([ADR 0059](decisions/0059-running-tests.md)) |
 | `adminer` | `adminer:latest` | `FORWARD_ADMINER_PORT` 8081 | DB web UI (phpMyAdmin is MySQL-only). Log in with system *PostgreSQL*, server `pgsql`, user/password from `.env` |
 
+[Course introduction videos](decisions/0150-course-intro-video-upload-limit.md) use Livewire’s 100 MiB temporary upload ceiling. Sail reads its PHP request limits from [uploads.ini](../docker/php/uploads.ini).
+
 `.env` (from `.env.example`) sets `DB_CONNECTION=pgsql` with `DB_HOST=pgsql`, `APP_LOCALE=fa`, `APP_FAKER_LOCALE=fa_IR` and the compose ports. The app timezone is `Asia/Tehran` (`config/app.php`), so dates and scheduled times are Tehran time.
 
 The ports are chosen so they don't clash with LMS (80, 5173, 3306, 8080; Adminer uses 8081), and both projects can run together. Defaults can be overridden in `.env`.

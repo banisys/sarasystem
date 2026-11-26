@@ -50,10 +50,10 @@ class CourseForm
             Section::make('رسانه')->columns(2)->columnSpanFull()->schema([
                 self::imageUpload('cover_image', 'تصویر کاور'),
                 self::imageUpload('video_cover', 'کاور ویدیو'),
-                FileUpload::make('intro_video')->label('ویدیوی معرفی')
+                FileUpload::make('intro_video')->label('ویدیوی معرفی')->helperText('حداکثر حجم ویدیو ۱۰۰ مگابایت است.')
                     ->acceptedFileTypes(['video/mp4', 'video/webm'])
                     ->disk('local')->directory('courses/intros')->visibility('private')
-                    ->preventFilePathTampering()->maxSize(12288)->openable()->columnSpanFull(),
+                    ->preventFilePathTampering()->maxSize(102400)->openable()->columnSpanFull(),
                 self::imageUpload('gallery_images', 'گالری تصاویر')->multiple()->reorderable()->columnSpanFull(),
             ]),
             Section::make('زمان‌بندی')->columns(2)->columnSpanFull()->schema([

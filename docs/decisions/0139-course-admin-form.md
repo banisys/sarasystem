@@ -18,7 +18,7 @@ Creation and editing use the same four sections for general information, media, 
 
 The first selected category remains the primary category, and a branch-scoped join table stores additional selections. The catalog filter matches any assignment, and category counts include all direct assignments. Categories are optional so installations without a taxonomy can create courses. The create form saves initial instructor assignments in the same database transaction as the course. Instructors remain editable in their existing tab, and new assignments use the same branch membership and active-profile checks.
 
-The editable rich description is stored as sanitized HTML. The existing reader views use a full plain-text version. Course cover, video cover, introductory video and ordered gallery are stored privately for staff editing, with the existing 12 MiB upload limit per file. The course uses the existing enrollment flow. Type, capacity, Jalali dates and prepayment are administrative fields. The dates are checked for order, and the prepayment amount is required when enabled.
+The editable rich description is stored as sanitized HTML. The existing reader views use a full plain-text version. Course cover, video cover, introductory video and ordered gallery are stored privately for staff editing, with a 100 MiB limit for introductory videos and a 12 MiB limit per image. The course uses the existing enrollment flow. Type, capacity, Jalali dates and prepayment are administrative fields. The dates are checked for order, and the prepayment amount is required when enabled.
 
 ## Consequences
 

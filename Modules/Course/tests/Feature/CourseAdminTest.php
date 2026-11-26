@@ -10,6 +10,7 @@ use Filament\Schemas\Components\Callout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
 use Modules\Course\Enums\CourseLessonType;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
@@ -330,6 +331,30 @@ class CourseAdminTest extends TestCase
 
         Livewire::test(EditCourse::class, ['record' => $course->id])->call('save')->assertHasNoFormErrors();
         $this->assertSame($course->gallery_images, $course->refresh()->gallery_images);
+    }
+
+    public function test_course_introduction_accepts_a_100_megabyte_video(): void
+    {
+        Storage::fake('local');
+        Storage::fake('tmp-for-tests');
+        $tenant = Tenant::factory()->create();
+        $this->actAsEducationOfficer($tenant);
+        $course = Course::factory()->create();
+        $video = UploadedFile::fake()->create('intro.mp4', 102400, 'video/mp4');
+        $tooLarge = UploadedFile::fake()->create('large.mp4', 102401, 'video/mp4');
+        $uploadUrl = URL::temporarySignedRoute('livewire.upload-file', now()->addMinutes(5), absolute: false);
+
+        $this->post($uploadUrl, ['files' => [$video]], ['Accept' => 'application/json'])
+            ->assertOk()->assertJsonCount(1, 'paths');
+        $this->post($uploadUrl, ['files' => [$tooLarge]], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors('files.0');
+
+        Livewire::test(EditCourse::class, ['record' => $course->id])
+            ->fillForm(['intro_video' => $video])
+            ->call('save')->assertHasNoFormErrors();
+
+        $this->assertStringStartsWith('courses/intros/', $course->refresh()->intro_video);
+        Storage::disk('local')->assertExists($course->intro_video);
     }
 
     private function actAsEducationOfficer(Tenant $tenant): void
