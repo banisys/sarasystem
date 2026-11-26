@@ -12,7 +12,7 @@ use Modules\Course\Models\CourseLesson;
 use Modules\Course\Support\CoursePermissions;
 use Modules\Exam\Interfaces\SharedExamContextSource;
 use Modules\Exam\Models\Exam;
-use Modules\Exam\Models\ExamSection;
+use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Support\ExamContext;
 use Modules\Exam\Support\ExamContexts;
 
@@ -20,7 +20,9 @@ class CourseExamSource implements SharedExamContextSource
 {
     public const string TYPE = 'course-lesson';
 
-    public const string INVALID_CODE = 'آزمون مستقلی با این کد در دسترس نیست.';
+    private const string INVALID_CODE = 'آزمون مستقلی با این کد که مجوز ویرایش آن را داشته باشید در دسترس نیست.';
+
+    private const string EXAM_IN_USE = 'این آزمون شرکت‌کننده یا سابقهٔ شرکت دارد و نمی‌توان آن را به درس متصل کرد.';
 
     public function tenantForVisit(int $id, User $user): ?Tenant
     {
@@ -81,7 +83,12 @@ class CourseExamSource implements SharedExamContextSource
             ->all();
     }
 
-    public static function sourceExam(string $code): ?Exam
+    public static function codeError(string $code): ?string
+    {
+        return self::sourceError(self::sourceExam($code));
+    }
+
+    private static function sourceExam(string $code, bool $lock = false): ?Exam
     {
         $actor = auth()->user();
         if (! $actor instanceof User) {
@@ -89,12 +96,26 @@ class CourseExamSource implements SharedExamContextSource
         }
 
         $tenantIds = array_filter([
-            $actor->can('View:Exam') ? Tenant::current()?->getKey() : null,
-            CoursePermissions::allows($actor, 'View:Exam') ? Tenant::primary()?->getKey() : null,
+            $actor->can('Update:Exam') ? Tenant::current()?->getKey() : null,
+            CoursePermissions::allows($actor, 'Update:Exam') ? Tenant::primary()?->getKey() : null,
         ]);
 
-        return Exam::withoutTenantScope()->whereIn('tenant_id', $tenantIds)
-            ->whereNull('context_type')->where('code', $code)->first();
+        $query = Exam::withoutTenantScope()->whereIn('tenant_id', $tenantIds)
+            ->whereNull('context_type')->where('code', $code);
+
+        return ($lock ? $query->lockForUpdate() : $query)->first();
+    }
+
+    private static function sourceError(?Exam $exam): ?string
+    {
+        if ($exam === null) {
+            return self::INVALID_CODE;
+        }
+
+        return ExamAttempt::withoutTenantScope()->whereBelongsTo($exam)->exists()
+            || $exam->participantUsers()->exists() || $exam->participantRoles()->exists()
+            ? self::EXAM_IN_USE
+            : null;
     }
 
     public static function linkedCode(CourseLesson $lesson): ?string
@@ -108,8 +129,8 @@ class CourseExamSource implements SharedExamContextSource
     {
         Gate::authorize('update', $lesson->course);
 
-        // The form transaction covers the lesson and the copied exam. The row lock
-        // serializes attachments from concurrent edits of the same lesson.
+        // Both rows are locked in the lesson form's transaction so concurrent saves
+        // cannot attach two exams to a lesson or assign one exam to two lessons.
         CourseLesson::query()->whereKey($lesson->getKey())->lockForUpdate()->firstOrFail();
 
         if (($linkedCode = self::linkedCode($lesson)) !== null) {
@@ -120,22 +141,19 @@ class CourseExamSource implements SharedExamContextSource
             return;
         }
 
-        $source = self::sourceExam($code);
+        $source = self::sourceExam($code, lock: true);
         if ($source === null) {
             throw ValidationException::withMessages([$errorField => self::INVALID_CODE]);
         }
 
-        $exam = $source->replicate(['code', 'source_exam_code', 'user_panel_locked']);
-        $exam->forceFill([
+        if (($error = self::sourceError($source)) !== null) {
+            throw ValidationException::withMessages([$errorField => $error]);
+        }
+
+        $source->forceFill([
             'context_type' => self::TYPE,
             'context_id' => $lesson->getKey(),
-            'assigned_by_id' => auth()->id(),
-            'source_exam_code' => $code,
         ])->save();
-
-        $exam->sections()->createMany($source->sections()->get()->map(
-            fn (ExamSection $section): array => $section->only('question_bank_id', 'question_count', 'question_ids', 'sort'),
-        ));
     }
 
     private static function lessonExams(int $lesson): Builder

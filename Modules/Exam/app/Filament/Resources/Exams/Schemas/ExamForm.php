@@ -235,7 +235,7 @@ class ExamForm
                     ->compact($forStandaloneCreation)
                     ->columnSpan($forStandaloneCreation ? 'full' : 1)
                     ->hidden($forSession)
-                    ->description(fn (?Exam $record): string => $record?->context_type !== null ? 'شرکت‌کنندگان این آزمون از عضویت در جلسه تعیین می‌شوند؛ انتخاب کاربر یا نقش این‌جا کاربرد ندارد.' : 'آزمون را این کاربران و دارندگان این نقش‌ها (در همین '.config('sarasystem.tenant_label').') می‌بینند.')
+                    ->description(fn (?Exam $record): string => $record?->context_type !== null ? 'شرکت‌کنندگان این آزمون بر اساس عضویت در دوره یا جلسهٔ مرتبط تعیین می‌شوند.' : 'آزمون را این کاربران و دارندگان این نقش‌ها (در همین '.config('sarasystem.tenant_label').') می‌بینند.')
                     ->columns(2)
                     ->schema([
                         Select::make('participantUsers')

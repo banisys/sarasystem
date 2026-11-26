@@ -42,14 +42,17 @@ class CourseLessonForm
             ...(Module::isEnabled('Exam') ? [
                 TextInput::make('exam_code')->label('کد آزمون')->trim()->maxLength(64)
                     ->extraInputAttributes(['dir' => 'ltr'])
-                    ->helperText('کد یک آزمون مستقل از شعبهٔ فعلی یا شعبهٔ اصلی را وارد کنید.')
+                    ->helperText('کد یک آزمون مستقل از شعبهٔ فعلی یا اصلی را وارد کنید. پس از اتصال، ثبت‌نام دوره دسترسی به آزمون را تعیین می‌کند.')
                     ->formatStateUsing(fn (?CourseLesson $record): ?string => $record?->exists ? CourseExamSource::linkedCode($record) : null)
                     ->readOnly(fn (?CourseLesson $record): bool => $record?->exists && CourseExamSource::linkedCode($record) !== null)
                     ->dehydrated(false)
                     ->rule(fn (?CourseLesson $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
-                        if (filled($value) && $value !== ($record?->exists ? CourseExamSource::linkedCode($record) : null)
-                            && CourseExamSource::sourceExam((string) $value) === null) {
-                            $fail(CourseExamSource::INVALID_CODE);
+                        if (blank($value) || ($record?->exists && $value === CourseExamSource::linkedCode($record))) {
+                            return;
+                        }
+
+                        if (($error = CourseExamSource::codeError((string) $value)) !== null) {
+                            $fail($error);
                         }
                     })
                     ->saveRelationshipsUsing(function (CourseLesson $record, ?string $state, TextInput $component): void {

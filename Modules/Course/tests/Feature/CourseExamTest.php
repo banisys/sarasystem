@@ -19,6 +19,7 @@ use Modules\Course\Models\CourseEnrollment;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
 use Modules\Exam\Models\Exam;
+use Modules\Exam\Models\ExamAttempt;
 use Modules\Exam\Models\Question;
 use Modules\Exam\Models\QuestionBank;
 use Nwidart\Modules\Facades\Module;
@@ -77,16 +78,19 @@ class CourseExamTest extends TestCase
         Livewire::test(LessonsRelationManager::class, ['ownerRecord' => $course, 'pageClass' => ManageCourseLessons::class])
             ->callAction(TestAction::make('edit')->table($lesson), data: ['exam_code' => $secondExam->code])
             ->assertHasActionErrors(['exam_code']);
+        Livewire::test(CreateCourseLesson::class, ['course' => $course->id])
+            ->fillForm(['title' => 'درس دوم', 'course_section_id' => $section->id, 'exam_code' => $sourceExam->code])
+            ->call('create')->assertHasFormErrors(['exam_code']);
+        $this->assertDatabaseCount('course_lessons', 1);
         $this->get($contextUrl)->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('context.host_label', 'درس')->where('context.can_create', false)->where('context.can_manage', true));
         $this->post(route('exams.context.store', $context))->assertForbidden();
 
         $exam = Exam::withoutTenantScope()->where('context_type', CourseExamSource::TYPE)->sole();
         $this->assertSame($examBranch->id, $exam->tenant_id);
-        $this->assertSame($sourceExam->code, $exam->source_exam_code);
-        $this->assertNotSame($sourceExam->code, $exam->code);
-        $this->assertNull($sourceExam->fresh()->context_type);
-        $this->assertSame($sourceExam->sections()->sole()->question_bank_id, $exam->sections()->sole()->question_bank_id);
+        $this->assertSame($sourceExam->id, $exam->id);
+        $this->assertSame($sourceExam->code, $exam->code);
+        $this->assertDatabaseCount('exams', 3);
         $this->assertNull($exam->starts_at);
         $this->assertNull($exam->ends_at);
         $this->assertFalse($exam->is_published);
@@ -117,6 +121,36 @@ class CourseExamTest extends TestCase
 
         $course->enrollments()->whereBelongsTo($learner, 'user')->sole()->update(['is_revoked' => true]);
         $this->get($examUrl)->assertNotFound();
+    }
+
+    public function test_lesson_attachment_preserves_standalone_exam_access_and_attempts(): void
+    {
+        if (! Module::isEnabled('Exam')) {
+            $this->markTestSkipped('Exam is disabled.');
+        }
+
+        $primary = Tenant::factory()->create(['is_primary' => true]);
+        $branch = Tenant::factory()->create();
+        $officer = User::factory()->create();
+        app(DefaultRoles::class)->install();
+        $this->grantRole($officer, $primary, DefaultRoles::EDUCATION_OFFICER);
+        $this->grantRole($officer, $branch, DefaultRoles::EDUCATION_OFFICER);
+        $course = Course::factory()->create();
+        $section = CourseSection::factory()->for($course)->create();
+        $assignedExam = Exam::factory()->for($primary)->create();
+        $assignedExam->participantUsers()->attach(User::factory()->create());
+        $attemptedExam = Exam::factory()->for($primary)->create();
+        ExamAttempt::factory()->for($attemptedExam)->create();
+
+        $this->actingInPanel($officer, $branch);
+        Livewire::test(CreateCourseLesson::class, ['course' => $course->id])
+            ->fillForm(['title' => 'درس آموزشی', 'course_section_id' => $section->id, 'exam_code' => $assignedExam->code])
+            ->call('create')->assertHasFormErrors(['exam_code'])
+            ->fillForm(['exam_code' => $attemptedExam->code])
+            ->call('create')->assertHasFormErrors(['exam_code']);
+
+        $this->assertDatabaseCount('course_lessons', 0);
+        $this->assertDatabaseCount('exams', 2);
     }
 
     public function test_preexisting_lesson_exams_keep_working_after_their_original_branch_closes(): void

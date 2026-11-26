@@ -15,6 +15,12 @@ class EditExam extends EditRecord
 
     protected ?bool $hasDatabaseTransactions = true;
 
+    protected function beforeValidate(): void
+    {
+        // Attaching an exam to a lesson can change which participant fields are editable.
+        $this->getRecord()->refreshForUpdate();
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         unset($data['is_practice']);
