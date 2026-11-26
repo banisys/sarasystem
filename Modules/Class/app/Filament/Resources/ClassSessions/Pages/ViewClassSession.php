@@ -12,6 +12,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Size;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Filament\Actions\SessionActions;
@@ -54,14 +55,19 @@ class ViewClassSession extends ViewRecord
 
     public function getTitle(): string
     {
-        return $this->getHeading().' · '.SessionActions::when($this->session());
+        return $this->sessionHeading().' · '.SessionActions::when($this->session());
     }
 
     /**
      * The session title or subject: the time is in the page's first section, and stays
      * in the browser tab's title to tell open sessions apart.
      */
-    public function getHeading(): string
+    public function getHeading(): string|Htmlable
+    {
+        return $this->sessionHeading();
+    }
+
+    protected function sessionHeading(): string
     {
         return $this->session()->title ?? $this->session()->subject?->title ?? 'جلسه';
     }

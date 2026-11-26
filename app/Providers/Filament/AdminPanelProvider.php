@@ -10,6 +10,7 @@ use App\Http\Middleware\MakeFilamentTenantCurrent;
 use App\Models\Tenant;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Forms\Components\Builder as FormBuilder;
@@ -27,6 +28,7 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Support\Colors\Color;
@@ -173,6 +175,7 @@ class AdminPanelProvider extends PanelProvider
                 'آموزش سامانه' => Heroicon::OutlinedAcademicCap,
                 'آزمون' => Heroicon::OutlinedClipboardDocument,
                 'پیش‌ثبت‌نام' => Heroicon::OutlinedUserPlus,
+                'دوره‌های خودآموز' => Heroicon::OutlinedPlayCircle,
                 'قراردادها' => Heroicon::OutlinedDocumentDuplicate,
                 'کارتابل' => Heroicon::OutlinedInboxStack,
                 'کارکنان' => Heroicon::OutlinedIdentification,
@@ -197,6 +200,12 @@ class AdminPanelProvider extends PanelProvider
         Form::configureUsing(fn (Form $form) => $form->extraAttributes(['novalidate' => true], merge: true));
         Step::configureUsing(fn (Step $step) => $step->extraAttributes(['novalidate' => true], merge: true));
         Action::configureUsing(fn (Action $action) => $action->extraModalWindowAttributes(['novalidate' => true], merge: true));
+
+        CreateAction::configureUsing(fn (CreateAction $action) => $action->icon(
+            fn (CreateAction $action): ?Heroicon => $action->getLivewire() instanceof ListRecords && $action->getTable() === null
+                ? Heroicon::OutlinedPlus
+                : null,
+        ));
 
         // Row actions in a dropdown in the first column, no row click (PanelTable).
         $this->app->bind(Table::class, PanelTable::class);

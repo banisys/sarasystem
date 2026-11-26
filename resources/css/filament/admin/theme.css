@@ -76,6 +76,29 @@ html:not(.dark) .fi-sidebar {
     margin-bottom: 4rem;
 }
 
+.fi-resource-list-records-page > .fi-page-header-main-ctn,
+.fi-page-header-main-ctn:has(> .fi-page-main > .fi-page-content .fi-ta) {
+    @apply gap-y-4;
+}
+
+/* Neutral glass for page and table header actions, including dropdown triggers. */
+:is(
+    .fi-page-header-main-ctn:has(> .fi-page-main > .fi-page-content .fi-ta) > .fi-header > .fi-header-actions-ctn,
+    .fi-ta-header > .fi-ta-actions,
+    .fi-ta-header-toolbar > .fi-ta-actions
+) .fi-btn:not(.fi-dropdown-panel *, .fi-modal *, [aria-pressed], label) {
+    @apply bg-white/65 text-gray-950 ring-1 ring-gray-950/10 backdrop-blur-md dark:bg-white/5 dark:text-white dark:ring-white/20;
+
+    & > .fi-icon {
+        @apply text-gray-500 dark:text-gray-400;
+    }
+
+    &.fi-force-enabled,
+    &:not(.fi-disabled, [disabled]) {
+        @apply hover:bg-white/90 hover:text-gray-950 focus-visible:ring-gray-500/50 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-gray-400/60;
+    }
+}
+
 /* Table header toolbar: Filament packs search, the filter trigger and the
    column manager at gap-x-4, which reads as icons stuck together. Only the
    toolbar's own groups are widened, not the controls' internals. */

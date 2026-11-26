@@ -7,6 +7,8 @@ use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
 use Modules\Course\Models\Course;
 
@@ -31,6 +33,14 @@ abstract class ManageCourseContent extends Page
 
         return $course instanceof Course
             && CourseResource::canEdit($course);
+    }
+
+    public function getHeading(): Htmlable
+    {
+        return new HtmlString(view('filament.admin.page-heading', [
+            'title' => $this->getBreadcrumb(),
+            'context' => $this->getRecord()->title,
+        ])->render());
     }
 
     public function getTitle(): string

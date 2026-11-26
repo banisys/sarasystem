@@ -7,6 +7,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
 use Modules\Class\Filament\Resources\Classrooms\ClassroomResource;
 
 /**
@@ -37,6 +38,14 @@ abstract class ClassroomSectionPage extends ViewRecord
     public function content(Schema $schema): Schema
     {
         return $schema->components([$this->getRelationManagersContentComponent()]);
+    }
+
+    public function getHeading(): Htmlable
+    {
+        return new HtmlString(view('filament.admin.page-heading', [
+            'title' => static::sectionTitle(),
+            'context' => $this->getRecord()->title,
+        ])->render());
     }
 
     public function getTitle(): string|Htmlable

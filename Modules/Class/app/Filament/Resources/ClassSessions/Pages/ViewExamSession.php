@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Support\EmployeeDirectory;
 use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Modules\Class\Enums\SessionKind;
 use Modules\Class\Enums\SessionStatus;
 use Modules\Class\Filament\Actions\ExamScheduleActions;
@@ -24,7 +26,15 @@ class ViewExamSession extends ViewClassSession
         abort_unless($this->canReadSession() || $this->canReadPaper(), 403);
     }
 
-    public function getHeading(): string
+    public function getHeading(): Htmlable
+    {
+        return new HtmlString(view('filament.admin.page-heading', [
+            'title' => $this->pageLabel(),
+            'context' => $this->session()->title ?? $this->session()->subject?->title,
+        ])->render());
+    }
+
+    protected function sessionHeading(): string
     {
         $title = $this->session()->title ?? $this->session()->subject?->title;
 

@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\ClassRoster;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -22,6 +23,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
+use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseParticipants;
 use Modules\Course\Models\CourseEnrollmentSettings;
 use Modules\Course\Support\CourseRoleRoster;
 
@@ -60,14 +64,21 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
             IconColumn::make('is_revoked')->label('لغوشده')->boolean(),
         ])
             ->pluralModelLabel('ثبت‌نام‌ها')
-            ->headerActions([
+            ->headerActions(ActionGroup::make([
                 CreateAction::make()
-                    ->label(fn (): string => CourseEnrollmentSettings::current()->manual_name)
+                    ->label(fn (): string => (string) Str::of(CourseEnrollmentSettings::current()->manual_name)
+                        ->replace(['ثبت‌نام', 'ثبت نام'], '')->trim()->whenEmpty(fn () => 'دستی'))
                     ->visible(fn (): bool => CourseEnrollmentSettings::current()->manual_enabled)
                     ->before(fn () => abort_unless(CourseEnrollmentSettings::current()->manual_enabled, 403)),
                 $this->enrollFromRoleAction(app(CourseRoleRoster::class)),
                 ...(app()->bound(ClassRoster::class) ? [$this->enrollFromClassAction(app(ClassRoster::class))] : []),
             ])
+                ->label('ثبت‌نام در دوره')
+                ->icon(Heroicon::OutlinedUserPlus)
+                ->button())
+            ->header($this->getPageClass() === ManageCourseParticipants::class
+                ? fn (): View => view('filament.admin.course-participant-actions', ['actions' => $table->getHeaderActions()])
+                : null)
             ->recordActions([EditAction::make()]);
     }
 
@@ -78,7 +89,8 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
             && CourseEnrollmentSettings::current()->manual_enabled;
 
         return Action::make('enrollFromClass')
-            ->label('ثبت‌نام از کلاس')
+            ->label('از کلاس')
+            ->modalHeading('ثبت‌نام از کلاس')
             ->icon(Heroicon::OutlinedUserGroup)
             ->authorize($canEnroll)
             ->modalDescription(fn (): string => 'فراگیران فعلی کلاس در '.Tenant::current()?->name.' به دوره اضافه می‌شوند. ثبت‌نام‌های قبلی حفظ می‌شوند.')
@@ -110,7 +122,8 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
             && $rosters->tenantOptions(auth()->user()) !== [];
 
         return Action::make('enrollFromRole')
-            ->label('ثبت‌نام بر اساس نقش')
+            ->label('بر اساس نقش')
+            ->modalHeading('ثبت‌نام بر اساس نقش')
             ->icon(Heroicon::OutlinedIdentification)
             ->authorize($canEnroll)
             ->modalDescription('کاربرانی که نقش انتخابی را در محدودهٔ انتخاب‌شده دارند به دوره اضافه می‌شوند. ثبت‌نام‌های قبلی حفظ می‌شوند.')

@@ -56,7 +56,7 @@ class EnrollCourseFromClassTest extends TestCase
 
         Livewire::withoutLazyLoading();
         $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $branch))
-            ->assertOk()->assertSee('ثبت‌نام از کلاس');
+            ->assertOk()->assertSee(['ثبت‌نام در دوره', 'از کلاس']);
 
         $component = Livewire::test(EnrollmentsRelationManager::class, $this->owner($course));
         $action = TestAction::make('enrollFromClass')->table();
