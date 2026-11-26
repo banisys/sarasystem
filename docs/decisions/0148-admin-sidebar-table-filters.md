@@ -14,7 +14,7 @@ Admin table filter dropdowns overlap the list and can make the Apply button hard
 
 ## Decision
 
-Use the navigation sidebar for the default admin table filters. Expand the sidebar when the toolbar filter button is clicked. Only the filter fields scroll. Applying filters closes the panel, and closing on desktop exposes the navigation again.
+Use the navigation sidebar for the default admin table filters. Expand the sidebar when the toolbar filter button is clicked. Only the filter fields scroll. The full-width Apply button updates the table while the panel stays open. Closing the panel on desktop exposes the navigation again.
 
 ## Consequences
 

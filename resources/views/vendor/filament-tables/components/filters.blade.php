@@ -38,7 +38,6 @@
             x-on:sara-close-table-filters.window="areFiltersOpen = false"
             x-on:livewire:navigate.document="areFiltersOpen = false"
             x-on:keydown.escape.prevent.stop="closeFilters()"
-            x-on:click="if ($event.target.closest('[data-table-filter-action=apply]')) closeFilters()"
         >
 @endif
 

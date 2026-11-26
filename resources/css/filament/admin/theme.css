@@ -139,7 +139,7 @@ html:not(.dark) .fi-sidebar {
         }
 
         & .fi-ta-filters-actions-ctn {
-            @apply border-t;
+            @apply flex-col items-stretch border-t;
         }
     }
 }
@@ -161,6 +161,10 @@ html:not(.dark) .fi-sidebar {
    column is raised one layer above it; below lg the sidebar is an overlay and
    must stay on top. */
 @media (min-width: 64rem) {
+    .fi-main-sidebar:not(.fi-sidebar-open) {
+        display: none;
+    }
+
     .fi-main-ctn {
         position: relative;
         z-index: 21;
@@ -223,10 +227,6 @@ html:not(.dark) .fi-modal > .fi-modal-close-overlay {
 @media (min-width: 64rem) {
     .fi-layout:has(.fi-main-sidebar.fi-sidebar-open) {
         --modal-fullscreen-start: var(--sidebar-width);
-    }
-
-    .fi-layout:has(.fi-main-sidebar:not(.fi-sidebar-open)) {
-        --modal-fullscreen-start: var(--collapsed-sidebar-width);
     }
 }
 
