@@ -280,7 +280,7 @@ class ExamAdminTest extends TestCase
             ->call('create')->assertHasNoFormErrors();
 
         $exam = Exam::query()->sole();
-        $this->assertStringStartsWith('EXM-', $exam->code);
+        $this->assertMatchesRegularExpression('/\AEXM-[A-Z0-9]{8}\z/', $exam->code);
         $this->assertTrue($exam->is_practice);
         $practice = ExamAttempt::factory()->for($exam)->create();
         $graded = ExamAttempt::factory()->for(Exam::factory()->for($this->tenant))->create();

@@ -43,7 +43,7 @@ class Exam extends Model
     {
         static::saving(function (Exam $exam): void {
             if (blank($exam->code)) {
-                $exam->code = $exam->getOriginal('code') ?? 'EXM-'.str()->upper(str()->random(16));
+                $exam->code = $exam->getOriginal('code') ?? 'EXM-'.str()->upper(str()->random(8));
             }
         });
     }

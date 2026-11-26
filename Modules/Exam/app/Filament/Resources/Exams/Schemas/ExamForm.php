@@ -39,8 +39,8 @@ class ExamForm
         Schema $schema,
         bool $forSession = false,
         bool $formalSession = false,
-        bool $forStandaloneCreation = false,
     ): Schema {
+        $useAdminLayout = ! $forSession;
         $graded = fn (Get $get, ?Exam $record): bool => $formalSession || ! ($record?->is_practice ?? $get('is_practice'));
 
         $practice = Toggle::make('is_practice')
@@ -50,17 +50,17 @@ class ExamForm
             ->default(false)
             ->disabledOn('edit')
             ->live()
-            ->columnSpan($forStandaloneCreation ? 1 : 'full');
+            ->columnSpan($useAdminLayout ? 1 : 'full');
 
         $availability = [
             DateTimePicker::make('starts_at')
-                ->label($forStandaloneCreation ? 'شروع دسترسی' : 'از')
+                ->label($useAdminLayout ? 'شروع دسترسی' : 'از')
                 ->hidden($forSession)
-                ->helperText($forStandaloneCreation ? 'خالی بگذارید تا پس از انتشار در دسترس باشد.' : 'خالی: از همین حالا')
+                ->helperText($useAdminLayout ? 'خالی بگذارید تا پس از انتشار در دسترس باشد.' : 'خالی: از همین حالا')
                 ->jalali()
                 ->seconds(false),
             DateTimePicker::make('ends_at')
-                ->label($forStandaloneCreation ? 'پایان دسترسی' : 'تا')
+                ->label($useAdminLayout ? 'پایان دسترسی' : 'تا')
                 ->hidden($forSession)
                 ->helperText(fn (?Exam $record): string => $record?->allow_late_start
                     ? 'امکان شروع پس از پایان جلسه فعال است. این تاریخ فقط پس از غیرفعال کردن آن گزینه اعمال می‌شود.'
@@ -69,22 +69,22 @@ class ExamForm
                 ->seconds(false)
                 ->after('starts_at'),
             Toggle::make('is_published')
-                ->label($forStandaloneCreation ? 'انتشار آزمون' : 'منتشر شده')
+                ->label($useAdminLayout ? 'انتشار آزمون' : 'منتشر شده')
                 ->helperText('فقط آزمون منتشرشده به شرکت‌کنندگان نشان داده می‌شود.')
-                ->columnSpan($forStandaloneCreation ? 'full' : 1),
+                ->columnSpan($useAdminLayout ? 'full' : 1),
         ];
 
-        if ($forStandaloneCreation) {
+        if ($useAdminLayout) {
             $schema->columns(['lg' => 1, 'xl' => 12]);
         }
 
         return $schema
             ->components([
-                Section::make($forStandaloneCreation ? 'مشخصات آزمون' : 'مشخصات')
-                    ->icon($forStandaloneCreation ? Heroicon::OutlinedClipboardDocumentList : null)
-                    ->compact($forStandaloneCreation)
-                    ->columnSpan($forStandaloneCreation ? ['default' => 'full', 'xl' => 7] : 1)
-                    ->columns($forStandaloneCreation ? ['sm' => 2] : 2)
+                Section::make($useAdminLayout ? 'مشخصات آزمون' : 'مشخصات')
+                    ->icon($useAdminLayout ? Heroicon::OutlinedClipboardDocumentList : null)
+                    ->compact($useAdminLayout)
+                    ->columnSpan($useAdminLayout ? ['default' => 'full', 'xl' => 7] : 1)
+                    ->columns($useAdminLayout ? ['sm' => 2] : 2)
                     ->schema([
                         TextInput::make('title')
                             ->label('عنوان')
@@ -92,13 +92,15 @@ class ExamForm
                             ->maxLength(255)
                             ->columnSpanFull(),
                         TextInput::make('code')
-                            ->label($forStandaloneCreation ? 'کد آزمون' : 'کد')
+                            ->label($useAdminLayout ? 'کد آزمون' : 'کد')
                             ->trim()
                             ->maxLength(64)
                             ->unique(table: Exam::class, ignoreRecord: true)
-                            ->helperText($forStandaloneCreation ? 'خالی بماند، خودکار ساخته می‌شود.' : 'در صورت خالی بودن، به‌صورت خودکار ساخته می‌شود.')
+                            ->helperText(fn (?Exam $record): string => $record?->code
+                                ? 'خالی بماند، کد فعلی حفظ می‌شود.'
+                                : 'خالی بماند، خودکار ساخته می‌شود.')
                             ->extraInputAttributes(['dir' => 'ltr']),
-                        ...($forStandaloneCreation ? [] : [$practice]),
+                        ...($useAdminLayout ? [] : [$practice]),
                         Select::make('exam_group_id')
                             ->label('گروه آزمون')
                             ->relationship('examGroup', 'title')
@@ -110,11 +112,11 @@ class ExamForm
                         Textarea::make('description')
                             ->label('توضیحات')
                             ->helperText('پیش از شروع آزمون به شرکت‌کننده نشان داده می‌شود.')
-                            ->rows($forStandaloneCreation ? 2 : 3)
-                            ->columnSpan($forStandaloneCreation ? 1 : 'full'),
-                        ...($forStandaloneCreation ? [$practice] : $availability),
+                            ->rows($useAdminLayout ? 2 : 3)
+                            ->columnSpan($useAdminLayout ? 1 : 'full'),
+                        ...($useAdminLayout ? [$practice] : $availability),
                     ]),
-                ...($forStandaloneCreation ? [
+                ...($useAdminLayout ? [
                     Section::make('زمان‌بندی و انتشار')
                         ->icon(Heroicon::OutlinedCalendarDays)
                         ->compact()
@@ -123,11 +125,11 @@ class ExamForm
                         ->schema($availability),
                 ] : []),
                 Section::make('سؤال‌ها')
-                    ->icon($forStandaloneCreation ? Heroicon::OutlinedQueueList : null)
-                    ->compact($forStandaloneCreation)
-                    ->columnSpan($forStandaloneCreation ? 'full' : 1)
+                    ->icon($useAdminLayout ? Heroicon::OutlinedQueueList : null)
+                    ->compact($useAdminLayout)
+                    ->columnSpan($useAdminLayout ? 'full' : 1)
                     ->hidden(fn (?Exam $record): bool => $record?->question_snapshot !== null)
-                    ->description($forStandaloneCreation
+                    ->description($useAdminLayout
                         ? 'سؤال‌ها هنگام شروع از بانک برداشته می‌شوند. برای گلچین دستی، «انتخاب سؤال‌ها» را بزنید.'
                         : 'برای گلچین کردن سؤال‌های هر بانک، «انتخاب سؤال‌ها» را بزنید. در ردیف‌های بدون انتخاب دستی، سؤال‌ها هنگام شروع آزمون از بانک برداشته می‌شوند.')
                     ->schema([
@@ -147,7 +149,7 @@ class ExamForm
                                     ->live()
                                     ->afterStateUpdated(fn (Set $set) => $set('question_ids', null))
                                     ->required()
-                                    ->columnSpan($forStandaloneCreation ? ['sm' => 3] : 2),
+                                    ->columnSpan($useAdminLayout ? ['sm' => 3] : 2),
                                 TextInput::make('question_count')
                                     ->label('تعداد سؤال')
                                     ->integer()
@@ -160,16 +162,16 @@ class ExamForm
                                     ->required(),
                                 Hidden::make('question_ids'),
                             ])
-                            ->columns($forStandaloneCreation ? ['sm' => 4] : 3)
+                            ->columns($useAdminLayout ? ['sm' => 4] : 3)
                             ->defaultItems(1)
                             ->addActionLabel('افزودن بانک')
-                            ->addActionAlignment($forStandaloneCreation ? Alignment::Start : null),
+                            ->addActionAlignment($useAdminLayout ? Alignment::Start : null),
                     ]),
-                Section::make($forStandaloneCreation ? 'تنظیمات آزمون' : 'قوانین')
-                    ->icon($forStandaloneCreation ? Heroicon::OutlinedAdjustmentsHorizontal : null)
-                    ->compact($forStandaloneCreation)
-                    ->columnSpan($forStandaloneCreation ? 'full' : 1)
-                    ->columns($forStandaloneCreation ? ['sm' => 2, 'lg' => 3] : 3)
+                Section::make($useAdminLayout ? 'تنظیمات آزمون' : 'قوانین')
+                    ->icon($useAdminLayout ? Heroicon::OutlinedAdjustmentsHorizontal : null)
+                    ->compact($useAdminLayout)
+                    ->columnSpan($useAdminLayout ? 'full' : 1)
+                    ->columns($useAdminLayout ? ['sm' => 2, 'lg' => 3] : 3)
                     ->schema([
                         TextInput::make('duration_minutes')
                             ->label('مدت آزمون (دقیقه)')
@@ -231,9 +233,9 @@ class ExamForm
                             ->label('ترتیب گزینه‌ها تصادفی باشد'),
                     ]),
                 Section::make('شرکت‌کنندگان')
-                    ->icon($forStandaloneCreation ? Heroicon::OutlinedUsers : null)
-                    ->compact($forStandaloneCreation)
-                    ->columnSpan($forStandaloneCreation ? 'full' : 1)
+                    ->icon($useAdminLayout ? Heroicon::OutlinedUsers : null)
+                    ->compact($useAdminLayout)
+                    ->columnSpan($useAdminLayout ? 'full' : 1)
                     ->hidden($forSession)
                     ->description(fn (?Exam $record): string => $record?->context_type !== null ? 'شرکت‌کنندگان این آزمون بر اساس عضویت در دوره یا جلسهٔ مرتبط تعیین می‌شوند.' : 'آزمون را این کاربران و دارندگان این نقش‌ها (در همین '.config('sarasystem.tenant_label').') می‌بینند.')
                     ->columns(2)

@@ -14,7 +14,7 @@ Staff need a short code to refer to an exam, following the course creation form.
 
 ## Decision
 
-The exam form accepts an optional code, unique across the installation. A new exam with no supplied code receives an automatically generated `EXM-` code, including exams created through a context. Existing exams receive codes derived from their IDs.
+The exam form accepts an optional code, unique across the installation. A new exam with no supplied code receives `EXM-` followed by eight uppercase letters or digits, including exams created through a context. The original backfill derived codes from exam IDs. Stored codes retain their original format.
 
 ## Consequences
 

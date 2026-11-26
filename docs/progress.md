@@ -23,6 +23,9 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-26 — Removed the Results button from the admin exam edit header.
+- 2026-11-26 — Matched the admin exam edit page to the shared creation layout, including the scheduling card and responsive question bank rows.
+- 2026-11-26 — Shortened the random suffix of newly generated exam codes to eight characters.
 - 2026-11-26 — Opened lesson editing on a dedicated page with the shared lesson form ([ADR 0159](decisions/0159-course-lesson-edit-page.md)).
 - 2026-11-26 — Removed the lesson exam action from the admin lessons list.
 - 2026-11-26 — Linked course lessons to the original exam by code ([ADR 0160](decisions/0160-link-original-lesson-exam.md)). All 883 tests and Pint passed. Course and Exam passed with the other module disabled.
