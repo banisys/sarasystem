@@ -28,7 +28,6 @@ Route::middleware(['auth', 'auth.session', 'tenant'])->prefix('profile/academic-
     Route::post('/sessions/{session}/reminders/{target}', [MyClassController::class, 'addReminder'])->name('reminders.store');
     Route::post('/sessions/{session}/attendance', [MyClassController::class, 'attendance'])->name('attendance');
     Route::post('/sessions/{session}/content', [MyClassController::class, 'content'])->name('content');
-    Route::put('/sessions/{session}/lessons', [MyClassController::class, 'shareLessons'])->name('lessons.update');
     Route::get('/sessions/{session}/lessons/{lesson}/files/{file}', [MyClassController::class, 'sharedLessonFile'])
         ->whereNumber(['lesson', 'file'])->name('lessons.file');
     Route::post('/sessions/{session}/homework', [MyClassController::class, 'submitHomework'])->name('homework');

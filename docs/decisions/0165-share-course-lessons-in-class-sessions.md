@@ -14,7 +14,7 @@ Class staff need to share individual lessons in a session's «مطالب و تک
 
 ## Decision
 
-A session's teacher or substitute and its class's current non-attendee staff can enter one or more [lesson codes](0164-course-lesson-codes.md), one per line. The separate save action replaces the ordered list in the session and accepts lessons from published courses. Class stores stable lesson IDs, so renaming a code does not break an existing share. An unknown or unpublished code leaves the saved list unchanged. Saving the list does not change whether the session has been held.
+A session's teacher or substitute and its class's current non-attendee staff can enter one or more [lesson codes](0164-course-lesson-codes.md), one per text field in «درس‌های خودآموز این جلسه». Staff add fields with the plus button and save the ordered list through the same form as the lesson write-up, homework and files. The form accepts lessons from published courses. Class stores stable lesson IDs, so renaming a code does not break an existing share. An unknown or unpublished code leaves the saved list unchanged. Saving only the list does not change whether the session has been held. If the list and other content are submitted together, validation must pass for the whole submission.
 
 Staff and learners on the session roster can open shared text, video, audio and attachments inside «مطالب و تکلیف». The existing guardian view follows the ward's roster access and stays read-only. Every file request resolves the session in the current branch, rechecks access, and verifies that the requested file belongs to the assigned lesson. Sharing provides no course enrollment, exam access or progress actions. Exam and cancelled sessions do not expose shared lessons.
 

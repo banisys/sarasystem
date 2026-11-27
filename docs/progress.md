@@ -23,8 +23,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-27 — Unified session content and lesson sharing in one form with repeatable lesson-code inputs. Verified atomic saving, the frontend build, all 896 tests, the staff form in a desktop and mobile browser, and the relevant tests with Course and Class disabled separately.
+- 2026-11-27 — Refined the session content tab so shared lessons sit beside homework at wide widths. Compacted the staff code form and made media and attachment availability visible on lesson rows. The frontend build and 35 related tests passed. Checked desktop and mobile with sample content in the browser.
 - 2026-11-27 — Added [session-scoped sharing of self-paced lesson content](decisions/0165-share-course-lessons-in-class-sessions.md) by code. The frontend build and all 895 tests passed. Session and system map tests passed with Course disabled, and course learning and system map tests passed with Class disabled.
 - 2026-11-27 — Added unique, searchable [lesson codes](decisions/0164-course-lesson-codes.md) in the admin lesson form and list, with a backfill for existing lessons. All 41 Course tests and Pint passed.
+- 2026-11-27 — Improved the responsive layout of the academic calendar session’s «مطالب و تکلیف» tab for editing lesson content and reading or submitting homework ([ADR 0111](decisions/0111-user-academic-calendar.md)). The frontend build and 41 related tests passed.
 - 2026-11-27 — Routed Course administration through the primary branch while preserving route parameters and filters ([ADR 0162](decisions/0162-course-admin-primary-branch-urls.md)). All 37 Course tests and Pint passed. The system map passed with Course disabled.
 - 2026-11-27 — Added an explicit source branch picker to course enrollment from a class. All 36 Course tests and Pint passed. The participants page also passed with Class disabled, and the system map passed with Course disabled.
 - 2026-11-27 — Added playback and attachment previews for saved files in the admin lesson editor ([ADR 0161](decisions/0161-admin-lesson-file-previews.md)). All 36 Course tests, Pint and the frontend build passed. The public home and five system map tests passed with Course disabled.

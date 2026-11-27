@@ -386,23 +386,6 @@ class MyClassController extends Controller
         return back()->with('status', 'حضور و غیاب ثبت شد.');
     }
 
-    public function shareLessons(Request $request, ClassSession $session, MyClasses $myClasses, SessionLessons $lessons): RedirectResponse
-    {
-        $user = $request->user();
-        abort_if($request->filled('for') || ! $myClasses->canSee($user, $session), 404);
-        $lessons->authorizeEditing($session, $user);
-
-        $data = $request->validate([
-            'lesson_codes' => ['present', 'array', 'list', 'max:50'],
-            'lesson_codes.*' => ['required', 'string', 'max:64', 'distinct:strict'],
-        ], attributes: ['lesson_codes' => 'کدهای درس', 'lesson_codes.*' => 'کد درس']);
-
-        $lessons->save($session, $user, $data['lesson_codes']);
-
-        return to_route('my-classes.session', ['session' => $session, 'tab' => 'content'])
-            ->with('status', 'درس‌های این جلسه ذخیره شدند.');
-    }
-
     public function sharedLessonFile(Request $request, ClassSession $session, int $lesson, int $file, MyClasses $myClasses, SessionLessons $lessons): BinaryFileResponse
     {
         $viewer = $this->person($request);
@@ -411,11 +394,11 @@ class MyClassController extends Controller
         return $lessons->file($session, $viewer, $lesson, $file);
     }
 
-    public function content(Request $request, ClassSession $session, MyClasses $myClasses, SessionContentBook $book): RedirectResponse
+    public function content(Request $request, ClassSession $session, MyClasses $myClasses, SessionContentBook $book, SessionLessons $lessons): RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($myClasses->canSee($user, $session), 404);
+        abort_if($request->filled('for') || ! $myClasses->canSee($user, $session), 404);
 
         $data = $request->validate([
             'covered_topic_ids' => ['nullable', 'array'],
@@ -428,13 +411,29 @@ class MyClassController extends Controller
             'remove_media_ids.*' => ['integer'],
             'files' => ['nullable', 'array', 'max:10'],
             'files.*' => ['file', 'max:20480'],
-        ]);
+            'lesson_codes' => ['sometimes', 'array', 'list', 'max:50'],
+            'lesson_codes.*' => ['nullable', 'string', 'max:64', 'distinct:strict'],
+        ], attributes: ['lesson_codes' => 'کدهای درس', 'lesson_codes.*' => 'کد درس']);
 
-        $this->attempt(fn () => $book->record($session, [
-            ...$data,
-            'homework_due_on' => JalaliDate::toDate($data['homework_due_on'] ?? null)?->toDateString(),
-            'files' => $request->file('files', []),
-        ], $user));
+        $this->attempt(fn () => DB::transaction(function () use ($session, $user, $request, $data, $book, $lessons): void {
+            $current = ClassSession::query()->lockForUpdate()->findOrFail($session->getKey());
+            $content = $data;
+            if (array_key_exists('lesson_codes', $data)) {
+                $codes = array_values(array_filter($data['lesson_codes'], fn (?string $code): bool => filled($code)));
+                $lessons->update($current, $user, $codes);
+                unset($content['lesson_codes']);
+
+                if ($content === []) {
+                    return;
+                }
+            }
+
+            $book->record($current, [
+                ...$content,
+                'homework_due_on' => JalaliDate::toDate($content['homework_due_on'] ?? null)?->toDateString(),
+                'files' => $request->file('files', []),
+            ], $user);
+        }));
 
         return back()->with('status', 'مطالب جلسه ثبت شد.');
     }

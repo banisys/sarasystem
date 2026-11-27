@@ -6,6 +6,7 @@ use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Class\Database\Factories\ClassRoleFactory;
@@ -57,12 +58,15 @@ class SessionLessonSharingTest extends TestCase
         $videoUrl = route('my-classes.lessons.file', [$session, $lesson, $video]);
         $fileUrl = route('my-classes.lessons.file', [$session, $lesson, $file]);
 
-        $this->inBranch($teacher, $branch)->put(route('my-classes.lessons.update', $session), [
+        $this->inBranch($teacher, $branch)->from($sessionUrl)->post(route('my-classes.content', $session), [
             'lesson_codes' => [$otherLesson->code, $lesson->code],
+            'summary' => 'شرح جدید جلسه',
+            'files' => [UploadedFile::fake()->create('session-notes.pdf', 10, 'application/pdf')],
         ])->assertRedirect($sessionUrl)->assertSessionHasNoErrors();
 
         $this->assertSame([$otherLesson->id, $lesson->id], $session->refresh()->shared_lesson_ids);
-        $this->assertSame('مطالب قبلی', $session->summary);
+        $this->assertSame('شرح جدید جلسه', $session->summary);
+        $this->assertSame('session-notes.pdf', $session->getMedia(ClassSession::MATERIALS_COLLECTION)->sole()->file_name);
         $this->assertSame(SessionStatus::Scheduled, $session->status);
         $this->assertFalse($session->isUntouched());
         $this->inBranch($learner, $branch)->get($sessionUrl)->assertOk()
@@ -94,14 +98,14 @@ class SessionLessonSharingTest extends TestCase
         $this->addMember($session, $staff, ClassRole::factory()->state(['title' => $role]));
         $lesson = $this->publishedLesson();
         $file = $lesson->addMediaFromString('Course handout')->usingFileName('handout.txt')->toMediaCollection('attachments');
-        $update = route('my-classes.lessons.update', $session);
+        $update = route('my-classes.content', $session);
         $fileUrl = route('my-classes.lessons.file', [$session, $lesson, $file]);
 
-        $this->inBranch($staff, $branch)->put($update, ['lesson_codes' => [$lesson->code]])->assertRedirect();
+        $this->inBranch($staff, $branch)->post($update, ['lesson_codes' => [$lesson->code]])->assertRedirect();
         $this->get(route('my-classes.session', $session))->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('sharedLessons.can_manage', true)
             ->where('sharedLessons.lessons.0.lesson.code', $lesson->code));
-        $this->put($update, ['lesson_codes' => []])->assertRedirect();
+        $this->post($update, ['lesson_codes' => ['']])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertNull($session->refresh()->shared_lesson_ids);
         $this->get($fileUrl)->assertNotFound();
@@ -122,13 +126,13 @@ class SessionLessonSharingTest extends TestCase
         $this->addMember($session, $learner, $learnerRole);
         $file = $lesson->addMediaFromString('Course handout')->usingFileName('handout.txt')->toMediaCollection('attachments');
         $fileUrl = route('my-classes.lessons.file', [$session, $lesson, $file]);
-        $updateUrl = route('my-classes.lessons.update', $session);
+        $updateUrl = route('my-classes.content', $session);
 
-        $this->inBranch($learner, $branch)->put($updateUrl, ['lesson_codes' => []])->assertForbidden();
+        $this->inBranch($learner, $branch)->post($updateUrl, ['lesson_codes' => []])->assertForbidden();
         $this->get(route('my-classes.lessons.file', [$otherSession, $lesson, $file]))->assertNotFound();
         $this->inBranch($outsider, $branch)->get($fileUrl)->assertNotFound();
         $this->inBranch($learner, $otherBranch)->get($fileUrl)->assertNotFound();
-        $this->put($updateUrl, ['lesson_codes' => []])->assertNotFound();
+        $this->post($updateUrl, ['lesson_codes' => []])->assertNotFound();
         $this->assertSame([$lesson->id], $branch->execute(fn () => $session->refresh()->shared_lesson_ids));
     }
 
@@ -139,13 +143,31 @@ class SessionLessonSharingTest extends TestCase
         $published = $this->publishedLesson();
         $draft = CourseLesson::factory()->create();
         $session = ClassSession::factory()->for(Classroom::factory()->for($branch))->taughtBy($teacher)
-            ->create(['shared_lesson_ids' => [$published->id]]);
+            ->create(['summary' => 'مطالب قبلی', 'shared_lesson_ids' => [$published->id]]);
 
-        $this->inBranch($teacher, $branch)->putJson(route('my-classes.lessons.update', $session), [
+        $this->inBranch($teacher, $branch)->postJson(route('my-classes.content', $session), [
             'lesson_codes' => [$draft->code],
+            'summary' => 'شرح جدید جلسه',
         ])->assertUnprocessable()->assertJsonValidationErrors('lesson_codes');
 
         $this->assertSame([$published->id], $session->refresh()->shared_lesson_ids);
+        $this->assertSame('مطالب قبلی', $session->summary);
+    }
+
+    public function test_invalid_session_write_up_rolls_back_the_new_lesson_codes(): void
+    {
+        $branch = Tenant::factory()->create();
+        $teacher = $this->branchUser($branch);
+        $lesson = $this->publishedLesson();
+        $session = ClassSession::factory()->for(Classroom::factory()->for($branch))->taughtBy($teacher)->create();
+
+        $this->inBranch($teacher, $branch)->postJson(route('my-classes.content', $session), [
+            'lesson_codes' => [$lesson->code],
+            'homework' => 'تمرین',
+        ])->assertUnprocessable()->assertJsonValidationErrors('form');
+
+        $this->assertNull($session->refresh()->shared_lesson_ids);
+        $this->assertNull($session->homework);
     }
 
     public function test_exam_and_cancelled_sessions_refuse_new_lesson_sharing(): void
@@ -157,8 +179,8 @@ class SessionLessonSharingTest extends TestCase
         $cancelled = ClassSession::factory()->for($classroom)->taughtBy($teacher)->create(['status' => SessionStatus::Cancelled]);
         $data = ['lesson_codes' => [$this->publishedLesson()->code]];
 
-        $this->inBranch($teacher, $branch)->put(route('my-classes.lessons.update', $exam), $data)->assertNotFound();
-        $this->put(route('my-classes.lessons.update', $cancelled), $data)->assertForbidden();
+        $this->inBranch($teacher, $branch)->post(route('my-classes.content', $exam), $data)->assertNotFound();
+        $this->post(route('my-classes.content', $cancelled), $data)->assertForbidden();
     }
 
     private function publishedLesson(): CourseLesson

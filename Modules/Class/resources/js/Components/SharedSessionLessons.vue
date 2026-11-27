@@ -1,72 +1,75 @@
 <script setup>
-import { computed, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import { ElForm, ElInput } from 'element-plus';
-import 'element-plus/es/components/form/style/css';
+import { nextTick } from 'vue';
+import { ElInput } from 'element-plus';
 import 'element-plus/es/components/input/style/css';
 import PanelButton from '@/Components/Ui/PanelButton.vue';
 import PanelFormField from '@/Components/Ui/PanelFormField.vue';
 import PanelIcon from '@/Components/PanelIcon.vue';
 
-const props = defineProps({
-    sessionId: { type: Number, required: true },
+defineProps({
     sharing: { type: Object, required: true },
+    error: { type: String, default: '' },
+    processing: Boolean,
 });
 
-const savedCodes = computed(() => props.sharing.lessons.map(({ lesson }) => lesson.code).join('\n'));
-const form = useForm({ lesson_codes: savedCodes.value });
-const codeError = computed(() => Object.entries(form.errors).find(([field]) => field.startsWith('lesson_codes'))?.[1]);
+const codes = defineModel('codes', { type: Array, default: () => [''] });
 
-watch(savedCodes, (codes) => {
-    form.defaults('lesson_codes', codes);
-    form.reset();
-});
-
-function save() {
-    const codes = form.lesson_codes.split(/\r?\n/).map((code) => code.trim()).filter(Boolean);
-    form.transform(() => ({ lesson_codes: [...new Set(codes)] })).put(route('my-classes.lessons.update', props.sessionId), {
-        preserveScroll: true,
-        onSuccess: () => {
-            form.lesson_codes = savedCodes.value;
-        },
-    });
+async function addCode() {
+    codes.value = [...codes.value, ''];
+    await nextTick();
+    document.getElementById(`session-lesson-code-${codes.value.length - 1}`)?.focus();
 }
 </script>
 
 <template>
     <section class="ui-surface min-w-0 space-y-4 p-4 sm:p-5" aria-labelledby="shared-session-lessons">
-        <h2 id="shared-session-lessons" class="flex items-center gap-2 font-semibold text-ui-ink">
-            <PanelIcon name="book" class="size-5 shrink-0 text-brand-700" />
-            درس‌های این جلسه
+        <h2 id="shared-session-lessons" class="flex items-center gap-2.5 font-semibold text-ui-ink">
+            <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
+                <PanelIcon name="book" class="size-5" />
+            </span>
+            درس‌های خودآموز این جلسه
         </h2>
 
-        <ElForm v-if="sharing.can_manage" class="space-y-3" @submit.prevent="save">
-            <PanelFormField label="کدهای درس" :error="codeError">
-                <ElInput
-                    v-model="form.lesson_codes"
-                    type="textarea"
-                    dir="ltr"
-                    :autosize="{ minRows: 2, maxRows: 8 }"
-                    aria-describedby="shared-session-lesson-code-hint"
-                />
-            </PanelFormField>
-            <p id="shared-session-lesson-code-hint" class="text-xs leading-5 text-ui-muted">
-                هر کد را در یک خط بنویسید. برای برداشتن یک درس از جلسه، کد آن را پاک کنید و ذخیره کنید.
-            </p>
-            <div class="flex justify-end">
-                <PanelButton type="submit" :loading="form.processing" class="w-full sm:w-auto">
-                    ذخیرهٔ درس‌های جلسه
+        <fieldset v-if="sharing.can_manage" class="min-w-0 space-y-2 rounded-xl border border-ui-line bg-ui-canvas p-3 sm:p-4">
+            <legend class="px-1 text-sm font-medium text-ui-ink">کدهای درس</legend>
+            <div v-for="(_, index) in codes" :key="index" class="grid max-w-xl grid-cols-[minmax(0,1fr)_2.5rem] items-start gap-2">
+                <PanelFormField class="min-w-0">
+                    <ElInput
+                        :id="`session-lesson-code-${index}`"
+                        v-model="codes[index]"
+                        dir="ltr"
+                        maxlength="64"
+                        placeholder="LSN-…"
+                        :aria-label="`کد درس ${(index + 1).toLocaleString('fa-IR')}`"
+                        aria-describedby="shared-session-lesson-code-hint"
+                        :disabled="processing"
+                        clearable
+                    />
+                </PanelFormField>
+                <PanelButton v-if="index === codes.length - 1" type="button" variant="outline-brand" class="w-10 px-0!"
+                    aria-label="افزودن کد درس" :disabled="processing || codes.length >= 50" @click="addCode">
+                    <PanelIcon name="plus" class="size-5" />
                 </PanelButton>
             </div>
-        </ElForm>
+            <p id="shared-session-lesson-code-hint" class="text-xs leading-5 text-ui-muted">برای برداشتن درس، کد آن را پاک کنید.</p>
+            <p v-if="error" role="alert" class="text-sm text-red-700 panel-dark:text-red-300">{{ error }}</p>
+        </fieldset>
 
-        <div v-if="sharing.lessons.length" class="grid gap-2">
+        <div v-if="sharing.lessons.length" class="grid gap-2.5">
             <details v-for="{ lesson, video, audio, attachments } in sharing.lessons" :key="lesson.id" :open="sharing.lessons.length === 1"
                 class="group min-w-0 rounded-ui border border-ui-line bg-ui-surface">
-                <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-ui bg-ui-canvas px-3 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-brand-700 [&::-webkit-details-marker]:hidden">
-                    <PanelIcon name="document" class="size-4 shrink-0 text-brand-700" />
-                    <span class="min-w-0 flex-1 wrap-anywhere" dir="auto">{{ lesson.title }}</span>
-                    <PanelIcon name="chevron-right" class="size-4 shrink-0 text-ui-muted transition-transform rtl:rotate-180 group-open:rotate-90 rtl:group-open:rotate-90" />
+                <summary class="flex cursor-pointer list-none items-center gap-3 rounded-ui px-3 py-3 hover:bg-ui-canvas focus-visible:outline-2 focus-visible:outline-brand-700 group-open:rounded-b-none group-open:bg-ui-canvas sm:px-4 [&::-webkit-details-marker]:hidden">
+                    <PanelIcon name="document" class="size-5 shrink-0 text-brand-700" />
+                    <span class="min-w-0 flex-1">
+                        <span class="block wrap-anywhere text-sm font-semibold leading-6 text-ui-ink" dir="auto">{{ lesson.title }}</span>
+                        <span v-if="sharing.can_manage || video || audio || attachments.length" class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs leading-5 text-ui-muted">
+                            <bdi v-if="sharing.can_manage" class="wrap-anywhere font-mono">{{ lesson.code }}</bdi>
+                            <span v-if="video">ویدئو</span>
+                            <span v-if="audio">صوت</span>
+                            <span v-if="attachments.length">{{ attachments.length.toLocaleString('fa-IR') }} پیوست</span>
+                        </span>
+                    </span>
+                    <PanelIcon name="chevron-right" class="size-4 shrink-0 text-ui-muted motion-safe:transition-transform rtl:rotate-180 group-open:rotate-90 rtl:group-open:rotate-90" />
                 </summary>
                 <div class="grid min-w-0 gap-4 border-t border-ui-line p-3 sm:p-4">
                     <video v-if="video" :src="video" controls playsinline preload="none"

@@ -130,6 +130,16 @@ function saveAttendance() {
 }
 
 // ── Content
+const showSharedLessons = computed(() => Boolean(props.sharedLessons?.can_manage || props.sharedLessons?.lessons.length));
+const showSharedLessonReader = computed(() => !props.contentForm && showSharedLessons.value);
+const showHomework = computed(() => Boolean(props.session.homework && (!props.contentForm || props.mySubmission || props.canSubmit)));
+const showSessionWriteUp = computed(() => !props.contentForm && (
+    !props.sharedLessons?.lessons.length
+    || props.session.content?.topics.length
+    || props.session.content?.summary
+    || (!props.session.content && props.session.planned_topics.length)
+    || props.session.materials.length
+));
 const content = useForm({
     covered_topic_ids: props.contentForm?.covered_topic_ids ?? [],
     summary: props.contentForm?.summary ?? '',
@@ -152,6 +162,9 @@ const topicGroups = computed(() => {
 
     return [...groups.values()];
 });
+const savedLessonCodes = computed(() => props.sharedLessons?.lessons.map(({ lesson }) => lesson.code) ?? []);
+const lessonCodes = ref(savedLessonCodes.value.length ? [...savedLessonCodes.value] : ['']);
+const lessonCodeError = computed(() => Object.entries(content.errors).find(([key]) => key.startsWith('lesson_codes'))?.[1]);
 const showDone = ref({});
 
 function toggleTopic(id) {
@@ -167,10 +180,23 @@ function toggleRemoval(id) {
 const fileError = (form) => Object.entries(form.errors).find(([key]) => key.startsWith('files'))?.[1] ?? '';
 
 function saveContent() {
-    content.post(route('my-classes.content', props.session.id), {
+    const codes = [...new Set(lessonCodes.value.map((code) => code.trim()).filter(Boolean))];
+    const updateLessons = props.sharedLessons?.can_manage && (
+        codes.length !== savedLessonCodes.value.length || codes.some((code, index) => code !== savedLessonCodes.value[index])
+    );
+
+    content.transform((data) => {
+        if (!updateLessons) return data;
+
+        // An empty array has no multipart entries. A blank item explicitly clears the saved codes.
+        return { ...(content.isDirty ? data : {}), lesson_codes: codes.length ? codes : [''] };
+    }).post(route('my-classes.content', props.session.id), {
         ...keep,
         forceFormData: true,
-        onSuccess: () => content.reset('files', 'remove_media_ids'),
+        onSuccess: () => {
+            content.reset('files', 'remove_media_ids');
+            lessonCodes.value = savedLessonCodes.value.length ? [...savedLessonCodes.value] : [''];
+        },
     });
 }
 
@@ -362,193 +388,235 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                         </div>
                     </ElForm>
 
-                    <div v-if="item.key === 'content' && tab === 'content'" class="space-y-5">
-                        <!-- Content: the form for who may record it… -->
-                        <ElForm v-if="contentForm" class="space-y-6 ui-surface p-4 sm:p-5" @submit.prevent="saveContent">
-                            <div v-if="!session.content && session.planned_topics.length" class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700">
-                                <span class="font-medium">طبق طرح درس، این جلسه:</span> {{ session.planned_topics.join('، ') }}
-                            </div>
-
-                            <fieldset v-if="topicGroups.length" class="space-y-3">
-                                <legend class="mb-1 font-semibold text-gray-900 panel-dark:text-ui-ink">سرفصل‌هایی که تمام شد</legend>
-                                <p class="-mt-2 text-xs text-gray-500 panel-dark:text-ui-muted">سرفصل تمام‌نشده را انتخاب نکنید تا به جلسه‌ی بعد برود.</p>
-                                <div v-for="group in topicGroups" :key="group.name" class="space-y-2">
-                                    <div v-if="topicGroups.length > 1" class="text-xs font-medium text-gray-500 panel-dark:text-ui-muted" dir="auto">{{ group.name }}</div>
-                                    <div class="flex flex-wrap gap-2">
-                                        <PanelButton
-                                            v-for="topic in group.open"
-                                            :key="topic.id"
-                                            type="button"
-                                            :aria-pressed="content.covered_topic_ids.includes(topic.id)"
-                                            round :variant="content.covered_topic_ids.includes(topic.id) ? 'primary' : 'outline'" class="panel-wrap-button"
-                                            @click="toggleTopic(topic.id)"
-                                        >
-                                            <PanelIcon v-if="content.covered_topic_ids.includes(topic.id)" name="check" class="size-4" />
-                                            <span dir="auto">{{ topic.title }}</span>
-                                        </PanelButton>
-                                        <PanelButton
-                                            v-if="group.done.length"
-                                            type="button"
-                                            variant="ghost" class="panel-wrap-button"
-                                            @click="showDone[group.name] = !showDone[group.name]"
-                                        >
-                                            {{ showDone[group.name] ? 'پنهان کردن تمام‌شده‌ها' : `${group.done.length} سرفصل تمام‌شده در جلسه‌های دیگر` }}
-                                        </PanelButton>
+                    <div v-if="item.key === 'content' && tab === 'content'" class="@container space-y-4">
+                        <ElForm v-if="contentForm" class="space-y-4" @submit.prevent="saveContent">
+                            <div class="grid items-start gap-4 @3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                                <section class="ui-surface min-w-0 space-y-4 p-4 sm:p-5">
+                                    <h2 class="flex items-center gap-2 font-semibold text-ui-ink">
+                                        <PanelIcon name="book" class="size-5 shrink-0 text-brand-700" />
+                                        مطالب جلسه
+                                    </h2>
+                                    <div v-if="!session.content && session.planned_topics.length" class="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm leading-6 text-brand-700">
+                                        <span class="font-medium">طبق طرح درس، این جلسه:</span> {{ session.planned_topics.join('، ') }}
                                     </div>
-                                    <div v-if="showDone[group.name]" class="flex flex-wrap gap-2">
-                                        <span v-for="topic in group.done" :key="topic.id" class="rounded-full bg-gray-100 panel-dark:bg-white/8 px-3 py-1.5 text-sm text-gray-400 panel-dark:text-ui-muted line-through" dir="auto">{{ topic.title }}</span>
-                                    </div>
-                                </div>
-                            </fieldset>
 
-                            <PanelFormField label="شرح مطالب" :error="content.errors.summary">
-                                <ElInput type="textarea" v-model="content.summary" :rows="4" placeholder="در این جلسه چه گفته شد؟" />
-                            </PanelFormField>
+                                    <fieldset v-if="topicGroups.length" class="min-w-0 space-y-3">
+                                        <legend class="mb-2 text-sm font-semibold text-ui-ink">سرفصل‌هایی که تمام شد</legend>
+                                        <p class="text-xs leading-5 text-ui-muted">سرفصل تمام‌نشده را انتخاب نکنید تا به جلسه‌ی بعد برود.</p>
+                                        <div v-for="group in topicGroups" :key="group.name" class="space-y-2">
+                                            <div v-if="topicGroups.length > 1" class="text-xs font-medium text-ui-muted" dir="auto">{{ group.name }}</div>
+                                            <div class="flex flex-wrap gap-2">
+                                                <PanelButton
+                                                    v-for="topic in group.open"
+                                                    :key="topic.id"
+                                                    type="button"
+                                                    :aria-pressed="content.covered_topic_ids.includes(topic.id)"
+                                                    round :variant="content.covered_topic_ids.includes(topic.id) ? 'primary' : 'outline-brand'" class="panel-wrap-button"
+                                                    @click="toggleTopic(topic.id)"
+                                                >
+                                                    <PanelIcon v-if="content.covered_topic_ids.includes(topic.id)" name="check" class="size-4" />
+                                                    <span class="min-w-0 wrap-anywhere text-start" dir="auto">{{ topic.title }}</span>
+                                                </PanelButton>
+                                                <PanelButton
+                                                    v-if="group.done.length"
+                                                    type="button"
+                                                    variant="ghost" class="panel-wrap-button"
+                                                    :aria-expanded="Boolean(showDone[group.name])"
+                                                    @click="showDone[group.name] = !showDone[group.name]"
+                                                >
+                                                    {{ showDone[group.name] ? 'پنهان کردن تمام‌شده‌ها' : `${group.done.length} سرفصل تمام‌شده در جلسه‌های دیگر` }}
+                                                </PanelButton>
+                                            </div>
+                                            <div v-if="showDone[group.name]" class="flex flex-wrap gap-2">
+                                                <span v-for="topic in group.done" :key="topic.id" class="rounded-full bg-ui-canvas px-3 py-1.5 text-sm text-ui-muted line-through wrap-anywhere" dir="auto">{{ topic.title }}</span>
+                                            </div>
+                                        </div>
+                                        <p v-if="content.errors.covered_topic_ids" class="text-sm text-red-700 panel-dark:text-red-300">{{ content.errors.covered_topic_ids }}</p>
+                                    </fieldset>
 
-                            <div class="space-y-3 rounded-xl bg-amber-50/60 panel-dark:bg-amber-950/30 p-4 ring-1 ring-amber-100 panel-dark:ring-amber-800/55">
-                                <PanelFormField label="تکلیف">
-                                    <ElInput type="textarea" v-model="content.homework" :rows="3" placeholder="اگر تکلیفی دارد، اینجا بنویسید." />
-                                </PanelFormField>
-                                <div v-if="content.homework" class="grid gap-3 sm:grid-cols-2">
-                                    <PanelFormField label="مهلت تحویل" for="homework_due_on" :error="content.errors.homework_due_on">
-                                        <PanelJalaliDateInput id="homework_due_on" v-model="content.homework_due_on" />
+                                    <PanelFormField label="شرح مطالب" :error="content.errors.summary">
+                                        <ElInput type="textarea" v-model="content.summary" :autosize="{ minRows: 4, maxRows: 12 }" placeholder="در این جلسه چه گفته شد؟" />
                                     </PanelFormField>
-                                    <PanelFormField label="نمره‌ی تکلیف از">
-                                        <ElInput v-model.number="content.homework_max_score" type="number" min="1" max="100" />
-                                    </PanelFormField>
+                                </section>
+
+                                <div class="min-w-0 space-y-4">
+                                    <section class="ui-surface space-y-4 p-4">
+                                        <h2 class="flex items-center gap-2 font-semibold text-ui-ink">
+                                            <PanelIcon name="clipboard" class="size-5 shrink-0 text-brand-700" />
+                                            تکلیف
+                                        </h2>
+                                        <PanelFormField :error="content.errors.homework">
+                                            <ElInput type="textarea" v-model="content.homework" :autosize="{ minRows: 3, maxRows: 8 }" aria-label="شرح تکلیف" placeholder="اگر تکلیفی دارد، اینجا بنویسید." />
+                                        </PanelFormField>
+                                        <div v-if="content.homework" class="grid gap-3 @lg:grid-cols-2 @3xl:grid-cols-1 @5xl:grid-cols-2">
+                                            <PanelFormField label="مهلت تحویل" for="homework_due_on" :error="content.errors.homework_due_on">
+                                                <PanelJalaliDateInput id="homework_due_on" v-model="content.homework_due_on" />
+                                            </PanelFormField>
+                                            <PanelFormField label="نمرهٔ تکلیف از" :error="content.errors.homework_max_score">
+                                                <ElInput v-model.number="content.homework_max_score" type="number" min="1" max="100" />
+                                            </PanelFormField>
+                                        </div>
+                                    </section>
+
+                                    <section class="ui-surface space-y-3 p-4">
+                                        <h2 class="flex items-center gap-2 font-semibold text-ui-ink">
+                                            <PanelIcon name="paperclip" class="size-5 shrink-0 text-brand-700" />
+                                            فایل‌های جلسه
+                                        </h2>
+                                        <ul v-if="contentForm.materials.length" class="space-y-1">
+                                            <li
+                                                v-for="file in contentForm.materials"
+                                                :key="file.id"
+                                                class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm ring-1"
+                                                :class="content.remove_media_ids.includes(file.id) ? 'bg-red-50 panel-dark:bg-red-950/50 text-red-700 panel-dark:text-red-300 ring-red-200 panel-dark:ring-red-800/55' : 'bg-gray-50 panel-dark:bg-ui-canvas text-gray-800 panel-dark:text-ui-ink ring-gray-200 panel-dark:ring-ui-line'"
+                                            >
+                                                <span class="flex min-w-0 items-center gap-2" :class="{ 'line-through': content.remove_media_ids.includes(file.id) }">
+                                                    <PanelIcon name="document" class="size-4 shrink-0" />
+                                                    <span class="wrap-anywhere" dir="auto">{{ file.name }}</span>
+                                                </span>
+                                                <PanelButton type="button" size="small" :variant="content.remove_media_ids.includes(file.id) ? 'link' : 'danger-link'" @click="toggleRemoval(file.id)">
+                                                    {{ content.remove_media_ids.includes(file.id) ? 'نگه‌داشتن' : 'حذف' }}
+                                                </PanelButton>
+                                            </li>
+                                        </ul>
+                                        <FilePicker v-model="content.files" hint="جزوه، تمرین، اسلاید؛ هر فایل تا ۲۰ مگابایت" :error="fileError(content)" />
+                                        <ElProgress v-if="content.progress" :percentage="content.progress.percentage ?? 0" aria-label="پیشرفت بارگذاری فایل‌ها" />
+                                    </section>
                                 </div>
                             </div>
-
-                            <div class="space-y-2">
-                                <span class="font-semibold text-gray-900 panel-dark:text-ui-ink">فایل‌های جلسه</span>
-                                <ul v-if="contentForm.materials.length" class="space-y-1">
-                                    <li
-                                        v-for="file in contentForm.materials"
-                                        :key="file.id"
-                                        class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm ring-1"
-                                        :class="content.remove_media_ids.includes(file.id) ? 'bg-red-50 panel-dark:bg-red-950/50 text-red-700 panel-dark:text-red-300 ring-red-200 panel-dark:ring-red-800/55' : 'bg-gray-50 panel-dark:bg-ui-canvas text-gray-800 panel-dark:text-ui-ink ring-gray-200 panel-dark:ring-ui-line'"
-                                    >
-                                        <span class="flex min-w-0 items-center gap-2" :class="{ 'line-through': content.remove_media_ids.includes(file.id) }">
-                                            <PanelIcon name="document" class="size-4 shrink-0" />
-                                            <span class="truncate" dir="auto">{{ file.name }}</span>
-                                        </span>
-                                        <PanelButton type="button" variant="link" @click="toggleRemoval(file.id)">
-                                            {{ content.remove_media_ids.includes(file.id) ? 'نگه‌داشتن' : 'حذف' }}
-                                        </PanelButton>
-                                    </li>
-                                </ul>
-                                <FilePicker v-model="content.files" hint="جزوه، تمرین، اسلاید؛ هر فایل تا ۲۰ مگابایت" :error="fileError(content)" />
-                                <ElProgress v-if="content.progress" :percentage="content.progress.percentage ?? 0" aria-label="پیشرفت بارگذاری فایل‌ها" />
-                            </div>
-
-                            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 panel-dark:border-ui-line pt-4">
-                                <p class="text-sm text-red-600 panel-dark:text-red-300">{{ content.errors.form }}</p>
-                                <PanelButton type="submit" :disabled="content.processing">
-                                    <PanelIcon name="check" class="size-5" />
-                                    ثبت مطالب
+                            <SharedSessionLessons
+                                v-if="showSharedLessons"
+                                v-model:codes="lessonCodes"
+                                :sharing="sharedLessons"
+                                :error="lessonCodeError"
+                                :processing="content.processing"
+                            />
+                            <div class="flex flex-col gap-3 border-t border-ui-line pt-3 @lg:flex-row @lg:items-center @lg:justify-end">
+                                <p v-if="content.errors.form" role="alert" class="me-auto text-sm text-red-700 panel-dark:text-red-300">{{ content.errors.form }}</p>
+                                <PanelButton type="submit" variant="outline-brand" :loading="content.processing">
+                                    ذخیرهٔ مطالب جلسه
                                 </PanelButton>
                             </div>
                         </ElForm>
 
-                        <!-- …or what was recorded, to read. -->
-                        <PanelCard v-if="!contentForm" body-class="space-y-4 p-4 sm:p-5">
-                            <h2 class="flex items-center gap-2 font-semibold text-gray-900 panel-dark:text-ui-ink">
-                                <PanelIcon name="book" class="size-5 text-brand-700" />
-                                مطالب جلسه
-                            </h2>
-                            <template v-if="session.content">
-                                <div v-if="session.content.topics.length" class="flex flex-wrap gap-2">
-                                    <span v-for="topic in session.content.topics" :key="topic" class="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700">
-                                        <PanelIcon name="check" class="size-4" />
-                                        <span dir="auto">{{ topic }}</span>
-                                    </span>
-                                </div>
-                                <p v-if="session.content.summary" class="whitespace-pre-line wrap-break-word text-sm leading-7 text-gray-700 panel-dark:text-ui-ink">{{ session.content.summary }}</p>
-                            </template>
-                            <p v-else-if="session.planned_topics.length" class="text-sm text-gray-600 panel-dark:text-ui-muted">طبق طرح درس: {{ session.planned_topics.join('، ') }}</p>
-                            <p v-else class="text-sm text-gray-500 panel-dark:text-ui-muted">هنوز ثبت نشده است.</p>
+                        <div
+                            v-if="showSessionWriteUp || showSharedLessonReader || showHomework"
+                            class="grid items-start gap-4"
+                            :class="{ '@3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]': !contentForm && showHomework && (showSessionWriteUp || showSharedLessonReader) }"
+                        >
+                            <div v-if="showSessionWriteUp || showSharedLessonReader" class="min-w-0 space-y-4">
+                                <section v-if="showSessionWriteUp" class="ui-surface min-w-0 space-y-4 p-4 sm:p-5">
+                                    <h2 class="flex items-center gap-2 font-semibold text-ui-ink">
+                                        <PanelIcon name="book" class="size-5 shrink-0 text-brand-700" />
+                                        مطالب جلسه
+                                    </h2>
+                                    <template v-if="session.content?.topics.length || session.content?.summary">
+                                        <div v-if="session.content.topics.length" class="flex flex-wrap gap-2">
+                                            <span v-for="topic in session.content.topics" :key="topic" class="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1 text-sm text-brand-700">
+                                                <PanelIcon name="check" class="size-4 shrink-0" />
+                                                <span class="min-w-0 wrap-anywhere" dir="auto">{{ topic }}</span>
+                                            </span>
+                                        </div>
+                                        <p v-if="session.content.summary" class="whitespace-pre-line wrap-anywhere text-sm leading-7 text-ui-ink">{{ session.content.summary }}</p>
+                                    </template>
+                                    <p v-else-if="!session.content && session.planned_topics.length" class="wrap-anywhere text-sm leading-7 text-ui-muted">طبق طرح درس: {{ session.planned_topics.join('، ') }}</p>
+                                    <p v-else class="text-sm text-ui-muted">هنوز ثبت نشده است.</p>
 
-                            <div v-if="session.homework" class="rounded-xl bg-amber-50 panel-dark:bg-amber-950/45 p-4 text-sm text-amber-900 panel-dark:text-amber-200 ring-1 ring-amber-100 panel-dark:ring-amber-800/55">
-                                <div class="flex flex-wrap items-center justify-between gap-2 font-semibold">
-                                    تکلیف
-                                    <span v-if="session.homework_due" class="rounded-full bg-ui-surface/70 px-2.5 py-0.5 text-xs font-normal">مهلت: {{ session.homework_due }}</span>
-                                </div>
-                                <p class="mt-2 whitespace-pre-line wrap-break-word leading-7">{{ session.homework }}</p>
+                                    <section v-if="session.materials.length" class="space-y-3 border-t border-ui-line pt-4">
+                                        <h3 class="flex items-center gap-2 text-sm font-semibold text-ui-ink">
+                                            <PanelIcon name="paperclip" class="size-4 shrink-0 text-brand-700" />
+                                            فایل‌های جلسه
+                                        </h3>
+                                        <ul class="grid gap-2">
+                                            <li v-for="file in session.materials" :key="file.url" class="min-w-0">
+                                                <ElLink type="primary"
+                                                    :href="file.url"
+                                                    target="_blank"
+                                                    rel="noopener"
+                                                    class="panel-file-link w-full justify-start! rounded-lg border border-ui-line bg-ui-canvas px-3! py-2!"
+                                                >
+                                                    <PanelIcon name="document" class="size-4 shrink-0" />
+                                                    <span class="min-w-0 wrap-anywhere text-start" dir="auto">{{ file.name }}</span>
+                                                </ElLink>
+                                            </li>
+                                        </ul>
+                                    </section>
+                                </section>
+
+                                <SharedSessionLessons
+                                    v-if="showSharedLessonReader"
+                                    :key="session.id"
+                                    :sharing="sharedLessons"
+                                />
                             </div>
 
-                            <div v-if="session.materials.length" class="flex flex-wrap gap-2">
-                                <ElLink type="primary"
-                                    v-for="file in session.materials"
-                                    :key="file.url"
-                                    :href="file.url"
-                                    target="_blank"
-                                    rel="noopener"
-                                    class="panel-file-link rounded-lg bg-ui-canvas px-3 py-2 ring-1 ring-ui-line"
-                                >
-                                    <PanelIcon name="document" class="size-4" />
-                                    <span dir="auto">{{ file.name }}</span>
-                                </ElLink>
+                            <div v-if="showHomework" class="min-w-0 space-y-4">
+                                <section v-if="!contentForm" class="ui-surface min-w-0 space-y-3 p-4 sm:p-5">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h2 class="flex items-center gap-2 font-semibold text-ui-ink">
+                                            <PanelIcon name="clipboard" class="size-5 shrink-0 text-brand-700" />
+                                            تکلیف
+                                        </h2>
+                                        <span v-if="session.homework_due" class="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1 text-xs text-amber-900 panel-dark:bg-amber-950/45 panel-dark:text-amber-200">
+                                            <PanelIcon name="clock" class="size-4 shrink-0" />
+                                            مهلت تحویل {{ session.homework_due }}
+                                        </span>
+                                    </div>
+                                    <p class="whitespace-pre-line wrap-anywhere text-sm leading-7 text-ui-ink">{{ session.homework }}</p>
+                                </section>
+
+                                <section v-if="mySubmission || canSubmit" class="ui-surface min-w-0 space-y-4 p-4 sm:p-5">
+                                    <h2 class="flex items-center gap-2 font-semibold text-ui-ink">
+                                        <PanelIcon name="pencil" class="size-5 shrink-0 text-brand-700" />
+                                        {{ ward ? `تکلیف ${ward.name}` : 'تکلیف شما' }}
+                                    </h2>
+                                    <div v-if="mySubmission" class="space-y-3 text-sm text-ui-ink">
+                                        <p class="flex flex-wrap items-center gap-2 text-ui-muted">
+                                            <span>زمان تحویل {{ mySubmission.submitted_at }}</span>
+                                            <span v-if="mySubmission.is_late" class="rounded-full bg-red-50 panel-dark:bg-red-950/50 px-2 py-0.5 text-xs text-red-700 panel-dark:text-red-300">با تأخیر</span>
+                                        </p>
+                                        <div v-if="mySubmission.is_graded" class="rounded-xl bg-emerald-50 panel-dark:bg-emerald-950/50 p-3 text-emerald-900 panel-dark:text-emerald-200 ring-1 ring-emerald-100 panel-dark:ring-emerald-800/55">
+                                            <p v-if="mySubmission.score !== null">نمره: <strong class="text-lg">{{ mySubmission.score }}</strong> از {{ homeworkMaxScore }}</p>
+                                            <p v-if="mySubmission.feedback" class="mt-1 whitespace-pre-line wrap-anywhere">بازخورد مدرس: {{ mySubmission.feedback }}</p>
+                                        </div>
+                                        <p v-if="!canSubmit && mySubmission.answer" class="whitespace-pre-line wrap-anywhere rounded-lg bg-ui-canvas p-3">{{ mySubmission.answer }}</p>
+                                        <div v-if="!canSubmit && mySubmission.files.length" class="flex flex-wrap gap-2">
+                                            <ElLink type="primary" v-for="file in mySubmission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="panel-file-link rounded-lg bg-ui-canvas px-3! py-2! ring-1 ring-ui-line">
+                                                <PanelIcon name="document" class="size-4 shrink-0" />
+                                                <span class="min-w-0 wrap-anywhere text-start" dir="auto">{{ file.name }}</span>
+                                            </ElLink>
+                                        </div>
+                                    </div>
+
+                                    <ElForm v-if="canSubmit" class="space-y-4" @submit.prevent="submitHomework">
+                                        <PanelFormField label="پاسخ" :error="handIn.errors.answer">
+                                            <ElInput type="textarea" v-model="handIn.answer" :autosize="{ minRows: 3, maxRows: 10 }" placeholder="پاسخ خود را بنویسید…" />
+                                        </PanelFormField>
+                                        <ul v-if="mySubmission?.files.length" class="space-y-1">
+                                            <li
+                                                v-for="file in mySubmission.files"
+                                                :key="file.id"
+                                                class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm ring-1"
+                                                :class="handIn.remove_media_ids.includes(file.id) ? 'bg-red-50 panel-dark:bg-red-950/50 text-red-700 panel-dark:text-red-300 ring-red-200 panel-dark:ring-red-800/55' : 'bg-gray-50 panel-dark:bg-ui-canvas text-gray-800 panel-dark:text-ui-ink ring-gray-200 panel-dark:ring-ui-line'"
+                                            >
+                                                <ElLink type="primary" :href="file.url" target="_blank" rel="noopener" class="min-w-0 wrap-anywhere text-start hover:underline" :class="{ 'line-through': handIn.remove_media_ids.includes(file.id) }" dir="auto">{{ file.name }}</ElLink>
+                                                <PanelButton type="button" variant="link" @click="toggleHandInRemoval(file.id)">
+                                                    {{ handIn.remove_media_ids.includes(file.id) ? 'نگه‌داشتن' : 'حذف' }}
+                                                </PanelButton>
+                                            </li>
+                                        </ul>
+                                        <FilePicker v-model="handIn.files" hint="تا ۵ فایل، هر کدام تا ۲۰ مگابایت" :error="fileError(handIn)" />
+                                        <ElProgress v-if="handIn.progress" :percentage="handIn.progress.percentage ?? 0" aria-label="پیشرفت بارگذاری فایل‌ها" />
+                                        <div class="flex flex-col gap-3 border-t border-ui-line pt-3 @lg:flex-row @lg:items-center @lg:justify-end">
+                                            <p v-if="handIn.errors.form" role="alert" class="me-auto text-sm text-red-700 panel-dark:text-red-300">{{ handIn.errors.form }}</p>
+                                            <PanelButton type="submit" :loading="handIn.processing">
+                                                {{ mySubmission ? 'به‌روزرسانی تکلیف' : 'تحویل تکلیف' }}
+                                            </PanelButton>
+                                        </div>
+                                    </ElForm>
+                                </section>
                             </div>
-                        </PanelCard>
-
-                        <!-- The person's own hand-in, or a ward's (read only). -->
-                        <PanelCard v-if="session.homework && (mySubmission || canSubmit)" body-class="space-y-4 p-4 sm:p-5">
-                            <h2 class="flex items-center gap-2 font-semibold text-gray-900 panel-dark:text-ui-ink">
-                                <PanelIcon name="pencil" class="size-5 text-brand-700" />
-                                {{ ward ? `تکلیف ${ward.name}` : 'تکلیف شما' }}
-                            </h2>
-                            <div v-if="mySubmission" class="space-y-2 text-sm text-gray-700 panel-dark:text-ui-ink">
-                                <p>
-                                    تحویل: {{ mySubmission.submitted_at }}
-                                    <span v-if="mySubmission.is_late" class="rounded-full bg-red-50 panel-dark:bg-red-950/50 px-2 py-0.5 text-xs text-red-700 panel-dark:text-red-300">با تأخیر</span>
-                                </p>
-                                <div v-if="mySubmission.is_graded" class="rounded-xl bg-emerald-50 panel-dark:bg-emerald-950/50 p-3 text-emerald-900 panel-dark:text-emerald-200 ring-1 ring-emerald-100 panel-dark:ring-emerald-800/55">
-                                    <p v-if="mySubmission.score !== null">نمره: <strong class="text-lg">{{ mySubmission.score }}</strong> از {{ homeworkMaxScore }}</p>
-                                    <p v-if="mySubmission.feedback" class="mt-1 whitespace-pre-line wrap-break-word">بازخورد مدرس: {{ mySubmission.feedback }}</p>
-                                </div>
-                                <p v-if="!canSubmit && mySubmission.answer" class="whitespace-pre-line wrap-break-word rounded-lg bg-gray-50 panel-dark:bg-ui-canvas p-3">{{ mySubmission.answer }}</p>
-                                <div v-if="!canSubmit && mySubmission.files.length" class="flex flex-wrap gap-2">
-                                    <ElLink type="primary" v-for="file in mySubmission.files" :key="file.id" :href="file.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 panel-file-link rounded-lg bg-ui-canvas px-3 py-2 ring-1 ring-ui-line">
-                                        <PanelIcon name="document" class="size-4" />
-                                        <span dir="auto">{{ file.name }}</span>
-                                    </ElLink>
-                                </div>
-                            </div>
-
-                            <ElForm v-if="canSubmit" class="space-y-4" @submit.prevent="submitHomework">
-                                <PanelFormField label="پاسخ" :error="handIn.errors.answer">
-                                    <ElInput type="textarea" v-model="handIn.answer" :rows="5" placeholder="پاسخ خود را بنویسید…" />
-                                </PanelFormField>
-                                <ul v-if="mySubmission?.files.length" class="space-y-1">
-                                    <li
-                                        v-for="file in mySubmission.files"
-                                        :key="file.id"
-                                        class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm ring-1"
-                                        :class="handIn.remove_media_ids.includes(file.id) ? 'bg-red-50 panel-dark:bg-red-950/50 text-red-700 panel-dark:text-red-300 ring-red-200 panel-dark:ring-red-800/55' : 'bg-gray-50 panel-dark:bg-ui-canvas text-gray-800 panel-dark:text-ui-ink ring-gray-200 panel-dark:ring-ui-line'"
-                                    >
-                                        <ElLink type="primary" :href="file.url" target="_blank" rel="noopener" class="truncate hover:underline" :class="{ 'line-through': handIn.remove_media_ids.includes(file.id) }" dir="auto">{{ file.name }}</ElLink>
-                                        <PanelButton type="button" variant="link" @click="toggleHandInRemoval(file.id)">
-                                            {{ handIn.remove_media_ids.includes(file.id) ? 'نگه‌داشتن' : 'حذف' }}
-                                        </PanelButton>
-                                    </li>
-                                </ul>
-                                <FilePicker v-model="handIn.files" hint="تا ۵ فایل، هر کدام تا ۲۰ مگابایت" :error="fileError(handIn)" />
-                                <ElProgress v-if="handIn.progress" :percentage="handIn.progress.percentage ?? 0" aria-label="پیشرفت بارگذاری فایل‌ها" />
-                                <div class="flex flex-wrap items-center justify-between gap-3">
-                                    <p class="text-sm text-red-600 panel-dark:text-red-300">{{ handIn.errors.form }}</p>
-                                    <PanelButton type="submit" :disabled="handIn.processing">
-                                        {{ mySubmission ? 'به‌روزرسانی تکلیف' : 'تحویل تکلیف' }}
-                                    </PanelButton>
-                                </div>
-                            </ElForm>
-                        </PanelCard>
-
-                        <SharedSessionLessons
-                            v-if="sharedLessons && (sharedLessons.can_manage || sharedLessons.lessons.length)"
-                            :key="session.id"
-                            :session-id="session.id"
-                            :sharing="sharedLessons"
-                        />
+                        </div>
                     </div>
 
                     <!-- Grading: who may (HomeworkBook::canGrade), at any time. -->

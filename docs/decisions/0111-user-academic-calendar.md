@@ -28,7 +28,9 @@ The session page has a separate staff tab for reading and leaving reminders ([AD
 The session tabs sit below the page header with extra spacing and align to the right in Persian. The tabs have a responsive horizontal gap. When the row overflows, it scrolls and keeps the active tab in view when its viewport changes.
 Choosing a session tab updates the `tab` query parameter on the current URL and preserves its other parameters. Reloading or opening the link restores the selected tab when it is available to the viewer. The details tab is the fallback.
 
-The «مطالب و تکلیف» tab also includes [course lessons shared by class staff](0165-share-course-lessons-in-class-sessions.md) when Course is enabled.
+The «مطالب و تکلیف» tab groups the lesson write-up, assignment and files into distinct sections. When the tab has room for two columns, editors see the assignment and file controls alongside the lesson write-up, and readers see the assignment and hand-in alongside the lesson material. Smaller widths stack the sections in reading order.
+
+The «مطالب و تکلیف» tab places [course lessons shared by class staff](0165-share-course-lessons-in-class-sessions.md) beside the homework column when space permits. Shared lesson rows identify their media and attachments before opening, and staff can see the lesson codes in the shared lesson rows. The same submission saves the write-up, homework, files and lesson codes.
 
 The toolbar uses the panel surface, white in light mode, and highlights the active view with white text on green. Previous and next use chevrons with accessible labels, and «امروز» keeps its visible label.
 
