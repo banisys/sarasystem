@@ -390,7 +390,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
 
                     <div v-if="item.key === 'content' && tab === 'content'" class="@container space-y-4">
                         <ElForm v-if="contentForm" class="space-y-4" @submit.prevent="saveContent">
-                            <div class="grid items-start gap-4 @3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                            <div class="grid grid-cols-1 gap-4">
                                 <section class="ui-surface min-w-0 space-y-4 p-4 sm:p-5">
                                     <h2 class="flex items-center gap-2 font-semibold text-ui-ink">
                                         <PanelIcon name="book" class="size-5 shrink-0 text-brand-700" />
@@ -448,7 +448,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                         <PanelFormField :error="content.errors.homework">
                                             <ElInput type="textarea" v-model="content.homework" :autosize="{ minRows: 3, maxRows: 8 }" aria-label="شرح تکلیف" placeholder="اگر تکلیفی دارد، اینجا بنویسید." />
                                         </PanelFormField>
-                                        <div v-if="content.homework" class="grid gap-3 @lg:grid-cols-2 @3xl:grid-cols-1 @5xl:grid-cols-2">
+                                        <div v-if="content.homework" class="grid grid-cols-1 gap-3">
                                             <PanelFormField label="مهلت تحویل" for="homework_due_on" :error="content.errors.homework_due_on">
                                                 <PanelJalaliDateInput id="homework_due_on" v-model="content.homework_due_on" />
                                             </PanelFormField>
@@ -501,8 +501,7 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
 
                         <div
                             v-if="showSessionWriteUp || showSharedLessonReader || showHomework"
-                            class="grid items-start gap-4"
-                            :class="{ '@3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]': !contentForm && showHomework && (showSessionWriteUp || showSharedLessonReader) }"
+                            class="grid grid-cols-1 gap-4"
                         >
                             <div v-if="showSessionWriteUp || showSharedLessonReader" class="min-w-0 space-y-4">
                                 <section v-if="showSessionWriteUp" class="ui-surface min-w-0 space-y-4 p-4 sm:p-5">

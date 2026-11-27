@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-27 — Stacked all sections of the academic calendar session’s «مطالب و تکلیف» tab in a single column. The frontend build passed, and the editor and learner layouts were checked with sample content in the browser.
 - 2026-11-27 — Unified session content and lesson sharing in one form with repeatable lesson-code inputs. Verified atomic saving, the frontend build, all 896 tests, the staff form in a desktop and mobile browser, and the relevant tests with Course and Class disabled separately.
 - 2026-11-27 — Refined the session content tab so shared lessons sit beside homework at wide widths. Compacted the staff code form and made media and attachment availability visible on lesson rows. The frontend build and 35 related tests passed. Checked desktop and mobile with sample content in the browser.
 - 2026-11-27 — Added [session-scoped sharing of self-paced lesson content](decisions/0165-share-course-lessons-in-class-sessions.md) by code. The frontend build and all 895 tests passed. Session and system map tests passed with Course disabled, and course learning and system map tests passed with Class disabled.
