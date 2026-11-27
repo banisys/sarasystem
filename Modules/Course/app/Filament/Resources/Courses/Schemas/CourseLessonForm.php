@@ -26,71 +26,70 @@ class CourseLessonForm
 {
     public static function configure(Schema $schema, Course $course): Schema
     {
-        return $schema->components([
-            Section::make('اطلاعات درس')->columns(2)->columnSpanFull()->schema(self::fields($course)),
-        ]);
-    }
-
-    private static function fields(Course $course): array
-    {
         $inCourse = fn (Builder $query): Builder => $query->where('course_id', $course->getKey());
 
-        return [
-            TextInput::make('title')->label('عنوان')->trim()->required()->maxLength(255),
-            TextInput::make('code')->label('کد درس')->trim()->maxLength(64)
-                ->unique(table: CourseLesson::class, ignoreRecord: true)
-                ->helperText(fn (?CourseLesson $record): string => $record?->code
-                    ? 'خالی بماند، کد فعلی حفظ می‌شود.'
-                    : 'خالی بماند، خودکار ساخته می‌شود.')
-                ->extraInputAttributes(['dir' => 'ltr']),
-            Select::make('course_section_id')->label('سرفصل')->required()
-                ->relationship('section', 'title', modifyQueryUsing: $inCourse)
-                ->scopedExists(CourseSection::class, 'id', $inCourse),
-            TextInput::make('position')->label('ترتیب')->integer()->minValue(0)->maxValue(1000000)->default(0)->required(),
-            RichEditor::make('body_html')->label('متن درس')->maxLength(50000)
-                ->disableToolbarButtons(['attachFiles'])
-                ->formatStateUsing(fn (?string $state, ?CourseLesson $record): ?string => $state
-                    ?? (filled($record?->body) ? '<p>'.nl2br(e($record->body), false).'</p>' : null))
-                ->dehydrateStateUsing(fn (?string $state): string => str($state ?? '')->sanitizeHtml()->toString())
-                ->columnSpanFull(),
-            ...(Module::isEnabled('Exam') ? [
-                TextInput::make('exam_code')->label('کد آزمون')->trim()->maxLength(64)
-                    ->extraInputAttributes(['dir' => 'ltr'])
-                    ->helperText('کد یک آزمون مستقل از شعبهٔ فعلی یا اصلی را وارد کنید. پس از اتصال، ثبت‌نام دوره دسترسی به آزمون را تعیین می‌کند.')
-                    ->formatStateUsing(fn (?CourseLesson $record): ?string => $record?->exists ? CourseExamSource::linkedCode($record) : null)
-                    ->readOnly(fn (?CourseLesson $record): bool => $record?->exists && CourseExamSource::linkedCode($record) !== null)
-                    ->dehydrated(false)
-                    ->rule(fn (?CourseLesson $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
-                        if (blank($value) || ($record?->exists && $value === CourseExamSource::linkedCode($record))) {
-                            return;
-                        }
+        return $schema->components([
+            Section::make('اطلاعات درس')->columns(2)->columnSpanFull()->schema([
+                TextInput::make('title')->label('عنوان')->trim()->required()->maxLength(255),
+                TextInput::make('code')->label('کد درس')->trim()->maxLength(64)
+                    ->unique(table: CourseLesson::class, ignoreRecord: true)
+                    ->helperText(fn (?CourseLesson $record): string => $record?->code
+                        ? 'خالی بماند، کد فعلی حفظ می‌شود.'
+                        : 'خالی بماند، خودکار ساخته می‌شود.')
+                    ->extraInputAttributes(['dir' => 'ltr']),
+                Select::make('course_section_id')->label('سرفصل')->required()
+                    ->relationship('section', 'title', modifyQueryUsing: $inCourse)
+                    ->scopedExists(CourseSection::class, 'id', $inCourse),
+                TextInput::make('position')->label('ترتیب')->integer()->minValue(0)->maxValue(1000000)->default(0)->required(),
+                RichEditor::make('body_html')->label('متن درس')->maxLength(50000)
+                    ->disableToolbarButtons(['attachFiles'])
+                    ->formatStateUsing(fn (?string $state, ?CourseLesson $record): ?string => $state
+                        ?? (filled($record?->body) ? '<p>'.nl2br(e($record->body), false).'</p>' : null))
+                    ->dehydrateStateUsing(fn (?string $state): string => str($state ?? '')->sanitizeHtml()->toString())
+                    ->columnSpanFull(),
+            ]),
+            Section::make('رسانه و پیوست‌ها')->columns(2)->columnSpanFull()->schema([
+                self::timedMedia('video', 'ویدئو', CourseLesson::VIDEO_TYPES),
+                self::timedMedia('audio', 'فایل صوتی', CourseLesson::AUDIO_TYPES),
+                SpatieMediaLibraryFileUpload::make('attachments')->label('فایل‌ها')->collection('attachments')
+                    ->disk('local')->visibility('private')->multiple()->preserveFilenames()->previewable(false)->maxFiles(5)->maxSize(12288)->columnSpanFull(),
+                View::make('course::filament.lesson-file-previews')
+                    ->visible(fn (?CourseLesson $record): bool => $record?->exists
+                        && ($record->hasMedia('video') || $record->hasMedia('audio') || $record->hasMedia('attachments')))
+                    ->viewData(fn (CourseLesson $record): array => [
+                        'lesson' => $record,
+                        'video' => $record->getFirstMedia('video'),
+                        'audio' => $record->getFirstMedia('audio'),
+                        'attachments' => $record->getMedia('attachments'),
+                    ])
+                    ->columnSpanFull(),
+            ]),
+            Section::make('دسترسی و آزمون')->columns(2)->columnSpanFull()->schema([
+                Toggle::make('is_preview')->label('نمایش درس پیش از ثبت‌نام')->helperText('اعضای واردشده می‌توانند این درس را پیش از ثبت‌نام ببینند.'),
+                ...(Module::isEnabled('Exam') ? [
+                    TextInput::make('exam_code')->label('کد آزمون')->trim()->maxLength(64)
+                        ->extraInputAttributes(['dir' => 'ltr'])
+                        ->helperText('کد یک آزمون مستقل از شعبهٔ فعلی یا اصلی را وارد کنید. پس از اتصال، ثبت‌نام دوره دسترسی به آزمون را تعیین می‌کند.')
+                        ->formatStateUsing(fn (?CourseLesson $record): ?string => $record?->exists ? CourseExamSource::linkedCode($record) : null)
+                        ->readOnly(fn (?CourseLesson $record): bool => $record?->exists && CourseExamSource::linkedCode($record) !== null)
+                        ->dehydrated(false)
+                        ->rule(fn (?CourseLesson $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                            if (blank($value) || ($record?->exists && $value === CourseExamSource::linkedCode($record))) {
+                                return;
+                            }
 
-                        if (($error = CourseExamSource::codeError((string) $value)) !== null) {
-                            $fail($error);
-                        }
-                    })
-                    ->saveRelationshipsUsing(function (CourseLesson $record, ?string $state, TextInput $component): void {
-                        if (filled($state)) {
-                            CourseExamSource::attachByCode($record, trim($state), $component->getStatePath());
-                        }
-                    }),
-            ] : []),
-            self::timedMedia('video', 'ویدئو', CourseLesson::VIDEO_TYPES),
-            self::timedMedia('audio', 'فایل صوتی', CourseLesson::AUDIO_TYPES),
-            SpatieMediaLibraryFileUpload::make('attachments')->label('فایل‌ها')->collection('attachments')
-                ->disk('local')->visibility('private')->multiple()->preserveFilenames()->previewable(false)->maxFiles(5)->maxSize(12288),
-            Toggle::make('is_preview')->label('پیش‌نمایش')->helperText('اعضای واردشده می‌توانند این درس را پیش از ثبت‌نام ببینند.'),
-            View::make('course::filament.lesson-file-previews')
-                ->visible(fn (?CourseLesson $record): bool => $record?->exists
-                    && ($record->hasMedia('video') || $record->hasMedia('audio') || $record->hasMedia('attachments')))
-                ->viewData(fn (CourseLesson $record): array => [
-                    'lesson' => $record,
-                    'video' => $record->getFirstMedia('video'),
-                    'audio' => $record->getFirstMedia('audio'),
-                    'attachments' => $record->getMedia('attachments'),
-                ])
-                ->columnSpanFull(),
-        ];
+                            if (($error = CourseExamSource::codeError((string) $value)) !== null) {
+                                $fail($error);
+                            }
+                        })
+                        ->saveRelationshipsUsing(function (CourseLesson $record, ?string $state, TextInput $component): void {
+                            if (filled($state)) {
+                                CourseExamSource::attachByCode($record, trim($state), $component->getStatePath());
+                            }
+                        }),
+                ] : []),
+            ]),
+        ]);
     }
 
     /** @param list<string> $types */

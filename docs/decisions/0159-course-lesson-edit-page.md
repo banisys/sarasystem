@@ -14,7 +14,7 @@ The lesson editor contains rich text, media uploads and an optional exam code. C
 
 ## Decision
 
-The lesson row's edit action opens `/{course}/lessons/{record}/edit` under the course resource. Both pages use the same form card. Saving or cancelling returns to the course's lessons list.
+The lesson row's edit action opens `/{course}/lessons/{record}/edit` under the course resource. Both pages group the shared form into lesson details, media and attachments, and access and exam settings. Saving or cancelling returns to the course's lessons list.
 
 ## Consequences
 

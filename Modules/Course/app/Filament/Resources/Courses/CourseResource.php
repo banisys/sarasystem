@@ -100,7 +100,10 @@ class CourseResource extends Resource implements IndependentOfTenant
                     ->authorize(fn (Course $record): bool => ManageCourseParticipants::canAccess(['record' => $record]))
                     ->url(fn (Course $record): string => static::getUrl('participants', ['record' => $record])),
                 EditAction::make(),
-                DeleteAction::make()->visible(fn (Course $record): bool => ! $record->lessons_exists),
+                DeleteAction::make()
+                    ->disabled(fn (Course $record): bool => (bool) $record->lessons_exists)
+                    ->tooltip(fn (Course $record): ?string => $record->lessons_exists ? 'برای حذف دوره، ابتدا درس‌های آن را حذف کنید.' : null)
+                    ->before(fn (Course $record) => abort_if($record->lessons()->exists(), 403)),
             ]);
     }
 

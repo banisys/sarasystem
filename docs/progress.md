@@ -30,9 +30,11 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - 2026-11-27 — Added unique, searchable [lesson codes](decisions/0164-course-lesson-codes.md) in the admin lesson form and list, with a backfill for existing lessons. All 41 Course tests and Pint passed.
 - 2026-11-27 — Improved the responsive layout of the academic calendar session’s «مطالب و تکلیف» tab for editing lesson content and reading or submitting homework ([ADR 0111](decisions/0111-user-academic-calendar.md)). The frontend build and 41 related tests passed.
 - 2026-11-27 — Routed Course administration through the primary branch while preserving route parameters and filters ([ADR 0162](decisions/0162-course-admin-primary-branch-urls.md)). All 37 Course tests and Pint passed. The system map passed with Course disabled.
+- 2026-11-27 — Made Delete visible in the admin course list for authorized staff, with an explanation when lessons block deletion.
 - 2026-11-27 — Added top and leading spacing to the branch and term row below the user-panel avatar.
 - 2026-11-27 — Moved the branch selector below the user-panel avatar and displayed the current term beside the branch name. Checked the desktop sidebar and mobile drawer.
 - 2026-11-27 — Added an explicit source branch picker to course enrollment from a class. All 36 Course tests and Pint passed. The participants page also passed with Class disabled, and the system map passed with Course disabled.
+- 2026-11-27 — Grouped the lesson form into details, media and attachments, and access and exam settings.
 - 2026-11-27 — Added playback and attachment previews for saved files in the admin lesson editor ([ADR 0161](decisions/0161-admin-lesson-file-previews.md)). All 36 Course tests, Pint and the frontend build passed. The public home and five system map tests passed with Course disabled.
 - 2026-11-26 — Removed the lesson exam action from the admin lessons list.
 - 2026-11-26 — Linked course lessons to the original exam by code ([ADR 0160](decisions/0160-link-original-lesson-exam.md)). All 883 tests and Pint passed. Course and Exam passed with the other module disabled.

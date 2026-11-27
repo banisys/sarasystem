@@ -516,7 +516,8 @@ class CourseAdminTest extends TestCase
 
         $list = Livewire::test(ListCourses::class);
         $blockedAction = TestAction::make('delete')->table($courseWithLessons);
-        $list->assertActionHidden($blockedAction)->mountAction($blockedAction)->assertSet('mountedActions', []);
+        $list->assertActionVisible($blockedAction)->assertActionDisabled($blockedAction)
+            ->mountAction($blockedAction)->assertSet('mountedActions', []);
         $this->assertModelExists($courseWithLessons);
         $this->assertModelExists($lesson);
 
