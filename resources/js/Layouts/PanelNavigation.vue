@@ -1,5 +1,5 @@
 <script setup>
-import { router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { ElAvatar } from 'element-plus';
 import 'element-plus/es/components/avatar/style/css';
@@ -54,31 +54,26 @@ function logout() {
                 </div>
                 <slot name="close" />
             </div>
-            <p v-if="page.props.navigationSubtitle" class="wrap-break-word text-xs font-medium text-ui-muted">
-                {{ page.props.navigationSubtitle }}
-            </p>
+            <component
+                :is="canSwitchTenant ? Link : 'div'"
+                v-if="tenant.current"
+                :href="canSwitchTenant ? route('tenants.select') : undefined"
+                :aria-current="canSwitchTenant && page.component === 'Tenants/Select' ? 'page' : undefined"
+                :title="canSwitchTenant ? `تغییر ${tenant.label}` : undefined"
+                class="mt-1 flex min-w-0 items-center gap-2 rounded-md ps-2 text-sm"
+                :class="{ 'hover:bg-ui-canvas focus-visible:outline-2 focus-visible:outline-offset-2': canSwitchTenant }"
+                @click="canSwitchTenant && $emit('navigate')"
+            >
+                <span class="min-w-0 flex-1 wrap-break-word">
+                    <bdi class="font-semibold">{{ tenant.current.name }}</bdi>
+                    <bdi v-if="page.props.navigationSubtitle" class="text-xs text-ui-muted">{{ ' ' }}({{ page.props.navigationSubtitle }})</bdi>
+                </span>
+                <PanelIcon v-if="canSwitchTenant" name="chevrons" class="size-4 shrink-0 text-ui-muted" />
+            </component>
         </div>
 
         <nav aria-label="منوی پنل کاربری" class="min-h-0 flex-1 overflow-y-auto px-4 py-2">
             <ul class="space-y-1">
-                <li v-if="tenant.current">
-                    <PanelButton
-                        v-if="canSwitchTenant"
-                        :href="route('tenants.select')"
-                        variant="navigation"
-                        :aria-current="page.component === 'Tenants/Select' ? 'page' : undefined"
-                        :title="`تغییر ${tenant.label}`"
-                        @click="$emit('navigate')"
-                    >
-                        <PanelIcon name="building" class="size-5 shrink-0" />
-                        <span class="min-w-0 flex-1 truncate">{{ tenant.current.name }}</span>
-                        <PanelIcon name="chevrons" class="size-4 shrink-0" />
-                    </PanelButton>
-                    <div v-else class="flex min-h-12 items-center gap-3 px-4 py-2 text-sm">
-                        <PanelIcon name="building" class="size-5 shrink-0" />
-                        <span class="min-w-0 truncate">{{ tenant.current.name }}</span>
-                    </div>
-                </li>
                 <li v-for="link in links" :key="link.url">
                     <PanelButton :href="link.url" variant="navigation" :aria-current="isActive(link.url) ? 'page' : undefined" @click="$emit('navigate')">
                         <PanelIcon :name="link.icon" class="size-5 shrink-0" />

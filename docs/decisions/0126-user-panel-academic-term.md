@@ -18,4 +18,4 @@ Class provides the term title through the user panel’s `navigationSubtitleUsin
 
 ## Consequences
 
-The same organization term appears across branches in the sidebar and mobile drawer. The subtitle is omitted when there is no current term or when Class is disabled.
+The sidebar and mobile drawer show the branch name below the avatar, followed by the organization’s current term in muted parentheses. The row opens the branch picker when the user can switch branches. The subtitle is omitted when there is no current term or when Class is disabled.
