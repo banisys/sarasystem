@@ -19,3 +19,5 @@ The lesson row's edit action opens `/{course}/lessons/{record}/edit` under the c
 ## Consequences
 
 The edit page requires permission to update the owning course and resolves the lesson through that course. The same section, media and exam rules apply as before.
+
+The edit form shows [previews of saved files](0161-admin-lesson-file-previews.md).

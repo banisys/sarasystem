@@ -9,6 +9,7 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
@@ -73,6 +74,16 @@ class CourseLessonForm
             SpatieMediaLibraryFileUpload::make('attachments')->label('فایل‌ها')->collection('attachments')
                 ->disk('local')->visibility('private')->multiple()->preserveFilenames()->previewable(false)->maxFiles(5)->maxSize(12288),
             Toggle::make('is_preview')->label('پیش‌نمایش')->helperText('اعضای واردشده می‌توانند این درس را پیش از ثبت‌نام ببینند.'),
+            View::make('course::filament.lesson-file-previews')
+                ->visible(fn (?CourseLesson $record): bool => $record?->exists
+                    && ($record->hasMedia('video') || $record->hasMedia('audio') || $record->hasMedia('attachments')))
+                ->viewData(fn (CourseLesson $record): array => [
+                    'lesson' => $record,
+                    'video' => $record->getFirstMedia('video'),
+                    'audio' => $record->getFirstMedia('audio'),
+                    'attachments' => $record->getMedia('attachments'),
+                ])
+                ->columnSpanFull(),
         ];
     }
 

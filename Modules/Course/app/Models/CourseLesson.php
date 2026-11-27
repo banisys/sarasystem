@@ -23,6 +23,8 @@ class CourseLesson extends Model implements HasMedia
         'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/ogg', 'application/ogg', 'audio/wav', 'audio/x-wav', 'audio/wave',
     ];
 
+    public const array ATTACHMENT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
+
     protected static function newFactory(): CourseLessonFactory
     {
         return CourseLessonFactory::new();

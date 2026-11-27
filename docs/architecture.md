@@ -199,6 +199,8 @@ The user-panel exam session details let class editors and effective invigilators
 
 The «شرکت‌کنندگان» action in the self-paced course list opens the shared enrollment editor for the selected course. Both admin entry points honor the shared manual enrollment setting and keep revoked enrollments on record. Course permissions come from the primary branch. The «ثبت‌نام در دوره» menu offers manual, role-based, and class-based enrollment. It sits beside the page title on the participants page and above the table in the course edit tab. «از کلاس» adds the current attendees of a class in the selected branch through Class’s optional roster source ([ADR 0146](decisions/0146-course-enrollment-from-a-class.md)). «بر اساس نقش» imports users from a role assignment in an authorized branch or across the organization ([ADR 0147](decisions/0147-course-enrollment-by-role.md)). Lesson exams open through the Exam context without changing the user's selected branch ([ADR 0145](decisions/0145-global-course-module.md)).
 
+The admin lesson editor uses the course update permission to serve [private file previews](decisions/0161-admin-lesson-file-previews.md), including for unpublished courses.
+
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy

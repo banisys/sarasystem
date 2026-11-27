@@ -35,6 +35,7 @@ use Modules\Course\Filament\Resources\Courses\RelationManagers\InstructorsRelati
 use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationManager;
 use Modules\Course\Filament\Resources\Courses\RelationManagers\SectionsRelationManager;
 use Modules\Course\Filament\Resources\Courses\Schemas\CourseForm;
+use Modules\Course\Http\Controllers\CourseController;
 use Modules\Course\Models\Course;
 use UnitEnum;
 
@@ -120,6 +121,13 @@ class CourseResource extends Resource implements IndependentOfTenant
             'lessons' => ManageCourseLessons::route('/{record}/lessons'),
             'create-lesson' => CreateCourseLesson::route('/{course}/lessons/create'),
             'edit-lesson' => EditCourseLesson::route('/{course}/lessons/{record}/edit'),
+            'lesson-file' => new PageRegistration(
+                page: EditCourseLesson::class,
+                route: fn (Panel $panel): RoutingRoute => Route::get(
+                    '/{course}/lessons/{lesson}/files/{file}',
+                    [CourseController::class, 'previewFile'],
+                )->scopeBindings()->whereNumber('file')->middleware(EditCourseLesson::getRouteMiddleware($panel)),
+            ),
             'legacy-activities' => new PageRegistration(
                 page: ManageCourseLessons::class,
                 route: fn (Panel $panel): RoutingRoute => Route::get(

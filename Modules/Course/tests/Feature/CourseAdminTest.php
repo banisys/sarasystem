@@ -239,6 +239,22 @@ class CourseAdminTest extends TestCase
         $this->assertCount(5, $lesson->getMedia('attachments'));
 
         $edit = ['course' => $section->course_id, 'record' => $lesson->id];
+        $fileUrl = fn ($file): string => CourseResource::getUrl('lesson-file', [
+            'course' => $section->course_id,
+            'lesson' => $lesson,
+            'file' => $file,
+        ], tenant: $tenant);
+        $videoUrl = $fileUrl($lesson->getFirstMedia('video'));
+        $savedAudio = $lesson->getFirstMedia('audio');
+        $audioUrl = $fileUrl($savedAudio);
+
+        $this->get(CourseResource::getUrl('edit-lesson', $edit, tenant: $tenant))
+            ->assertOk()
+            ->assertSee(['<video controls', '<audio controls', $videoUrl, $audioUrl, 'guide-1.txt'], escape: false);
+        $this->get($videoUrl, ['Range' => 'bytes=0-15'])
+            ->assertStatus(206)->assertHeader('Content-Type', 'video/mp4');
+        $this->get($audioUrl)->assertOk()->assertHeader('Content-Type', $savedAudio->mime_type);
+
         Livewire::test(EditCourseLesson::class, $edit)
             ->set('data.video', [])
             ->fillForm(['video' => UploadedFile::fake()->create('invalid.mp4', 1, 'video/mp4')])
@@ -275,6 +291,55 @@ class CourseAdminTest extends TestCase
             ->assertHasNoFormErrors();
         $this->assertFalse($lesson->refresh()->hasMedia('audio'));
         $this->assertNull($lesson->audio_duration_seconds);
+    }
+
+    public function test_lesson_file_previews_require_course_edit_access_and_scope_files_to_the_lesson(): void
+    {
+        Storage::fake('local');
+        $primary = Tenant::factory()->create();
+        $branch = Tenant::factory()->create();
+        $course = Course::factory()->create(['is_published' => false]);
+        $section = CourseSection::factory()->for($course)->create();
+        $lesson = CourseLesson::factory()->for($section, 'section')->create();
+        $otherLesson = CourseLesson::factory()->for($section, 'section')->create();
+        $image = $lesson->addMedia(UploadedFile::fake()->image('handout.png'))->toMediaCollection('attachments');
+        $pdf = $lesson->addMediaFromString('%PDF-1.4')->usingFileName('handout.pdf')->toMediaCollection('attachments');
+        $html = $lesson->addMediaFromString('<html><body>Handout</body></html>')
+            ->usingFileName('handout.html')->toMediaCollection('attachments');
+        $otherFile = $otherLesson->addMediaFromString('Other lesson')->usingFileName('other.txt')->toMediaCollection('attachments');
+        $fileUrl = fn ($file, Tenant $tenant): string => CourseResource::getUrl('lesson-file', [
+            'course' => $course,
+            'lesson' => $lesson,
+            'file' => $file,
+        ], tenant: $tenant);
+
+        $this->get($fileUrl($image, $primary))->assertRedirect(route('login'));
+        $this->actAsEducationOfficer($primary);
+
+        $this->get(CourseResource::getUrl('edit-lesson', ['course' => $course, 'record' => $lesson], tenant: $primary))
+            ->assertOk()->assertSee([
+                '<img src="'.$fileUrl($image, $primary).'"',
+                'href="'.$fileUrl($pdf, $primary).'"',
+                'href="'.$fileUrl($html, $primary).'"',
+            ], escape: false);
+        $this->get($fileUrl($image, $primary))->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->get($fileUrl($pdf, $primary))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->get($fileUrl($html, $primary))->assertOk()->assertDownload('handout.html')
+            ->assertHeader('Content-Type', 'application/octet-stream')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->get($fileUrl($otherFile, $primary))->assertNotFound();
+        $this->get(CourseResource::getUrl('lesson-file', [
+            'course' => Course::factory()->create(),
+            'lesson' => $lesson,
+            'file' => $image,
+        ], tenant: $primary))->assertNotFound();
+
+        $branchOfficer = User::factory()->create();
+        $this->makeStaff($branchOfficer, $branch);
+        $this->grantRole($branchOfficer, $branch, DefaultRoles::EDUCATION_OFFICER);
+        $this->actingInPanel($branchOfficer, $branch);
+        $this->get($fileUrl($image, $branch))->assertForbidden();
+        $this->get($fileUrl($image, $primary))->assertNotFound();
     }
 
     public function test_head_office_officers_can_assign_users_from_different_branches(): void
