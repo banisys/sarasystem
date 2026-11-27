@@ -26,7 +26,7 @@ defineProps({
                     <PanelIcon :name="icon" class="size-6" />
                 </span>
                 <div class="min-w-0">
-                    <h1 class="wrap-break-word text-2xl font-extrabold sm:text-3xl">{{ title }}</h1>
+                    <h1 class="wrap-break-word text-xl font-extrabold sm:text-2xl">{{ title }}</h1>
                     <p v-if="description" class="mt-1 wrap-break-word text-sm text-ui-muted">{{ description }}</p>
                 </div>
             </div>

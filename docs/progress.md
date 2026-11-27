@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-27 — Standardized user-panel page headings to match the course detail page. The frontend build passed, and the course list and detail preview both measured 20px on mobile and 24px on desktop.
 - 2026-11-27 — Made syllabus lesson codes copyable by mouse and keyboard. The frontend build passed, and clipboard contents and course-page navigation were verified in the browser with sample lessons.
 - 2026-11-27 — Displayed lesson codes beside titles in the user-panel course syllabus for users eligible to browse all published courses. All 10 course-learning tests, targeted Pint, and the frontend build passed.
 - 2026-11-27 — Displayed existing covers on published course cards in «همهٔ دوره‌ها» and applied the catalog's role check to the cover route.

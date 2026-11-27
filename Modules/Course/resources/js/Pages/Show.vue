@@ -57,7 +57,6 @@ watch([description, () => props.course.description], ([element], _, onCleanup) =
                 icon="academic"
                 :back-href="route('courses.index')"
                 back-label="دوره‌های من"
-                class="[&_h1]:text-xl sm:[&_h1]:text-2xl"
             />
 
             <div class="flex flex-col items-stretch gap-5 lg:flex-row-reverse lg:items-start">

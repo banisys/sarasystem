@@ -25,4 +25,4 @@ The public site and user panel share Vue, Inertia and Tailwind. They need consis
 
 ## Consequences
 
-The user panel uses [UiPageHeader](../../resources/js/Components/Ui/UiPageHeader.vue) for page titles, context and related actions. Lists use keyboard-focusable cards and explain empty states. The class session groups teaching tasks, and the timed exam keeps progress and save status visible below the mobile header. Account and contract code forms move focus to the code field after sending. Grade entry and report cards use responsive rows and tables.
+The user panel uses [UiPageHeader](../../resources/js/Components/Ui/UiPageHeader.vue) for page titles, context and related actions. Page titles use the course page's size across the panel, with `text-xl` on mobile and `text-2xl` from the `sm` breakpoint. Lists use keyboard-focusable cards and explain empty states. The class session groups teaching tasks, and the timed exam keeps progress and save status visible below the mobile header. Account and contract code forms move focus to the code field after sending. Grade entry and report cards use responsive rows and tables.
