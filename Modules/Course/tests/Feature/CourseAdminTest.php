@@ -162,6 +162,39 @@ class CourseAdminTest extends TestCase
         $this->get($url)->assertForbidden();
     }
 
+    public function test_course_admin_routes_redirect_to_the_primary_branch_with_their_parameters(): void
+    {
+        $primary = Tenant::factory()->create();
+        $branch = Tenant::factory()->create();
+        $this->actAsEducationOfficer($primary);
+        $this->makeStaff(auth()->user(), $branch);
+        $course = Course::factory()->create();
+        $lesson = CourseLesson::factory()->for(CourseSection::factory()->for($course), 'section')->create();
+
+        $paths = [
+            'courses?tableSearch=php&tableFilters%5Bis_published%5D%5Bvalue%5D=1',
+            'courses/create',
+            "courses/{$course->id}/edit",
+            "courses/{$course->id}/sections",
+            "courses/{$course->id}/lessons",
+            "courses/{$course->id}/lessons/create",
+            "courses/{$course->id}/lessons/{$lesson->id}/edit",
+            "courses/{$course->id}/participants",
+            "courses/{$course->id}/activities",
+            'course-categories',
+            'course-teachers',
+            'course/enrollment',
+        ];
+
+        foreach ($paths as $path) {
+            $this->get("/cpadmin/{$branch->slug}/{$path}")
+                ->assertRedirect("/cpadmin/{$primary->slug}/{$path}");
+        }
+
+        $this->get("/cpadmin/{$primary->slug}/courses/{$course->id}/lessons")->assertOk();
+        $this->get("/cpadmin/{$branch->slug}")->assertOk();
+    }
+
     public function test_course_lessons_link_opens_only_the_selected_courses_lessons(): void
     {
         $tenant = Tenant::factory()->create();
@@ -338,7 +371,7 @@ class CourseAdminTest extends TestCase
         $this->makeStaff($branchOfficer, $branch);
         $this->grantRole($branchOfficer, $branch, DefaultRoles::EDUCATION_OFFICER);
         $this->actingInPanel($branchOfficer, $branch);
-        $this->get($fileUrl($image, $branch))->assertForbidden();
+        $this->get($fileUrl($image, $branch))->assertRedirect($fileUrl($image, $primary));
         $this->get($fileUrl($image, $primary))->assertNotFound();
     }
 

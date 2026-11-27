@@ -21,11 +21,14 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Course\Enums\TeacherEducation;
 use Modules\Course\Filament\Resources\CourseTeachers\Pages\ManageCourseTeachers;
+use Modules\Course\Http\Middleware\RedirectCourseToPrimaryTenant;
 use Modules\Course\Models\CourseTeacher;
 use UnitEnum;
 
 class CourseTeacherResource extends Resource implements IndependentOfTenant
 {
+    protected static string|array $routeMiddleware = [RedirectCourseToPrimaryTenant::class];
+
     protected static ?string $model = CourseTeacher::class;
 
     protected static bool $isScopedToTenant = false;

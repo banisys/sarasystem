@@ -44,7 +44,8 @@ class ManageCourseParticipantsTest extends TestCase
         $this->grantRole($branchOfficer, $otherBranch, DefaultRoles::EDUCATION_OFFICER);
         $this->actingInPanel($branchOfficer, $otherBranch);
 
-        $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $otherBranch))->assertForbidden();
+        $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $otherBranch))->assertRedirect($url);
+        $this->get($url)->assertNotFound();
 
         $viewer = User::factory()->create();
         $this->makeStaff($viewer, $tenant);

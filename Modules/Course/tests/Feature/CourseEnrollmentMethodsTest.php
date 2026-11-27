@@ -34,7 +34,7 @@ class CourseEnrollmentMethodsTest extends TestCase
         $this->actingInPanel($officer, $tenant);
 
         $this->get(CourseEnrollmentMethods::getUrl(tenant: $tenant))->assertOk()->assertSee('روش‌های ثبت‌نام');
-        $this->get(CourseEnrollmentMethods::getUrl(tenant: $otherBranch))->assertOk();
+        $this->get(CourseEnrollmentMethods::getUrl(tenant: $otherBranch))->assertRedirect(CourseEnrollmentMethods::getUrl(tenant: $tenant));
         $this->actingInPanel($officer, $otherBranch);
 
         $page = Livewire::test(CourseEnrollmentMethods::class)

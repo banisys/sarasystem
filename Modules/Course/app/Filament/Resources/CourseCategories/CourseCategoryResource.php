@@ -15,12 +15,15 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Str;
 use Modules\Course\Filament\Resources\CourseCategories\Pages\ManageCourseCategories;
+use Modules\Course\Http\Middleware\RedirectCourseToPrimaryTenant;
 use Modules\Course\Models\CourseCategory;
 use Modules\Course\Support\CourseCategoryTree;
 use UnitEnum;
 
 class CourseCategoryResource extends Resource implements IndependentOfTenant
 {
+    protected static string|array $routeMiddleware = [RedirectCourseToPrimaryTenant::class];
+
     protected static ?string $model = CourseCategory::class;
 
     protected static bool $isScopedToTenant = false;

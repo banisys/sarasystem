@@ -36,11 +36,14 @@ use Modules\Course\Filament\Resources\Courses\RelationManagers\LessonsRelationMa
 use Modules\Course\Filament\Resources\Courses\RelationManagers\SectionsRelationManager;
 use Modules\Course\Filament\Resources\Courses\Schemas\CourseForm;
 use Modules\Course\Http\Controllers\CourseController;
+use Modules\Course\Http\Middleware\RedirectCourseToPrimaryTenant;
 use Modules\Course\Models\Course;
 use UnitEnum;
 
 class CourseResource extends Resource implements IndependentOfTenant
 {
+    protected static string|array $routeMiddleware = [RedirectCourseToPrimaryTenant::class];
+
     protected static ?string $model = Course::class;
 
     protected static bool $isScopedToTenant = false;

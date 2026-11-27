@@ -36,7 +36,7 @@ class EnrollCourseFromRoleTest extends TestCase
         $course = Course::factory()->create();
 
         Livewire::withoutLazyLoading();
-        $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $north))
+        $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $primary))
             ->assertOk()->assertSee(['ثبت‌نام در دوره', 'بر اساس نقش']);
         Livewire::test(EnrollmentsRelationManager::class, $this->owner($course))
             ->callAction(TestAction::make('enrollFromRole')->table(), data: ['scope' => $south->id, 'role_id' => $role->id])

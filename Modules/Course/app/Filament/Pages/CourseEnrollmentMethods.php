@@ -16,12 +16,15 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
+use Modules\Course\Http\Middleware\RedirectCourseToPrimaryTenant;
 use Modules\Course\Models\CourseEnrollmentSettings;
 use Modules\Course\Support\CoursePermissions;
 use UnitEnum;
 
 class CourseEnrollmentMethods extends Page implements IndependentOfTenant
 {
+    protected static string|array $routeMiddleware = [RedirectCourseToPrimaryTenant::class];
+
     protected static ?string $slug = 'course/enrollment';
 
     protected static ?string $title = 'روش‌های ثبت‌نام';

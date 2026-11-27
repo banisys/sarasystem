@@ -57,9 +57,10 @@ class EnrollCourseFromClassTest extends TestCase
         ]);
 
         Livewire::withoutLazyLoading();
-        $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $branch))
+        $this->get(CourseResource::getUrl('participants', ['record' => $course], tenant: $primary))
             ->assertOk()->assertSee(['ثبت‌نام در دوره', 'از کلاس']);
 
+        $this->actingInPanel(auth()->user(), $branch);
         $component = Livewire::test(EnrollmentsRelationManager::class, $this->owner($course));
         $action = TestAction::make('enrollFromClass')->table();
         $component->mountAction($action)->assertActionDataSet(['tenant_id' => null, 'class_id' => null]);
