@@ -61,7 +61,7 @@ class CourseServiceProvider extends ModuleServiceProvider
             : []);
 
         UserPanel::navigationUsing('courses', fn (): array => Course::query()->published()->exists()
-            ? [['title' => 'دوره‌های آموزشی', 'url' => route('courses.index'), 'icon' => 'academic']]
+            ? [['title' => 'دوره‌های من', 'url' => route('courses.index'), 'icon' => 'academic']]
             : [], requiresTenant: false);
     }
 }

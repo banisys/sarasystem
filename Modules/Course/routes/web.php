@@ -10,6 +10,7 @@ Route::get('profile/courses/open/{branch:slug}/{catalogCourse}', [CourseCatalogC
 Route::middleware(['auth', 'auth.session'])->prefix('profile/courses')->name('courses.')->scopeBindings()->group(function (): void {
     Route::get('/', [CourseController::class, 'index'])->name('index');
     Route::get('/{course}', [CourseController::class, 'show'])->name('show');
+    Route::get('/{course}/cover', [CourseController::class, 'cover'])->name('cover');
     Route::post('/{course}/enroll', [CourseController::class, 'enroll'])->name('enroll');
     Route::get('/{course}/lessons/{lesson}', [CourseController::class, 'lesson'])->name('lesson');
     Route::put('/{course}/lessons/{lesson}/complete', [CourseController::class, 'complete'])->name('lesson.complete');

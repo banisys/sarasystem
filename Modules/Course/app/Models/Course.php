@@ -18,6 +18,8 @@ use Modules\Course\Database\Factories\CourseFactory;
 ])]
 class Course extends Model
 {
+    public const array IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+
     /** @use HasFactory<CourseFactory> */
     use HasFactory;
 

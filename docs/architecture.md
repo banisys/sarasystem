@@ -199,11 +199,15 @@ The user-panel exam session details let class editors and effective invigilators
 
 The «شرکت‌کنندگان» action in the self-paced course list opens the shared enrollment editor for the selected course. Both admin entry points honor the shared manual enrollment setting and keep revoked enrollments on record. Course permissions come from the primary branch, and Course admin URLs [redirect there](decisions/0162-course-admin-primary-branch-urls.md). The «ثبت‌نام در دوره» menu offers manual, role-based, and class-based enrollment. It sits beside the page title on the participants page and above the table in the course edit tab. «از کلاس» asks for a source branch and adds the current attendees of a class from that branch through Class’s optional roster source ([ADR 0146](decisions/0146-course-enrollment-from-a-class.md)). «بر اساس نقش» imports users from a role assignment in an authorized branch or across the organization ([ADR 0147](decisions/0147-course-enrollment-by-role.md)). Lesson exams open through the Exam context without changing the user's selected branch ([ADR 0145](decisions/0145-global-course-module.md)).
 
+In the user panel, eligible users can switch «دوره‌های من» to a [paginated view of the published catalog](decisions/0166-profile-course-catalog-toggle.md).
+
 The admin lesson editor uses the course update permission to serve [private file previews](decisions/0161-admin-lesson-file-previews.md), including for unpublished courses.
 
-[Lesson codes](decisions/0164-course-lesson-codes.md) are unique across the installation and searchable from the course’s admin lesson list.
+[Lesson codes](decisions/0164-course-lesson-codes.md) are unique across the installation and searchable from the course’s admin lesson list. Eligible users see them beside lesson titles on the user-panel course page.
 
 Class staff can [share lessons by code in a class session](decisions/0165-share-course-lessons-in-class-sessions.md). Course supplies lesson content and Class authorizes the session page and private files.
+
+The course cards load [private course covers](decisions/0163-my-courses-cover-images.md) through the user panel for active enrollees and users eligible to browse all published courses.
 
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 

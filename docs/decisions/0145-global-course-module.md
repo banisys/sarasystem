@@ -16,6 +16,8 @@ The first release of Course gave every course, category, teacher profile, enroll
 
 Courses, sections, lessons, categories, instructor assignments, participants, completion and registration methods are installation-wide. The public catalog is at `/courses`. Old branch catalog and course-entry links redirect to the shared location. Authenticated accounts can enroll or study without choosing a branch. Publishing, registration settings, effective enrollment dates, revocation and private file checks keep their existing meanings.
 
+The user panel’s «دوره‌های من» page at `/profile/courses` defaults to published courses with an active enrollment for the signed-in user, regardless of the selected branch. Eligible users can switch to [all published courses](0166-profile-course-catalog-toggle.md).
+
 Super admins and staff granted Course permissions in the primary branch can manage these records. Branch assignments outside the primary branch confer no Course permissions. Course admin routes use the [primary branch URL](0162-course-admin-primary-branch-urls.md) and normal panel access checks. The tenant selector labels the Course pages «مستقل از شعبه». The branch explicitly selected in the form supplies the eligible class roster for [enrollment from a class](0146-course-enrollment-from-a-class.md).
 
 Staff with course deletion permission see Delete in the admin course list. The action is disabled for courses with lessons and explains the prerequisite. Deleting a course without lessons requires confirmation.

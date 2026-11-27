@@ -22,4 +22,4 @@ The editable rich description is stored as sanitized HTML. The existing reader v
 
 ## Consequences
 
-Existing courses keep their primary category and publication state. Their descriptions open as text in the rich editor. The catalog and reader use their existing text presentation. Publishing introductory media, scheduling visibility or enrollment, capacity enforcement and payment or package registration can be implemented separately.
+Existing courses keep their primary category and publication state. Their descriptions open as text in the rich editor. The [course cover appears in «دوره‌های من»](0163-my-courses-cover-images.md) for active enrollees. The public catalog keeps its text presentation. Publishing introductory media, scheduling visibility or enrollment, capacity enforcement and payment or package registration can be implemented separately.

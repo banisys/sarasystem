@@ -2,6 +2,7 @@
 
 namespace Modules\Course\Http\Controllers;
 
+use App\Authorization\DefaultRoles;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
@@ -17,34 +19,67 @@ use Modules\Course\Models\Course;
 use Modules\Course\Models\CourseEnrollmentSettings;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
-use Nwidart\Modules\Facades\Module;
 use Modules\Course\Services\LessonContent;
+use Nwidart\Modules\Facades\Module;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CourseController extends Controller
 {
     public function index(Request $request): Response
     {
-        $onlyMine = $request->boolean('mine');
-        $freeEnrollmentEnabled = CourseEnrollmentSettings::current()->free_enabled;
-        $myActiveEnrollment = fn (Builder $query): Builder => $query->active()->where('user_id', $request->user()->getKey());
+        $user = $request->user();
+        $canShowAll = $this->canBrowseCatalog($user);
+        $showAll = $canShowAll && $request->boolean('all');
+        $search = $request->query('search');
+        $search = is_string($search) ? mb_substr(trim($search), 0, 100) : '';
+        $myActiveEnrollment = fn (Builder $query): Builder => $query->active()->where('user_id', $user->getKey());
 
         $courses = Course::query()->published()
-            ->when($onlyMine, fn (Builder $query): Builder => $query->whereHas('enrollments', $myActiveEnrollment))
-            ->with('category:id,title')
+            ->when(! $showAll, fn (Builder $query): Builder => $query->whereHas('enrollments', $myActiveEnrollment))
+            ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('title', '%'.$search.'%'))
             ->withExists(['enrollments as enrolled' => $myActiveEnrollment])
+            ->with('category:id,title')
             ->withCount('lessons')
             ->latest('id')
             ->paginate(15)
-            ->withQueryString()
+            ->appends([
+                'all' => $showAll ? 1 : null,
+                'search' => $search !== '' ? $search : null,
+            ])
             ->through(fn (Course $course): array => [
-                ...$course->only('title', 'enrolled', 'lessons_count'),
-                'allows_self_enrollment' => $freeEnrollmentEnabled && $course->allows_self_enrollment,
+                ...$course->only('title', 'lessons_count', 'enrolled'),
                 'category' => $course->category?->title,
+                'cover_url' => filled($course->cover_image) ? route('courses.cover', $course) : null,
                 'url' => route('courses.show', $course),
             ]);
 
-        return Inertia::render('Course::Index', ['courses' => $courses, 'onlyMine' => $onlyMine]);
+        return Inertia::render('Course::Index', [
+            'courses' => $courses,
+            'canShowAll' => $canShowAll,
+            'showAll' => $showAll,
+            'search' => $search,
+        ]);
+    }
+
+    public function cover(Request $request, Course $course): StreamedResponse
+    {
+        abort_unless($course->is_published, 404);
+        $user = $request->user();
+        abort_unless($this->canBrowseCatalog($user) || $this->isEnrolled($course, $user), 403);
+
+        $disk = Storage::disk('local');
+        $cover = $course->cover_image;
+        abort_unless(filled($cover) && $disk->fileExists($cover), 404);
+
+        $mimeType = $disk->mimeType($cover);
+        abort_unless(in_array($mimeType, Course::IMAGE_TYPES, true), 404);
+
+        return $disk->response($cover, headers: [
+            'Content-Type' => $mimeType,
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function show(Request $request, Course $course): Response
@@ -54,8 +89,9 @@ class CourseController extends Controller
         $user = $request->user();
         $enrollment = $course->enrollments()->where('user_id', $user->getKey())->first();
         $enrolled = $this->isEnrolled($course, $user);
+        $showLessonCodes = $this->canBrowseCatalog($user);
         $course->load(['category:id,title', 'instructors.user:id,name', 'sections.lessons' => fn (HasMany $lessons) => $lessons
-            ->select(['id', 'course_section_id', 'title', 'duration_minutes', 'is_preview'])
+            ->select(['id', 'course_section_id', 'title', 'code', 'duration_minutes', 'is_preview'])
             ->withExists(['completions as completed' => fn (Builder $completed): Builder => $completed->where('user_id', $user->getKey())])]);
 
         return Inertia::render('Course::Show', [
@@ -68,6 +104,7 @@ class CourseController extends Controller
                 ...$section->only('id', 'title'),
                 'lessons' => $section->lessons->map(fn (CourseLesson $lesson): array => [
                     ...$lesson->only('id', 'title', 'duration_minutes', 'is_preview', 'completed'),
+                    ...($showLessonCodes ? ['code' => $lesson->code] : []),
                     'url' => $enrolled || $lesson->is_preview ? route('courses.lesson', [$course, $lesson]) : null,
                 ]),
             ]),
@@ -143,6 +180,13 @@ class CourseController extends Controller
         abort_unless($enrolled || $lesson->is_preview, 403);
 
         return $enrolled;
+    }
+
+    private function canBrowseCatalog(User $user): bool
+    {
+        $roles = $user->getRoleNames();
+
+        return $user->isSuperAdmin() || ($roles->isNotEmpty() && ! $roles->contains(DefaultRoles::LEARNER));
     }
 
     private function isEnrolled(Course $course, User $user): bool

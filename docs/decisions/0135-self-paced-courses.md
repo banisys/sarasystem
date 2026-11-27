@@ -33,3 +33,7 @@ The «شرکت‌کنندگان» row action opens the course's enrollment edito
 Branch administrators control the availability and display names of supported enrollment methods through [ADR 0138](0138-course-enrollment-methods.md). The course form and its administrative details are described in [ADR 0139](0139-course-admin-form.md).
 
 SaraSystem uses branches and user accounts for the organizational and instructor roles of the legacy Academy and Teacher records. Branch teacher profiles for those accounts were added in [ADR 0137](0137-course-teacher-profiles.md). Category trees were added in [ADR 0136](0136-course-category-trees.md). Paid and package enrollments, individual activity sales, related-course merchandising, gallery and site widgets, and inline video quizzes remain outside this port. Data import needs a separate mapping for branches, accounts and stored files.
+
+The user panel’s «دوره‌های من» page lists published courses where the signed-in user has an active enrollment. Course cards show the [course cover](0163-my-courses-cover-images.md) when set, show lesson counts, and link to the course.
+
+The learner course page places the description above the syllabus. Long descriptions show four lines by default and can be expanded. The syllabus opens its first section by default and shows one section’s lessons at a time. A responsive summary card groups the lesson count, instructors, enrollment status or progress, and the available enrollment or study action. Restricted lessons display a lock icon.

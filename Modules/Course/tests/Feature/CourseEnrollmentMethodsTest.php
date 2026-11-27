@@ -74,9 +74,7 @@ class CourseEnrollmentMethodsTest extends TestCase
             ->where('courses.data.0.allows_self_enrollment', false));
         $this->get(route('courses.catalog', $course))->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('course.allows_self_enrollment', false));
-        $this->actingAs($learner)->get(route('courses.index'))->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->where('courses.data.0.allows_self_enrollment', false));
-        $this->get(route('courses.show', $course))->assertOk()->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($learner)->get(route('courses.show', $course))->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('canEnroll', false));
         $this->post(route('courses.enroll', $course))->assertForbidden();
         $this->assertDatabaseCount(CourseEnrollment::class, 0);

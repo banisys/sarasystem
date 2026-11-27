@@ -2,10 +2,12 @@
 
 namespace Modules\Course\Tests\Feature;
 
+use App\Authorization\DefaultRoles;
 use App\Http\Middleware\ResolveCurrentTenant;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -50,7 +52,9 @@ class CourseLearningTest extends TestCase
         $this->get(route('courses.catalog', $course))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('Course::CatalogCourse', false)
-                ->where('sections.0.lessons.0.title', $lesson->title)->missing('sections.0.lessons.0.body'));
+                ->where('sections.0.lessons.0.title', $lesson->title)
+                ->missing('sections.0.lessons.0.body')
+                ->missing('sections.0.lessons.0.code'));
 
         $this->get(route('courses.lesson', [$course, $lesson]))->assertRedirect(route('login'));
     }
@@ -67,12 +71,178 @@ class CourseLearningTest extends TestCase
         $this->get($openUrl)->assertRedirect(route('login'));
         $this->actingAs($user)->get($showUrl)->assertOk()->assertSessionMissing(ResolveCurrentTenant::SESSION_KEY)
             ->assertInertia(fn (Assert $page) => $page->where('tenant.current', null)
+                ->where('navigation.0.title', 'دوره‌های من')
                 ->where('navigation.0.url', route('courses.index')));
 
         $this->grantRole($user, $otherBranch, 'learner');
         $this->withSession([ResolveCurrentTenant::SESSION_KEY => $otherBranch->id])
             ->get($openUrl)->assertRedirect($showUrl)
             ->assertSessionHas(ResolveCurrentTenant::SESSION_KEY, $otherBranch->id);
+    }
+
+    public function test_my_courses_lists_only_published_courses_with_an_active_enrollment_for_the_signed_in_user(): void
+    {
+        $learner = User::factory()->create();
+        $otherLearner = User::factory()->create();
+        $course = Course::factory()->create(['is_published' => true]);
+        $publishedCourses = Course::factory()->state(['is_published' => true]);
+        CourseEnrollment::factory()->for($course)->for($learner)->create();
+        CourseEnrollment::factory()->for($publishedCourses)->for($otherLearner, 'user')->create();
+        CourseEnrollment::factory()->for($publishedCourses)->for($learner)->create(['is_revoked' => true]);
+        CourseEnrollment::factory()->for($publishedCourses)->for($learner)->create(['starts_at' => now()->addDay()]);
+        CourseEnrollment::factory()->for($publishedCourses)->for($learner)->create(['expires_at' => now()->subDay()]);
+        CourseEnrollment::factory()->for($learner)->create();
+        $publishedCourses->create(['allows_self_enrollment' => true]);
+
+        $this->actingAs($learner)->get(route('courses.index', ['all' => 1]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Course::Index', false)
+                ->where('canShowAll', false)
+                ->where('showAll', false)
+                ->has('courses.data', 1)
+                ->where('courses.data.0.url', route('courses.show', $course))
+                ->where('courses.data.0.cover_url', null));
+    }
+
+    public function test_all_courses_uses_the_selected_branch_role_and_paginates_the_published_catalog(): void
+    {
+        Storage::fake('local');
+        $image = UploadedFile::fake()->image('cover.png');
+        $cover = $image->storeAs('courses/images', 'cover.png', 'local');
+        $staffBranch = Tenant::factory()->create();
+        $learnerBranch = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $this->grantRole($user, $staffBranch, DefaultRoles::INSTRUCTOR);
+        $this->grantRole($user, $learnerBranch, DefaultRoles::LEARNER);
+
+        $published = Course::factory()->state(['is_published' => true]);
+        $unenrolled = $published->create(['cover_image' => $cover]);
+        $enrolled = $published->create();
+        CourseEnrollment::factory()->for($enrolled)->for($user)->create();
+        $published->count(14)->create();
+        $unpublished = Course::factory()->create(['is_published' => false, 'cover_image' => $cover]);
+
+        $secondPage = route('courses.index', ['all' => 1, 'page' => 2]);
+        $coverUrl = route('courses.cover', $unenrolled);
+        $this->actingAs($user)->withSession([ResolveCurrentTenant::SESSION_KEY => $staffBranch->id]);
+        $this->get(route('courses.index'))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('canShowAll', true)
+                ->where('showAll', false)
+                ->has('courses.data', 1)
+                ->where('courses.data.0.enrolled', true));
+        $this->get(route('courses.index', ['all' => 1]))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('showAll', true)
+                ->has('courses.data', 15)
+                ->where('courses.total', 16)
+                ->where('courses.next_page_url', $secondPage));
+        $this->get($secondPage)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('showAll', true)
+                ->where('courses.current_page', 2)
+                ->has('courses.data', 1)
+                ->where('courses.data.0.url', route('courses.show', $unenrolled))
+                ->where('courses.data.0.enrolled', false)
+                ->where('courses.data.0.cover_url', $coverUrl));
+        $this->get($coverUrl)->assertOk()->assertStreamedContent($image->getContent());
+        $this->get(route('courses.cover', $unpublished))->assertNotFound();
+
+        $this->withSession([ResolveCurrentTenant::SESSION_KEY => $learnerBranch->id])
+            ->get(route('courses.index', ['all' => 1]))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('canShowAll', false)
+                ->where('showAll', false)
+                ->has('courses.data', 1)
+                ->where('courses.data.0.url', route('courses.show', $enrolled)));
+        $this->get($coverUrl)->assertForbidden();
+    }
+
+    public function test_search_filters_course_titles_within_the_selected_list_before_pagination(): void
+    {
+        $branch = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $this->grantRole($user, $branch, DefaultRoles::INSTRUCTOR);
+
+        $published = Course::factory()->state(['is_published' => true]);
+        $match = $published->create(['title' => 'آموزش طراحی']);
+        $other = $published->create(['title' => 'آموزش برنامه‌نویسی']);
+        CourseEnrollment::factory()->for($match)->for($user)->create();
+        CourseEnrollment::factory()->for($other)->for($user)->create();
+
+        for ($number = 1; $number <= 15; $number++) {
+            $published->create(['title' => "طراحی پیشرفته {$number}"]);
+        }
+        Course::factory()->create(['title' => 'پیش‌نویس طراحی', 'is_published' => false]);
+
+        $this->actingAs($user)->get(route('courses.index', ['search' => ' طراحی ']))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('search', 'طراحی')
+                ->has('courses.data', 1)
+                ->where('courses.data.0.url', route('courses.show', $match)));
+
+        $filters = ['all' => 1, 'search' => 'طراحی'];
+        $secondPage = route('courses.index', [...$filters, 'page' => 2]);
+        $this->get(route('courses.index', $filters))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('showAll', true)
+                ->where('courses.total', 16)
+                ->has('courses.data', 15)
+                ->where('courses.next_page_url', $secondPage));
+        $this->get($secondPage)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('search', 'طراحی')
+                ->where('courses.current_page', 2)
+                ->has('courses.data', 1)
+                ->where('courses.data.0.url', route('courses.show', $match)));
+    }
+
+    public function test_learners_need_an_active_enrollment_to_view_a_published_course_cover(): void
+    {
+        Storage::fake('local');
+        $image = UploadedFile::fake()->image('cover.png');
+        $path = $image->storeAs('courses/images', 'cover.png', 'local');
+        $course = Course::factory()->create(['is_published' => true, 'cover_image' => $path]);
+        $learner = User::factory()->create();
+        $this->grantRole($learner, Tenant::factory()->create(), DefaultRoles::LEARNER);
+        $enrollment = CourseEnrollment::factory()->for($course)->for($learner)->create();
+        $coverUrl = route('courses.cover', $course);
+
+        $this->get($coverUrl)->assertRedirect(route('login'));
+        $this->actingAs(User::factory()->create())->get($coverUrl)->assertForbidden();
+        $this->actingAs($learner)->get(route('courses.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('courses.data.0.cover_url', $coverUrl));
+        $this->get($coverUrl)->assertOk()->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('Cache-Control', 'no-store, private')->assertStreamedContent($image->getContent());
+
+        $course->update(['is_published' => false]);
+        $this->get($coverUrl)->assertNotFound();
+        $course->update(['is_published' => true]);
+        $enrollment->update(['is_revoked' => true]);
+        $this->get($coverUrl)->assertForbidden();
+    }
+
+    public function test_course_syllabus_includes_lesson_codes_only_in_a_non_learner_branch_role(): void
+    {
+        $staffBranch = Tenant::factory()->create();
+        $learnerBranch = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $this->grantRole($user, $staffBranch, DefaultRoles::INSTRUCTOR);
+        $this->grantRole($user, $learnerBranch, DefaultRoles::LEARNER);
+
+        $course = Course::factory()->create(['is_published' => true]);
+        $section = CourseSection::factory()->for($course)->create();
+        $lesson = CourseLesson::factory()->for($section, 'section')->create(['position' => 1, 'code' => 'LSN-FIRST']);
+        $preview = CourseLesson::factory()->for($section, 'section')->create(['position' => 2, 'code' => 'LSN-PREVIEW', 'is_preview' => true]);
+        $url = route('courses.show', $course);
+        $lessonUrl = route('courses.lesson', [$course, $lesson]);
+
+        $this->actingAs($user)->withSession([ResolveCurrentTenant::SESSION_KEY => $staffBranch->id])
+            ->get($url)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('sections.0.lessons.0.code', $lesson->code)
+                ->where('sections.0.lessons.1.code', $preview->code)
+                ->where('sections.0.lessons.0.url', null));
+        $this->get($lessonUrl)->assertForbidden();
+
+        CourseEnrollment::factory()->for($course)->for($user)->create();
+        $this->withSession([ResolveCurrentTenant::SESSION_KEY => $learnerBranch->id])
+            ->get($url)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->missing('sections.0.lessons.0.code')
+                ->missing('sections.0.lessons.1.code')
+                ->where('sections.0.lessons.0.url', $lessonUrl));
     }
 
     public function test_enrollment_unlocks_content_and_completion_is_idempotent_and_individual(): void
@@ -108,8 +278,8 @@ class CourseLearningTest extends TestCase
 
         $this->assertDatabaseCount(CourseEnrollment::class, 1);
         $this->assertDatabaseCount(CourseCompletion::class, 1);
-        $this->get(route('courses.index', ['mine' => 1]))->assertInertia(fn (Assert $page) => $page
-            ->where('courses.data.0.url', $showUrl)->where('courses.data.0.enrolled', true));
+        $this->get(route('courses.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('courses.data.0.url', $showUrl));
         $this->get($showUrl)->assertInertia(fn (Assert $page) => $page->where('sections.0.lessons.1.completed', true));
         $this->get($lessonUrl)->assertInertia(fn (Assert $page) => $page->where('previous', $previewUrl)
             ->where('lesson.bodyHtml', '<p><strong>متن قالب‌بندی‌شده</strong></p>'));

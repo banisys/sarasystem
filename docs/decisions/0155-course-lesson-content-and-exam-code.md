@@ -21,3 +21,5 @@ Remove the type. Each lesson supports rich text, one private video, up to five p
 ## Consequences
 
 Staff can reuse the same source in several lessons. The original exam's participants and attempts stay with the original. Bank-based copies keep using the banks. Existing lesson exams and files are preserved. If a legacy lesson already has multiple exams, they remain available and the form rejects adding another. A lesson with more than five legacy attachments must be reduced to five when its form is saved. The video upload [sets the lesson duration](0156-course-lesson-video-duration.md). [ADR 0157](0157-course-lesson-audio.md) adds an optional audio track.
+
+The learner page stacks available media, lesson text, attachments, and the exam link in one column at every screen width. Completion and navigation to adjacent lessons share a footer.

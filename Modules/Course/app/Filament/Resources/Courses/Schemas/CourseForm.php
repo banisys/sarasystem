@@ -106,7 +106,7 @@ class CourseForm
     private static function imageUpload(string $name, string $label): FileUpload
     {
         return FileUpload::make($name)->label($label)->image()
-            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+            ->acceptedFileTypes(Course::IMAGE_TYPES)
             ->disk('local')->directory('courses/images')->visibility('private')
             ->preventFilePathTampering()->maxSize(12288);
     }
