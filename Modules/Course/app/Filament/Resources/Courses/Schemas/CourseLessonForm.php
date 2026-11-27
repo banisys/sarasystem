@@ -37,6 +37,12 @@ class CourseLessonForm
 
         return [
             TextInput::make('title')->label('عنوان')->trim()->required()->maxLength(255),
+            TextInput::make('code')->label('کد درس')->trim()->maxLength(64)
+                ->unique(table: CourseLesson::class, ignoreRecord: true)
+                ->helperText(fn (?CourseLesson $record): string => $record?->code
+                    ? 'خالی بماند، کد فعلی حفظ می‌شود.'
+                    : 'خالی بماند، خودکار ساخته می‌شود.')
+                ->extraInputAttributes(['dir' => 'ltr']),
             Select::make('course_section_id')->label('سرفصل')->required()
                 ->relationship('section', 'title', modifyQueryUsing: $inCourse)
                 ->scopedExists(CourseSection::class, 'id', $inCourse),

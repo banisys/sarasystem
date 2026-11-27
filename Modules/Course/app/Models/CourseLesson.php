@@ -11,7 +11,7 @@ use Modules\Course\Database\Factories\CourseLessonFactory;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-#[Fillable(['course_id', 'course_section_id', 'title', 'position', 'body', 'body_html', 'is_preview', 'duration_minutes', 'audio_duration_seconds'])]
+#[Fillable(['course_id', 'course_section_id', 'title', 'code', 'position', 'body', 'body_html', 'is_preview', 'duration_minutes', 'audio_duration_seconds'])]
 class CourseLesson extends Model implements HasMedia
 {
     /** @use HasFactory<CourseLessonFactory> */
@@ -24,6 +24,15 @@ class CourseLesson extends Model implements HasMedia
     ];
 
     public const array ATTACHMENT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
+
+    protected static function booted(): void
+    {
+        static::saving(function (CourseLesson $lesson): void {
+            if (blank($lesson->code)) {
+                $lesson->code = $lesson->getOriginal('code') ?? 'LSN-'.str()->upper(str()->random(8));
+            }
+        });
+    }
 
     protected static function newFactory(): CourseLessonFactory
     {

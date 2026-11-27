@@ -229,6 +229,56 @@ class CourseAdminTest extends TestCase
         $this->get($createUrl)->assertForbidden();
     }
 
+    public function test_lesson_gets_a_code_on_creation_and_keeps_it_when_edited_with_the_code_blank(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actAsEducationOfficer($tenant);
+        $section = CourseSection::factory()->create();
+        $course = $section->course;
+
+        Livewire::test(CreateCourseLesson::class, ['course' => $course->id])
+            ->fillForm(['title' => 'درس با کد خودکار', 'course_section_id' => $section->id])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $lesson = $section->lessons()->sole();
+        $code = $lesson->code;
+        $this->assertMatchesRegularExpression('/^LSN-[A-Z0-9]{8}$/', $code);
+
+        Livewire::test(EditCourseLesson::class, ['course' => $course->id, 'record' => $lesson->id])
+            ->fillForm(['code' => ''])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($code, $lesson->refresh()->code);
+        Livewire::withoutLazyLoading();
+        $this->get(CourseResource::getUrl('lessons', ['record' => $course], tenant: $tenant))
+            ->assertOk()
+            ->assertSee(['کد درس', $code]);
+    }
+
+    public function test_lesson_accepts_a_custom_code_and_rejects_its_reuse_in_another_course(): void
+    {
+        $this->actAsEducationOfficer(Tenant::factory()->create());
+        $section = CourseSection::factory()->create();
+        $otherSection = CourseSection::factory()->create();
+        $code = 'INTRO-101';
+
+        Livewire::test(CreateCourseLesson::class, ['course' => $section->course_id])
+            ->fillForm(['title' => 'درس با کد دستی', 'course_section_id' => $section->id, 'code' => $code])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($code, $section->lessons()->sole()->code);
+
+        Livewire::test(CreateCourseLesson::class, ['course' => $otherSection->course_id])
+            ->fillForm(['title' => 'درس با کد تکراری', 'course_section_id' => $otherSection->id, 'code' => $code])
+            ->call('create')
+            ->assertHasFormErrors(['code' => 'unique']);
+
+        $this->assertSame(0, $otherSection->lessons()->count());
+    }
+
     public function test_lesson_can_contain_video_and_attachments_but_rejects_more_than_five_files(): void
     {
         Storage::fake('local');

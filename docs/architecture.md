@@ -201,6 +201,8 @@ The «شرکت‌کنندگان» action in the self-paced course list opens the
 
 The admin lesson editor uses the course update permission to serve [private file previews](decisions/0161-admin-lesson-file-previews.md), including for unpublished courses.
 
+[Lesson codes](decisions/0164-course-lesson-codes.md) are unique across the installation and searchable from the course’s admin lesson list.
+
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy

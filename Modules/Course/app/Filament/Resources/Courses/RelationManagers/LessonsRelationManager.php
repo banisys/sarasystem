@@ -26,6 +26,7 @@ class LessonsRelationManager extends CourseRelationManager
         return $table->recordTitleAttribute('title')->defaultSort('position')
             ->columns([
                 TextColumn::make('title')->label('عنوان')->searchable(),
+                TextColumn::make('code')->label('کد درس')->searchable(),
                 TextColumn::make('section.title')->label('سرفصل'),
                 TextColumn::make('position')->label('ترتیب')->sortable(),
                 IconColumn::make('is_preview')->label('پیش‌نمایش')->boolean(),
