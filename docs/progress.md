@@ -23,6 +23,7 @@ Defining scope of the redesign: which LMS features to keep, drop and add.
 - Decide how modules ship Inertia pages (resolver for `Module::Page` names, module Vite configs via `vite-module-loader.js`).
 
 ## Done
+- 2026-11-27 — Added an explicit source branch picker to course enrollment from a class. All 36 Course tests and Pint passed. The participants page also passed with Class disabled, and the system map passed with Course disabled.
 - 2026-11-27 — Added playback and attachment previews for saved files in the admin lesson editor ([ADR 0161](decisions/0161-admin-lesson-file-previews.md)). All 36 Course tests, Pint and the frontend build passed. The public home and five system map tests passed with Course disabled.
 - 2026-11-26 — Removed the lesson exam action from the admin lessons list.
 - 2026-11-26 — Linked course lessons to the original exam by code ([ADR 0160](decisions/0160-link-original-lesson-exam.md)). All 883 tests and Pint passed. Course and Exam passed with the other module disabled.

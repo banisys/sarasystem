@@ -5,10 +5,12 @@ namespace Modules\Course\Filament\Resources\Courses\RelationManagers;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\ClassRoster;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
@@ -84,35 +86,74 @@ class EnrollmentsRelationManager extends CoursePeopleRelationManager
 
     private function enrollFromClassAction(ClassRoster $rosters): Action
     {
-        $canEnroll = fn (): bool => auth()->user() instanceof User
-            && $rosters->canBrowse(auth()->user())
-            && CourseEnrollmentSettings::current()->manual_enabled;
+        $tenantOptions = function () use ($rosters): array {
+            $actor = auth()->user();
+
+            return $actor instanceof User
+                ? $actor->getTenants(Filament::getCurrentPanel())
+                    ->filter(fn (Tenant $tenant): bool => $tenant->execute(fn (): bool => $rosters->canBrowse(
+                        (clone $actor)->unsetRelation('roles')->unsetRelation('permissions'),
+                    )))
+                    ->pluck('name', 'id')->all()
+                : [];
+        };
+
+        $canEnroll = fn (): bool => CourseEnrollmentSettings::current()->manual_enabled && $tenantOptions() !== [];
 
         return Action::make('enrollFromClass')
             ->label('از کلاس')
             ->modalHeading('ثبت‌نام از کلاس')
             ->icon(Heroicon::OutlinedUserGroup)
             ->authorize($canEnroll)
-            ->modalDescription(fn (): string => 'فراگیران فعلی کلاس در '.Tenant::current()?->name.' به دوره اضافه می‌شوند. ثبت‌نام‌های قبلی حفظ می‌شوند.')
+            ->modalDescription('فراگیران فعلی کلاس به دوره اضافه می‌شوند. ثبت‌نام‌های قبلی حفظ می‌شوند.')
             ->modalSubmitActionLabel('ثبت‌نام فراگیران')
             ->schema([
+                Select::make('tenant_id')
+                    ->label(config('sarasystem.tenant_label'))->required()->searchable()->live()->rule('integer')
+                    ->options($tenantOptions)
+                    ->afterStateUpdated(fn (Set $set) => $set('class_id', null)),
                 Select::make('class_id')
                     ->label('کلاس')->required()->searchable()->rule('integer')
-                    ->options(fn (): array => $rosters->options(auth()->user()))
-                    ->getSearchResultsUsing(fn (string $search): array => $rosters->options(auth()->user(), $search))
-                    ->getOptionLabelUsing(function (mixed $value) use ($rosters): ?string {
+                    ->disabled(fn (Get $get): bool => blank($get('tenant_id')))
+                    ->options(fn (Get $get): array => $this->inClassBranch(
+                        $get('tenant_id'), fn (User $actor): array => $rosters->options($actor),
+                    ) ?? [])
+                    ->getSearchResultsUsing(fn (Get $get, string $search): array => $this->inClassBranch(
+                        $get('tenant_id'), fn (User $actor): array => $rosters->options($actor, $search),
+                    ) ?? [])
+                    ->getOptionLabelUsing(function (Get $get, mixed $value) use ($rosters): ?string {
                         $classId = filter_var($value, FILTER_VALIDATE_INT);
 
-                        return $classId === false ? null : $rosters->title(auth()->user(), $classId);
+                        return $classId === false ? null : $this->inClassBranch(
+                            $get('tenant_id'), fn (User $actor): ?string => $rosters->title($actor, $classId),
+                        );
                     }),
             ])
             ->action(function (array $data) use ($rosters, $canEnroll): void {
                 abort_unless($canEnroll(), 403);
-                $userIds = $rosters->attendeeIds(auth()->user(), (int) $data['class_id']);
+                $userIds = $this->inClassBranch(
+                    $data['tenant_id'], fn (User $actor): ?array => $rosters->attendeeIds($actor, (int) $data['class_id']),
+                );
                 abort_if($userIds === null, 404);
 
                 $this->enrollUsers($userIds, 'ثبت‌نام از کلاس انجام شد.');
             });
+    }
+
+    private function inClassBranch(mixed $value, Closure $read): mixed
+    {
+        $actor = auth()->user();
+        $tenantId = filter_var($value, FILTER_VALIDATE_INT);
+        if (! $actor instanceof User || $tenantId === false) {
+            return null;
+        }
+
+        $tenant = Tenant::query()->find($tenantId);
+        if ($tenant === null || ! $actor->canAccessTenant($tenant)) {
+            return null;
+        }
+
+        return $tenant->execute(fn () => $read((clone $actor)->unsetRelation('roles')->unsetRelation('permissions')));
     }
 
     private function enrollFromRoleAction(CourseRoleRoster $rosters): Action

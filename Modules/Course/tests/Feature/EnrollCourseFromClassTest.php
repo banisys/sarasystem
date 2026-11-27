@@ -39,7 +39,9 @@ class EnrollCourseFromClassTest extends TestCase
         $primary = Tenant::factory()->create(['is_primary' => true]);
         $branch = Tenant::factory()->create();
         $this->actAsCourseEditor($primary, $branch);
-        $class = Classroom::factory()->for($branch)->create();
+        $this->makeStaff(auth()->user(), $primary);
+        $class = Classroom::factory()->for($primary)->create();
+        $panelClass = Classroom::factory()->for($branch)->create();
         $attendee = ClassRole::factory()->for($primary)->attendee()->create(['title' => 'شرکت‌کنندهٔ کلاس']);
         $teacher = ClassRole::factory()->for($primary)->teacher()->create(['title' => 'مدرس کلاس']);
         $members = ClassMember::factory()->for($class)->for($attendee);
@@ -60,10 +62,21 @@ class EnrollCourseFromClassTest extends TestCase
 
         $component = Livewire::test(EnrollmentsRelationManager::class, $this->owner($course));
         $action = TestAction::make('enrollFromClass')->table();
-        $component->callAction($action, data: ['class_id' => $class->id])
-            ->assertHasNoActionErrors()->assertNotified('ثبت‌نام از کلاس انجام شد.');
-        $component->callAction($action, data: ['class_id' => $class->id])->assertHasNoActionErrors();
+        $component->mountAction($action)->assertActionDataSet(['tenant_id' => null, 'class_id' => null]);
+        $classPicker = fn () => $component->instance()->getSchema('mountedActionSchema0')->getComponent('class_id');
+        $this->assertTrue($classPicker()->isDisabled());
+        $component->set('mountedActions.0.data.tenant_id', $branch->id);
+        $this->assertSame([$panelClass->id => $panelClass->title], $classPicker()->getOptions());
+        $component->set('mountedActions.0.data.class_id', $panelClass->id)
+            ->set('mountedActions.0.data.tenant_id', $primary->id)
+            ->assertActionDataSet(['tenant_id' => $primary->id, 'class_id' => null]);
+        $this->assertSame([$class->id => $class->title], $classPicker()->getSearchResults(''));
 
+        $component->set('mountedActions.0.data.class_id', $class->id)->callMountedAction()
+            ->assertHasNoActionErrors()->assertNotified('ثبت‌نام از کلاس انجام شد.');
+        $component->callAction($action, data: ['tenant_id' => $primary->id, 'class_id' => $class->id])->assertHasNoActionErrors();
+
+        $this->assertTrue($branch->isCurrent());
         $this->assertSame([$learner->user_id], $course->enrollments()->active()->pluck('user_id')->all());
         $this->assertSame(2, $course->enrollments()->count());
         $this->assertTrue($existing->refresh()->is_revoked);
@@ -84,7 +97,11 @@ class EnrollCourseFromClassTest extends TestCase
         $action = TestAction::make('enrollFromClass')->table();
 
         Livewire::test(EnrollmentsRelationManager::class, $this->owner($course))
-            ->callAction($action, data: ['class_id' => $foreignClass->id])->assertHasActionErrors(['class_id']);
+            ->callAction($action, data: ['tenant_id' => $branch->id, 'class_id' => $foreignClass->id])
+            ->assertHasActionErrors(['class_id']);
+        Livewire::test(EnrollmentsRelationManager::class, $this->owner($course))
+            ->callAction($action, data: ['tenant_id' => $primary->id, 'class_id' => $foreignClass->id])
+            ->assertHasActionErrors(['tenant_id']);
         $this->assertFalse($course->enrollments()->exists());
 
         CourseEnrollmentSettings::factory()->create(['manual_enabled' => false]);
