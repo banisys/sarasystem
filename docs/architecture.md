@@ -203,6 +203,8 @@ The admin lesson editor uses the course update permission to serve [private file
 
 [Lesson codes](decisions/0164-course-lesson-codes.md) are unique across the installation and searchable from the course’s admin lesson list.
 
+Class staff can [share lessons by code in a class session](decisions/0165-share-course-lessons-in-class-sessions.md). Course supplies lesson content and Class authorizes the session page and private files.
+
 Further modules will be derived from the domain map in [legacy-lms.md](legacy-lms.md#mapping-to-sarasystem-domains) as parts are ported.
 
 ## Tenancy

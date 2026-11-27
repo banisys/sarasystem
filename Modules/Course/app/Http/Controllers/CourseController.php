@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Course\Filament\Resources\Courses\CourseResource;
@@ -19,7 +18,7 @@ use Modules\Course\Models\CourseEnrollmentSettings;
 use Modules\Course\Models\CourseLesson;
 use Modules\Course\Models\CourseSection;
 use Nwidart\Modules\Facades\Module;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Modules\Course\Services\LessonContent;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CourseController extends Controller
@@ -92,29 +91,17 @@ class CourseController extends Controller
         return redirect()->route('courses.show', $course)->with('status', 'ثبت‌نام انجام شد.');
     }
 
-    public function lesson(Request $request, Course $course, CourseLesson $lesson): Response
+    public function lesson(Request $request, Course $course, CourseLesson $lesson, LessonContent $content): Response
     {
         $enrolled = $this->authorizeLesson($course, $lesson, $request->user());
         $lesson->load('media');
-        $video = $lesson->getFirstMedia('video');
-        $audio = $lesson->getFirstMedia('audio');
         $neighbours = $course->sections()->with('lessons:id,course_section_id,is_preview')->get()
             ->flatMap->lessons->filter(fn (CourseLesson $item): bool => $enrolled || $item->is_preview)->values();
         $position = $neighbours->search(fn (CourseLesson $item): bool => $item->is($lesson));
 
         return Inertia::render('Course::Lesson', [
             'course' => $course->only('id', 'title'),
-            'lesson' => [
-                ...$lesson->only('id', 'title', 'duration_minutes'),
-                'body' => $lesson->body_html === null ? $lesson->body : null,
-                'bodyHtml' => str($lesson->body_html ?? '')->sanitizeHtml()->toString(),
-            ],
-            'video' => $video ? route('courses.lesson.file', [$course, $lesson, $video->getKey()]) : null,
-            'audio' => $audio ? route('courses.lesson.file', [$course, $lesson, $audio->getKey()]) : null,
-            'attachments' => $lesson->getMedia('attachments')->map(fn (Media $file): array => [
-                'name' => $file->file_name,
-                'url' => route('courses.lesson.file', [$course, $lesson, $file->getKey()]),
-            ])->values(),
+            ...$content->describe($lesson, fn (int $file): string => route('courses.lesson.file', [$course, $lesson, $file])),
             'completed' => $lesson->completions()->where('user_id', $request->user()->getKey())->exists(),
             'canComplete' => $enrolled,
             'examUrl' => $enrolled && Module::isEnabled('Exam')
@@ -134,39 +121,18 @@ class CourseController extends Controller
         return redirect()->route('courses.lesson', [$course, $lesson])->with('status', 'پیشرفت شما ثبت شد.');
     }
 
-    public function file(Request $request, Course $course, CourseLesson $lesson, int $file): BinaryFileResponse
+    public function file(Request $request, Course $course, CourseLesson $lesson, int $file, LessonContent $content): BinaryFileResponse
     {
         $this->authorizeLesson($course, $lesson, $request->user());
 
-        return $this->lessonFileResponse($lesson, $file);
+        return $content->file($lesson, $file);
     }
 
-    public function previewFile(string $tenant, Course $course, CourseLesson $lesson, int $file): BinaryFileResponse
+    public function previewFile(string $tenant, Course $course, CourseLesson $lesson, int $file, LessonContent $content): BinaryFileResponse
     {
         abort_unless(CourseResource::canEdit($course), 403);
 
-        return $this->lessonFileResponse($lesson, $file, previewAttachments: true);
-    }
-
-    private function lessonFileResponse(CourseLesson $lesson, int $file, bool $previewAttachments = false): BinaryFileResponse
-    {
-        $media = $lesson->media()->whereIn('collection_name', ['video', 'audio', 'attachments'])->findOrFail($file);
-        $path = $media->getPath();
-        abort_unless(File::isFile($path), 404);
-
-        $headers = ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff'];
-
-        $inlineTypes = match ($media->collection_name) {
-            'video' => CourseLesson::VIDEO_TYPES,
-            'audio' => CourseLesson::AUDIO_TYPES,
-            'attachments' => $previewAttachments ? [...CourseLesson::ATTACHMENT_IMAGE_TYPES, 'application/pdf'] : [],
-        };
-
-        $response = in_array($media->mime_type, $inlineTypes, true)
-            ? response()->file($path, [...$headers, 'Content-Type' => $media->mime_type])
-            : response()->download($path, null, [...$headers, 'Content-Type' => 'application/octet-stream']);
-
-        return $response->setPrivate();
+        return $content->file($lesson, $file, previewAttachments: true);
     }
 
     private function authorizeLesson(Course $course, CourseLesson $lesson, User $user): bool

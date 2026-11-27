@@ -34,7 +34,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 #[Fillable([
     'tenant_id', 'classroom_id', 'schedule_id', 'subject_id', 'title', 'starts_at', 'ends_at', 'mode', 'location',
     'kind', 'status', 'cancel_reason', 'is_modified', 'original_starts_at', 'note', 'changed_by_id', 'changed_at',
-    'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'homework_max_score', 'content_recorded_by_id', 'content_recorded_at',
+    'covered_topic_ids', 'summary', 'homework', 'homework_due_on', 'homework_max_score', 'content_recorded_by_id', 'content_recorded_at', 'shared_lesson_ids',
 ])]
 class ClassSession extends Model implements HasMedia
 {
@@ -139,7 +139,7 @@ class ClassSession extends Model implements HasMedia
     public function isUntouched(): bool
     {
         return $this->kind === SessionKind::Regular && ! $this->is_modified && $this->status === SessionStatus::Scheduled
-            && ! $this->hasSubstitute() && blank($this->note) && $this->content_recorded_at === null;
+            && ! $this->hasSubstitute() && blank($this->note) && ! $this->hasContent() && blank($this->shared_lesson_ids);
     }
 
     public function hasContent(): bool
@@ -332,6 +332,7 @@ class ClassSession extends Model implements HasMedia
         return [
             'mode' => ClassMode::class,
             'covered_topic_ids' => 'array',
+            'shared_lesson_ids' => 'array',
             'seat_layout' => 'array',
             'seat_layout_user_panel_locked' => 'boolean',
             'homework_due_on' => 'date',

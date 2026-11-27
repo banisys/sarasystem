@@ -4,6 +4,7 @@ namespace Modules\Course\Providers;
 
 use App\Authorization\DefaultRoles;
 use App\PublicSite\PublicSite;
+use App\Support\SessionLessonLibrary;
 use App\UserPanel\UserPanel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
@@ -13,6 +14,7 @@ use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseParticipants;
 use Modules\Course\Filament\Resources\Courses\Pages\ManageCourseSections;
 use Modules\Course\Integrations\CourseExamSource;
 use Modules\Course\Models\Course;
+use Modules\Course\Services\LessonContent;
 use Modules\Exam\Support\ExamContexts;
 use Nwidart\Modules\Facades\Module;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -24,6 +26,13 @@ class CourseServiceProvider extends ModuleServiceProvider
     protected string $nameLower = 'course';
 
     protected array $providers = [RouteServiceProvider::class];
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->bind(SessionLessonLibrary::class, LessonContent::class);
+    }
 
     public function boot(): void
     {

@@ -34,6 +34,7 @@ use Modules\Class\Services\Online\OnlineRooms;
 use Modules\Class\Services\PlanForecast;
 use Modules\Class\Services\SessionContentBook;
 use Modules\Class\Services\SessionExamSource;
+use Modules\Class\Services\SessionLessons;
 use Modules\Class\Services\SessionReminders;
 use Modules\Exam\Services\ExamPerformance;
 use Nwidart\Modules\Facades\Module;
@@ -136,7 +137,7 @@ class MyClassController extends Controller
         ]);
     }
 
-    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry, SessionReminders $reminders, ExamSeating $seating): Response
+    public function show(Request $request, ClassSession $session, MyClasses $myClasses, AttendanceRegister $register, SessionContentBook $book, PlanForecast $forecast, HomeworkBook $homework, OnlineEntry $entry, SessionReminders $reminders, ExamSeating $seating, SessionLessons $lessons): Response
     {
         $user = $this->person($request);
         abort_unless($myClasses->canSee($user, $session), 404);
@@ -170,6 +171,7 @@ class MyClassController extends Controller
                 'planned_topics' => array_values(array_unique(array_map(fn (PlanTopic $topic): string => $topic->title, $forecast->topicsFor($session)))),
             ],
             'role' => $role,
+            'sharedLessons' => fn (): ?array => $lessons->forViewer($session, $user, $isOwn),
             'ward' => $isOwn ? null : ['id' => $user->getKey(), 'name' => $user->name],
             'gallery' => fn (): array => [
                 'can_upload' => $isOwn && $this->canUploadGallery($user, $session),
@@ -382,6 +384,31 @@ class MyClassController extends Controller
         $this->attempt(fn () => $register->record($session, collect($data['rows'])->keyBy(fn (array $row): int => (int) $row['user_id'])->all(), $user));
 
         return back()->with('status', 'حضور و غیاب ثبت شد.');
+    }
+
+    public function shareLessons(Request $request, ClassSession $session, MyClasses $myClasses, SessionLessons $lessons): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if($request->filled('for') || ! $myClasses->canSee($user, $session), 404);
+        $lessons->authorizeEditing($session, $user);
+
+        $data = $request->validate([
+            'lesson_codes' => ['present', 'array', 'list', 'max:50'],
+            'lesson_codes.*' => ['required', 'string', 'max:64', 'distinct:strict'],
+        ], attributes: ['lesson_codes' => 'کدهای درس', 'lesson_codes.*' => 'کد درس']);
+
+        $lessons->save($session, $user, $data['lesson_codes']);
+
+        return to_route('my-classes.session', ['session' => $session, 'tab' => 'content'])
+            ->with('status', 'درس‌های این جلسه ذخیره شدند.');
+    }
+
+    public function sharedLessonFile(Request $request, ClassSession $session, int $lesson, int $file, MyClasses $myClasses, SessionLessons $lessons): BinaryFileResponse
+    {
+        $viewer = $this->person($request);
+        abort_unless($myClasses->canSee($viewer, $session), 404);
+
+        return $lessons->file($session, $viewer, $lesson, $file);
     }
 
     public function content(Request $request, ClassSession $session, MyClasses $myClasses, SessionContentBook $book): RedirectResponse

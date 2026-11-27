@@ -21,6 +21,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import ExamSeatingEditor from '../Components/ExamSeatingEditor.vue';
 import SessionReminderTimeline from '../Components/SessionReminderTimeline.vue';
 import SessionGallery from '../Components/SessionGallery.vue';
+import SharedSessionLessons from '../Components/SharedSessionLessons.vue';
 
 // One session in «تقویم آموزشی» (ADR 0026): details, what it covered,
 // homework and materials, one's own attendance, and — for who may — the
@@ -37,6 +38,7 @@ const props = defineProps({
     statuses: { type: Array, required: true },
     attendance: { type: Array, default: null },
     contentForm: { type: Object, default: null },
+    sharedLessons: { type: Object, default: null },
     // Homework (ADR 0030): the person's hand-in, whether they may (still)
     // hand it in, and — for who grades — every attendee's.
     homeworkMaxScore: { type: Number, default: 20 },
@@ -540,6 +542,13 @@ const initial = (name) => name?.trim()?.charAt(0) ?? '?';
                                 </div>
                             </ElForm>
                         </PanelCard>
+
+                        <SharedSessionLessons
+                            v-if="sharedLessons && (sharedLessons.can_manage || sharedLessons.lessons.length)"
+                            :key="session.id"
+                            :session-id="session.id"
+                            :sharing="sharedLessons"
+                        />
                     </div>
 
                     <!-- Grading: who may (HomeworkBook::canGrade), at any time. -->

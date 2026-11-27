@@ -14,7 +14,7 @@
         "surfaces": ["admin", "user", "public"],
         "connections": [
             { "target": "Exam", "label": "آزمون‌های درس" },
-            { "target": "Class", "label": "ثبت‌نام از کلاس" }
+            { "target": "Class", "label": "ثبت‌نام از کلاس و اشتراک درس در جلسه" }
         ]
     }
 }

@@ -28,6 +28,8 @@ The session page has a separate staff tab for reading and leaving reminders ([AD
 The session tabs sit below the page header with extra spacing and align to the right in Persian. The tabs have a responsive horizontal gap. When the row overflows, it scrolls and keeps the active tab in view when its viewport changes.
 Choosing a session tab updates the `tab` query parameter on the current URL and preserves its other parameters. Reloading or opening the link restores the selected tab when it is available to the viewer. The details tab is the fallback.
 
+The «مطالب و تکلیف» tab also includes [course lessons shared by class staff](0165-share-course-lessons-in-class-sessions.md) when Course is enabled.
+
 The toolbar uses the panel surface, white in light mode, and highlights the active view with white text on green. Previous and next use chevrons with accessible labels, and «امروز» keeps its visible label.
 
 ## Consequences
